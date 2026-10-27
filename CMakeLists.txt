@@ -120,6 +120,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mixed_scene_test tests/mixed_scene_test.cpp)
+  target_link_libraries(mixed_scene_test PRIVATE earthsiege_core)
+  add_test(NAME mixed_scene COMMAND mixed_scene_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mixed_scene.bin")
   add_executable(herc_body_test tests/herc_body_test.cpp)
   target_link_libraries(herc_body_test PRIVATE earthsiege_core)
   add_test(NAME herc_body COMMAND herc_body_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_body.bin")

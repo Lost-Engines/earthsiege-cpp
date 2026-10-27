@@ -8,7 +8,7 @@ namespace earthsiege {
 namespace {
 
 int16_t constexpr terrain_class{0};
-int16_t constexpr herc_class{5};
+int16_t constexpr ground_target_class{5};
 int16_t constexpr effect_class{8};
 int16_t constexpr large_model_radius{5000};
 
@@ -58,7 +58,7 @@ distance_shading::distance_shading(world_environment const &source, distance_sha
 }
 
 size_t distance_shading::band(int32_t distance, int16_t const native_class, int16_t const radius) const {
-  if(native_class == herc_class) distance = std::max(0, wrap_long(static_cast<int64_t>(distance) + environment.model_distance_offsets[radius >= large_model_radius ? 1 : 0]));
+  if(native_class == ground_target_class) distance = std::max(0, wrap_long(static_cast<int64_t>(distance) + environment.model_distance_offsets[radius >= large_model_radius ? 1 : 0]));
   auto const &distances{environment.distance_bands[native_class == terrain_class ? 1 : 0]};
   if(distances.empty()) throw std::runtime_error{"empty distance bands"};
   size_t index{0};
@@ -67,8 +67,8 @@ size_t distance_shading::band(int32_t distance, int16_t const native_class, int1
 }
 
 bool distance_shading::culled(int32_t distance, int16_t const native_class, int16_t const radius) const {
-  if(native_class == herc_class || native_class == effect_class) {
-    auto const offset{environment.model_distance_offsets[native_class == herc_class && radius >= large_model_radius ? 1 : 0]};
+  if(native_class == ground_target_class || native_class == effect_class) {
+    auto const offset{environment.model_distance_offsets[native_class == ground_target_class && radius >= large_model_radius ? 1 : 0]};
     distance = std::max(0, wrap_long(static_cast<int64_t>(distance) + offset));
   }
   auto const &distances{environment.distance_bands[native_class == terrain_class ? 1 : 0]};
