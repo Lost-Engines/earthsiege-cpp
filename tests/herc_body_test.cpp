@@ -4,6 +4,7 @@
 #include <string>
 #include "resources/resource_store.h"
 #include "simulation/herc_body.h"
+#include "simulation/component_damage.h"
 
 namespace {
 
@@ -67,7 +68,7 @@ int main(int const argc, char **argv) try {
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
   std::string const version{magic.begin(), magic.end()};
-  if(version != "ESBODY01" && version != "ESBODY02" && version != "ESBODY03") file.fail("fixture version");
+  if(version != "ESBODY01" && version != "ESBODY02" && version != "ESBODY03" && version != "ESBODY04") file.fail("fixture version");
   bool const collisions{version == "ESBODY02"};
   auto const count{file.integer<uint16_t>()};
   unsigned int total{0};
@@ -83,7 +84,32 @@ int main(int const argc, char **argv) try {
     for(unsigned int step{0}; step != steps; ++step) {
       earthsiege::herc_controls const controls{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()};
       auto const ratio{file.integer<int16_t>()};
-      if(collisions) {
+      if(version == "ESBODY04") {
+        earthsiege::damage_consequences consequences;
+        consequences.disabled = file.integer<uint8_t>() != 0;
+        consequences.movement_light = file.integer<uint8_t>() != 0;
+        consequences.movement_heavy = file.integer<uint8_t>() != 0;
+        auto const recovery{file.integer<int32_t>()};
+        bool const reverse{file.integer<uint8_t>() != 0};
+        auto const expected_recovery{file.integer<int32_t>()};
+        bool const collapsed{file.integer<uint8_t>() != 0};
+        auto const events{file.integer<uint8_t>()};
+        std::vector<std::array<int16_t, 3>> expected_events;
+        for(unsigned int i{0}; i != events; ++i) {
+          auto const kind{file.integer<uint8_t>()};
+          auto const a{file.integer<int16_t>()};
+          auto const b{kind == 1 ? file.integer<int16_t>() : int16_t{0}};
+          expected_events.push_back({kind, a, b});
+        }
+        body.apply_damage(consequences);
+        if(recovery >= 0) body.recover_from_collision(recovery, reverse);
+        std::vector<std::array<int16_t, 3>> actual_events;
+        body.step_requested(controls.throttle, controls.steering, {controls.torso, controls.elevation}, ratio, {}, [&](earthsiege::movement_event const event){
+          if(event == earthsiege::movement_event::collapse_started) actual_events.push_back({0, 0x1e, 0});
+          else { actual_events.push_back({1, 120, 150}); actual_events.push_back({0, 0x29, 0}); }
+        });
+        if(body.movement().collision_recovery != expected_recovery || body.movement().collapsed != collapsed || actual_events != expected_events) file.fail(name + "/" + std::to_string(step) + ": damaged movement events/recovery differ");
+      } else if(collisions) {
         std::array<bool, 2> const hits{file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0};
         bool const expected_hit{file.integer<uint8_t>() != 0};
         auto const probes{file.integer<uint8_t>()};
@@ -103,7 +129,7 @@ int main(int const argc, char **argv) try {
     }
   }
   file.require_end();
-  if(count != 8 || total != (collisions ? 1920U : 1280U)) file.fail("incomplete HERC body references");
+  if(count != 8 || total != (version == "ESBODY04" ? 2880U : collisions ? 1920U : 1280U)) file.fail("incomplete HERC body references");
   std::cout << total << " original combined movement, aiming, pose and hierarchy updates agree" << std::endl;
   return EXIT_SUCCESS;
 } catch(std::exception const &error) {

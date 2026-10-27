@@ -3,6 +3,7 @@
 #include <optional>
 #include <utility>
 #include "resources/model_tree.h"
+#include "simulation/component_damage.h"
 #include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
 
@@ -15,26 +16,41 @@ herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &
   elevation_channel = rig.add_channel(source.profile.elevation.sequence);
 }
 
-bool herc_body::step(herc_controls const &controls, int16_t const frame_ratio, std::function<bool(herc_body const &)> const &contact) {
-  update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), controls.throttle, controls.steering);
-  return advance_body(vec2<int16_t>{controls.torso, controls.elevation}, frame_ratio, contact);
+void herc_body::apply_damage(damage_consequences const &consequences) {
+  damage = {consequences.disabled, consequences.movement_light, consequences.movement_heavy};
 }
 
-bool herc_body::step_requested(int16_t const speed, int16_t const steering, vec2<int16_t> const &aim, int16_t const frame_ratio, std::function<bool(herc_body const &)> const &contact) {
-  update_requested_movement(movement_state, source.profile.movement, rig.channel(body_channel), speed, steering);
-  return advance_body(aim, frame_ratio, contact);
+void herc_body::recover_from_collision(int32_t const duration, bool const reverse) {
+  movement_state.collision_recovery = duration;
+  movement_state.reverse_recovery = reverse;
 }
 
-bool herc_body::advance_body(vec2<int16_t> const &aim, int16_t const frame_ratio, std::function<bool(herc_body const &)> const &contact) {
-  update_aim(torso_state, source.profile.torso, aim.x, frame_ratio);
-  update_aim(elevation_state, source.profile.elevation, aim.y, frame_ratio);
+std::span<movement_event const> herc_body::movement_events() const { return frame_movement_events; }
+
+bool herc_body::step(herc_controls const &controls, int16_t const time_ratio, std::function<bool(herc_body const &)> const &contact, movement_event_sink const &events) {
+  frame_movement_events.clear();
+  auto const notify{[&](movement_event const event){ frame_movement_events.push_back(event); if(events) events(event); }};
+  update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), controls.throttle, controls.steering, damage, time_ratio, notify);
+  return advance_body(vec2<int16_t>{controls.torso, controls.elevation}, time_ratio, contact);
+}
+
+bool herc_body::step_requested(int16_t const speed, int16_t const steering, vec2<int16_t> const &aim, int16_t const time_ratio, std::function<bool(herc_body const &)> const &contact, movement_event_sink const &events) {
+  frame_movement_events.clear();
+  auto const notify{[&](movement_event const event){ frame_movement_events.push_back(event); if(events) events(event); }};
+  update_requested_movement(movement_state, source.profile.movement, rig.channel(body_channel), speed, steering, damage, time_ratio, notify);
+  return advance_body(aim, time_ratio, contact);
+}
+
+bool herc_body::advance_body(vec2<int16_t> const &aim, int16_t const time_ratio, std::function<bool(herc_body const &)> const &contact) {
+  update_aim(torso_state, source.profile.torso, aim.x, time_ratio);
+  update_aim(elevation_state, source.profile.elevation, aim.y, time_ratio);
   rig.channel(torso_channel).set_phase(source.profile.torso.sequence, static_cast<int16_t>(static_cast<uint16_t>(torso_state.angle) >> 2));
   rig.channel(elevation_channel).set_phase(source.profile.elevation.sequence, static_cast<int16_t>(static_cast<uint16_t>(elevation_state.angle) >> 2));
   std::optional<animation_rig> saved;
   if(contact) saved.emplace(rig);
   auto const position{movement_state.position};
   auto const advance{[&]{
-    advance_root_movement(movement_state, rig.channel(body_channel), frame_ratio);
+    advance_root_movement(movement_state, rig.channel(body_channel), time_ratio);
     rig.update_pose();
   }};
   auto const restore{[&]{

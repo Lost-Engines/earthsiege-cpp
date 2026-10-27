@@ -28,10 +28,13 @@ int constexpr steering_gait_threshold{45};
 int16_t constexpr minimum_start_rate{60};
 int16_t constexpr stop_transition_rate{100};
 int constexpr turn_animation_rate{350};
+int16_t constexpr collapse_playback_rate{120};
+int constexpr light_damage_speed_q10{750};
+int constexpr heavy_damage_speed_q10{400};
 
 } // anonymous namespace
 
-void update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input) {
+void update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events) {
   /// Preserve per-update throttle and acceleration; only root-motion time is scaled
   bool const forward{std::abs(throttle_input) > throttle_direction_threshold ? throttle_input <= 0 : state.throttle >= 0};
   if(forward) steering_input = wrap_word(-steering_input);
@@ -42,13 +45,22 @@ void update_player_movement(locomotion_state &state, movement_profile const &pro
     state.throttle = crosses_neutral ? 0 : static_cast<int16_t>(std::clamp<int>(next_throttle, -throttle_limit, throttle_limit));
   }
   auto const desired{scale(state.throttle, state.throttle < 0 ? -profile.reverse_rate : profile.forward_rate, 10)};
-  update_requested_movement(state, profile, channel, desired, steering_input);
+  update_requested_movement(state, profile, channel, desired, steering_input, damage, ratio, events);
 }
 
-void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const desired, int16_t steering_input) {
+void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t desired, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events) {
+  if(damage.disabled) {
+    desired = 0;
+    steering_input = 0;
+  } else {
+    state.collision_recovery = std::max(0, wrap_long(static_cast<int64_t>(state.collision_recovery) - ratio));
+    desired = state.collision_recovery != 0 ? (state.reverse_recovery ? profile.reverse_rate : profile.forward_rate) : std::clamp(desired, profile.reverse_rate, profile.forward_rate);
+  }
+  if(damage.heavy) desired = scale(desired, heavy_damage_speed_q10, 10);
+  else if(damage.light) desired = scale(desired, light_damage_speed_q10, 10);
   auto const &pose{channel.state()};
   auto const previous{state.gait_rate};
-  state.gait_rate = approach(state.gait_rate, std::clamp(desired, profile.reverse_rate, profile.forward_rate), profile.acceleration);
+  state.gait_rate = approach(state.gait_rate, desired, profile.acceleration);
   steering_input = static_cast<int16_t>(std::clamp<int>(steering_input, -steering_axis_limit, steering_axis_limit));
   bool const turning{pose.sequence == profile.turn_sequence};
   bool const stopping{pose.sequence == profile.forward_stop_sequence || pose.sequence == profile.reverse_stop_sequence};
@@ -61,7 +73,22 @@ void update_requested_movement(locomotion_state &state, movement_profile const &
     state.gait_rate = 0;
   }
   if(pose.sequence == pose.next_sequence) {
-    if(previous_magnitude < magnitude) {
+    if(!turning && damage.disabled) {
+      if(pose.sequence == profile.disabled_sequence) {
+        state.playback_rate = collapse_playback_rate;
+        if(!state.collapsed && pose.frame == pose.next_frame) {
+          state.collapsed = true;
+          if(events) events(movement_event::collapsed);
+        }
+      } else {
+        if(pose.requested_sequence != profile.disabled_sequence) {
+          if(pose.sequence == profile.reverse_stop_sequence) channel.reset(profile.forward_stop_sequence);
+          channel.request_sequence(profile.disabled_sequence);
+          if(!state.collapsed && events) events(movement_event::collapse_started);
+        }
+        state.playback_rate = stop_transition_rate;
+      }
+    } else if(previous_magnitude < magnitude) {
       if(!stopping) {
         if(pose.sequence == profile.movement_sequence) {
           state.playback_rate = state.gait_rate;

@@ -38,7 +38,7 @@ public:
   mission_session &operator=(mission_session &&) = delete;
   scenery_world const &scenery() const;
   herc_body const &player() const;
-  void step(herc_controls const &controls, int16_t frame_ratio);
+  void step(herc_controls const &controls, int16_t time_ratio);
   std::span<actor_contact const> contacts() const;
   std::vector<scene_model> roster_models() const;
   camera_target view_target() const;

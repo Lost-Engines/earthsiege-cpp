@@ -44,9 +44,9 @@ herc_body const &mission_session::player() const {
   return *crew.at(player_index).body;
 }
 
-void mission_session::step(herc_controls const &controls, int16_t const frame_ratio) {
+void mission_session::step(herc_controls const &controls, int16_t const time_ratio) {
   frame_contacts.clear();
-  crew.at(player_index).body->step(controls, frame_ratio, [&](herc_body const &candidate){
+  crew.at(player_index).body->step(controls, time_ratio, [&](herc_body const &candidate){
     std::vector<contact_actor> bodies;
     bodies.reserve(crew.size());
     for(auto const &member : crew) bodies.push_back(member.body->contact_geometry());
