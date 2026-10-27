@@ -16,6 +16,14 @@ struct model_view {
   model_detail detail;
 };
 
+/// Replace a body placeholder using the body skeleton and independent weapon cells/textures
+struct model_attachment {
+  int16_t body_part{0};
+  model_part const *geometry{nullptr};
+  std::span<uint16_t const> cells;
+  std::span<bitmap const> textures;
+};
+
 class model_renderer {
   framebuffer &target;
   palette const &colours;
@@ -23,7 +31,7 @@ class model_renderer {
 
 public:
   model_renderer(framebuffer &target, palette const &colours);
-  void draw(model_part const &source, model_instance const &instance, model_transform const &object, model_view const &view, std::span<bitmap const> textures, std::span<light const> lights);
+  void draw(model_part const &source, model_instance const &instance, model_transform const &object, model_view const &view, std::span<bitmap const> textures, std::span<light const> lights, std::span<model_attachment const> attachments = {});
 };
 
 } // namespace earthsiege

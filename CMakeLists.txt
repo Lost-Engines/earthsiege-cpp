@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/model_tree.cpp
+  src/resources/model_tree.h
+  src/simulation/weapon_assembly.cpp
+  src/simulation/weapon_assembly.h
   src/resources/combat.cpp
   src/resources/combat.h
   src/resources/player_roster.cpp
@@ -112,6 +116,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(armed_renderer_test tests/armed_renderer_test.cpp)
+  target_link_libraries(armed_renderer_test PRIVATE earthsiege_core)
+  add_test(NAME armed_renderer COMMAND armed_renderer_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/armed_render.bin")
+  add_executable(weapon_assembly_test tests/weapon_assembly_test.cpp)
+  target_link_libraries(weapon_assembly_test PRIVATE earthsiege_core)
+  add_test(NAME weapon_assembly COMMAND weapon_assembly_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/weapon_assembly.bin")
   add_executable(combat_test tests/combat_test.cpp)
   target_link_libraries(combat_test PRIVATE earthsiege_core)
   add_test(NAME combat_resources COMMAND combat_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/combat.bin")

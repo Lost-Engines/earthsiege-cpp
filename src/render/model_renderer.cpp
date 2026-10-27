@@ -28,6 +28,8 @@ class model_draw {
   model_view const &view;
   std::span<bitmap const> textures;
   std::span<light const> lights;
+  std::span<uint16_t const> cells;
+  std::span<model_attachment const> attachments;
 
   struct part_view {
     model_transform transform;
@@ -170,11 +172,18 @@ class model_draw {
   }
 
 public:
-  model_draw(framebuffer &buffer, palette const &palette_data, texture_shade_maps const &shades, model_instance const &model, model_transform const &placement, model_view const &camera, std::span<bitmap const> const bank, std::span<light const> const sources)
-    : target{buffer}, colours{palette_data}, texture_shades{shades}, instance{model}, object{placement}, view{camera}, textures{bank}, lights{sources} {
+  model_draw(framebuffer &buffer, palette const &palette_data, texture_shade_maps const &shades, model_instance const &model, model_transform const &placement, model_view const &camera, std::span<bitmap const> const bank, std::span<light const> const sources, std::span<uint16_t const> const frames, std::span<model_attachment const> const replacements)
+    : target{buffer}, colours{palette_data}, texture_shades{shades}, instance{model}, object{placement}, view{camera}, textures{bank}, lights{sources}, cells{frames}, attachments{replacements} {
   }
 
   void part(model_part const &source) {
+    if(source.kind != model_kind::null) {
+      auto const found{std::ranges::find(attachments, source.header.id, &model_attachment::body_part)};
+      if(found != attachments.end()) {
+        if(found->geometry) model_draw{target, colours, texture_shades, instance, object, view, found->textures, lights, found->cells, {}}.part(*found->geometry);
+        return;
+      }
+    }
     auto const current{context(source.header.transform)};
     std::visit([&](auto const &value){
       using type = std::decay_t<decltype(value)>;
@@ -185,7 +194,7 @@ public:
         auto detail{view.detail};
         detail.projection_shift = view.projection.perspective_shift;
         part(value.children.at(detail_draw_index(value, source.header.radius, current.eye, detail)));
-      } else if constexpr(std::is_same_v<type, cell_part>) part(value.children.at(cell_draw_index(value, instance.cell_frames())));
+      } else if constexpr(std::is_same_v<type, cell_part>) part(value.children.at(cell_draw_index(value, cells)));
       else if constexpr(std::is_same_v<type, part_list> || std::is_same_v<type, shape_part>) {
         for(auto const &child : value.children) part(child);
       } else if constexpr(std::is_same_v<type, billboard_part>) billboard(source.header, value, current);
@@ -198,8 +207,8 @@ public:
 model_renderer::model_renderer(framebuffer &buffer, palette const &palette_data) : target{buffer}, colours{palette_data}, texture_shades{make_texture_shades(palette_data)} {
 }
 
-void model_renderer::draw(model_part const &source, model_instance const &instance, model_transform const &object, model_view const &view, std::span<bitmap const> const textures, std::span<light const> const lights) {
-  model_draw{target, colours, texture_shades, instance, object, view, textures, lights}.part(source);
+void model_renderer::draw(model_part const &source, model_instance const &instance, model_transform const &object, model_view const &view, std::span<bitmap const> const textures, std::span<light const> const lights, std::span<model_attachment const> const attachments) {
+  model_draw{target, colours, texture_shades, instance, object, view, textures, lights, instance.cell_frames(), attachments}.part(source);
 }
 
 } // namespace earthsiege
