@@ -18,12 +18,6 @@ size_t kind_index(actor_kind const kind) {
   return index;
 }
 
-uint16_t route_heading(vec3<int32_t> const &first, vec3<int32_t> const &second) {
-  auto x{wrap_long(static_cast<int64_t>(second.x) - first.x)};
-  auto const y{wrap_long(static_cast<int64_t>(second.y) - first.y)};
-  if(x == 0 && y == 0) x = 1;
-  return static_cast<uint16_t>(direction_angle(x, y) - angle_quarter_turn);
-}
 
 } // anonymous namespace
 
@@ -116,7 +110,7 @@ mission_placement placement_catalogue::place(mission_script const &script, playe
     if(source.route >= 0) route = script.routes.at(static_cast<size_t>(source.route)).points;
     uint16_t heading{0};
     if(source.heading >= 0) heading = decode_mission_heading(script.headings.at(static_cast<size_t>(source.heading)));
-    else if(route.size() > 1) heading = route_heading(script.points.at(static_cast<size_t>(route[0])), script.points.at(static_cast<size_t>(route[1])));
+    else if(route.size() > 1) heading = bearing_angle(script.points.at(static_cast<size_t>(route[0])), script.points.at(static_cast<size_t>(route[1])));
     vec3<int32_t> const *anchor{nullptr};
     if(source.position >= 0) anchor = &script.points.at(static_cast<size_t>(source.position));
     else if(!route.empty()) anchor = &script.points.at(static_cast<size_t>(route[0]));

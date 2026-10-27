@@ -190,4 +190,11 @@ auto inverse_plane_distance(vec3<int32_t> const &eye, model_transform const &tra
   return wrap_long(static_cast<int64_t>(local.x) * normal.x + static_cast<int64_t>(local.y) * normal.y + static_cast<int64_t>(local.z) * normal.z);
 }
 
+uint16_t bearing_angle(vec3<int32_t> const &first, vec3<int32_t> const &second) {
+  auto x{wrap_long(static_cast<int64_t>(second.x) - first.x)};
+  auto const y{wrap_long(static_cast<int64_t>(second.y) - first.y)};
+  if(x == 0 && y == 0) x = 1;
+  return static_cast<uint16_t>(direction_angle(x, y) - angle_quarter_turn);
+}
+
 } // namespace earthsiege

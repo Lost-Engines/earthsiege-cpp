@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/navigation.cpp
+  src/simulation/navigation.h
   src/simulation/mission_triggers.cpp
   src/simulation/mission_triggers.h
   src/simulation/actor_contact.cpp
@@ -143,6 +145,9 @@ if(BUILD_TESTING)
   add_executable(input_test tests/input_test.cpp)
   target_link_libraries(input_test PRIVATE earthsiege_core)
   add_test(NAME input COMMAND input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/input.bin")
+  add_executable(navigation_test tests/navigation_test.cpp)
+  target_link_libraries(navigation_test PRIVATE earthsiege_core)
+  add_test(NAME navigation COMMAND navigation_test "${PROJECT_SOURCE_DIR}/tests/fixtures/navigation.bin")
   add_executable(trigger_test tests/trigger_test.cpp)
   target_link_libraries(trigger_test PRIVATE earthsiege_core)
   add_test(NAME triggers COMMAND trigger_test "${PROJECT_SOURCE_DIR}/tests/fixtures/triggers.bin")

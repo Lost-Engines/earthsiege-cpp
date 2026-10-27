@@ -15,6 +15,7 @@ auto model_cosine(uint16_t angle)->int16_t;
 uint16_t model_arcsine(int16_t sine);
 vec3<uint16_t> transform_angles(model_transform const &transform);
 uint16_t direction_angle(int32_t x, int32_t y);
+uint16_t bearing_angle(vec3<int32_t> const &first, vec3<int32_t> const &second);
 auto rotation_transform(vec3<uint16_t> const &angles)->model_transform;
 auto transform_point(vec3<int16_t> const &point, model_transform const &transform)->vec3<int32_t>;
 auto rotate_vector(vec3<int32_t> const &vector, model_transform const &transform)->vec3<int32_t>;
