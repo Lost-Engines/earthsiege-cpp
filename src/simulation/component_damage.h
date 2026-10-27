@@ -10,8 +10,8 @@ struct damage_consequences {
   bool disabled{false};
   bool movement_light{false};
   bool movement_heavy{false};
-  bool component5_light{false};
-  bool component5_heavy{false};
+  bool reactor_light{false};
+  bool reactor_heavy{false};
   bool operator==(damage_consequences const &) const = default;
 };
 

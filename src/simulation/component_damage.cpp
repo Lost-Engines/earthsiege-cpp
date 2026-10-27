@@ -101,10 +101,10 @@ void component_damage::update_consequences(int16_t const legs) {
     return current.armour.at(section) < 0 && std::ranges::all_of(definition.components.at(section).dependents, [&](damage_dependency const &entry){ return current.internal.at(static_cast<size_t>(entry.component)) < 0; });
   }};
   if(!flags.dead && (destroyed(0) || destroyed(1) || fraction(9) == 256)) flags.dead = true;
-  if(!flags.component5_light && !flags.component5_heavy) {
+  if(!flags.reactor_light && !flags.reactor_heavy) {
     int const damage{fraction(5)};
-    if(damage >= 193) flags.component5_heavy = true;
-    else if(damage > 128) flags.component5_light = true;
+    if(damage >= 193) flags.reactor_heavy = true;
+    else if(damage > 128) flags.reactor_light = true;
   }
 }
 

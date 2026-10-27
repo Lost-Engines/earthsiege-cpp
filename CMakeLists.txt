@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/weapon_controls.cpp
+  src/simulation/weapon_controls.h
+  src/simulation/shield_power.cpp
+  src/simulation/shield_power.h
   src/simulation/component_damage.cpp
   src/simulation/component_damage.h
   src/simulation/navigation.cpp
@@ -147,6 +151,9 @@ if(BUILD_TESTING)
   add_executable(input_test tests/input_test.cpp)
   target_link_libraries(input_test PRIVATE earthsiege_core)
   add_test(NAME input COMMAND input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/input.bin")
+  add_executable(weapon_controls_test tests/weapon_controls_test.cpp)
+  target_link_libraries(weapon_controls_test PRIVATE earthsiege_core)
+  add_test(NAME weapon_controls COMMAND weapon_controls_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/weapon_controls.bin")
   add_executable(damage_test tests/damage_test.cpp)
   target_link_libraries(damage_test PRIVATE earthsiege_core)
   add_test(NAME damage COMMAND damage_test "${PROJECT_SOURCE_DIR}/tests/fixtures/damage.bin")

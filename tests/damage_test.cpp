@@ -24,8 +24,8 @@ earthsiege::damage_state state(earthsiege::binary_reader &file) {
   flags.disabled = file.integer<uint8_t>() != 0;
   flags.movement_light = file.integer<uint8_t>() != 0;
   flags.movement_heavy = file.integer<uint8_t>() != 0;
-  flags.component5_light = file.integer<uint8_t>() != 0;
-  flags.component5_heavy = file.integer<uint8_t>() != 0;
+  flags.reactor_light = file.integer<uint8_t>() != 0;
+  flags.reactor_heavy = file.integer<uint8_t>() != 0;
   return result;
 }
 
