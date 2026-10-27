@@ -11,6 +11,7 @@ Working components:
 - Source-mission compilation: conditions, late variant binding, coordinate sums, partial merges and reference remapping. All nine output tables and final RNG state agree with 300 original compiler cases under four explicit campaign/RNG states.
 - Typed compiled mission handoff: points, headings, routes, areas, triggers, HERCs, flyers, fixed ground objects and groups. All nine tables match captured native in-memory records in 300 cases.
 - Complete mission briefing/objective/debrief decoding, with counter-selected phrases matching 2,223 original interpreter results.
+- Original BSP painter traversal, projected-size detail selection and cell-animation selection; 28,632 original child-render traces agree.
 - Fixed-point Euler matrices and point/vector/plane transforms, with 2,141 original-code comparisons. Original cosine-table rounding is preserved.
 - Typed 3Space meshes, materials, BSP trees, detail levels, cell animations, articulated poses and collision heightfields. All 47,575 objects in 44 resources agree with original-reader fingerprints across 23 field groups.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.

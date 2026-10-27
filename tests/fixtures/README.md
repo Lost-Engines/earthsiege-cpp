@@ -11,3 +11,10 @@ It includes exact quadrant/rounding boundaries and deterministic mixed angles.
 The cosine constants retain all original entries, including four one-unit
 rounding differences from mathematical cosine. Matrix storage is converted
 explicitly from the original planar-first arrangement to column-major `mat3`.
+
+`model_traversal_checks.tsv` contains 28,632 original child-render traces from
+`earthsiege-reverse/tools/check_model_traversal.py`. It covers every supplied
+BSP part, detail selector and cell-animation selector, with varied view points,
+articulated matrices, frame counters, projection shifts and detail preferences.
+The host replaces only child render calls with trace collection; all selection
+arithmetic executes in the original methods (0x53240, 0x530b0, 0x52fd0).

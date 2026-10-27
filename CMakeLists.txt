@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/model_traversal.cpp
+  src/render/model_traversal.h
   src/simulation/model_math.cpp
   src/simulation/model_math.h
   src/simulation/cosine_table.h
@@ -53,6 +55,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(model_traversal_test tests/model_traversal_test.cpp)
+  target_link_libraries(model_traversal_test PRIVATE earthsiege_core)
+  add_test(NAME model_traversal COMMAND model_traversal_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/model_traversal_checks.tsv")
   add_executable(model_math_test tests/model_math_test.cpp)
   target_link_libraries(model_math_test PRIVATE earthsiege_core)
   add_test(NAME model_math COMMAND model_math_test "${PROJECT_SOURCE_DIR}/tests/fixtures/model_math.bin")
