@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/projection.cpp
+  src/render/projection.h
   src/render/palette_shading.cpp
   src/render/palette_shading.h
   src/simulation/fixed_math.cpp
@@ -65,6 +67,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(projection_test tests/projection_test.cpp)
+  target_link_libraries(projection_test PRIVATE earthsiege_core)
+  add_test(NAME projection COMMAND projection_test "${PROJECT_SOURCE_DIR}/tests/fixtures/projection.bin")
   add_executable(palette_shading_test tests/palette_shading_test.cpp)
   target_link_libraries(palette_shading_test PRIVATE earthsiege_core)
   add_test(NAME palette_shading COMMAND palette_shading_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/palette_shading.bin")

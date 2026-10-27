@@ -46,3 +46,12 @@ wrapping and final byte conversion. Regenerate with
 DBSIM 0x28b28, plus 32,256 ramp results independently verified against original
 0x68be0 by `check_materials.py`. It covers all 18 supplied ramp-bearing palettes.
 Regenerate with `python3 tools/export_palette_fixtures.py ../earthsiege-reverse`.
+
+`projection.bin` records 3,200 model/terrain polygons through original DBSIM
+0x5c5d4/0x75a28 and 0x5c9bc, followed by flat, texture-coordinate and shade
+clippers 0x5cc4c/0x5ce10/0x5d06c. Original geometry and arithmetic execute without
+drawing substitutions; captures stop before rasterization. Both parallel and
+perspective paths are covered. Model equality at the near plane clips, whereas
+terrain equality is retained. Nonstandard near/focal pairs deliberately retain
+the original clipper's implicit unit projection at the intersection.
+Regenerate with `python3 tools/export_projection_fixtures.py ../earthsiege-reverse/analysis`.
