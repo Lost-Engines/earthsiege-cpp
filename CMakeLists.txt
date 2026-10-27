@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/hit_dispatch.cpp
+  src/simulation/hit_dispatch.h
   src/simulation/projectile_instance.cpp
   src/simulation/projectile_instance.h
   src/simulation/weapon_firing.cpp
@@ -175,6 +177,12 @@ if(BUILD_TESTING)
   add_executable(hit_volumes_test tests/hit_volumes_test.cpp)
   target_link_libraries(hit_volumes_test PRIVATE earthsiege_core)
   add_test(NAME hit_volumes COMMAND hit_volumes_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/hit_volumes.bin")
+  add_executable(world_impacts_test tests/world_impacts_test.cpp)
+  target_link_libraries(world_impacts_test PRIVATE earthsiege_core)
+  add_test(NAME world_impacts COMMAND world_impacts_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/world_impacts.bin")
+  add_executable(hit_dispatch_test tests/hit_dispatch_test.cpp)
+  target_link_libraries(hit_dispatch_test PRIVATE earthsiege_core)
+  add_test(NAME hit_dispatch COMMAND hit_dispatch_test "${PROJECT_SOURCE_DIR}/tests/fixtures/hit_dispatch.bin")
   add_executable(projectile_instance_test tests/projectile_instance_test.cpp)
   target_link_libraries(projectile_instance_test PRIVATE earthsiege_core)
   add_test(NAME projectile_instances COMMAND projectile_instance_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/projectile_packets.bin")
