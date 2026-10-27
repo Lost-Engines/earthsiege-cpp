@@ -27,3 +27,11 @@ BULLDOG root 5, for example, leaves nodes 7, 8, 11 and 12 unwritten. Filling
 allocations with 0x55 and 0xaa confirmed those slots retain the supplied bytes.
 The native implementation gives unused slots safe identity transforms.
 Regenerate with `python3 tools/export_animation_fixtures.py ../earthsiege-reverse/analysis`.
+
+`animation_channels.bin` imports 8,955 original channel traces, covering 98,505
+post-request states plus each initial state. Original calls are 0x619f0, 0x6200c,
+0x6265c, 0x626c8 and 0x62718, with accumulated forward/reverse motion retained.
+The fixture also includes 5,120 original interpolated root transforms (0x61da8).
+Destination-frame selection is -1 (any frame), the ordinary HERC request path.
+Only unwritten matrix padding is excluded. Both animation fixture files are
+produced by `export_animation_fixtures.py`.
