@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/herc_profile.cpp
+  src/resources/herc_profile.h
+  src/simulation/aim_control.cpp
+  src/simulation/aim_control.h
   src/simulation/animation_rig.cpp
   src/simulation/animation_rig.h
   src/resources/model_bindings.cpp
@@ -83,6 +87,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(aim_control_test tests/aim_control_test.cpp)
+  target_link_libraries(aim_control_test PRIVATE earthsiege_core)
+  add_test(NAME aim_controls COMMAND aim_control_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/aim_control.bin")
   add_executable(animation_rig_test tests/animation_rig_test.cpp)
   target_link_libraries(animation_rig_test PRIVATE earthsiege_core)
   add_test(NAME animation_rigs COMMAND animation_rig_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/animation_rigs.bin")

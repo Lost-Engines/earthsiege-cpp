@@ -104,3 +104,9 @@ from complete original player actors. It retains their runtime sequence
 priorities, all channel state fields, stable channel order, poses and matrices.
 The captures execute 0x620c4, 0x614d4, 0x6168c and 0x61810. Regenerate with
 `python3 tools/export_rig_fixtures.py ../earthsiege-reverse/analysis`.
+
+`aim_control.bin` retains 13,440 original torso/elevation control cases across
+all sixteen chassis, with multiple frame ratios, demands, previous rates and
+limit angles. Original 0x149ac/0x14ba0 execute without channels/HUD side effects;
+the full articulated side is checked separately by `animation_rigs.bin`.
+Regenerate with `python3 tools/export_aim_fixtures.py ../earthsiege-reverse/analysis`.
