@@ -38,6 +38,8 @@ enum class herc_texture_group : int16_t {
   enemy,
 };
 
+inline std::array<int32_t, 7> constexpr herc_detail_thresholds{75, 60, 45, 25, 18, 12, 6};
+
 struct herc_profile {
   movement_profile movement;
   aiming_profile torso;

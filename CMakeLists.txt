@@ -116,6 +116,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(actor_detail_test tests/actor_detail_test.cpp)
+  target_link_libraries(actor_detail_test PRIVATE earthsiege_core)
+  add_test(NAME actor_detail COMMAND actor_detail_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/actor_detail.bin")
   add_executable(armed_renderer_test tests/armed_renderer_test.cpp)
   target_link_libraries(armed_renderer_test PRIVATE earthsiege_core)
   add_test(NAME armed_renderer COMMAND armed_renderer_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/armed_render.bin")

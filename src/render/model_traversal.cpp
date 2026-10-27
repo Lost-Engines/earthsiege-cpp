@@ -60,6 +60,17 @@ auto approximate_distance(vec3<int32_t> const &point)->int32_t {
   return wrap(components[2] + (components[0] >> 2) + (components[1] >> 2) + (components[1] >> 4) + (components[1] >> 5));
 }
 
+auto projected_radius(int16_t radius, vec3<int32_t> const &eye, model_detail const &detail)->int32_t {
+  int32_t const distance{std::max(1, approximate_distance(eye) - radius)};
+  int32_t projected{wrap(static_cast<int64_t>(radius) * (int64_t{1} << detail.projection_shift)) / distance};
+  if(projected == 0) projected = 1;
+  int64_t const scaled{static_cast<int64_t>(projected) * detail.scale};
+  // Preserve the signed-product rounding instruction used by 0x5e818.
+  uint32_t const rounding{(scaled == static_cast<int32_t>(scaled) ? 0U : ~0U) ^ 0x200U};
+  projected = wrap((scaled + rounding) >> 10);
+  return projected;
+}
+
 } // namespace
 
 auto bsp_draw_order(bsp_part const &part, vec3<int32_t> const &eye, std::span<model_transform const> transforms)->std::vector<uint16_t> {
@@ -71,15 +82,21 @@ auto cell_draw_index(cell_part const &part, std::span<uint16_t const> frames)->u
   return frames[static_cast<unsigned int>(part.sequence)] % static_cast<unsigned int>(part.children.size());
 }
 
+auto actor_detail_index(size_t const model_count, std::span<int32_t const> const thresholds, int16_t const radius, vec3<int32_t> const &eye, model_detail const &detail)->unsigned int {
+  if(!model_count || model_count > thresholds.size() + 1 || detail.projection_shift > 30) throw std::runtime_error{"invalid actor detail selection"};
+  auto const projected{projected_radius(radius, eye, detail)};
+  auto index{static_cast<unsigned int>(std::min(static_cast<size_t>(detail.bias), model_count - 1))};
+  size_t threshold{0};
+  while(index + 1 < model_count && thresholds[threshold] > projected) {
+    ++index;
+    ++threshold;
+  }
+  return index;
+}
+
 auto detail_draw_index(detail_part const &part, int16_t radius, vec3<int32_t> const &eye, model_detail const &detail)->unsigned int {
   if(part.children.empty() || part.children.size() != part.distances.size() || detail.bias >= part.children.size() || detail.projection_shift > 30) throw std::runtime_error{"invalid model detail selection"};
-  int32_t const distance{std::max(1, approximate_distance(eye) - radius)};
-  int32_t projected{wrap(static_cast<int64_t>(radius) * (int64_t{1} << detail.projection_shift)) / distance};
-  if(projected == 0) projected = 1;
-  int64_t const scaled{static_cast<int64_t>(projected) * detail.scale};
-  // Preserve the signed-product rounding instruction used by 0x5e818.
-  uint32_t const rounding{(scaled == static_cast<int32_t>(scaled) ? 0U : ~0U) ^ 0x200U};
-  projected = wrap((scaled + rounding) >> 10);
+  auto const projected{projected_radius(radius, eye, detail)};
   unsigned int index{detail.bias};
   while(index + 1 < part.children.size() && projected > part.distances[index]) ++index;
   return index - detail.bias;
