@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <stdexcept>
 #include "simulation/fixed_math.h"
+#include "simulation/frame_time.h"
 #include "simulation/model_math.h"
 
 namespace earthsiege {
@@ -126,8 +127,7 @@ void update_player_movement(locomotion_state &state, movement_profile const &pro
 void advance_root_movement(locomotion_state &state, animation_channel &channel, int16_t const frame_ratio) {
   channel.set_rate(state.playback_rate);
   channel.rebase_motion();
-  int constexpr nominal_step{100};
-  channel.advance(std::max<int16_t>(-32767, scale(nominal_step, frame_ratio)));
+  channel.advance(scale_frame_time(nominal_frame_milliseconds, frame_ratio));
   auto const movement{channel.root_motion()};
   auto const rotation{rotation_transform(state.angles)};
   auto const displacement{rotate_vector(movement.translation, rotation)};

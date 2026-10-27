@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/keyboard_input.cpp
+  src/simulation/keyboard_input.h
+  src/simulation/frame_time.cpp
+  src/simulation/frame_time.h
   src/resources/herc_definition.cpp
   src/resources/herc_definition.h
   src/simulation/herc_body.cpp
@@ -120,6 +124,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(input_test tests/input_test.cpp)
+  target_link_libraries(input_test PRIVATE earthsiege_core)
+  add_test(NAME input COMMAND input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/input.bin")
   add_executable(mixed_scene_test tests/mixed_scene_test.cpp)
   target_link_libraries(mixed_scene_test PRIVATE earthsiege_core)
   add_test(NAME mixed_scene COMMAND mixed_scene_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mixed_scene.bin")
