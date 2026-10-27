@@ -18,6 +18,7 @@ add_library(earthsiege_core
   src/simulation/weapon_bank.h
   src/simulation/herc_actor.cpp
   src/simulation/herc_actor.h
+  src/simulation/herc_impact.h
   src/simulation/herc_power.cpp
   src/simulation/herc_power.h
   src/simulation/herc_loadout.cpp
@@ -177,6 +178,9 @@ if(BUILD_TESTING)
   add_executable(hit_volumes_test tests/hit_volumes_test.cpp)
   target_link_libraries(hit_volumes_test PRIVATE earthsiege_core)
   add_test(NAME hit_volumes COMMAND hit_volumes_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/hit_volumes.bin")
+  add_executable(herc_impacts_test tests/herc_impacts_test.cpp)
+  target_link_libraries(herc_impacts_test PRIVATE earthsiege_core)
+  add_test(NAME herc_impacts COMMAND herc_impacts_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_impacts.bin")
   add_executable(world_impacts_test tests/world_impacts_test.cpp)
   target_link_libraries(world_impacts_test PRIVATE earthsiege_core)
   add_test(NAME world_impacts COMMAND world_impacts_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/world_impacts.bin")

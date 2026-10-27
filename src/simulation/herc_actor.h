@@ -1,8 +1,10 @@
 #pragma once
 #include "simulation/herc_body.h"
+#include "simulation/herc_impact.h"
 #include "simulation/herc_loadout.h"
 #include "simulation/herc_power.h"
 #include "simulation/hit_volumes.h"
+#include "simulation/projectile_instance.h"
 #include "simulation/weapon_bank.h"
 #include "simulation/weapon_firing.h"
 
@@ -16,6 +18,7 @@ class herc_actor {
   herc_body body_state;
   component_damage components;
   herc_power power_state;
+  herc_impact_state impact_state;
   weapon_bank armament;
 
 public:
@@ -27,6 +30,11 @@ public:
   herc_body const &body() const;
   damage_state const &damage() const;
   herc_power const &power() const;
+  herc_power &power();
+  herc_impact_state const &impacts() const;
+  herc_impact_state &impacts();
+  /// Absorb shields and prepare a body-damage request; damage/effects execute after this boundary
+  std::optional<herc_interception> intercept(impact_request const &request, impact_conditions const &conditions, std::function<void()> const &shield_warning = {});
   weapon_bank &weapons();
   weapon_bank const &weapons() const;
   void update_power(frame_ratio ratio, bool free_energy = false);

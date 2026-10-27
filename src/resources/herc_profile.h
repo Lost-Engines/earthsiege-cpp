@@ -50,6 +50,8 @@ struct herc_profile {
   int16_t mass_factor{0};
   int16_t legs{0};
   int16_t shield_capacity{0};
+  int16_t shield_height{0};
+  int16_t shield_radius{0};
   int16_t camera_part{0};
   vec3<int16_t> camera_offset;
   vec3<int16_t> camera_focus;
