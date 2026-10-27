@@ -78,6 +78,7 @@ auto read_palette(bytes data)->palette {
     unsigned int const blue{file.integer<uint8_t>()};
     file.take(1);
     if(red > 63 || green > 63 || blue > 63) file.fail("colour exceeds VGA DAC range");
+    result.dac_colours[index] = {static_cast<uint8_t>(red), static_cast<uint8_t>(green), static_cast<uint8_t>(blue)};
     result.colours[index] = 0xff000000u | ((red * 255 / 63) << 16) | ((green * 255 / 63) << 8) | (blue * 255 / 63);
   }
   if(file.remaining()) {

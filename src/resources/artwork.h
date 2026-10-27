@@ -15,6 +15,7 @@ struct bitmap {
 };
 
 struct palette {
+  std::array<std::array<uint8_t, 3>, 256> dac_colours{};
   std::array<uint32_t, 256> colours{};
   std::vector<std::vector<uint16_t>> shade_ramps;
 };

@@ -41,3 +41,8 @@ unoriented surfaces, plus 512 transformed lights from `check_lighting.py` in the
 analysis tree. The reference retains the native incidence, attenuation, signed
 wrapping and final byte conversion. Regenerate with
 `python3 tools/export_lighting_fixtures.py ../earthsiege-reverse/analysis`.
+
+`palette_shading.bin` contains all 144 texture translation tables from original
+DBSIM 0x28b28, plus 32,256 ramp results independently verified against original
+0x68be0 by `check_materials.py`. It covers all 18 supplied ramp-bearing palettes.
+Regenerate with `python3 tools/export_palette_fixtures.py ../earthsiege-reverse`.
