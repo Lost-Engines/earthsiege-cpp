@@ -17,8 +17,17 @@ herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &
 
 bool herc_body::step(herc_controls const &controls, int16_t const frame_ratio, std::function<bool(herc_body const &)> const &contact) {
   update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), controls.throttle, controls.steering);
-  update_aim(torso_state, source.profile.torso, controls.torso, frame_ratio);
-  update_aim(elevation_state, source.profile.elevation, controls.elevation, frame_ratio);
+  return advance_body(vec2<int16_t>{controls.torso, controls.elevation}, frame_ratio, contact);
+}
+
+bool herc_body::step_requested(int16_t const speed, int16_t const steering, vec2<int16_t> const &aim, int16_t const frame_ratio, std::function<bool(herc_body const &)> const &contact) {
+  update_requested_movement(movement_state, source.profile.movement, rig.channel(body_channel), speed, steering);
+  return advance_body(aim, frame_ratio, contact);
+}
+
+bool herc_body::advance_body(vec2<int16_t> const &aim, int16_t const frame_ratio, std::function<bool(herc_body const &)> const &contact) {
+  update_aim(torso_state, source.profile.torso, aim.x, frame_ratio);
+  update_aim(elevation_state, source.profile.elevation, aim.y, frame_ratio);
   rig.channel(torso_channel).set_phase(source.profile.torso.sequence, static_cast<int16_t>(static_cast<uint16_t>(torso_state.angle) >> 2));
   rig.channel(elevation_channel).set_phase(source.profile.elevation.sequence, static_cast<int16_t>(static_cast<uint16_t>(elevation_state.angle) >> 2));
   std::optional<animation_rig> saved;

@@ -67,7 +67,7 @@ int main(int const argc, char **argv) try {
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
   std::string const version{magic.begin(), magic.end()};
-  if(version != "ESBODY01" && version != "ESBODY02") file.fail("fixture version");
+  if(version != "ESBODY01" && version != "ESBODY02" && version != "ESBODY03") file.fail("fixture version");
   bool const collisions{version == "ESBODY02"};
   auto const count{file.integer<uint16_t>()};
   unsigned int total{0};
@@ -96,7 +96,8 @@ int main(int const argc, char **argv) try {
           return hits.at(visited++);
         })};
         if(visited != probes || hit != expected_hit) file.fail("contact response differs");
-      } else body.step(controls, ratio);
+      } else if(version == "ESBODY03") body.step_requested(controls.throttle, controls.steering, vec2<int16_t>{controls.torso, controls.elevation}, ratio);
+      else body.step(controls, ratio);
       check(body, read_state(file), name + "/" + std::to_string(step));
       ++total;
     }

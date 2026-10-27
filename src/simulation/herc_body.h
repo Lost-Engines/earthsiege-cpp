@@ -27,11 +27,13 @@ class herc_body {
   size_t body_channel{0};
   size_t torso_channel{0};
   size_t elevation_channel{0};
+  bool advance_body(vec2<int16_t> const &aim, int16_t frame_ratio, std::function<bool(herc_body const &)> const &contact);
 
 public:
   herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   /// Advance normal-player controls; return whether either contact probe blocked motion
   bool step(herc_controls const &controls, int16_t frame_ratio, std::function<bool(herc_body const &)> const &contact = {});
+  bool step_requested(int16_t speed, int16_t steering, vec2<int16_t> const &aim, int16_t frame_ratio, std::function<bool(herc_body const &)> const &contact = {});
   locomotion_state const &movement() const;
   aiming_state const &torso() const;
   aiming_state const &elevation() const;

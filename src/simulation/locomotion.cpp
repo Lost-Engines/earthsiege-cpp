@@ -33,7 +33,6 @@ int constexpr turn_animation_rate{350};
 
 void update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input) {
   /// Preserve per-update throttle and acceleration; only root-motion time is scaled
-  auto const &pose{channel.state()};
   bool const forward{std::abs(throttle_input) > throttle_direction_threshold ? throttle_input <= 0 : state.throttle >= 0};
   if(forward) steering_input = wrap_word(-steering_input);
   auto const throttle_change{scale(-throttle_input, throttle_change_scale)};
@@ -43,6 +42,11 @@ void update_player_movement(locomotion_state &state, movement_profile const &pro
     state.throttle = crosses_neutral ? 0 : static_cast<int16_t>(std::clamp<int>(next_throttle, -throttle_limit, throttle_limit));
   }
   auto const desired{scale(state.throttle, state.throttle < 0 ? -profile.reverse_rate : profile.forward_rate, 10)};
+  update_requested_movement(state, profile, channel, desired, steering_input);
+}
+
+void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const desired, int16_t steering_input) {
+  auto const &pose{channel.state()};
   auto const previous{state.gait_rate};
   state.gait_rate = approach(state.gait_rate, std::clamp(desired, profile.reverse_rate, profile.forward_rate), profile.acceleration);
   steering_input = static_cast<int16_t>(std::clamp<int>(steering_input, -steering_axis_limit, steering_axis_limit));
