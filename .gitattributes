@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.VOL binary
+*.DFL binary
+*.RAW binary
+*.TAP binary
