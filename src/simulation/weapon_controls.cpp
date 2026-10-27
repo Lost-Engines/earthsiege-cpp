@@ -17,8 +17,8 @@ void advance_cell(weapon_controls &state) {
   state.cell = static_cast<uint16_t>((state.cell + 1U) % state.cell_count);
 }
 
-int16_t priority(capacitor const &state) {
-  return state.fast ? 10000 : state.setting;
+int16_t priority(weapon_power_slot const &slot) {
+  return slot.energy ? (slot.energy->fast ? 10000 : slot.energy->setting) : 0;
 }
 
 } // namespace
@@ -123,7 +123,7 @@ void fast_charge_capacitor(capacitor &state) {
   state.setting = capacitor_maximum;
 }
 
-int16_t allocate_capacitors(std::span<capacitor_slot const> const slots, int16_t const selected, int16_t budget, frame_ratio const ratio, bool const free_energy) {
+int16_t allocate_weapon_power(std::span<weapon_power_slot const> const slots, int16_t const selected, int16_t budget, frame_ratio const ratio, bool const free_energy) {
   if(selected >= 0 && static_cast<size_t>(selected) >= slots.size()) throw std::out_of_range{"selected capacitor slot"};
   auto const initial_budget{budget};
   std::vector<bool> visited(slots.size(), false);
@@ -134,14 +134,16 @@ int16_t allocate_capacitors(std::span<capacitor_slot const> const slots, int16_t
       next = static_cast<size_t>(selected);
     } else {
       for(size_t i{0}; i != slots.size(); ++i) {
-        if(!visited[i] && slots[i].energy && (next == slots.size() || priority(*slots[i].energy) > priority(*slots[next].energy))) next = i;
+        if(!visited[i] && (slots[i].energy || slots[i].ordinary) && (next == slots.size() || priority(slots[i]) > priority(slots[next]))) next = i;
       }
     }
-    if(next == slots.size() || !slots[next].energy) break;
+    if(next == slots.size() || (!slots[next].energy && !slots[next].ordinary)) break;
     visited[next] = true;
     auto const &slot{slots[next]};
-    budget = slot.elf ? advance_elf(*slot.energy, *slot.elf, inhibited, budget, ratio) : charge_capacitor(*slot.energy, inhibited, budget, ratio);
-    if(slot.energy->fast) inhibited = true;
+    if(slot.energy) {
+      budget = slot.elf ? advance_elf(*slot.energy, *slot.elf, inhibited, budget, ratio) : charge_capacitor(*slot.energy, inhibited, budget, ratio);
+      if(slot.energy->fast) inhibited = true;
+    } else advance_weapon_controls(*slot.ordinary, ratio);
   }
   return free_energy ? initial_budget : budget;
 }

@@ -38,6 +38,7 @@ public:
   herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   void apply_damage(damage_consequences const &consequences);
   void apply_damage(damage_state const &state);
+  void update_weapons(weapon_bank const &bank);
   void recover_from_collision(int32_t duration, bool reverse);
   std::span<movement_event const> movement_events() const;
   /// Advance player controls; return whether either contact probe blocked motion

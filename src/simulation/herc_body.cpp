@@ -29,6 +29,8 @@ void herc_body::apply_damage(damage_state const &state) {
   apply_damage(state.consequences);
 }
 
+void herc_body::update_weapons(weapon_bank const &bank) { armament.update_cells(bank); }
+
 void herc_body::recover_from_collision(int32_t const duration, bool const reverse) {
   movement_state.collision_recovery = duration;
   movement_state.reverse_recovery = reverse;

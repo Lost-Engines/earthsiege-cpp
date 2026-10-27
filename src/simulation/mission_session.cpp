@@ -25,7 +25,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     auto const &loadout{roster.hercs.at(actor.source - script.hercs.size())};
     crew_member member{
       .definition{definition.get()},
-      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, loadout.weapons, *actor.position, actor.angles)},
+      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, loadout.weapons, *actor.position, actor.angles, loadout.weapon_values)},
       .attachments{},
     };
     for(auto const &part : member.actor->body().weapons().parts()) member.attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});

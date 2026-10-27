@@ -4,6 +4,7 @@
 #include "resources/model_tree.h"
 #include "simulation/fixed_math.h"
 #include "simulation/herc_loadout.h"
+#include "simulation/weapon_bank.h"
 
 namespace earthsiege {
 namespace {
@@ -73,6 +74,15 @@ void weapon_assembly::disable_missing_sections(std::span<int16_t const> const pr
     auto const section{weapon_section_first + static_cast<size_t>(weapon.equipment_slot)};
     if(section >= presence.size()) throw std::out_of_range{"weapon damage section"};
     if(presence[section] == 0) weapon.disabled = true;
+  }
+}
+
+void weapon_assembly::update_cells(weapon_bank const &bank) {
+  for(auto &model : models) for(auto const &weapon : bank.slots()) {
+    if(!weapon || weapon->equipment_slot != model.equipment_slot) continue;
+    model.disabled = weapon->controls().disabled;
+    if(!model.cell_frames.empty()) model.cell_frames.front() = weapon->controls().cell;
+    break;
   }
 }
 

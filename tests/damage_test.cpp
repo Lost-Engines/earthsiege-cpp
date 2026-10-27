@@ -106,6 +106,10 @@ int main(int const argc, char **argv) try {
           bool const disabled{expected.present.at(earthsiege::weapon_section_first + static_cast<size_t>(weapon.equipment_slot)) == 0};
           if(weapon.disabled != disabled) file.fail(label + ": attached weapon visibility differs");
         }
+        for(auto const &weapon : actor.weapons().slots()) {
+          if(!weapon) continue;
+          if(weapon->controls().disabled != (expected.present.at(earthsiege::weapon_section_first + static_cast<size_t>(weapon->equipment_slot)) == 0)) file.fail(label + ": live weapon disable differs");
+        }
         ++total;
       }
     }

@@ -3,6 +3,7 @@
 #include "simulation/herc_loadout.h"
 #include "simulation/herc_power.h"
 #include "simulation/hit_volumes.h"
+#include "simulation/weapon_bank.h"
 
 namespace earthsiege {
 
@@ -13,9 +14,10 @@ class herc_actor {
   herc_body body_state;
   component_damage components;
   herc_power power_state;
+  weapon_bank armament;
 
 public:
-  herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles);
+  herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<int16_t const> weapon_values = {});
   herc_actor(herc_actor const &) = delete;
   herc_actor(herc_actor &&) = delete;
   herc_actor &operator=(herc_actor const &) = delete;
@@ -23,6 +25,9 @@ public:
   herc_body const &body() const;
   damage_state const &damage() const;
   herc_power const &power() const;
+  weapon_bank &weapons();
+  weapon_bank const &weapons() const;
+  void update_power(frame_ratio ratio, bool free_energy = false);
   herc_loadout const &definition() const;
   /// Direct armour/component damage; projectile shielding and impact effects are separate stages
   std::vector<size_t> damage_section(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach = {});

@@ -77,13 +77,13 @@ int main(int const argc, char **argv) try {
       check(state.balance, 2);
     } else if(kind == 9) {
       std::vector<earthsiege::capacitor> states(static_cast<size_t>(v[3]));
-      std::vector<earthsiege::capacitor_slot> slots(states.size());
+      std::vector<earthsiege::weapon_power_slot> slots(states.size());
       for(size_t i{0}; i != states.size(); ++i) {
         size_t const first{4 + i * 7};
         states[i] = {.controls{.disabled{flag(first + 4)}}, .setting{word(first + 1)}, .charge{word(first + 2)}, .fast{flag(first + 3)}};
         if(flag(first)) slots[i].energy = &states[i];
       }
-      check(earthsiege::allocate_capacitors(slots, word(0), word(1), 256, flag(2)), v.size() - 1);
+      check(earthsiege::allocate_weapon_power(slots, word(0), word(1), 256, flag(2)), v.size() - 1);
       for(size_t i{0}; i != states.size(); ++i) {
         check(states[i].charge, 4 + i * 7 + 5);
         check(states[i].fast, 4 + i * 7 + 6);

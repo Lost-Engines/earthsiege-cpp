@@ -8,6 +8,7 @@ namespace earthsiege {
 inline int16_t constexpr capacitor_maximum{1200};
 inline int16_t constexpr capacitor_setting_step{80};
 inline int16_t constexpr capacitor_default_setting{820};
+inline int16_t constexpr capacitor_initial_charge{961};                         // original rounded Q10 product of 1200 and 820
 inline int16_t constexpr capacitor_charge_per_update{20};
 inline int16_t constexpr capacitor_fast_charge_per_update{60};
 inline int16_t constexpr capacitor_discharge_per_update{5};
@@ -41,9 +42,10 @@ struct elf_trigger {
   int16_t remaining{0};
 };
 
-struct capacitor_slot {
+struct weapon_power_slot {
   capacitor *energy{nullptr};
   elf_trigger *elf{nullptr};
+  weapon_controls *ordinary{nullptr};
 };
 
 bool weapon_in_range(weapon_definition const &definition, int32_t distance);
@@ -59,6 +61,6 @@ void change_capacitor_setting(capacitor &state, bool increase);
 void default_capacitor_setting(capacitor &state);
 void fast_charge_capacitor(capacitor &state);
 /// Selected slot first, then stable descending priority; a selected missing slot ends the pass
-int16_t allocate_capacitors(std::span<capacitor_slot const> slots, int16_t selected, int16_t budget, frame_ratio ratio, bool free_energy);
+int16_t allocate_weapon_power(std::span<weapon_power_slot const> slots, int16_t selected, int16_t budget, frame_ratio ratio, bool free_energy);
 
 } // namespace earthsiege
