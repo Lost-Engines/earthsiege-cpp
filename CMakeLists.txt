@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/herc_definition.cpp
+  src/resources/herc_definition.h
+  src/simulation/herc_body.cpp
+  src/simulation/herc_body.h
   src/resources/model_tree.cpp
   src/resources/model_tree.h
   src/simulation/weapon_assembly.cpp
@@ -116,6 +120,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(herc_body_test tests/herc_body_test.cpp)
+  target_link_libraries(herc_body_test PRIVATE earthsiege_core)
+  add_test(NAME herc_body COMMAND herc_body_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_body.bin")
   add_executable(actor_detail_test tests/actor_detail_test.cpp)
   target_link_libraries(actor_detail_test PRIVATE earthsiege_core)
   add_test(NAME actor_detail COMMAND actor_detail_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/actor_detail.bin")
