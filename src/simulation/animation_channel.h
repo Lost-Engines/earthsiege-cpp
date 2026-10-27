@@ -46,6 +46,7 @@ class animation_channel {
 
 public:
   animation_channel(animation_list const &animation);
+  void restore(animation_channel const &saved);
   void reset(animation_index sequence, animation_index frame = 0, animation_time elapsed = 0);
   void request_sequence(animation_index sequence, bool stop_on_arrival = false);
   void cancel_request();

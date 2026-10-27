@@ -1,5 +1,6 @@
 #include "scenery_collision.h"
 #include <algorithm>
+#include <cstdlib>
 #include <stdexcept>
 #include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
@@ -50,6 +51,20 @@ int32_t scenery_height(collision_heightfield const &field, vec2<int32_t> const &
   if(field.size.x == 0) return 0;
   auto const origin{origin_offset(field)};
   return grid_height(field, vec2<int32_t>{wrap_long(static_cast<int64_t>(point.x) + origin.x), wrap_long(static_cast<int64_t>(point.y) + origin.y)}, radius);
+}
+
+int32_t scenery_contact_height(std::span<scenery_collider const> const objects, vec3<int32_t> const &position) {
+  for(auto const &object : objects) {
+    if(!object.field) continue;
+    vec3<int32_t> const delta{wrap_long(static_cast<int64_t>(position.x) - object.placement.translation.x), wrap_long(static_cast<int64_t>(position.y) - object.placement.translation.y), 0};
+    auto const x{std::abs(static_cast<int64_t>(delta.x))};
+    auto const y{std::abs(static_cast<int64_t>(delta.y))};
+    if(std::max(x, y) + (std::min(x, y) >> 1) >= object.radius) continue;
+    auto const local{inverse_rotate_vector(delta, object.placement)};
+    auto const height{scenery_height(*object.field, vec2<int32_t>{local.x, local.y})};
+    if(height != 0) return height;
+  }
+  return 0;
 }
 
 std::optional<vec3<int32_t>> intersect_heightfield(collision_heightfield const &field, vec3<int32_t> const &start, vec3<int32_t> const &end, int16_t const radius) {

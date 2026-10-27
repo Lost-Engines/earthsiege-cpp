@@ -17,6 +17,6 @@ struct locomotion_state {
 
 /// Unobstructed normal-player control; collision and disabled states are separate consumers
 void update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t throttle_input, int16_t steering_input);
-void advance_root_movement(locomotion_state &state, animation_channel &channel, int16_t frame_ratio);
+void advance_root_movement(locomotion_state &state, animation_channel &channel, int16_t time_ratio);
 
 } // namespace earthsiege

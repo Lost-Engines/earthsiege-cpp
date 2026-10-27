@@ -9,6 +9,6 @@ struct aiming_state {
   int16_t angle{0};
 };
 
-void update_aim(aiming_state &state, aiming_profile const &profile, int16_t input, int16_t frame_ratio);
+void update_aim(aiming_state &state, aiming_profile const &profile, int16_t input, int16_t time_ratio);
 
 } // namespace earthsiege

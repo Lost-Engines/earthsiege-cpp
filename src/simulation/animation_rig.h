@@ -21,6 +21,7 @@ public:
   animation_channel const &channel(size_t index) const;
   model_instance &instance();
   model_instance const &instance() const;
+  void restore(animation_rig const &saved);
   void update_pose();
   std::span<size_t const> order() const;
 };

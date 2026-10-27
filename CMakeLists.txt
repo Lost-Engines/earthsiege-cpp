@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/actor_contact.cpp
+  src/simulation/actor_contact.h
   src/shell/mission_view.cpp
   src/shell/mission_view.h
   src/simulation/mission_session.cpp
@@ -139,11 +141,15 @@ if(BUILD_TESTING)
   add_executable(input_test tests/input_test.cpp)
   target_link_libraries(input_test PRIVATE earthsiege_core)
   add_test(NAME input COMMAND input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/input.bin")
+  add_executable(contact_test tests/contact_test.cpp)
+  target_link_libraries(contact_test PRIVATE earthsiege_core)
+  add_test(NAME contacts COMMAND contact_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/actor_contact.bin" "${PROJECT_SOURCE_DIR}/tests/fixtures/scenery_contact.bin")
   add_executable(mixed_scene_test tests/mixed_scene_test.cpp)
   target_link_libraries(mixed_scene_test PRIVATE earthsiege_core)
   add_test(NAME mixed_scene COMMAND mixed_scene_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mixed_scene.bin")
   add_executable(herc_body_test tests/herc_body_test.cpp)
   target_link_libraries(herc_body_test PRIVATE earthsiege_core)
+  add_test(NAME contact_motion COMMAND herc_body_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/contact_motion.bin")
   add_test(NAME herc_body COMMAND herc_body_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_body.bin")
   add_executable(actor_detail_test tests/actor_detail_test.cpp)
   target_link_libraries(actor_detail_test PRIVATE earthsiege_core)

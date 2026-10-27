@@ -253,4 +253,9 @@ void animation_channel::set_flag(animation_channel_flags const flag, bool const 
   current.flags = static_cast<animation_channel_flags>(value ? bits | mask : bits & ~mask);
 }
 
+void animation_channel::restore(animation_channel const &saved) {
+  if(&source != &saved.source) throw std::invalid_argument{"cannot restore a different animation source"};
+  current = saved.current;
+}
+
 } // namespace earthsiege

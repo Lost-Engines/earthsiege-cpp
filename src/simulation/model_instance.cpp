@@ -76,4 +76,11 @@ std::span<uint16_t const> model_instance::cell_frames() const {
   return cells;
 }
 
+void model_instance::restore(model_instance const &saved) {
+  if(&source != &saved.source) throw std::invalid_argument{"cannot restore a different animation source"};
+  local = saved.local;
+  world = saved.world;
+  changed = saved.changed;
+}
+
 } // namespace earthsiege

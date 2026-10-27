@@ -45,8 +45,21 @@ herc_body const &mission_session::player() const {
 }
 
 void mission_session::step(herc_controls const &controls, int16_t const frame_ratio) {
-  crew.at(player_index).body->step(controls, frame_ratio);
+  frame_contacts.clear();
+  crew.at(player_index).body->step(controls, frame_ratio, [&](herc_body const &candidate){
+    std::vector<contact_actor> bodies;
+    bodies.reserve(crew.size());
+    for(auto const &member : crew) bodies.push_back(member.body->contact_geometry());
+    if(auto const hit{find_actor_contact(bodies, player_index)}) {
+      crew.at(hit->other).contact_received = true;
+      frame_contacts.push_back(*hit);                                          // retain damage dispatch for the component-damage consumer
+      return true;
+    }
+    return scenery_contact_height(terrain.colliders(), candidate.movement().position) != 0;
+  });
 }
+
+std::span<actor_contact const> mission_session::contacts() const { return frame_contacts; }
 
 std::vector<scene_model> mission_session::roster_models() const {
   std::vector<scene_model> result;
@@ -72,7 +85,10 @@ camera_target mission_session::view_target() const {
 
 camera_state mission_session::make_camera(camera_mode const mode) const {
   auto const &profile{crew.at(player_index).definition->profile};
-  camera_state result{.orbit_distance{10000}, .mode{mode}, .focus_offset{vec3<int16_t>{profile.camera_focus}}, .attachment_offset{vec3<int16_t>{profile.camera_offset}}};
+  camera_state result;
+  result.mode = mode;
+  result.focus_offset = profile.camera_focus;
+  result.attachment_offset = profile.camera_offset;
   update_camera(result, view_target());
   return result;
 }

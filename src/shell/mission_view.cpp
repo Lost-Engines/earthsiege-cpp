@@ -25,7 +25,7 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   : session{demo_start(resources, demo)},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::orbit)} {
-  camera.orbit_angles.x = 0xf000;
+  camera.orbit_angles.x = 0xf800;
   update_camera(camera, session->view_target());
 }
 

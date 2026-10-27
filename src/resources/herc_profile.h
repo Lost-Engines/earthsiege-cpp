@@ -46,6 +46,8 @@ struct herc_profile {
   aiming_profile torso;
   aiming_profile elevation;
   int16_t position_height{0};
+  int16_t collision_radius{0};
+  int16_t mass_factor{0};
   int16_t camera_part{0};
   vec3<int16_t> camera_offset;
   vec3<int16_t> camera_focus;

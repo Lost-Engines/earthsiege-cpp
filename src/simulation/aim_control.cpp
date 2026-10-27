@@ -6,9 +6,9 @@
 
 namespace earthsiege {
 
-void update_aim(aiming_state &state, aiming_profile const &profile, int16_t const input, int16_t const frame_ratio) {
+void update_aim(aiming_state &state, aiming_profile const &profile, int16_t const input, int16_t const time_ratio) {
   /// Original acceleration and averaged-rate integration use signed Q8 frame time
-  auto const timed{[frame_ratio](int32_t const value){ return scale_frame_time(wrap_word(value), frame_ratio); }};
+  auto const timed{[time_ratio](int32_t const value){ return scale_frame_time(wrap_word(value), time_ratio); }};
   auto const desired{wrap_word((static_cast<int32_t>(profile.rate) * input + 128) >> 8)};
   auto previous{state.rate};
   auto const magnitude{[](int16_t const value){ return std::min(32767, std::abs(static_cast<int>(value))); }};

@@ -66,7 +66,9 @@ int main(int const argc, char **argv) try {
   auto const bytes{earthsiege::read_file(argv[2])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != "ESBODY01") file.fail("fixture version");
+  std::string const version{magic.begin(), magic.end()};
+  if(version != "ESBODY01" && version != "ESBODY02") file.fail("fixture version");
+  bool const collisions{version == "ESBODY02"};
   auto const count{file.integer<uint16_t>()};
   unsigned int total{0};
   for(unsigned int row{0}; row != count; ++row) {
@@ -81,13 +83,26 @@ int main(int const argc, char **argv) try {
     for(unsigned int step{0}; step != steps; ++step) {
       earthsiege::herc_controls const controls{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()};
       auto const ratio{file.integer<int16_t>()};
-      body.step(controls, ratio);
+      if(collisions) {
+        std::array<bool, 2> const hits{file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0};
+        bool const expected_hit{file.integer<uint8_t>() != 0};
+        auto const probes{file.integer<uint8_t>()};
+        unsigned int visited{0};
+        bool const hit{body.step(controls, ratio, [&](earthsiege::herc_body const &candidate){
+          if(visited >= probes) file.fail(name + "/" + std::to_string(step) + ": too many contact probes");
+          vec3<int32_t> const position{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
+          vec3<uint16_t> const angles{file.integer<uint16_t>(), file.integer<uint16_t>(), file.integer<uint16_t>()};
+          if(candidate.movement().position != position || candidate.movement().angles != angles) file.fail(name + "/" + std::to_string(step) + ": contact placement differs at " + std::to_string(visited));
+          return hits.at(visited++);
+        })};
+        if(visited != probes || hit != expected_hit) file.fail("contact response differs");
+      } else body.step(controls, ratio);
       check(body, read_state(file), name + "/" + std::to_string(step));
       ++total;
     }
   }
   file.require_end();
-  if(count != 8 || total != 1280) file.fail("incomplete HERC body references");
+  if(count != 8 || total != (collisions ? 1920U : 1280U)) file.fail("incomplete HERC body references");
   std::cout << total << " original combined movement, aiming, pose and hierarchy updates agree" << std::endl;
   return EXIT_SUCCESS;
 } catch(std::exception const &error) {

@@ -15,6 +15,7 @@ class model_instance {
 
 public:
   model_instance(shape_part const &shape);
+  void restore(model_instance const &saved);
   void reset_pose();
   void apply_frame(unsigned int sequence, unsigned int frame, unsigned int next_sequence, unsigned int next_frame, int16_t fraction);
   void update();

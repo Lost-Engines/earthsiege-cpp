@@ -1,5 +1,7 @@
 #pragma once
+#include <functional>
 #include "resources/herc_definition.h"
+#include "simulation/actor_contact.h"
 #include "simulation/aim_control.h"
 #include "simulation/animation_rig.h"
 #include "simulation/locomotion.h"
@@ -28,14 +30,15 @@ class herc_body {
 
 public:
   herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles);
-  /// Advance unobstructed normal-player controls; collision and damaged controllers are separate
-  void step(herc_controls const &controls, int16_t frame_ratio);
+  /// Advance normal-player controls; return whether either contact probe blocked motion
+  bool step(herc_controls const &controls, int16_t frame_ratio, std::function<bool(herc_body const &)> const &contact = {});
   locomotion_state const &movement() const;
   aiming_state const &torso() const;
   aiming_state const &elevation() const;
   model_instance const &model() const;
   weapon_assembly const &weapons() const;
   model_transform placement() const;
+  contact_actor contact_geometry() const;
 };
 
 } // namespace earthsiege

@@ -124,10 +124,10 @@ void update_player_movement(locomotion_state &state, movement_profile const &pro
   state.angles.z = static_cast<uint16_t>(state.angles.z + state.steering_rate);
 }
 
-void advance_root_movement(locomotion_state &state, animation_channel &channel, int16_t const frame_ratio) {
+void advance_root_movement(locomotion_state &state, animation_channel &channel, int16_t const time_ratio) {
   channel.set_rate(state.playback_rate);
   channel.rebase_motion();
-  channel.advance(scale_frame_time(nominal_frame_milliseconds, frame_ratio));
+  channel.advance(scale_frame_time(nominal_frame_milliseconds, time_ratio));
   auto const movement{channel.root_motion()};
   auto const rotation{rotation_transform(state.angles)};
   auto const displacement{rotate_vector(movement.translation, rotation)};

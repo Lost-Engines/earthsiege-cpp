@@ -54,4 +54,12 @@ std::span<size_t const> animation_rig::order() const {
   return priority_order;
 }
 
+void animation_rig::restore(animation_rig const &saved) {
+  if(&source != &saved.source) throw std::invalid_argument{"cannot restore a different animation source"};
+  if(channels.size() != saved.channels.size()) throw std::invalid_argument{"animation channel count changed during rollback"};
+  for(size_t i{0}; i != channels.size(); ++i) channels[i].restore(saved.channels[i]);
+  model.restore(saved.model);
+  priority_order = saved.priority_order;
+}
+
 } // namespace earthsiege
