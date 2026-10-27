@@ -8,14 +8,20 @@
 namespace earthsiege {
 
 struct damage_dependency {
+  int16_t weight{0};
   int16_t component{0};
-  int16_t amount{0};
+};
+
+enum class damage_section_flag : uint8_t {
+  detachable = 1U << 0,
+  attached_effect = 1U << 1,
+  large_explosion = 1U << 2,
 };
 
 struct damage_component {
   int16_t armour{0};
   int8_t debris{0};
-  int8_t sequence{0};
+  int8_t cell_sequence{0};
   int8_t parent{0};
   uint8_t flags{0};
   std::vector<damage_dependency> dependents;

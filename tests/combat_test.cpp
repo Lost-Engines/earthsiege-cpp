@@ -21,10 +21,10 @@ public:
     ++index;
   }
   void component(earthsiege::damage_component const &part) {
-    value(part.armour); value(part.debris); value(part.sequence); value(part.parent); value(part.flags);
+    value(part.armour); value(part.debris); value(part.cell_sequence); value(part.parent); value(part.flags);
     value(static_cast<int64_t>(part.dependents.size()));
     for(auto const &dependency : part.dependents) {
-      value(dependency.component); value(dependency.amount);
+      value(dependency.weight); value(dependency.component);
     }
   }
   void collision(earthsiege::collision_state const &state) {

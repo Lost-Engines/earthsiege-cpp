@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/component_damage.cpp
+  src/simulation/component_damage.h
   src/simulation/navigation.cpp
   src/simulation/navigation.h
   src/simulation/mission_triggers.cpp
@@ -145,6 +147,9 @@ if(BUILD_TESTING)
   add_executable(input_test tests/input_test.cpp)
   target_link_libraries(input_test PRIVATE earthsiege_core)
   add_test(NAME input COMMAND input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/input.bin")
+  add_executable(damage_test tests/damage_test.cpp)
+  target_link_libraries(damage_test PRIVATE earthsiege_core)
+  add_test(NAME damage COMMAND damage_test "${PROJECT_SOURCE_DIR}/tests/fixtures/damage.bin")
   add_executable(navigation_test tests/navigation_test.cpp)
   target_link_libraries(navigation_test PRIVATE earthsiege_core)
   add_test(NAME navigation COMMAND navigation_test "${PROJECT_SOURCE_DIR}/tests/fixtures/navigation.bin")

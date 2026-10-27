@@ -8,11 +8,11 @@ damage_component component(binary_reader &file) {
   damage_component result;
   result.armour = file.integer<int16_t>();
   result.debris = file.integer<int8_t>();
-  result.sequence = file.integer<int8_t>();
+  result.cell_sequence = file.integer<int8_t>();
   result.parent = file.integer<int8_t>();
   result.flags = file.integer<uint8_t>();
   auto const count{file.integer<uint16_t>()};
-  for(unsigned int index{0}; index != count; ++index) result.dependents.push_back(damage_dependency{.component{file.integer<int16_t>()}, .amount{file.integer<int16_t>()}});
+  for(unsigned int index{0}; index != count; ++index) result.dependents.push_back(damage_dependency{.weight{file.integer<int16_t>()}, .component{file.integer<int16_t>()}});
   return result;
 }
 
