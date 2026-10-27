@@ -47,7 +47,7 @@ world_environment read_world_environment(bytes const source) {
 }
 
 bool terrain_metadata::used_by_instance() const {
-  return values[2] >= 0;
+  return sort_endpoints[0].z >= 0;
 }
 
 std::vector<terrain_metadata> read_terrain_metadata(bytes const source) {
@@ -55,7 +55,9 @@ std::vector<terrain_metadata> read_terrain_metadata(bytes const source) {
   std::vector<terrain_metadata> result;
   while(file.remaining() != 0) {
     terrain_metadata entry;
-    for(auto &value : entry.values) value = file.integer<int32_t>();
+    for(auto &point : entry.sort_endpoints) {
+      for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = file.integer<int32_t>();
+    }
     result.push_back(entry);
   }
   return result;

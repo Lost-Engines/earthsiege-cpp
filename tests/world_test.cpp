@@ -35,7 +35,11 @@ int main(int const argc, char **argv) try {
     auto const metadata_bytes{file.take(file.integer<uint16_t>())};
     auto const metadata{earthsiege::read_terrain_metadata(resources.read("simvol0", "dat/" + std::string{earthsiege::terrain_name(static_cast<earthsiege::terrain_kind>(terrain))} + ".DAT"))};
     earthsiege::binary_reader expected_metadata{metadata_bytes};
-    for(auto const &entry : metadata) for(auto const value : entry.values) require(value == expected_metadata.integer<int32_t>(), name, "metadata");
+    for(auto const &entry : metadata) {
+      for(auto const &endpoint : entry.sort_endpoints) {
+        for(unsigned int axis{0}; axis != 3; ++axis) require(endpoint[axis] == expected_metadata.integer<int32_t>(), name, "sort endpoint");
+      }
+    }
     expected_metadata.require_end();
     auto const count{file.integer<uint16_t>()};
     require(zone.placements.size() == count, name, "placement count");

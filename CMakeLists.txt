@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/scene_order.cpp
+  src/render/scene_order.h
   src/resources/world.cpp
   src/resources/world.h
   src/simulation/scenery_world.cpp
@@ -96,6 +98,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(scene_order_test tests/scene_order_test.cpp)
+  target_link_libraries(scene_order_test PRIVATE earthsiege_core)
+  add_test(NAME scene_order COMMAND scene_order_test "${PROJECT_SOURCE_DIR}/tests/fixtures/scene_order.bin")
   add_executable(world_test tests/world_test.cpp)
   target_link_libraries(world_test PRIVATE earthsiege_core)
   add_test(NAME worlds COMMAND world_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/world.bin")

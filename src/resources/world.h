@@ -38,7 +38,7 @@ struct world_environment {
 };
 
 struct terrain_metadata {
-  std::array<int32_t, 6> values{};                                              // original per-shape metadata; fields named as their consumers are integrated
+  std::array<vec3<int32_t>, 2> sort_endpoints;                                  // local segment used by the whole-scene painter tree
   bool used_by_instance() const;
 };
 
