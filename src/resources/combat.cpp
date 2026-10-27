@@ -16,9 +16,9 @@ damage_component component(binary_reader &file) {
   return result;
 }
 
-collision_state collision(binary_reader &file) {
-  collision_state result;
-  result.index = file.integer<int16_t>();
+collision_section collision(binary_reader &file) {
+  collision_section result;
+  result.section = file.integer<int16_t>();
   auto const count{file.integer<uint16_t>()};
   for(unsigned int index{0}; index != count; ++index) result.spheres.push_back(collision_sphere{.centre{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()}, .radius{file.integer<int16_t>()}});
   return result;
@@ -48,8 +48,8 @@ std::vector<collision_part> read_collision_parts(bytes const source) {
   for(unsigned int index{0}; index != count; ++index) {
     collision_part part;
     part.model_part = file.integer<int16_t>();
-    auto const states{file.integer<uint16_t>()};
-    for(unsigned int state{0}; state != states; ++state) part.states.push_back(collision(file));
+    auto const sections{file.integer<uint16_t>()};
+    for(unsigned int section{0}; section != sections; ++section) part.sections.push_back(collision(file));
     result.push_back(std::move(part));
   }
   file.require_end();

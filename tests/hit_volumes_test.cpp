@@ -57,8 +57,8 @@ int main(int const argc, char **argv) try {
       auto const &definition{definitions.at(name)};
       auto const p{std::ranges::find(definition, part, &earthsiege::collision_part::model_part)};
       if(p == definition.end()) file.fail("fixture collision part");
-      auto const s{std::ranges::find(p->states, state, &earthsiege::collision_state::index)};
-      if(s == p->states.end()) file.fail("fixture collision state");
+      auto const s{std::ranges::find(p->sections, state, &earthsiege::collision_section::section)};
+      if(s == p->sections.end()) file.fail("fixture collision state");
       auto const hit{earthsiege::intersect_spheres(s->spheres, matrix, projectile, reach)};
       check((hit ? *hit + 1 : 0) == expected_hit && reach == expected_reach);
     } else if(kind == 2) {

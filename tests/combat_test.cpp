@@ -27,8 +27,8 @@ public:
       value(dependency.weight); value(dependency.component);
     }
   }
-  void collision(earthsiege::collision_state const &state) {
-    value(state.index); value(static_cast<int64_t>(state.spheres.size()));
+  void collision(earthsiege::collision_section const &state) {
+    value(state.section); value(static_cast<int64_t>(state.spheres.size()));
     for(auto const &sphere : state.spheres) {
       for(unsigned int axis{0}; axis != 3; ++axis) value(sphere.centre[axis]);
       value(sphere.radius);
@@ -62,8 +62,8 @@ int main(int const argc, char **argv) try {
       auto const parts{earthsiege::read_collision_parts(data)};
       expect.value(static_cast<int64_t>(parts.size()));
       for(auto const &part : parts) {
-        expect.value(part.model_part); expect.value(static_cast<int64_t>(part.states.size()));
-        for(auto const &state : part.states) expect.collision(state);
+        expect.value(part.model_part); expect.value(static_cast<int64_t>(part.sections.size()));
+        for(auto const &state : part.sections) expect.collision(state);
       }
     } else {
       auto const catalogue{earthsiege::read_weapon_catalogue(data)};

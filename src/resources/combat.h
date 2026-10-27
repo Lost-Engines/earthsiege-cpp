@@ -32,14 +32,14 @@ struct collision_sphere {
   int16_t radius{0};
 };
 
-struct collision_state {
-  int16_t index{0};
+struct collision_section {
+  int16_t section{0};
   std::vector<collision_sphere> spheres;
 };
 
 struct collision_part {
   int16_t model_part{0};
-  std::vector<collision_state> states;
+  std::vector<collision_section> sections;
 };
 
 struct damage_definition {
@@ -49,7 +49,7 @@ struct damage_definition {
 
 struct weapon_definition {
   damage_component damage;
-  collision_state collision;
+  collision_section collision;
   std::array<int16_t, 4> model_indices{};
   int16_t internal_maximum{0};
   int32_t minimum_range{0};
