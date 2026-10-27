@@ -178,7 +178,9 @@ auto part(binary_reader &parent, unsigned int depth)->model_part {
       shape.transforms.reserve(transforms);
       for(unsigned int index{}; index < transforms; ++index) {
         model_transform transform;
-        for(auto &value : transform.basis.data) value = file.integer<int16_t>();
+        // Original 3Space storage puts the planar 2x2 block first, then
+        // xz/yz/zx/zy/zz. Convert it to vectorstorm column-major order.
+        for(unsigned int const component : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) transform.basis.data[component] = file.integer<int16_t>();
         transform.type = file.integer<uint8_t>();
         transform.flags = file.integer<uint8_t>();
         transform.translation = vec3<int32_t>{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};

@@ -3,3 +3,11 @@ These mission handoffs were produced by the original Earthsiege 1.0 GO.EXE reade
 `script_checks.tsv` records the final RNG state and hashes individual tables captured from the original reader's in-memory records, independently of the writer's file layout. `condition_checks.tsv` holds original active condition records. `random_checks.tsv` captures 1,000 original generator outputs for each of nine seed states. `mission_text_checks.tsv` holds 2,223 checksums from the original text interpreter (GO 0x19453) under three counter states. Artwork and archive checks come from independent Python extraction of the supplied media.
 
 The separate `earthsiege-reverse` tree contains the original-execution harnesses and their provenance. No emulator is linked into this program or its tests.
+
+`model_math.bin` records 2,141 original `DBSIM` Euler matrix, short-point,
+long-vector and inverse-plane calculations (0x5f0ac, 0x5e858, 0x5ef74,
+0x733c0), captured by `earthsiege-reverse/tools/check_model_math.py`.
+It includes exact quadrant/rounding boundaries and deterministic mixed angles.
+The cosine constants retain all original entries, including four one-unit
+rounding differences from mathematical cosine. Matrix storage is converted
+explicitly from the original planar-first arrangement to column-major `mat3`.
