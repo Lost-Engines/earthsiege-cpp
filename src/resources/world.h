@@ -33,7 +33,7 @@ struct world_environment {
   std::vector<palette_range> far_ranges;
   std::array<palette_range, 2> blend_ranges;
   std::array<int16_t, 2> effect_parameters{};
-  std::array<int32_t, 2> height_parameters{};
+  std::array<int32_t, 2> model_distance_offsets{};
   std::array<std::string, 5> resource_names;
 };
 

@@ -88,7 +88,7 @@ int main(int const argc, char **argv) try {
     }
     require(environment.stored_far_range_count == file.integer<int16_t>(), name, "stored range count");
     for(auto const value : environment.effect_parameters) require(value == file.integer<int16_t>(), name, "effect parameter");
-    for(auto const value : environment.height_parameters) require(value == file.integer<int32_t>(), name, "height parameter");
+    for(auto const value : environment.model_distance_offsets) require(value == file.integer<int32_t>(), name, "model distance offset");
     for(auto const &value : environment.resource_names) require(value == file.cstring(), name, "resource name");
     earthsiege::mission_header header{.terrain{static_cast<earthsiege::terrain_kind>(index / 6)}, .zone{-1}, .world_variant{static_cast<int16_t>(index % 2)}, .palette_variant{static_cast<int16_t>((index % 6) / 2)}};
     auto const selection{earthsiege::select_world(header)};

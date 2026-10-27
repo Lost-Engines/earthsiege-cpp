@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/distance_shading.cpp
+  src/render/distance_shading.h
   src/render/scene_order.cpp
   src/render/scene_order.h
   src/resources/world.cpp
@@ -98,6 +100,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(distance_shading_test tests/distance_shading_test.cpp)
+  target_link_libraries(distance_shading_test PRIVATE earthsiege_core)
+  add_test(NAME distance_shading COMMAND distance_shading_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/distance_shading.bin")
   add_executable(scene_order_test tests/scene_order_test.cpp)
   target_link_libraries(scene_order_test PRIVATE earthsiege_core)
   add_test(NAME scene_order COMMAND scene_order_test "${PROJECT_SOURCE_DIR}/tests/fixtures/scene_order.bin")

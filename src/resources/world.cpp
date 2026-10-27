@@ -40,7 +40,7 @@ world_environment read_world_environment(bytes const source) {
   for(int index{0}; index != count; ++index) result.far_ranges.push_back(range());
   for(auto &entry : result.blend_ranges) entry = range();
   for(auto &value : result.effect_parameters) value = file.integer<int16_t>();
-  for(auto &value : result.height_parameters) value = file.integer<int32_t>();
+  for(auto &value : result.model_distance_offsets) value = file.integer<int32_t>();
   for(auto &name : result.resource_names) name = file.cstring();
   file.require_end();
   return result;
