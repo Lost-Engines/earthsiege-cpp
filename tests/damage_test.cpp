@@ -3,7 +3,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include "resources/resource_store.h"
 #include "simulation/component_damage.h"
+#include "simulation/herc_loadout.h"
 
 namespace {
 
@@ -36,11 +38,13 @@ void check(earthsiege::damage_state const &a, earthsiege::damage_state const &b,
 } // namespace
 
 int main(int const argc, char **argv) try {
-  if(argc != 2) return EXIT_FAILURE;
-  auto const bytes{earthsiege::read_file(argv[1])};
+  if(argc != 3) return EXIT_FAILURE;
+  earthsiege::resource_store resources{argv[1]};
+  auto const weapons{earthsiege::read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))};
+  auto const bytes{earthsiege::read_file(argv[2])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != "ESDMG001") file.fail("fixture version");
+  if(std::string(magic.begin(), magic.end()) != "ESDMG002") file.fail("fixture version");
   auto const accumulators{file.integer<uint16_t>()};
   for(unsigned int row{0}; row != accumulators; ++row) {
     auto amount{file.integer<int16_t>()};
@@ -56,14 +60,21 @@ int main(int const argc, char **argv) try {
   unsigned int total{0};
   for(unsigned int row{0}; row != chassis; ++row) {
     auto const name{file.cstring()};
+    auto const equipment{shorts(file)};
     auto const legs{file.integer<int16_t>()};
     auto const definition_bytes{file.integer<uint32_t>()};
     auto const definition{earthsiege::read_damage_definition(file.take(definition_bytes))};
     auto const slots{shorts(file)};
     auto const initial{state(file)};
+    auto const body{earthsiege::read_herc_definition(resources, name)};
+    auto const loadout{earthsiege::assemble_herc_loadout(body, equipment, weapons)};
+    if(loadout.damage != definition) file.fail(name + ": assembled damage definition differs");
+    auto const &shape{std::get<earthsiege::shape_part>(body.models.roots.front().content)};
+    auto const created{earthsiege::initial_herc_damage(loadout, shape.cell_frame_counts.size())};
+    check(created, initial, name + "/initial");
     auto const traces{file.integer<uint16_t>()};
     for(unsigned int trace{0}; trace != traces; ++trace) {
-      earthsiege::component_damage damage{definition, initial};
+      earthsiege::component_damage damage{loadout.damage, created};
       auto const hits{file.integer<uint16_t>()};
       for(unsigned int hit{0}; hit != hits; ++hit) {
         auto const section{file.integer<int16_t>()};

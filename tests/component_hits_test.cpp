@@ -4,6 +4,7 @@
 #include <string>
 #include "resources/resource_store.h"
 #include "simulation/herc_body.h"
+#include "simulation/herc_loadout.h"
 #include "simulation/hit_volumes.h"
 #include "simulation/model_math.h"
 
@@ -60,6 +61,8 @@ int main(int const argc, char **argv) try {
         if(bounds.centre != expected_bounds.centre || bounds.radius != expected_bounds.radius) file.fail(name + ": section bounds differ");
       }
     }
+    auto const loadout{earthsiege::assemble_herc_loadout(definition, equipment, weapons)};
+    if(loadout.collision != parts) file.fail(name + ": assembled collision differs");
     auto const steps{file.integer<uint16_t>()};
     for(unsigned int step{0}; step != steps; ++step) {
       earthsiege::herc_controls const controls{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()};
@@ -75,7 +78,7 @@ int main(int const argc, char **argv) try {
         bool const expected_hit{file.integer<uint8_t>() != 0};
         auto const distance{file.integer<int32_t>()};
         auto const section{file.integer<uint16_t>()};
-        auto const hit{earthsiege::intersect_components(parts, present, definition.models.roots.front(), body.model().transforms(), transform, reach, radius)};
+        auto const hit{earthsiege::intersect_components(loadout.collision, present, definition.models.roots.front(), body.model().transforms(), transform, reach, radius)};
         if(hit.has_value() != expected_hit || (hit && (hit->distance + 1 != distance || hit->section != section))) file.fail(name + '/' + std::to_string(step) + '/' + std::to_string(query) + ": component selection differs");
         ++total;
         if(hit) ++hits;

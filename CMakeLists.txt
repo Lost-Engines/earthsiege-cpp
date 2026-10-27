@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_loadout.cpp
+  src/simulation/herc_loadout.h
   src/simulation/hit_volumes.cpp
   src/simulation/hit_volumes.h
   src/resources/projectile_motion.cpp
@@ -171,7 +173,7 @@ if(BUILD_TESTING)
   add_test(NAME weapon_controls COMMAND weapon_controls_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/weapon_controls.bin")
   add_executable(damage_test tests/damage_test.cpp)
   target_link_libraries(damage_test PRIVATE earthsiege_core)
-  add_test(NAME damage COMMAND damage_test "${PROJECT_SOURCE_DIR}/tests/fixtures/damage.bin")
+  add_test(NAME damage COMMAND damage_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/damage.bin")
   add_executable(navigation_test tests/navigation_test.cpp)
   target_link_libraries(navigation_test PRIVATE earthsiege_core)
   add_test(NAME navigation COMMAND navigation_test "${PROJECT_SOURCE_DIR}/tests/fixtures/navigation.bin")

@@ -1,10 +1,21 @@
 #include "weapon_mounts.h"
 #include <algorithm>
+#include "resources/combat.h"
+#include "simulation/fixed_math.h"
 
 namespace earthsiege {
 
 bool weapon_mount::external() const {
   return orientation < 4;
+}
+
+vec3<int16_t> weapon_mount_offset(weapon_mount const &mount, weapon_definition const &definition) {
+  vec3<int16_t> offset{mount.position};
+  if(mount.orientation == 0) offset.z = wrap_word(offset.z + definition.side_muzzle_offset.z);
+  else if(mount.orientation == 1) offset.z = wrap_word(offset.z - definition.side_muzzle_offset.z);
+  else if(mount.orientation == 2) offset.x = wrap_word(offset.x - definition.side_muzzle_offset.x);
+  else if(mount.orientation == 3) offset.x = wrap_word(offset.x + definition.side_muzzle_offset.x);
+  return offset;
 }
 
 std::vector<weapon_mount> read_weapon_mounts(bytes const source) {

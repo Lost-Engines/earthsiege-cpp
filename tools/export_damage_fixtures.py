@@ -5,7 +5,10 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 analysis=Path(sys.argv[1])/'models/damage'
 report=json.loads((analysis/'catalogue.json').read_text())
-out=bytearray(b'ESDMG001')
+out=bytearray(b'ESDMG002')
+tables=json.loads((Path(sys.argv[1])/'tables/tables.json').read_text())
+roster=next(r['hercs']for r in tables if r['name']=='shell0/CAR/SM_INIT.DAT')
+names=['ROADRUNN','GUNSLING','RAPTOR','TOMAHAWK','PATRIOT','PANTHER','HERCULES','COLOSSUS']
 def shorts(values):return struct.pack('<H'+'h'*len(values),len(values),*values)
 def state(s):
  result=b''.join(shorts(s[key]) for key in ['internal','armour','present','cells'])
@@ -19,7 +22,7 @@ for entry in report['models']:
  for piece in r['definition']['pieces']:
   definition+=struct.pack('<hbbbBH',piece['armour'],piece['debris'],piece['sequence'],piece['parent'],piece['flags'],len(piece['dependents']))
   for pair in piece['dependents']:definition+=struct.pack('<2h',*pair)
- out+=r['model'].encode()+b'\0'+struct.pack('<hI',r['legs'],len(definition))+definition
+ out+=r['model'].encode()+b'\0'+shorts([v[0]for v in roster[names.index(r['model'])]['weapons']])+struct.pack('<hI',r['legs'],len(definition))+definition
  out+=shorts(r['equipment_slots'])+state(r['initial'])+struct.pack('<H',len(r['cases']))
  for case in r['cases']:
   out+=struct.pack('<H',len(case['hits']))

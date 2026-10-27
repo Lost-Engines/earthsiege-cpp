@@ -12,6 +12,8 @@ herc_definition read_herc_definition(resource_store const &resources, std::strin
     .models{read_model(resources.read("simvol0", "dts/" + std::string{name} + ".DTS"))},
     .mounts{read_weapon_mounts(resources.read("simvol0", "gl/" + std::string{name} + ".GL"))},
     .textures{},
+    .damage{read_damage_definition(resources.read("simvol0", "dmg/" + std::string{name} + ".DMG"))},
+    .collision{read_collision_parts(resources.read("simvol0", "col/" + std::string{name} + ".COL"))},
   };
   bind_herc_detail_nodes(result.models, result.profile.detail_part_ids);
   std::array<std::string_view, 4> constexpr texture_names{"LIGHT", "MEDIUM", "HEAVY", "ENEMY"};

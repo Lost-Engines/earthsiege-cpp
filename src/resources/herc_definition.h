@@ -2,6 +2,7 @@
 #include <string_view>
 #include <vector>
 #include "resources/artwork.h"
+#include "resources/combat.h"
 #include "resources/herc_profile.h"
 #include "resources/model.h"
 #include "resources/weapon_mounts.h"
@@ -15,6 +16,8 @@ struct herc_definition {
   model_resource models;
   std::vector<weapon_mount> mounts;
   std::vector<bitmap> textures;
+  damage_definition damage;
+  std::vector<collision_part> collision;
 };
 
 /// Load runtime skeleton bindings, texture group and start/stop animation priorities

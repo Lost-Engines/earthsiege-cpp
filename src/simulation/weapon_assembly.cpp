@@ -57,11 +57,7 @@ weapon_assembly::weapon_assembly(model_part const &owner, std::span<weapon_mount
       auto const model{definition.model_indices.at(mount.orientation)};
       if(model < 0) throw std::out_of_range{"external weapon has no model"};
       weapon.geometry = clone_model_part(templates.roots.at(static_cast<size_t>(model)));
-      vec3<int16_t> offset{mount.position};
-      if(mount.orientation == 0) offset.z = wrap_word(offset.z + definition.side_muzzle_offset.z);
-      else if(mount.orientation == 1) offset.z = wrap_word(offset.z - definition.side_muzzle_offset.z);
-      else if(mount.orientation == 2) offset.x = wrap_word(offset.x - definition.side_muzzle_offset.x);
-      else offset.x = wrap_word(offset.x + definition.side_muzzle_offset.x);
+      auto const offset{weapon_mount_offset(mount, definition)};
       shift_geometry(*weapon.geometry, offset);
       bind_parent(*weapon.geometry, body->header.transform);
       auto const &shape{std::get<shape_part>(weapon.geometry->content)};

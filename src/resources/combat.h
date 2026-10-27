@@ -10,6 +10,7 @@ namespace earthsiege {
 struct damage_dependency {
   int16_t weight{0};
   int16_t component{0};
+  bool operator==(damage_dependency const &) const = default;
 };
 
 enum class damage_section_flag : uint8_t {
@@ -25,26 +26,31 @@ struct damage_component {
   int8_t parent{0};
   uint8_t flags{0};
   std::vector<damage_dependency> dependents;
+  bool operator==(damage_component const &) const = default;
 };
 
 struct collision_sphere {
   vec3<int16_t> centre;
   int16_t radius{0};
+  bool operator==(collision_sphere const &) const = default;
 };
 
 struct collision_section {
   int16_t section{0};
   std::vector<collision_sphere> spheres;
+  bool operator==(collision_section const &) const = default;
 };
 
 struct collision_part {
   int16_t model_part{0};
   std::vector<collision_section> sections;
+  bool operator==(collision_part const &) const = default;
 };
 
 struct damage_definition {
   std::vector<int16_t> hit_points;
   std::vector<damage_component> components;
+  bool operator==(damage_definition const &) const = default;
 };
 
 struct weapon_definition {

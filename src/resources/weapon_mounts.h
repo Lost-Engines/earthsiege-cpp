@@ -7,6 +7,8 @@
 
 namespace earthsiege {
 
+struct weapon_definition;
+
 struct weapon_mount {
   int16_t model_part{0};
   uint8_t orientation{0};
@@ -16,6 +18,7 @@ struct weapon_mount {
   bool external() const;
 };
 
+vec3<int16_t> weapon_mount_offset(weapon_mount const &mount, weapon_definition const &definition);
 std::vector<weapon_mount> read_weapon_mounts(bytes source);
 
 } // namespace earthsiege
