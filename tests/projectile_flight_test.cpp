@@ -86,7 +86,7 @@ int main(int const argc, char **argv) try {
     }
   }
   file.require_end();
-  if(traces != 243 || total != 16272) file.fail("projectile reference coverage differs");
+  if(traces != 216 || total != 14895) file.fail("projectile reference coverage differs");
   std::cout << total << " original projectile flight updates agree across " << traces << " trajectories" << std::endl;
   return EXIT_SUCCESS;
 } catch(std::exception const &error) {
