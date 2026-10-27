@@ -16,6 +16,8 @@ auto rotation_transform(vec3<uint16_t> const &angles)->model_transform;
 auto transform_point(vec3<int16_t> const &point, model_transform const &transform)->vec3<int32_t>;
 auto rotate_vector(vec3<int32_t> const &vector, model_transform const &transform)->vec3<int32_t>;
 auto inverse_rotate_vector(vec3<int32_t> const &vector, model_transform const &transform)->vec3<int32_t>;
+auto compose_transforms(model_transform const &local, model_transform const &parent)->model_transform;
+auto interpolate_pose(animation_pose const &from, animation_pose const &to, int16_t fraction)->animation_pose;
 auto inverse_plane_distance(vec3<int32_t> const &eye, model_transform const &transform, vec3<int16_t> const &normal)->int32_t;
 
 } // namespace earthsiege

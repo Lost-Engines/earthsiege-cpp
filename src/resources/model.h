@@ -152,7 +152,7 @@ struct part_list {
 
 struct shape_part {
   std::vector<model_part> children;
-  std::vector<int16_t> initial_cell_frames;
+  std::vector<int16_t> cell_frame_counts;
   std::vector<model_transform> transforms;
   std::optional<animation_list> animation;
   std::optional<collision_heightfield> collision;

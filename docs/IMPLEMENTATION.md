@@ -14,6 +14,7 @@ Working components:
 - Original BSP painter traversal, projected-size detail selection and cell-animation selection; 28,632 original child-render traces agree.
 - Fixed-point Euler matrices and point/vector/plane transforms, with 2,141 original-code comparisons. Original cosine-table rounding is preserved.
 - Typed 3Space meshes, materials, BSP trees, detail levels, cell animations, articulated poses and collision heightfields. All 47,575 objects in 44 resources agree with original-reader fingerprints across 23 field groups.
+- Independent model instances with zeroed cell state, default poses and incremental hierarchical transforms. All 5,236 original default/blended pose references agree; stored cell cycle counts are distinct from live frame indices.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
 Next work proceeds through mission placement, 3Space software rendering and animation, HERC movement/collision/weapons, AI and mission rules, cockpit and shell/campaign integration, then complete sound/presentation playback. These remain implementation work; the current menu is not a playable game.

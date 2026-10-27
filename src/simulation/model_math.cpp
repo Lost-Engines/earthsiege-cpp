@@ -5,17 +5,25 @@
 namespace earthsiege {
 namespace {
 
-auto word(int value)->int16_t { return std::bit_cast<int16_t>(static_cast<uint16_t>(value)); }
-auto signed_long(int64_t value)->int32_t { return std::bit_cast<int32_t>(static_cast<uint32_t>(value)); }
-auto rounded_product(int64_t value)->int32_t { return signed_long((value + matrix_rounding) >> matrix_fraction_bits); }
-auto cosine(int value)->int32_t { return model_cosine(static_cast<uint16_t>(value)); }
+int16_t word(int const value) {
+  return std::bit_cast<int16_t>(static_cast<uint16_t>(value));
+}
+int32_t signed_long(int64_t const value) {
+  return std::bit_cast<int32_t>(static_cast<uint32_t>(value));
+}
+int32_t rounded_product(int64_t const value) {
+  return signed_long((value + matrix_rounding) >> matrix_fraction_bits);
+}
+int32_t cosine(int const value) {
+  return model_cosine(static_cast<uint16_t>(value));
+}
 
-auto rotate(vec3<int32_t> const &point, model_transform const &transform, bool inverse)->vec3<int32_t> {
+auto rotate(vec3<int32_t> const &point, model_transform const &transform, bool const inverse)->vec3<int32_t> {
   if(transform.type == 0) return vec3<int32_t>{point};
   auto const &m{transform.basis};
-  auto component{[&](unsigned int row)->int32_t {
-    int64_t sum{};
-    for(unsigned int column{}; column < 3; ++column) {
+  auto component{[&](unsigned int const row)->int32_t {
+    int64_t sum{0};
+    for(unsigned int column{0}; column < 3; ++column) {
       sum += static_cast<int64_t>(point[column]) * (inverse ? m.at(row, column) : m.at(column, row));
     }
     return rounded_product(sum);
@@ -26,9 +34,9 @@ auto rotate(vec3<int32_t> const &point, model_transform const &transform, bool i
   return vec3<int32_t>{component(0), component(1), component(2)};
 }
 
-} // namespace
+} // anonymous namespace
 
-auto model_cosine(uint16_t angle)->int16_t {
+auto model_cosine(uint16_t const angle)->int16_t {
   int const signed_angle{std::bit_cast<int16_t>(angle)};
   int const sample{(signed_angle >> 4) + ((signed_angle >> 3) & 1)};
   unsigned int const index{static_cast<unsigned int>(sample < 0 ? -sample : sample)};
@@ -54,9 +62,9 @@ auto rotation_transform(vec3<uint16_t> const &angles)->model_transform {
   int const minus_cos{(cosine(b - c) - cosine(b + c)) >> 1};
   int const plus_sin{(cosine(b + c - quarter) + cosine(c - b - quarter)) >> 1};
   int const minus_sin{(cosine(b + c - quarter) - cosine(c - b - quarter)) >> 1};
-  // The original builder uses sum/difference identities, with rounding at each
-  // intermediate product. Multiplying three independent Euler matrices changes
-  // those rounding points and gives different articulated vertex positions.
+  // the original builder uses sum/difference identities, with rounding at each
+  // intermediate product; multiplying three independent Euler matrices changes
+  // those rounding points and gives different articulated vertex positions
   result.basis = mat3<int16_t>{
     word(plus_cos - rounded_product(static_cast<int64_t>(s) * minus_cos)),
     word(plus_sin + rounded_product(static_cast<int64_t>(s) * minus_sin)),
@@ -74,12 +82,12 @@ auto rotation_transform(vec3<uint16_t> const &angles)->model_transform {
 
 auto transform_point(vec3<int16_t> const &point, model_transform const &transform)->vec3<int32_t> {
   auto const &m{transform.basis};
-  auto component{[&](unsigned int row)->int32_t {
+  auto component{[&](unsigned int const row)->int32_t {
     int32_t value{point[row]};
     if(transform.type && (transform.type != 1 || row != 2)) {
       int64_t sum{matrix_rounding};
-      for(unsigned int column{}; column < 3; ++column) sum += static_cast<int64_t>(point[column]) * m.at(column, row);
-      // The short-point path accumulates in 32 bits before its arithmetic shift.
+      for(unsigned int column{0}; column < 3; ++column) sum += static_cast<int64_t>(point[column]) * m.at(column, row);
+      // the short-point path accumulates in 32 bits before its arithmetic shift
       value = signed_long(sum) >> matrix_fraction_bits;
     }
     return signed_long(static_cast<int64_t>(value) + transform.translation[row]);
@@ -95,6 +103,40 @@ auto inverse_rotate_vector(vec3<int32_t> const &vector, model_transform const &t
   return rotate(vector, transform, true);
 }
 
+auto compose_transforms(model_transform const &local, model_transform const &parent)->model_transform {
+  model_transform result;
+  if(local.type == 0) result = model_transform{parent};
+  else if(parent.type == 0) result = model_transform{local};
+  else {
+    for(unsigned int column{0}; column < 3; ++column) {
+      for(unsigned int row{0}; row < 3; ++row) {
+        int64_t sum{0};
+        for(unsigned int k{0}; k < 3; ++k) sum += static_cast<int64_t>(parent.basis.at(k, row)) * local.basis.at(column, k);
+        result.basis.at(column, row) = word(rounded_product(sum));
+      }
+    }
+    result.type = local.type == 1 && parent.type == 1 ? 1 : 2;
+  }
+  auto const translation{rotate_vector(local.translation, parent)};
+  for(unsigned int axis{0}; axis < 3; ++axis) result.translation[axis] = signed_long(static_cast<int64_t>(translation[axis]) + parent.translation[axis]);
+  return result;
+}
+
+auto interpolate_pose(animation_pose const &from, animation_pose const &to, int16_t const fraction)->animation_pose {
+  animation_pose result;
+  unsigned int constexpr interpolation_bits{10};
+  for(unsigned int axis{0}; axis < 3; ++axis) {
+    // a signed 16-bit difference chooses the shortest angular arc; exactly a
+    // half turn goes in the negative direction, matching the original tie rule
+    int const turn{word(static_cast<int>(to.rotation[axis]) - from.rotation[axis])};
+    result.rotation[axis] = static_cast<uint16_t>(from.rotation[axis] + ((turn * fraction) >> interpolation_bits));
+    // translation differences also wrap to a signed word before interpolation
+    int const movement{word(static_cast<int>(to.translation[axis]) - from.translation[axis])};
+    result.translation[axis] = word(from.translation[axis] + ((movement * fraction) >> interpolation_bits));
+  }
+  return result;
+}
+
 auto inverse_plane_distance(vec3<int32_t> const &eye, model_transform const &transform, vec3<int16_t> const &normal)->int32_t {
   vec3<int32_t> const relative{
     signed_long(static_cast<int64_t>(eye.x) - transform.translation.x),
@@ -102,7 +144,7 @@ auto inverse_plane_distance(vec3<int32_t> const &eye, model_transform const &tra
     signed_long(static_cast<int64_t>(eye.z) - transform.translation.z),
   };
   // BSP plane tests always evaluate the complete inverse matrix, regardless of
-  // the identity/planar fast-path tag used for ordinary vertex transforms.
+  // the identity/planar fast-path tag used for ordinary vertex transforms
   auto matrix{model_transform{transform}};
   matrix.type = 2;
   auto const local{inverse_rotate_vector(relative, matrix)};

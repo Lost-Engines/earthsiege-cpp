@@ -174,7 +174,7 @@ auto part(binary_reader &parent, unsigned int depth)->model_part {
       shape_part shape;
       shape.children = children();
       auto const transforms{file.integer<uint16_t>()};
-      shape.initial_cell_frames = counted(file, [&file]{ return file.integer<int16_t>(); });
+      shape.cell_frame_counts = counted(file, [&file]{ return file.integer<int16_t>(); });
       shape.transforms.reserve(transforms);
       for(unsigned int index{}; index < transforms; ++index) {
         model_transform transform;

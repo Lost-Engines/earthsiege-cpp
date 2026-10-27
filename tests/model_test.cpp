@@ -79,8 +79,8 @@ public:
       }
       if constexpr(std::is_same_v<T, earthsiege::shape_part>) {
         word(field::shape, static_cast<int32_t>(content.transforms.size()));
-        word(field::shape, static_cast<int32_t>(content.initial_cell_frames.size()));
-        words(field::shape, content.initial_cell_frames);
+        word(field::shape, static_cast<int32_t>(content.cell_frame_counts.size()));
+        words(field::shape, content.cell_frame_counts);
         if(content.animation) animation(*content.animation);
         if(content.collision) {
           auto const &heightfield{*content.collision};

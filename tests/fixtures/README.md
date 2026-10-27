@@ -18,3 +18,12 @@ BSP part, detail selector and cell-animation selector, with varied view points,
 articulated matrices, frame counters, projection shifts and detail preferences.
 The host replaces only child render calls with trace collection; all selection
 arithmetic executes in the original methods (0x53240, 0x530b0, 0x52fd0).
+
+`model_poses.bin` contains 116 default animated instances and 5,120 blended
+poses/hierarchies from the original constructor and channel application
+(0x61224, 0x62dfc, 0x61810). Cell states are zero, independently of stored cycle
+lengths. The test excludes matrix padding and slots absent from the hierarchy:
+BULLDOG root 5, for example, leaves nodes 7, 8, 11 and 12 unwritten. Filling
+allocations with 0x55 and 0xaa confirmed those slots retain the supplied bytes.
+The native implementation gives unused slots safe identity transforms.
+Regenerate with `python3 tools/export_animation_fixtures.py ../earthsiege-reverse/analysis`.
