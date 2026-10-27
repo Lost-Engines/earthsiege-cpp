@@ -22,7 +22,17 @@ zone_resource read_zone(bytes const source) {
 world_environment read_world_environment(bytes const source) {
   binary_reader file{source, "world environment"};
   world_environment result;
-  for(auto &value : result.sky_ground_parameters) value = file.integer<int16_t>();
+  result.background = background_style{
+    .horizon_band_width{file.integer<int16_t>()},
+    .sky_palette_start{file.integer<int16_t>()},
+    .sky_step{file.integer<int16_t>()},
+    .sky_bands{file.integer<int16_t>()},
+    .ground_palette_start{file.integer<int16_t>()},
+    .ground_step{file.integer<int16_t>()},
+    .ground_bands{file.integer<int16_t>()},
+    .horizon_offset{file.integer<int16_t>()},
+  };
+  for(auto &value : result.atmosphere_parameters) value = file.integer<int16_t>();
   for(auto &band : result.distance_bands) {
     auto const count{file.integer<uint32_t>()};
     if(count > file.remaining() / sizeof(int32_t)) file.fail("distance band exceeds descriptor");

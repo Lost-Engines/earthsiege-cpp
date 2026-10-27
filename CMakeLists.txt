@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/background_bands.cpp
+  src/render/background_bands.h
   src/render/scenery_renderer.cpp
   src/render/scenery_renderer.h
   src/render/distance_shading.cpp
@@ -102,6 +104,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(background_bands_test tests/background_bands_test.cpp)
+  target_link_libraries(background_bands_test PRIVATE earthsiege_core)
+  add_test(NAME background_bands COMMAND background_bands_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/background_bands.bin")
   add_executable(scenery_renderer_test tests/scenery_renderer_test.cpp)
   target_link_libraries(scenery_renderer_test PRIVATE earthsiege_core)
   add_test(NAME scenery_renderer COMMAND scenery_renderer_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/scenery_render.bin")

@@ -73,7 +73,10 @@ int main(int const argc, char **argv) try {
   for(unsigned int index{0}; index != environments; ++index) {
     auto const name{file.cstring()};
     auto const environment{earthsiege::read_world_environment(resources.read("simvol0", name.substr(name.find('/') + 1)))};
-    for(auto const value : environment.sky_ground_parameters) require(value == file.integer<int16_t>(), name, "sky/ground");
+    auto const &background{environment.background};
+    std::array const background_fields{background.horizon_band_width, background.sky_palette_start, background.sky_step, background.sky_bands, background.ground_palette_start, background.ground_step, background.ground_bands, background.horizon_offset};
+    for(auto const value : background_fields) require(value == file.integer<int16_t>(), name, "sky/ground");
+    for(auto const value : environment.atmosphere_parameters) require(value == file.integer<int16_t>(), name, "atmosphere");
     for(auto const &band : environment.distance_bands) {
       require(band.size() == file.integer<uint32_t>(), name, "distance count");
       for(auto const value : band) require(value == file.integer<int32_t>(), name, "distance");

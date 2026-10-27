@@ -24,8 +24,20 @@ struct palette_range {
   int16_t count{0};
 };
 
+struct background_style {
+  int16_t horizon_band_width{0};
+  int16_t sky_palette_start{0};
+  int16_t sky_step{0};
+  int16_t sky_bands{0};
+  int16_t ground_palette_start{0};
+  int16_t ground_step{0};
+  int16_t ground_bands{0};
+  int16_t horizon_offset{0};
+};
+
 struct world_environment {
-  std::array<int16_t, 12> sky_ground_parameters{};
+  background_style background;
+  std::array<int16_t, 4> atmosphere_parameters{};
   std::array<std::vector<int32_t>, 2> distance_bands;
   int16_t shade_levels{0};
   std::vector<palette_range> near_ranges;
