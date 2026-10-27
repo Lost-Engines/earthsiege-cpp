@@ -112,3 +112,5 @@ the full articulated side is checked separately by `animation_rigs.bin`.
 Regenerate with `python3 tools/export_aim_fixtures.py ../earthsiege-reverse/analysis`.
 
 `locomotion.bin` retains 11,520 original DBSIM `0x11afc`/`0x12038`/`0x14148` updates: eight playable chassis, four control traces and three frame ratios. Tests compare world position/orientation, throttle, gait/steering/playback rates, all fifteen channel words and flags. `direction_angles.bin` retains 4,104 original `0x63ca0`/`0x734a0` direction results. Refresh both with `tools/export_locomotion_fixtures.py ../earthsiege-reverse/analysis`. These are unobstructed normal-player fixtures; they do not claim complete collision response or damaged movement.
+
+`scenery_collision.bin` captures original DBSIM `0x1fa9c`/`0x1fc5c` height queries, `0x1fccc` stepped segments and `0x20894` outer ray selection. All 140 stored collision fields are covered, with translated/rotated four-object scenes, strict broad-phase bounds, shortening after a hit and the original early exit below distance 500. Refresh with `tools/export_collision_fixtures.py ../earthsiege-reverse/analysis`.

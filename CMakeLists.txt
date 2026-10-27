@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/scenery_collision.cpp
+  src/simulation/scenery_collision.h
   src/simulation/locomotion.cpp
   src/simulation/locomotion.h
   src/simulation/arctangent_table.h
@@ -90,6 +92,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(scenery_collision_test tests/scenery_collision_test.cpp)
+  target_link_libraries(scenery_collision_test PRIVATE earthsiege_core)
+  add_test(NAME scenery_collision COMMAND scenery_collision_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/scenery_collision.bin")
   add_executable(locomotion_test tests/locomotion_test.cpp)
   target_link_libraries(locomotion_test PRIVATE earthsiege_core)
   add_test(NAME locomotion COMMAND locomotion_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/locomotion.bin" "${PROJECT_SOURCE_DIR}/tests/fixtures/direction_angles.bin")
