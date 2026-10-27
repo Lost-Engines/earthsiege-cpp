@@ -8,6 +8,12 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/player_roster.cpp
+  src/resources/player_roster.h
+  src/resources/weapon_mounts.cpp
+  src/resources/weapon_mounts.h
+  src/simulation/actor_placement.cpp
+  src/simulation/actor_placement.h
   src/render/background_bands.cpp
   src/render/background_bands.h
   src/render/scenery_renderer.cpp
@@ -104,6 +110,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(actor_placement_test tests/actor_placement_test.cpp)
+  target_link_libraries(actor_placement_test PRIVATE earthsiege_core)
+  add_test(NAME actor_placement COMMAND actor_placement_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/actor_placement.bin")
   add_executable(background_bands_test tests/background_bands_test.cpp)
   target_link_libraries(background_bands_test PRIVATE earthsiege_core)
   add_test(NAME background_bands COMMAND background_bands_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/background_bands.bin")

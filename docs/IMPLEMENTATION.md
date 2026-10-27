@@ -9,6 +9,7 @@ Working components:
 - Original main-menu artwork, dialog text/hitboxes, three-state button styles and caption plaque. Actions other than exit are still being integrated.
 - Original 56-word additive random generator, including signed bounds and wrapping seed warm-up.
 - Source-mission compilation: conditions, late variant binding, coordinate sums, partial merges and reference remapping. All nine output tables and final RNG state agree with 300 original compiler cases under four explicit campaign/RNG states.
+- Native mission-start construction decodes player rosters, compacts referenced actors, maps equipment through GL slots and applies group/route/formation placement. All 304 original starts agree on 8,176 actors and 4,368 groups; 89 original out-of-bounds formation positions remain explicitly undefined. This is pre-tick placement, separate from activation and controller simulation.
 - Typed compiled mission handoff: points, headings, routes, areas, triggers, HERCs, flyers, fixed ground objects and groups. All nine tables match captured native in-memory records in 300 cases.
 - Complete mission briefing/objective/debrief decoding, with counter-selected phrases matching 2,223 original interpreter results.
 - Original BSP painter traversal, projected-size detail selection and cell-animation selection; 28,632 original child-render traces agree.
