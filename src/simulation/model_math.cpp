@@ -1,6 +1,7 @@
 #include "model_math.h"
 #include <bit>
 #include <cstdlib>
+#include "arcsine_table.h"
 #include "arctangent_table.h"
 #include "cosine_table.h"
 #include "fixed_math.h"
@@ -38,6 +39,20 @@ auto model_cosine(uint16_t const angle)->int16_t {
   int const sample{(signed_angle >> 4) + ((signed_angle >> 3) & 1)};
   unsigned int const index{static_cast<unsigned int>(sample < 0 ? -sample : sample)};
   return index < 1024 ? cosine_table[index] : static_cast<int16_t>(-cosine_table[2048 - index]);
+}
+
+uint16_t model_arcsine(int16_t const sine) {
+  auto const magnitude{std::abs(static_cast<int>(sine))};
+  auto const index{static_cast<size_t>((magnitude + 2) >> 2)};
+  auto const angle{arcsine_table.at(index)};
+  return static_cast<uint16_t>(sine < 0 ? -angle : angle);
+}
+
+vec3<uint16_t> transform_angles(model_transform const &transform) {
+  auto const &m{transform.basis.data};
+  auto const pitch{model_arcsine(m[5])};
+  if(std::abs(static_cast<int>(wrap_word(pitch))) == angle_quarter_turn) return vec3<uint16_t>{pitch, 0, direction_angle(m[0], m[1])};
+  return vec3<uint16_t>{pitch, direction_angle(m[8], -m[2]), direction_angle(m[4], -m[3])};
 }
 
 uint16_t direction_angle(int32_t const x, int32_t const y) {

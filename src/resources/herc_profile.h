@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "vectorstorm/vector/vector3.h"
 #include "resources/binary_reader.h"
 
 namespace earthsiege {
@@ -45,6 +46,9 @@ struct herc_profile {
   aiming_profile torso;
   aiming_profile elevation;
   int16_t position_height{0};
+  int16_t camera_part{0};
+  vec3<int16_t> camera_offset;
+  vec3<int16_t> camera_focus;
   std::string name;
   herc_texture_group textures{herc_texture_group::light};
   std::vector<uint8_t> detail_part_ids;

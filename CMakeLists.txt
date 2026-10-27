@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/camera.cpp
+  src/simulation/camera.h
+  src/simulation/arcsine_table.h
   src/simulation/keyboard_input.cpp
   src/simulation/keyboard_input.h
   src/simulation/frame_time.cpp
@@ -124,6 +127,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(camera_test tests/camera_test.cpp)
+  target_link_libraries(camera_test PRIVATE earthsiege_core)
+  add_test(NAME camera COMMAND camera_test "${PROJECT_SOURCE_DIR}/tests/fixtures/camera.bin")
   add_executable(input_test tests/input_test.cpp)
   target_link_libraries(input_test PRIVATE earthsiege_core)
   add_test(NAME input COMMAND input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/input.bin")

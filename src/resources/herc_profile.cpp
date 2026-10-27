@@ -26,6 +26,9 @@ herc_profile read_herc_profile(bytes const source) {
     .disabled_sequence{word(68)},
   };
   result.position_height = word(20);
+  result.camera_part = word(10);
+  result.camera_offset = vec3<int16_t>{0, word(98), word(100)};
+  result.camera_focus = vec3<int16_t>{0, word(102), word(104)};
   result.torso = {.sequence{word(26)}, .rate{word(28)}, .acceleration{word(30)}, .minimum{static_cast<int16_t>(-word(32))}, .maximum{word(32)}};
   result.elevation = {.sequence{word(34)}, .rate{word(36)}, .acceleration{word(38)}, .minimum{word(42)}, .maximum{word(40)}};
   auto const texture{word(148)};
