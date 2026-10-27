@@ -8,6 +8,12 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/shell/dialog.cpp
+  src/shell/dialog.h
+  src/render/framebuffer.cpp
+  src/render/framebuffer.h
+  src/resources/artwork.cpp
+  src/resources/artwork.h
   src/resources/archive.cpp
   src/resources/archive.h
   src/resources/binary_reader.cpp
@@ -20,10 +26,17 @@ target_compile_options(earthsiege_core PUBLIC
   $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>
 )
 
-add_executable(earthsiege src/main.cpp)
+add_executable(earthsiege
+  src/main.cpp
+  src/platform/window.cpp
+  src/platform/window.h
+)
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(artwork_test tests/artwork_test.cpp)
+  target_link_libraries(artwork_test PRIVATE earthsiege_core)
+  add_test(NAME artwork COMMAND artwork_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/artwork_checks.tsv")
   add_executable(resource_test tests/resource_test.cpp)
   target_link_libraries(resource_test PRIVATE earthsiege_core)
   add_test(NAME resources COMMAND resource_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/resource_checks.tsv")
