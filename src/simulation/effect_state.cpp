@@ -37,6 +37,18 @@ bool advance_explosion(explosion_state &state, explosion_definition const &defin
   return false;
 }
 
+bool advance_debris(debris_particle &state) {
+  int constexpr spin{1500}, gravity{50}, drag_q10{50}, bounce_q10{450}, minimum_bounce{100};
+  state.angles.x = static_cast<uint16_t>(state.angles.x + spin);
+  state.velocity.z = wrap_word(state.velocity.z - gravity);
+  for(unsigned int axis{0}; axis != 2; ++axis) state.velocity[axis] = wrap_word(state.velocity[axis] - wrap_word((drag_q10 * state.velocity[axis] + 512) >> 10));
+  for(unsigned int axis{0}; axis != 3; ++axis) state.position[axis] = wrap_long(static_cast<int64_t>(state.position[axis]) + state.velocity[axis]);
+  if(state.position.z >= 0) return false;
+  state.position.z = 0;                                                        // original debris uses the flat plane, not scenery height fields
+  state.velocity.z = wrap_word(-wrap_word((bounce_q10 * state.velocity.z + 512) >> 10));
+  return state.velocity.z < minimum_bounce;
+}
+
 std::vector<debris_particle> create_debris_burst(debris_definition const &definition, vec3<int32_t> const &position, random_state &random) {
   if(definition.count_limit <= 0 || definition.total_weight <= 0 || definition.models.empty()) throw std::invalid_argument{"invalid debris choice range"};
   auto const count{random.bounded(definition.count_limit)};

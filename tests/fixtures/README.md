@@ -192,3 +192,13 @@ damage/effect/UI/salvage requests and all 56 shared random words plus both indic
 The independent explosion/debris factories execute in the callbacks, so no random
 draws are injected from expected results. Isolated bursts fit the original pools;
 this does not test pool exhaustion, persistent smoke controllers or a full replay.
+
+`debris_motion.bin` contains 960 original `0x64b8` trajectories / 41,576 updates,
+from `check_debris_motion.py`. Native launches and signed-word/long boundary cases
+run with four frame ratios, including zero; movement is deliberately unscaled.
+`object_pools.bin` retains 2,400 original operations at capacities 1, 3, 40 and 150,
+including allocation failure, active-list traversal, direct release and queued
+collection. `check_object_pool.py` runs `0x638c8`, `0x6398c` and `0x63784`; object
+destructors are recorded callback boundaries. Duplicate queued releases and the
+original twenty-entry queue overflow are excluded. Refresh both with
+`tools/export_effect_lifetime_fixtures.py`.

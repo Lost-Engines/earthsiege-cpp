@@ -29,6 +29,8 @@ struct debris_particle {
 explosion_state create_explosion(explosion_definition const &definition, size_t cells, vec3<int32_t> const &position, random_state &random);
 /// Return true at expiry, retaining original overshoot discard and light/cell update order
 bool advance_explosion(explosion_state &state, explosion_definition const &definition, std::span<int16_t const> frame_counts, uint16_t secondary_count, frame_ratio ratio);
+/// Original debris advances once per update, without the Q8 frame ratio; true means retire
+bool advance_debris(debris_particle &state);
 std::vector<debris_particle> create_debris_burst(debris_definition const &definition, vec3<int32_t> const &position, random_state &random);
 
 } // namespace earthsiege
