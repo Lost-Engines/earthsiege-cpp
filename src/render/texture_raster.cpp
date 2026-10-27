@@ -69,7 +69,8 @@ class texture_edge {
       auto const &b{vertices[next]};
       steps = b.position[axis] - a.position[axis];
       if(steps != 0) {
-        if(steps < 0) throw std::invalid_argument{"texture polygon edge is not monotone"};
+        // Rounded animated quads can fold; native signed steps remain active
+        // until the other edge ends, the spans cross, or the viewport ends.
         remaining = steps;
         for(unsigned int component{0}; component != 2; ++component) {
           uv[component] = fixed_texture(a.texture[component]);

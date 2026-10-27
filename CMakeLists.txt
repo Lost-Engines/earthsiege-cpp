@@ -8,6 +8,12 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/bitmap_raster.cpp
+  src/render/bitmap_raster.h
+  src/render/line_raster.cpp
+  src/render/line_raster.h
+  src/render/model_renderer.cpp
+  src/render/model_renderer.h
   src/render/gouraud_raster.cpp
   src/render/gouraud_raster.h
   src/render/texture_raster.cpp
@@ -73,6 +79,15 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(bitmap_raster_test tests/bitmap_raster_test.cpp)
+  target_link_libraries(bitmap_raster_test PRIVATE earthsiege_core)
+  add_test(NAME bitmap_raster COMMAND bitmap_raster_test "${PROJECT_SOURCE_DIR}/tests/fixtures/bitmap_raster.bin")
+  add_executable(line_raster_test tests/line_raster_test.cpp)
+  target_link_libraries(line_raster_test PRIVATE earthsiege_core)
+  add_test(NAME line_raster COMMAND line_raster_test "${PROJECT_SOURCE_DIR}/tests/fixtures/line_raster.bin")
+  add_executable(model_renderer_test tests/model_renderer_test.cpp)
+  target_link_libraries(model_renderer_test PRIVATE earthsiege_core)
+  add_test(NAME model_renderer COMMAND model_renderer_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/model_render.bin")
   add_executable(gouraud_raster_test tests/gouraud_raster_test.cpp)
   target_link_libraries(gouraud_raster_test PRIVATE earthsiege_core)
   add_test(NAME gouraud_raster COMMAND gouraud_raster_test "${PROJECT_SOURCE_DIR}/tests/fixtures/gouraud_raster.bin")
