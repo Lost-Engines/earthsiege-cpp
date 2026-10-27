@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/world.cpp
+  src/resources/world.h
+  src/simulation/scenery_world.cpp
+  src/simulation/scenery_world.h
   src/simulation/scenery_collision.cpp
   src/simulation/scenery_collision.h
   src/simulation/locomotion.cpp
@@ -92,6 +96,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(world_test tests/world_test.cpp)
+  target_link_libraries(world_test PRIVATE earthsiege_core)
+  add_test(NAME worlds COMMAND world_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/world.bin")
   add_executable(scenery_collision_test tests/scenery_collision_test.cpp)
   target_link_libraries(scenery_collision_test PRIVATE earthsiege_core)
   add_test(NAME scenery_collision COMMAND scenery_collision_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/scenery_collision.bin")
