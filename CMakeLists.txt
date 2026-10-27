@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/effects.cpp
+  src/resources/effects.h
+  src/simulation/effect_state.cpp
+  src/simulation/effect_state.h
   src/simulation/hit_dispatch.cpp
   src/simulation/hit_dispatch.h
   src/simulation/projectile_instance.cpp
@@ -178,6 +182,9 @@ if(BUILD_TESTING)
   add_executable(hit_volumes_test tests/hit_volumes_test.cpp)
   target_link_libraries(hit_volumes_test PRIVATE earthsiege_core)
   add_test(NAME hit_volumes COMMAND hit_volumes_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/hit_volumes.bin")
+  add_executable(effects_test tests/effects_test.cpp)
+  target_link_libraries(effects_test PRIVATE earthsiege_core)
+  add_test(NAME effects COMMAND effects_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/effects.bin")
   add_executable(herc_impacts_test tests/herc_impacts_test.cpp)
   target_link_libraries(herc_impacts_test PRIVATE earthsiege_core)
   add_test(NAME herc_impacts COMMAND herc_impacts_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_impacts.bin")
