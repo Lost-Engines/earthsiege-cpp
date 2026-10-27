@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/gouraud_raster.cpp
+  src/render/gouraud_raster.h
   src/render/texture_raster.cpp
   src/render/texture_raster.h
   src/render/polygon_raster.cpp
@@ -71,6 +73,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(gouraud_raster_test tests/gouraud_raster_test.cpp)
+  target_link_libraries(gouraud_raster_test PRIVATE earthsiege_core)
+  add_test(NAME gouraud_raster COMMAND gouraud_raster_test "${PROJECT_SOURCE_DIR}/tests/fixtures/gouraud_raster.bin")
   add_executable(texture_raster_test tests/texture_raster_test.cpp)
   target_link_libraries(texture_raster_test PRIVATE earthsiege_core)
   add_test(NAME texture_raster COMMAND texture_raster_test "${PROJECT_SOURCE_DIR}/tests/fixtures/texture_raster.bin")

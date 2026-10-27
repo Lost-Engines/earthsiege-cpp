@@ -69,3 +69,10 @@ and row (0x735a4) writers execute through the VGA adapter, including clipping,
 Q16 rounding, transparent zero and translated zero. A single rectangle is used
 for row-mode clipping; arbitrary cockpit clip masks remain integration work.
 Regenerate with `python3 tools/export_texture_fixtures.py ../earthsiege-reverse/analysis`.
+
+`gouraud_raster.bin` contains 6,000 emitted-band traces from original 0x78ccc
+and 300 complete original VGA raster checksums. The original shades triangles
+by splitting them into solid palette-index bands, including its tie rules and
+integer rounding. Degenerate bands retain authored winding instead of being
+automatically reversed.
+Regenerate with `python3 tools/export_gouraud_fixtures.py ../earthsiege-reverse/analysis`.

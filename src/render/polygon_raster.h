@@ -19,6 +19,11 @@ struct polygon_edges {
 
 std::vector<vec2<int32_t>> clip_polygon_rectangle(std::span<vec2<int32_t> const> points, rectangle bounds);
 polygon_edges make_polygon_edges(std::span<vec2<int32_t> const> clockwise_points);
-void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> points, rectangle bounds, uint8_t colour);
+enum class polygon_winding {
+  detect,
+  preserve,
+};
+
+void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> points, rectangle bounds, uint8_t colour, polygon_winding winding = polygon_winding::detect);
 
 } // namespace earthsiege

@@ -120,7 +120,7 @@ polygon_edges make_polygon_edges(std::span<vec2<int32_t> const> const points) {
   return result;
 }
 
-void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> const points, rectangle const bounds, uint8_t const colour) {
+void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> const points, rectangle const bounds, uint8_t const colour, polygon_winding const winding) {
   auto clipped{clip_polygon_rectangle(points, bounds)};
   if(clipped.empty()) return;
   int64_t area{0};
@@ -129,7 +129,7 @@ void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> cons
     area += static_cast<int64_t>(previous->x) * p.y - static_cast<int64_t>(p.x) * previous->y;
     previous = &p;
   }
-  if(area < 0) std::ranges::reverse(clipped);
+  if(winding == polygon_winding::detect && area < 0) std::ranges::reverse(clipped);
   auto const edges{make_polygon_edges(clipped)};
   for(size_t row{0}; row != edges.spans.size(); ++row) {
     auto const &span{edges.spans[row]};
