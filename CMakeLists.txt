@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/combat.cpp
+  src/resources/combat.h
   src/resources/player_roster.cpp
   src/resources/player_roster.h
   src/resources/weapon_mounts.cpp
@@ -110,6 +112,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(combat_test tests/combat_test.cpp)
+  target_link_libraries(combat_test PRIVATE earthsiege_core)
+  add_test(NAME combat_resources COMMAND combat_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/combat.bin")
   add_executable(actor_placement_test tests/actor_placement_test.cpp)
   target_link_libraries(actor_placement_test PRIVATE earthsiege_core)
   add_test(NAME actor_placement COMMAND actor_placement_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/actor_placement.bin")
