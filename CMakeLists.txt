@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/polygon_raster.cpp
+  src/render/polygon_raster.h
   src/render/projection.cpp
   src/render/projection.h
   src/render/palette_shading.cpp
@@ -67,6 +69,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(polygon_raster_test tests/polygon_raster_test.cpp)
+  target_link_libraries(polygon_raster_test PRIVATE earthsiege_core)
+  add_test(NAME polygon_raster COMMAND polygon_raster_test "${PROJECT_SOURCE_DIR}/tests/fixtures/polygon_raster.bin")
   add_executable(projection_test tests/projection_test.cpp)
   target_link_libraries(projection_test PRIVATE earthsiege_core)
   add_test(NAME projection COMMAND projection_test "${PROJECT_SOURCE_DIR}/tests/fixtures/projection.bin")

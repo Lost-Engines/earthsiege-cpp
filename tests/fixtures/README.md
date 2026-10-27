@@ -55,3 +55,10 @@ perspective paths are covered. Model equality at the near plane clips, whereas
 terrain equality is retained. Nonstandard near/focal pairs deliberately retain
 the original clipper's implicit unit projection at the intersection.
 Regenerate with `python3 tools/export_projection_fixtures.py ../earthsiege-reverse/analysis`.
+
+`polygon_raster.bin` records 5,999 edge tables from 0x76f54 and 6,000 viewport
+clips from 0x788e4. Another 360 cases run the complete original flat-polygon path
+0x68fdc/0x68be0/0x8aef8 against the research VGA aperture. Their whole-frame CRCs
+check all 64,000 indexed pixels, including untouched background. Captures cover
+both windings, screen crossings, degenerate edges and inclusive endpoints.
+Regenerate with `python3 tools/export_raster_fixtures.py ../earthsiege-reverse/analysis`.
