@@ -1,19 +1,11 @@
 #include "animation_channel.h"
 #include <algorithm>
-#include <bit>
 #include <stdexcept>
+#include "fixed_math.h"
 #include "model_instance.h"
 #include "model_math.h"
 
 namespace earthsiege {
-namespace {
-
-int16_t wrap(int const value) {
-  return std::bit_cast<int16_t>(static_cast<uint16_t>(value));
-}
-
-} // anonymous namespace
-
 animation_channel::animation_channel(animation_list const &animation) : source{animation} {
   reset(0);
 }
@@ -21,7 +13,7 @@ animation_channel::animation_channel(animation_list const &animation) : source{a
 void animation_channel::reset(animation_index const sequence, animation_index const frame, animation_time const elapsed) {
   /// Select a frame without discarding accumulated movement or playback rate
   auto const &definition{source.sequences.at(static_cast<size_t>(sequence))};
-  current.duration = wrap(definition.frames.at(static_cast<size_t>(frame)).duration);
+  current.duration = wrap_word(definition.frames.at(static_cast<size_t>(frame)).duration);
   current.sequence = current.next_sequence = sequence;
   current.frame = frame;
   current.next_frame = next(sequence, frame);
@@ -52,10 +44,10 @@ void animation_channel::request_sequence(animation_index const sequence, bool co
     for(unsigned int index{0}; index != frame.transition_count; ++index) {
       auto const &transition{source.transitions.at(frame.first_transition + index)};
       if(transition.destination_sequence != sequence) continue;
-      current.transition_duration = wrap(transition.tick);
-      current.destination_sequence = wrap(transition.destination_sequence);
-      current.destination_frame = wrap(transition.destination_frame);
-      current.transition_pose = wrap(transition.ground_movement);
+      current.transition_duration = wrap_word(transition.tick);
+      current.destination_sequence = wrap_word(transition.destination_sequence);
+      current.destination_frame = wrap_word(transition.destination_frame);
+      current.transition_pose = wrap_word(transition.ground_movement);
       return;
     }
     auto const old{current.exit_frame};
@@ -75,9 +67,9 @@ void animation_channel::set_rate(animation_rate const rate) {
 void animation_channel::advance(animation_time const delta) {
   /// Preserve signed-word timing, overshoot and transition movement ordering
   if(has_flag(animation_channel_flags::arrived) && current.stop_on_arrival) return;
-  auto const step{wrap((static_cast<int>(delta) * current.rate) >> 8)};
+  auto const step{wrap_word((static_cast<int>(delta) * current.rate) >> 8)};
   if(step == 0) return;
-  auto elapsed{wrap(current.elapsed + step)};
+  auto elapsed{wrap_word(current.elapsed + step)};
   unsigned int remaining_steps{65'536};
   if(elapsed < 0 && current.frame == 0 && current.exit_frame != 0 && previous(current.sequence, 0) == 0) elapsed = 0;
   if(elapsed == 0) {
@@ -85,7 +77,7 @@ void animation_channel::advance(animation_time const delta) {
     if(has_flag(animation_channel_flags::transition)) {
       current.next_sequence = current.sequence;
       current.next_frame = next(current.sequence, current.frame);
-      current.duration = wrap(source.sequences.at(static_cast<size_t>(current.sequence)).frames.at(static_cast<size_t>(current.frame)).duration);
+      current.duration = wrap_word(source.sequences.at(static_cast<size_t>(current.sequence)).frames.at(static_cast<size_t>(current.frame)).duration);
       set_flag(animation_channel_flags::transition, false);
       frame_motion();
     }
@@ -106,17 +98,17 @@ void animation_channel::advance(animation_time const delta) {
         load_motion(current.transition_pose);
       } else {
         current.frame = previous(current.sequence, current.frame);
-        current.duration = wrap(source.sequences.at(static_cast<size_t>(current.sequence)).frames.at(static_cast<size_t>(current.frame)).duration);
+        current.duration = wrap_word(source.sequences.at(static_cast<size_t>(current.sequence)).frames.at(static_cast<size_t>(current.frame)).duration);
         set_flag(animation_channel_flags::transition, false);
         frame_motion();
       }
       accumulate(true);
       if(-current.duration <= elapsed) {
-        current.elapsed = wrap(current.duration + elapsed);
+        current.elapsed = wrap_word(current.duration + elapsed);
         elapsed = 0;
       } else {
         current.elapsed = 0;
-        elapsed = wrap(elapsed + current.duration);
+        elapsed = wrap_word(elapsed + current.duration);
       }
       if(reached()) {
         elapsed = 0;
@@ -133,7 +125,7 @@ void animation_channel::advance(animation_time const delta) {
     if(current.next_frame == current.exit_frame) {
       current.next_sequence = current.destination_sequence;
       current.next_frame = current.destination_frame;
-      elapsed = wrap(elapsed - current.duration);
+      elapsed = wrap_word(elapsed - current.duration);
       current.duration = current.transition_duration;
       current.elapsed = 0;
       current.exit_frame = -1;
@@ -141,8 +133,8 @@ void animation_channel::advance(animation_time const delta) {
       load_motion(current.transition_pose);
     } else {
       current.next_frame = next(current.next_sequence, current.next_frame);
-      elapsed = wrap(elapsed - current.duration);
-      current.duration = wrap(source.sequences.at(static_cast<size_t>(current.sequence)).frames.at(static_cast<size_t>(current.frame)).duration);
+      elapsed = wrap_word(elapsed - current.duration);
+      current.duration = wrap_word(source.sequences.at(static_cast<size_t>(current.sequence)).frames.at(static_cast<size_t>(current.frame)).duration);
       if(current.duration == 0) elapsed = 0;
       current.elapsed = 0;
       set_flag(animation_channel_flags::transition, false);
@@ -158,13 +150,13 @@ void animation_channel::set_phase(animation_index const sequence, int16_t const 
   auto const &definition{source.sequences.at(static_cast<size_t>(sequence))};
   int total{0};
   for(auto const &frame : definition.frames) total += frame.duration;
-  auto elapsed{wrap(((wrap(total) - 1) * static_cast<int>(phase) + matrix_rounding) >> matrix_fraction_bits)};
+  auto elapsed{wrap_word(((wrap_word(total) - 1) * static_cast<int>(phase) + matrix_rounding) >> matrix_fraction_bits)};
   size_t frame{0};
   while(definition.frames.at(frame).duration <= elapsed) {
-    elapsed = wrap(elapsed - definition.frames[frame].duration);
+    elapsed = wrap_word(elapsed - definition.frames[frame].duration);
     ++frame;
   }
-  reset(sequence, wrap(static_cast<int>(frame)), elapsed);
+  reset(sequence, wrap_word(static_cast<int>(frame)), elapsed);
 }
 
 animation_channel_state const &animation_channel::state() const {
@@ -173,7 +165,7 @@ animation_channel_state const &animation_channel::state() const {
 
 int16_t animation_channel::fraction() const {
   if(current.duration == 0) return 0;
-  return wrap((current.duration / 2 + current.elapsed * animation_blend_one) / current.duration);
+  return wrap_word((current.duration / 2 + current.elapsed * animation_blend_one) / current.duration);
 }
 
 model_transform animation_channel::root_motion() const {
@@ -181,8 +173,8 @@ model_transform animation_channel::root_motion() const {
   if(!current.has_motion || current.duration == 0) return model_transform{current.accumulated};
   animation_pose part;
   for(unsigned int axis{0}; axis != 3; ++axis) {
-    part.rotation[axis] = static_cast<uint16_t>(wrap(current.motion.rotation[axis]) * current.elapsed / current.duration);
-    part.translation[axis] = wrap(current.motion.translation[axis] * current.elapsed / current.duration);
+    part.rotation[axis] = static_cast<uint16_t>(wrap_word(current.motion.rotation[axis]) * current.elapsed / current.duration);
+    part.translation[axis] = wrap_word(current.motion.translation[axis] * current.elapsed / current.duration);
   }
   auto transform{rotation_transform(part.rotation)};
   transform.translation = vec3<int32_t>{part.translation};
@@ -197,14 +189,14 @@ animation_index animation_channel::next(animation_index const sequence, animatio
   auto const &definition{source.sequences.at(static_cast<size_t>(sequence))};
   if(definition.frames.empty()) throw std::runtime_error{"animation sequence has no frames"};
   auto const count{static_cast<int>(definition.frames.size())};
-  return wrap(definition.cyclic ? (frame + 1) % count : std::min(frame + 1, count - 1));
+  return wrap_word(definition.cyclic ? (frame + 1) % count : std::min(frame + 1, count - 1));
 }
 
 animation_index animation_channel::previous(animation_index const sequence, animation_index const frame) const {
   auto const &definition{source.sequences.at(static_cast<size_t>(sequence))};
   if(definition.frames.empty()) throw std::runtime_error{"animation sequence has no frames"};
   auto const count{static_cast<int>(definition.frames.size())};
-  return wrap(definition.cyclic ? (frame + count - 1) % count : std::max(frame - 1, 0));
+  return wrap_word(definition.cyclic ? (frame + count - 1) % count : std::max(frame - 1, 0));
 }
 
 void animation_channel::load_motion(animation_index const pose) {
@@ -215,7 +207,7 @@ void animation_channel::load_motion(animation_index const pose) {
 void animation_channel::frame_motion() {
   auto const &definition{source.sequences.at(static_cast<size_t>(current.sequence))};
   if(definition.ground_movement) {
-    load_motion(wrap(definition.pose_indices.at(static_cast<size_t>(current.frame) * definition.parts.size())));
+    load_motion(wrap_word(definition.pose_indices.at(static_cast<size_t>(current.frame) * definition.parts.size())));
   } else {
     current.has_motion = false;
   }

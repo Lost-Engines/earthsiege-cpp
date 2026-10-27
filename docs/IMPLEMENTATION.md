@@ -16,6 +16,7 @@ Working components:
 - Typed 3Space meshes, materials, BSP trees, detail levels, cell animations, articulated poses and collision heightfields. All 47,575 objects in 44 resources agree with original-reader fingerprints across 23 field groups.
 - Independent model instances with zeroed cell state, default poses and incremental hierarchical transforms. All 5,236 original default/blended pose references agree; stored cell cycle counts are distinct from live frame indices.
 - Queued animation channels with signed playback rates, authored transition search, stop-on-arrival, reverse stepping and accumulated/interpolated root motion. 8,955 original traces (98,505 transition states) and 5,120 root-motion samples agree. Requests currently select any destination frame, matching ordinary HERC consumers.
+- Native ambient, directional and positional lighting, object-space light transforms and the original ten-light list. All 16,896 original intensity calculations and 512 transformed lights agree, including different model/terrain incidence rules and fixed-point wrapping.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
 Next work proceeds through mission placement, 3Space software rendering and animation, HERC movement/collision/weapons, AI and mission rules, cockpit and shell/campaign integration, then complete sound/presentation playback. These remain implementation work; the current menu is not a playable game.

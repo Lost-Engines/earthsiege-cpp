@@ -35,3 +35,9 @@ The fixture also includes 5,120 original interpolated root transforms (0x61da8).
 Destination-frame selection is -1 (any frame), the ordinary HERC request path.
 Only unwritten matrix padding is excluded. Both animation fixture files are
 produced by `export_animation_fixtures.py`.
+
+`model_lighting.bin` contains 16,896 original intensities for model, terrain and
+unoriented surfaces, plus 512 transformed lights from `check_lighting.py` in the
+analysis tree. The reference retains the native incidence, attenuation, signed
+wrapping and final byte conversion. Regenerate with
+`python3 tools/export_lighting_fixtures.py ../earthsiege-reverse/analysis`.

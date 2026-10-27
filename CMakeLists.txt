@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/fixed_math.cpp
+  src/simulation/fixed_math.h
+  src/render/model_lighting.cpp
+  src/render/model_lighting.h
   src/simulation/animation_channel.cpp
   src/simulation/animation_channel.h
   src/simulation/model_instance.cpp
@@ -59,6 +63,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(model_lighting_test tests/model_lighting_test.cpp)
+  target_link_libraries(model_lighting_test PRIVATE earthsiege_core)
+  add_test(NAME model_lighting COMMAND model_lighting_test "${PROJECT_SOURCE_DIR}/tests/fixtures/model_lighting.bin")
   add_executable(animation_channel_test tests/animation_channel_test.cpp)
   target_link_libraries(animation_channel_test PRIVATE earthsiege_core)
   add_test(NAME animation_channels COMMAND animation_channel_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/animation_channels.bin")
