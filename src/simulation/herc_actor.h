@@ -4,12 +4,14 @@
 #include "simulation/herc_power.h"
 #include "simulation/hit_volumes.h"
 #include "simulation/weapon_bank.h"
+#include "simulation/weapon_firing.h"
 
 namespace earthsiege {
 
 /// Own one articulated HERC, its loadout-dependent hit volumes and changing combat state
 class herc_actor {
   herc_definition const &source;
+  weapon_catalogue const &weapon_definitions;
   herc_loadout loadout;
   herc_body body_state;
   component_damage components;
@@ -28,10 +30,12 @@ public:
   weapon_bank &weapons();
   weapon_bank const &weapons() const;
   void update_power(frame_ratio ratio, bool free_energy = false);
+  /// Readiness and group/trigger policy are checked by the controller before discharge
+  std::vector<weapon_shot> discharge_slot(size_t slot, vec2<int16_t> const &aim, bool free_ammunition = false);
   herc_loadout const &definition() const;
   /// Direct armour/component damage; projectile shielding and impact effects are separate stages
   std::vector<size_t> damage_section(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach = {});
-  std::optional<component_hit> component_hit_test(model_transform const &actor_to_ray, int16_t reach, int16_t radius) const;
+  std::optional<component_hit> component_hit_test(model_transform const &actor_to_ray, int32_t reach, int16_t radius) const;
   bool step(herc_controls const &controls, frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, movement_event_sink const &events = {});
   void recover_from_collision(int32_t duration, bool reverse);
 };

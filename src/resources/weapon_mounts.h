@@ -11,6 +11,8 @@ struct weapon_definition;
 
 struct weapon_mount {
   int16_t model_part{0};
+  int16_t pitch_sequence{-1};
+  int16_t yaw_sequence{-1};
   uint8_t orientation{0};
   vec3<int16_t> position;
   int8_t equipment_slot{0};

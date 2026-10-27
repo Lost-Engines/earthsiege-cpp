@@ -29,7 +29,8 @@ std::vector<weapon_mount> read_weapon_mounts(bytes const source) {
     std::ranges::copy(record, mount.source.begin());
     binary_reader fields{record};
     mount.model_part = fields.integer<int16_t>();
-    fields.seek(6);
+    mount.pitch_sequence = fields.integer<int16_t>();
+    mount.yaw_sequence = fields.integer<int16_t>();
     mount.orientation = fields.integer<uint8_t>();
     fields.seek(16);
     mount.position = vec3<int16_t>{fields.integer<int16_t>(), fields.integer<int16_t>(), fields.integer<int16_t>()};

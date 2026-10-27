@@ -16,6 +16,7 @@ struct elf_capacitor {
 struct ammunition_weapon {
   weapon_controls controls;
   int16_t rounds{0};
+  bool available{true};
   int32_t displayed_rounds{0};                                              // Q8 HUD countdown is distinct from actual ammunition
 };
 
