@@ -53,7 +53,7 @@ auto signatures(earthsiege::mission_script const &script)->std::array<uint32_t, 
   for(auto const &area : script.areas) { values.word(area.kind); values.word(area.first_point); values.word(area.second_point_or_radius); }
   result[4] = values.checksum();
   for(auto const &trigger : script.triggers) {
-    values.word(trigger.mode); values.word(trigger.test); values.words(trigger.areas); values.word(trigger.delay); values.word(trigger.argument);
+    values.word(trigger.mode); values.word(trigger.test); values.words(trigger.areas); values.word(trigger.counter); values.word(trigger.counter_operation);
   }
   result[5] = values.checksum();
   for(auto const &herc : script.hercs) {

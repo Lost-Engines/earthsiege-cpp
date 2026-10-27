@@ -55,8 +55,8 @@ struct mission_trigger {
   int16_t mode{};
   int16_t test{};
   std::array<mission_reference, 8> areas{};
-  int16_t delay{};
-  int16_t argument{};
+  int16_t counter{-1};
+  int16_t counter_operation{-1};
 };
 
 using source_field_mask = std::array<int16_t, 20>;                             // original editor/merge flags retained in the handoff

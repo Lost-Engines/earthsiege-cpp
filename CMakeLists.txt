@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/mission_triggers.cpp
+  src/simulation/mission_triggers.h
   src/simulation/actor_contact.cpp
   src/simulation/actor_contact.h
   src/shell/mission_view.cpp
@@ -141,6 +143,9 @@ if(BUILD_TESTING)
   add_executable(input_test tests/input_test.cpp)
   target_link_libraries(input_test PRIVATE earthsiege_core)
   add_test(NAME input COMMAND input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/input.bin")
+  add_executable(trigger_test tests/trigger_test.cpp)
+  target_link_libraries(trigger_test PRIVATE earthsiege_core)
+  add_test(NAME triggers COMMAND trigger_test "${PROJECT_SOURCE_DIR}/tests/fixtures/triggers.bin")
   add_executable(contact_test tests/contact_test.cpp)
   target_link_libraries(contact_test PRIVATE earthsiege_core)
   add_test(NAME contacts COMMAND contact_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/actor_contact.bin" "${PROJECT_SOURCE_DIR}/tests/fixtures/scenery_contact.bin")

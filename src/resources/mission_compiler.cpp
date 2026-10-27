@@ -58,8 +58,8 @@ void merge(mission_trigger &target, mission_trigger const &source) {
   update(target.mode, source.mode, int16_t{-1});
   update(target.test, source.test, int16_t{-1});
   update(target.areas, source.areas, int16_t{-1});
-  update(target.delay, source.delay, int16_t{-1});
-  update(target.argument, source.argument, int16_t{-1});
+  update(target.counter, source.counter, int16_t{-1});
+  update(target.counter_operation, source.counter_operation, int16_t{-1});
 }
 
 void merge(herc_spawn &target, herc_spawn const &source) {

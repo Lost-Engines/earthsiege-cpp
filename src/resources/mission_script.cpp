@@ -47,8 +47,8 @@ auto read_triggers_record(binary_reader &file)->mission_trigger {
     .mode{file.integer<int16_t>()},
     .test{file.integer<int16_t>()},
     .areas{words<8>(file)},
-    .delay{file.integer<int16_t>()},
-    .argument{file.integer<int16_t>()},
+    .counter{file.integer<int16_t>()},
+    .counter_operation{file.integer<int16_t>()},
   };
 }
 
