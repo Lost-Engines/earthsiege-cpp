@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/random_state.cpp
+  src/simulation/random_state.h
+  src/resources/mission_conditions.cpp
+  src/resources/mission_conditions.h
   src/shell/dialog.cpp
   src/shell/dialog.h
   src/render/framebuffer.cpp
@@ -34,6 +38,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(condition_test tests/condition_test.cpp)
+  target_link_libraries(condition_test PRIVATE earthsiege_core)
+  add_test(NAME conditions COMMAND condition_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/condition_checks.tsv" "${PROJECT_SOURCE_DIR}/tests/random_checks.tsv")
   add_executable(artwork_test tests/artwork_test.cpp)
   target_link_libraries(artwork_test PRIVATE earthsiege_core)
   add_test(NAME artwork COMMAND artwork_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/artwork_checks.tsv")
