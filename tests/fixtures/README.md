@@ -98,3 +98,9 @@ part and BSP transform fields checked after original 0x19ba0/0x19ac4 execution.
 The original 50-byte row indexing, static -1 part behavior and restricted BSP
 remapping are retained. Regenerate with
 `python3 tools/export_binding_fixtures.py ../earthsiege-reverse/analysis`.
+
+`animation_rigs.bin` contains 800 three-channel walking/torso/elevation cases
+from complete original player actors. It retains their runtime sequence
+priorities, all channel state fields, stable channel order, poses and matrices.
+The captures execute 0x620c4, 0x614d4, 0x6168c and 0x61810. Regenerate with
+`python3 tools/export_rig_fixtures.py ../earthsiege-reverse/analysis`.
