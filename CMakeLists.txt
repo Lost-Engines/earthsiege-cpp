@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/mission_text.cpp
+  src/resources/mission_text.h
   src/resources/mission_compiler.cpp
   src/resources/mission_compiler.h
   src/resources/mission_records.h
@@ -46,6 +48,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mission_text_test tests/mission_text_test.cpp)
+  target_link_libraries(mission_text_test PRIVATE earthsiege_core)
+  add_test(NAME mission_text COMMAND mission_text_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/mission_text_checks.tsv")
   add_executable(script_test tests/script_test.cpp)
   target_link_libraries(script_test PRIVATE earthsiege_core)
   add_test(NAME mission_handoffs COMMAND script_test "${PROJECT_SOURCE_DIR}/tests" "${PROJECT_SOURCE_DIR}/assets")
