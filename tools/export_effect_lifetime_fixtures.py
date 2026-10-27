@@ -13,5 +13,5 @@ rows=json.loads((analysis/'models/object-pools.json').read_text())['cases'];out=
 def indices(a):return struct.pack('<H'+'H'*len(a),len(a),*a)
 for row in rows:
  out+=struct.pack('<HH',row['capacity'],len(row['checks']))
- for r in row['checks']:out+=struct.pack('<BhH',r['operation'],r['index'],len(r['free']))+indices(r['active'])+indices(r['pending'])+indices(r['destroyed'])
+ for r in row['checks']:out+=struct.pack('<BhH',r['operation'],r['index'],len(r['free']))+indices(r['active'])+indices(r['oldest'])+indices(r['pending'])+indices(r['destroyed'])
 (root/'tests/fixtures/object_pools.bin').write_bytes(out)

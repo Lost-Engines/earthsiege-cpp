@@ -44,7 +44,7 @@ int main(int const argc, char **argv) try {
     auto const count{pools.integer<uint16_t>()};
     for(unsigned int step{0}; step != count; ++step) {
       auto const operation{pools.integer<uint8_t>()}; auto const index{pools.integer<int16_t>()}; auto const free_count{pools.integer<uint16_t>()};
-      auto const active{indices(pools)}, pending{indices(pools)}, retired{indices(pools)};
+      auto const active{indices(pools)}, oldest{indices(pools)}, pending{indices(pools)}, retired{indices(pools)};
       std::vector<size_t> destroyed;
       switch(operation) {
         case 0: {
@@ -60,6 +60,9 @@ int main(int const argc, char **argv) try {
       std::vector<size_t> actual;
       pool.for_each([&](size_t const slot, int const &){ actual.push_back(slot); });
       if(actual != active || destroyed != retired || pool.available() != free_count || pool.size() != active.size()) pools.fail("pool traversal/reclamation order");
+      actual.clear();
+      pool.for_each_oldest([&](size_t const slot, int const &){ actual.push_back(slot); });
+      if(actual != oldest) pools.fail("pool simulation order");
       for(auto const slot : active) {
         bool const expected{std::ranges::find(pending, slot) != pending.end()};
         if(pool.retiring(slot) != expected) pools.fail("deferred pool slot state");

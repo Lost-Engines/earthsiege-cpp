@@ -202,3 +202,12 @@ collection. `check_object_pool.py` runs `0x638c8`, `0x6398c` and `0x63784`; obje
 destructors are recorded callback boundaries. Duplicate queued releases and the
 original twenty-entry queue overflow are excluded. Refresh both with
 `tools/export_effect_lifetime_fixtures.py`.
+
+`effect_world.bin` contains 1,620 complete original mixed effect frames from
+`capture_effect_world.py`. Original explosion/debris factories, geometry instance
+creation/destruction, light controllers and pool reclamation all execute. Nine
+schedules combine three ratios and three seeds. C++ compares update and retirement
+order, every live state and primary/secondary cell, final shared RNG and reused
+slot IDs. The three-light controller limit is exercised. Persistent smoke, actor
+combat and effect rasterization are outside these explicit schedules. Refresh
+using `tools/export_effect_world_fixtures.py`.

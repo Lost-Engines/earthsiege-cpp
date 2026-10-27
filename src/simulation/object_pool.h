@@ -7,7 +7,7 @@
 
 namespace earthsiege {
 
-/// Fixed capacity with original newest-first traversal and deferred slot reuse.
+/// Fixed capacity with original linked ordering and deferred slot reuse.
 /// Objects own their resources; queued objects remain allocated until collect().
 template<typename T> class object_pool {
   static size_t constexpr end{std::numeric_limits<size_t>::max()};
@@ -80,6 +80,13 @@ public:
   /// Visitors may queue removal; they must not erase or collect during traversal.
   template<typename Visitor> void for_each(Visitor &&visitor) {
     for(auto index{active_head}; index != end; index = slots[index].next) visitor(index, *slots[index].value);
+  }
+  /// The original simulation consumer walks from the oldest entry toward the head.
+  template<typename Visitor> void for_each_oldest(Visitor &&visitor) {
+    auto index{active_head};
+    if(index == end) return;
+    while(slots[index].next != end) index = slots[index].next;
+    while(index != end) { visitor(index, *slots[index].value); index = slots[index].previous; }
   }
   template<typename Visitor> void for_each(Visitor &&visitor) const {
     for(auto index{active_head}; index != end; index = slots[index].next) visitor(index, *slots[index].value);

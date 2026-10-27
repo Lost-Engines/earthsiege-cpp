@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/world_effects.cpp
+  src/simulation/world_effects.h
+  src/simulation/object_pool.h
   src/resources/effects.cpp
   src/resources/effects.h
   src/simulation/effect_state.cpp
@@ -182,6 +185,9 @@ if(BUILD_TESTING)
   add_executable(hit_volumes_test tests/hit_volumes_test.cpp)
   target_link_libraries(hit_volumes_test PRIVATE earthsiege_core)
   add_test(NAME hit_volumes COMMAND hit_volumes_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/hit_volumes.bin")
+  add_executable(effect_world_test tests/effect_world_test.cpp)
+  target_link_libraries(effect_world_test PRIVATE earthsiege_core)
+  add_test(NAME effect_world COMMAND effect_world_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/effect_world.bin")
   add_executable(effect_lifetime_test tests/effect_lifetime_test.cpp)
   target_link_libraries(effect_lifetime_test PRIVATE earthsiege_core)
   add_test(NAME effect_lifetimes COMMAND effect_lifetime_test "${PROJECT_SOURCE_DIR}/tests/fixtures/debris_motion.bin" "${PROJECT_SOURCE_DIR}/tests/fixtures/object_pools.bin")
