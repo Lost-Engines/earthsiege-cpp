@@ -20,5 +20,6 @@ for source in sorted(base.rglob('*.json')):
    else:data.extend(shorts(record['words'][3 if name in ['areas','timers','groups']else 4:]))
   payloads.append(data)
  relative=source.relative_to(base).with_suffix('.dat');data_file=source.with_suffix('.dat');destination=root/'tests/fixtures/scripts'/relative;destination.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(data_file,destination)
- rows.append(f'{relative.as_posix()} {data_file.stat().st_size} '+' '.join(map(checksum,payloads))+'\n')
+ state=native['rng_final'];rng=struct.pack('<56H2B',*state['words'],*state['indices'])
+ rows.append(f'{relative.as_posix()} {data_file.stat().st_size} '+' '.join(map(checksum,payloads))+' '+checksum(rng)+'\n')
 (root/'tests/script_checks.tsv').write_text(''.join(rows));print(len(rows),'original compiled mission fixtures imported')

@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/mission_compiler.cpp
+  src/resources/mission_compiler.h
+  src/resources/mission_records.h
   src/resources/input_tape.cpp
   src/resources/input_tape.h
   src/resources/mission_script.cpp

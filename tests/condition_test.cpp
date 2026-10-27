@@ -7,6 +7,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include "resources/mission_compiler.h"
 #include "resources/mission_conditions.h"
 #include "resources/resource_store.h"
 #include "simulation/random_state.h"
@@ -59,12 +60,19 @@ auto main(int argc, char *argv[])->int try {
     std::array<int16_t, 100> const flags{};
     auto const active{earthsiege::evaluate_conditions(conditions, flags, random)};
     if(active.size() != count) throw std::runtime_error{"condition count differs from original: " + name};
+    std::vector<std::array<int16_t, 7>> expected_complete;
     for(unsigned int index{}; index < count; ++index) {
       std::array<int16_t, 7> expected{};
       for(auto &word : expected) fixture >> word;
+      expected_complete.push_back(expected);
       auto actual{native_words(active[index])};
       if(expected[2] == 3) actual[6] = expected[6];                        // group scratch binds during later table compilation
       if(actual != expected) throw std::runtime_error{"condition differs from original: " + name};
+    }
+    earthsiege::random_state complete_random{initial};
+    auto const complete{earthsiege::compile_mission(resources.read("zones", "msn/" + name), flags, complete_random, 0)};
+    for(unsigned int index{}; index < count; ++index) {
+      if(native_words(complete.conditions.at(index)) != expected_complete[index]) throw std::runtime_error{"late condition binding differs from original: " + name};
     }
     ++cases;
   }

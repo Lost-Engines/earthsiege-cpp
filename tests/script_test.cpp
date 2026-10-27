@@ -1,4 +1,5 @@
 #include <array>
+#include <bit>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -7,7 +8,10 @@
 #include <string>
 #include <vector>
 #include "resources/input_tape.h"
+#include "resources/mission_compiler.h"
 #include "resources/mission_script.h"
+#include "resources/resource_store.h"
+#include "simulation/random_state.h"
 
 namespace {
 
@@ -82,6 +86,7 @@ auto signatures(earthsiege::mission_script const &script)->std::array<uint32_t, 
 auto main(int argc, char *argv[])->int try {
   if(argc != 3) throw std::runtime_error{"expected fixture and asset roots"};
   std::filesystem::path const root{argv[1]};
+  earthsiege::resource_store const resources{argv[2]};
   std::ifstream fixture{root / "script_checks.tsv"};
   std::string name;
   size_t consumed{};
@@ -89,6 +94,8 @@ auto main(int argc, char *argv[])->int try {
   while(fixture >> name >> consumed) {
     std::array<uint32_t, 10> expected{};
     for(auto &value : expected) fixture >> std::hex >> value >> std::dec;
+    uint32_t expected_random{};
+    fixture >> std::hex >> expected_random >> std::dec;
     auto const data{earthsiege::read_file(root / "fixtures/scripts" / name)};
     auto const script{earthsiege::read_mission_script(data)};
     if(script.consumed != consumed) throw std::runtime_error{"handoff extent differs from original: " + name};
@@ -96,9 +103,31 @@ auto main(int argc, char *argv[])->int try {
     for(unsigned int table{}; table < expected.size(); ++table) {
       if(actual[table] != expected[table]) throw std::runtime_error{"handoff table " + std::to_string(table) + " differs from native compiler state: " + name};
     }
+    earthsiege::random_state::state initial;
+    if(!name.starts_with("zero/")) {
+      for(unsigned int index{}; index < initial.words.size(); ++index) initial.words[index] = static_cast<uint16_t>((index * 7919 + 12345) & 32767);
+      initial.first = 31;
+    }
+    earthsiege::random_state random{initial};
+    std::array<int16_t, 100> flags{};
+    if(name.starts_with("flags_one/")) flags.fill(1);
+    if(name.starts_with("flags_pattern/")) {
+      for(unsigned int index{}; index < flags.size(); ++index) flags[index] = static_cast<int16_t>(index % 5);
+    }
+    auto const source{resources.read("zones", "msn/" + std::filesystem::path{name}.stem().string() + ".msn")};
+    auto const compiled{earthsiege::compile_mission(source, flags, random, 0)};
+    auto const generated{signatures(compiled.script)};
+    for(unsigned int table{}; table < expected.size(); ++table) {
+      if(generated[table] != expected[table]) throw std::runtime_error{"compiled table " + std::to_string(table) + " differs from native compiler: " + name};
+    }
+    fixture_values final_random;
+    for(auto const value : random.snapshot().words) final_random.word(std::bit_cast<int16_t>(value));
+    final_random.data.push_back(static_cast<uint8_t>(random.snapshot().first));
+    final_random.data.push_back(static_cast<uint8_t>(random.snapshot().second));
+    if(final_random.checksum() != expected_random) throw std::runtime_error{"compiler random state differs from original: " + name};
     ++checked;
   }
-  if(checked != 150) throw std::runtime_error{"incomplete native handoff fixtures"};
+  if(checked != 300) throw std::runtime_error{"incomplete native handoff fixtures"};
   std::array constexpr frame_counts{2308u, 2951u, 2470u, 1571u};
   std::array constexpr mouse_counts{1332u, 983u, 42u, 370u};
   unsigned int total_frames{};
