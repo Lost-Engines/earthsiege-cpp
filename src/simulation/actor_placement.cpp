@@ -4,6 +4,7 @@
 #include <span>
 #include <stdexcept>
 #include <utility>
+#include "resources/name_table.h"
 #include "resources/resource_store.h"
 #include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
@@ -24,18 +25,10 @@ uint16_t route_heading(vec3<int32_t> const &first, vec3<int32_t> const &second) 
   return static_cast<uint16_t>(direction_angle(x, y) - angle_quarter_turn);
 }
 
-std::vector<std::string> resource_names(bytes source) {
-  while(!source.empty() && (source.back() == '\n' || source.back() == '\r')) source = source.first(source.size() - 1);
-  binary_reader file{source, "resource names"};
-  std::vector<std::string> result;
-  while(file.remaining()) result.push_back(file.cstring());
-  return result;
-}
-
 } // anonymous namespace
 
 placement_catalogue::placement_catalogue(resource_store const &resources) {
-  for(auto const &name : resource_names(resources.read("simvol0", "nam/MECHS.NAM"))) {
+  for(auto const &name : read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))) {
     hercs.push_back(chassis{.name{name}, .profile{read_herc_profile(resources.read("simvol0", "dat/" + name + ".DAT"))}, .mounts{read_weapon_mounts(resources.read("simvol0", "gl/" + name + ".GL"))}});
   }
   std::array<std::string_view, 3> const files{"MFORMS", "FFORMS", "BFORMS"};

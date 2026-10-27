@@ -4,6 +4,8 @@ The native game is being built from the supplied Earthsiege 1.0 data and origina
 
 Working components:
 
+- An owned mission session joins the original terrain, player roster, animated bodies, mounted weapons and model-attached cameras. `--inspect-demo 1–4` exposes these starting states in the native window with held movement/aiming and free/orbit/attached camera controls. Its fixed 25 ms inspection updates are separate from full frame scheduling; it does not substitute inactive scenery or player-roster bodies for enemy activation, combat or AI.
+
 - All seven original VOL archives, bounded resource lookup and independent payload checks.
 - Indexed artwork, VGA palettes/shade ramps and DFN fonts; native 320×200 software framebuffer and square-pixel SDL2 window.
 - Original main-menu artwork, dialog text/hitboxes, three-state button styles and caption plaque. Actions other than exit are still being integrated.

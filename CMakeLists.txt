@@ -8,6 +8,12 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/shell/mission_view.cpp
+  src/shell/mission_view.h
+  src/simulation/mission_session.cpp
+  src/simulation/mission_session.h
+  src/resources/name_table.cpp
+  src/resources/name_table.h
   src/simulation/camera.cpp
   src/simulation/camera.h
   src/simulation/arcsine_table.h
