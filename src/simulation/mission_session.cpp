@@ -25,10 +25,10 @@ mission_session::mission_session(resource_store const &resources, mission_script
     auto const &loadout{roster.hercs.at(actor.source - script.hercs.size())};
     crew_member member{
       .definition{definition.get()},
-      .body{std::make_unique<herc_body>(*definition, weapon_definitions, weapon_models, loadout.weapons, *actor.position, actor.angles)},
+      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, loadout.weapons, *actor.position, actor.angles)},
       .attachments{},
     };
-    for(auto const &part : member.body->weapons().parts()) member.attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});
+    for(auto const &part : member.actor->body().weapons().parts()) member.attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});
     if(actor.player_controlled) controlled = crew.size();
     crew.push_back(std::move(member));
   }
@@ -41,15 +41,15 @@ scenery_world const &mission_session::scenery() const {
 }
 
 herc_body const &mission_session::player() const {
-  return *crew.at(player_index).body;
+  return crew.at(player_index).actor->body();
 }
 
 void mission_session::step(herc_controls const &controls, int16_t const time_ratio) {
   frame_contacts.clear();
-  crew.at(player_index).body->step(controls, time_ratio, [&](herc_body const &candidate){
+  crew.at(player_index).actor->step(controls, time_ratio, [&](herc_body const &candidate){
     std::vector<contact_actor> bodies;
     bodies.reserve(crew.size());
-    for(auto const &member : crew) bodies.push_back(member.body->contact_geometry());
+    for(auto const &member : crew) bodies.push_back(member.actor->body().contact_geometry());
     if(auto const hit{find_actor_contact(bodies, player_index)}) {
       crew.at(hit->other).contact_received = true;
       frame_contacts.push_back(*hit);                                          // retain damage dispatch for the component-damage consumer
@@ -61,24 +61,28 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
 
 std::span<actor_contact const> mission_session::contacts() const { return frame_contacts; }
 
-std::vector<scene_model> mission_session::roster_models() const {
+std::vector<scene_model> mission_session::roster_models() {
   std::vector<scene_model> result;
   result.reserve(crew.size());
-  for(auto const &member : crew) result.push_back({
-    .roots{member.definition->models.roots}, .instance{member.body->model()},
-    .placement{member.body->placement()}, .native_class{7}, .textures{member.definition->textures},
-    .attachments{member.attachments}, .detail_thresholds{herc_detail_thresholds}, .detail{},
-  });
+  for(auto &member : crew) {
+    size_t index{0};
+    for(auto const &part : member.actor->body().weapons().parts()) member.attachments.at(index++).geometry = part.geometry && !part.disabled ? &*part.geometry : nullptr;
+    result.push_back({
+      .roots{member.definition->models.roots}, .instance{member.actor->body().model()},
+      .placement{member.actor->body().placement()}, .native_class{7}, .textures{member.definition->textures},
+      .attachments{member.attachments}, .detail_thresholds{herc_detail_thresholds}, .detail{},
+    });
+  }
   return result;
 }
 
 camera_target mission_session::view_target() const {
   auto const &member{crew.at(player_index)};
-  camera_target result{.angles{vec3<uint16_t>{member.body->movement().angles}}, .placement{member.body->placement()}, .attachment{std::nullopt}};
+  camera_target result{.angles{vec3<uint16_t>{member.actor->body().movement().angles}}, .placement{member.actor->body().placement()}, .attachment{std::nullopt}};
   auto const part{find_model_part(member.definition->models.roots.front(), member.definition->profile.camera_part)};
   if(part) {
     if(part->header.transform < 0) throw std::runtime_error{"HERC camera part has no skeletal transform"};
-    result.attachment = member.body->model().transforms()[static_cast<size_t>(part->header.transform)];
+    result.attachment = member.actor->body().model().transforms()[static_cast<size_t>(part->header.transform)];
   }
   return result;
 }

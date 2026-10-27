@@ -28,6 +28,8 @@ herc_profile read_herc_profile(bytes const source) {
   result.position_height = word(20);
   result.collision_radius = word(110);
   result.mass_factor = word(76);
+  result.legs = word(72);
+  result.shield_capacity = word(190);
   result.camera_part = word(10);
   result.camera_offset = vec3<int16_t>{0, word(98), word(100)};
   result.camera_focus = vec3<int16_t>{0, word(102), word(104)};

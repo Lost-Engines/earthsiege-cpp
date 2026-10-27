@@ -5,7 +5,7 @@
 #include <string>
 #include "resources/resource_store.h"
 #include "simulation/component_damage.h"
-#include "simulation/herc_loadout.h"
+#include "simulation/herc_actor.h"
 
 namespace {
 
@@ -41,6 +41,7 @@ int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
   auto const weapons{earthsiege::read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))};
+  auto const templates{earthsiege::read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))};
   auto const bytes{earthsiege::read_file(argv[2])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
@@ -74,7 +75,8 @@ int main(int const argc, char **argv) try {
     check(created, initial, name + "/initial");
     auto const traces{file.integer<uint16_t>()};
     for(unsigned int trace{0}; trace != traces; ++trace) {
-      earthsiege::component_damage damage{loadout.damage, created};
+      earthsiege::herc_actor actor{body, weapons, templates, equipment, {}, {}};
+      if(body.profile.legs != legs) file.fail(name + ": leg count differs");
       auto const hits{file.integer<uint16_t>()};
       for(unsigned int hit{0}; hit != hits; ++hit) {
         auto const section{file.integer<int16_t>()};
@@ -87,16 +89,23 @@ int main(int const argc, char **argv) try {
         auto const expected{state(file)};
         size_t consumed{0};
         auto const label{name + '/' + std::to_string(trace) + '/' + std::to_string(hit)};
-        auto const removed{damage.hit(static_cast<size_t>(section), amount, legs, [&](int16_t const bound){
+        auto const removed{actor.damage_section(static_cast<size_t>(section), amount, [&](int16_t const bound){
           if(consumed >= draws.size() || draws[consumed][0] != bound) file.fail(label + ": component choice bound differs");
           return draws[consumed++][1];
         })};
         if(consumed != draws.size()) file.fail(label + ": component draw count differs");
-        check(damage.state(), expected, label);
+        check(actor.damage(), expected, label);
         if(removed.size() != expected_removed.size()) file.fail(label + ": detachments differ");
         for(size_t i{0}; i != removed.size(); ++i) if(removed[i] != static_cast<size_t>(expected_removed[i])) file.fail(label + ": detachment order differs");
         if(slots.size() != expected_disabled.size()) file.fail("weapon-slot fixture differs");
-        for(size_t i{0}; i != slots.size(); ++i) if(slots[i] >= 0 && static_cast<int16_t>(damage.state().present.at(static_cast<size_t>(19 + slots[i])) == 0) != expected_disabled[i]) file.fail(label + ": weapon disable differs");
+        for(size_t i{0}; i != slots.size(); ++i) if(slots[i] >= 0 && static_cast<int16_t>(actor.damage().present.at(static_cast<size_t>(19 + slots[i])) == 0) != expected_disabled[i]) file.fail(label + ": weapon disable differs");
+        auto const cells{actor.body().model().cell_frames()};
+        for(size_t i{0}; i != cells.size(); ++i) if(cells[i] != static_cast<uint16_t>(expected.cells[i])) file.fail(label + ": visible damage cells differ");
+        for(auto const &weapon : actor.body().weapons().parts()) {
+          if(weapon.weapon == earthsiege::empty_weapon_slot) continue;
+          bool const disabled{expected.present.at(earthsiege::weapon_section_first + static_cast<size_t>(weapon.equipment_slot)) == 0};
+          if(weapon.disabled != disabled) file.fail(label + ": attached weapon visibility differs");
+        }
         ++total;
       }
     }

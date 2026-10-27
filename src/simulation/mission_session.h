@@ -6,7 +6,7 @@
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
 #include "simulation/camera.h"
-#include "simulation/herc_body.h"
+#include "simulation/herc_actor.h"
 #include "simulation/scenery_world.h"
 
 namespace earthsiege {
@@ -17,7 +17,7 @@ class resource_store;
 class mission_session {
   struct crew_member {
     herc_definition const *definition;
-    std::unique_ptr<herc_body> body;
+    std::unique_ptr<herc_actor> actor;
     std::vector<model_attachment> attachments;
     bool contact_received{false};
   };
@@ -40,7 +40,7 @@ public:
   herc_body const &player() const;
   void step(herc_controls const &controls, int16_t time_ratio);
   std::span<actor_contact const> contacts() const;
-  std::vector<scene_model> roster_models() const;
+  std::vector<scene_model> roster_models();
   camera_target view_target() const;
   camera_state make_camera(camera_mode mode) const;
 };

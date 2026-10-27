@@ -1,6 +1,7 @@
 #include "herc_body.h"
 #include <algorithm>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 #include "resources/model_tree.h"
 #include "simulation/component_damage.h"
@@ -18,6 +19,14 @@ herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &
 
 void herc_body::apply_damage(damage_consequences const &consequences) {
   damage = {consequences.disabled, consequences.movement_light, consequences.movement_heavy};
+}
+
+void herc_body::apply_damage(damage_state const &state) {
+  auto cells{rig.instance().cell_frames()};
+  if(cells.size() != state.cells.size()) throw std::invalid_argument{"HERC damage cells do not match its model"};
+  for(size_t i{0}; i != cells.size(); ++i) cells[i] = static_cast<uint16_t>(state.cells[i]);
+  armament.disable_missing_sections(state.present);
+  apply_damage(state.consequences);
 }
 
 void herc_body::recover_from_collision(int32_t const duration, bool const reverse) {

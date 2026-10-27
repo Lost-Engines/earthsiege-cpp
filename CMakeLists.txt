@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_actor.cpp
+  src/simulation/herc_actor.h
   src/simulation/herc_power.cpp
   src/simulation/herc_power.h
   src/simulation/herc_loadout.cpp
@@ -173,6 +175,9 @@ if(BUILD_TESTING)
   add_executable(weapon_controls_test tests/weapon_controls_test.cpp)
   target_link_libraries(weapon_controls_test PRIVATE earthsiege_core)
   add_test(NAME weapon_controls COMMAND weapon_controls_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/weapon_controls.bin")
+  add_executable(damaged_renderer_test tests/damaged_renderer_test.cpp)
+  target_link_libraries(damaged_renderer_test PRIVATE earthsiege_core)
+  add_test(NAME damaged_renderer COMMAND damaged_renderer_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/damaged_render.bin")
   add_executable(damage_test tests/damage_test.cpp)
   target_link_libraries(damage_test PRIVATE earthsiege_core)
   add_test(NAME damage COMMAND damage_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/damage.bin")

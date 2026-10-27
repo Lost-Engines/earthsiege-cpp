@@ -3,6 +3,7 @@
 #include <utility>
 #include "resources/model_tree.h"
 #include "simulation/fixed_math.h"
+#include "simulation/herc_loadout.h"
 
 namespace earthsiege {
 namespace {
@@ -51,7 +52,7 @@ weapon_assembly::weapon_assembly(model_part const &owner, std::span<weapon_mount
     auto const *body{find_model_part(owner, mount.model_part)};
     if(!body) throw std::runtime_error{"weapon mount has no body part"};
     auto const selected{equipment[static_cast<size_t>(mount.equipment_slot)]};
-    mounted_weapon_model weapon{.body_part{mount.model_part}, .weapon{selected}, .geometry{std::nullopt}, .cell_frames{}};
+    mounted_weapon_model weapon{.body_part{mount.model_part}, .weapon{selected}, .equipment_slot{mount.equipment_slot}, .geometry{std::nullopt}, .cell_frames{}};
     if(selected != empty_weapon_slot) {
       auto const &definition{definitions.weapons.at(static_cast<size_t>(selected))};
       auto const model{definition.model_indices.at(mount.orientation)};
@@ -64,6 +65,14 @@ weapon_assembly::weapon_assembly(model_part const &owner, std::span<weapon_mount
       weapon.cell_frames.resize(shape.cell_frame_counts.size(), 0);
     }
     models.push_back(std::move(weapon));
+  }
+}
+
+void weapon_assembly::disable_missing_sections(std::span<int16_t const> const presence) {
+  for(auto &weapon : models) {
+    auto const section{weapon_section_first + static_cast<size_t>(weapon.equipment_slot)};
+    if(section >= presence.size()) throw std::out_of_range{"weapon damage section"};
+    if(presence[section] == 0) weapon.disabled = true;
   }
 }
 
