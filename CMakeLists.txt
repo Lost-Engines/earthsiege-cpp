@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_power.cpp
+  src/simulation/herc_power.h
   src/simulation/herc_loadout.cpp
   src/simulation/herc_loadout.h
   src/simulation/hit_volumes.cpp

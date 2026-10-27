@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "resources/resource_store.h"
+#include "simulation/herc_power.h"
 #include "simulation/shield_power.h"
 #include "simulation/weapon_controls.h"
 
@@ -53,7 +54,7 @@ int main(int const argc, char **argv) try {
       earthsiege::advance_elf(elf_weapon, elf, false, 0, word(1));
       check(elf.spinning, 4); check(elf.ready, 5); check(elf_weapon.controls.cell, 6);
     } else if(kind == 4) {
-      earthsiege::capacitor state{.setting{word(0)}};
+      earthsiege::capacitor state{.controls{}, .setting{word(0)}};
       earthsiege::change_capacitor_setting(state, flag(1));
       check(state.setting, 2);
       if(state.controls.hud_changes != 2 || state.controls.refreshed_changes != 2) file.fail("setting HUD flags differ");
@@ -87,10 +88,18 @@ int main(int const argc, char **argv) try {
         check(states[i].charge, 4 + i * 7 + 5);
         check(states[i].fast, 4 + i * 7 + 6);
       }
+    } else if(kind == 10) {
+      earthsiege::herc_power state{word(0), {word(4), word(5), word(6), word(7)}};
+      earthsiege::damage_consequences damage;
+      damage.reactor_light = flag(2); damage.reactor_heavy = flag(3);
+      unsigned int calls{0};
+      earthsiege::update_herc_power(state, damage, word(1), [&](int16_t const available){ ++calls; check(available, 9); return word(8); });
+      check(state.reserve, 10); check(state.shields.front, 11); check(state.shields.rear, 12); check(state.shields.balance, 13); check(state.shields.capacity, 14);
+      if(calls != 1) file.fail("reactor weapon allocation count differs");
     } else file.fail("unknown power case");
   }
   file.require_end();
-  if(count != 14583 || elf_step != 432) file.fail("weapon/power reference coverage differs");
+  if(count != 16631 || elf_step != 432) file.fail("weapon/power reference coverage differs");
   std::cout << count << " original weapon control and power allocation cases agree" << std::endl;
   return EXIT_SUCCESS;
 } catch(std::exception const &error) {

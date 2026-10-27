@@ -62,3 +62,5 @@ Next work proceeds through mission placement, 3Space software rendering and anim
 Some retained handoff fields have provisional names (`argument`, `initial_value`, `extra`, numbered trigger links) until their original consumers establish their roles. Tests compare their exact values regardless of naming. The original handoff writer does not truncate reused files, so the parser deliberately accepts stale trailing bytes after its declared tables.
 
 `tools/export_mission_fixtures.py` refreshes reference fixtures from the research captures. `tests/fixtures/README.md` records the source routines and controlled campaign/RNG states. Do not treat zero campaign flags or the fixtures' arbitrary RNG state as a new campaign's real initial state.
+
+Reactor updates now preserve ratio-scaled generation, the light/heavy damage reductions, the 1,500-unit operating reserve and weapon-before-shield allocation. All 2,048 original reactor cases agree, extending weapon/power coverage to 16,631 cases. Actual firing and live actor power integration remain separate consumers.

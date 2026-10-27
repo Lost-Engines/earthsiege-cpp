@@ -7,8 +7,10 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 analysis = Path(sys.argv[1]) / 'definitions'
-kinds = ['range', 'ready', 'charge', 'elf', 'charge_setting', 'common', 'setting_preset', 'shield', 'balance', 'capacitor_schedule']
+kinds = ['range', 'ready', 'charge', 'elf', 'charge_setting', 'common', 'setting_preset', 'shield', 'balance', 'capacitor_schedule', 'reactor']
 rows = json.loads((analysis / 'weapon-controls.json').read_text())['cases'] + json.loads((analysis / 'power.json').read_text())['cases']
+for r in json.loads((analysis / 'reactor.json').read_text())['cases']:
+    rows.append(['reactor', r['reserve'], r['ratio'], r['light'], r['heavy'], *r['shields'], r['returned'], r['received'], r['result'], *r['final_shields']])
 out = bytearray(b'ESPOWER1') + struct.pack('<I', len(rows))
 for kind, *values in rows:
     if kind == 'capacitor_schedule':
