@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 #include "simulation/herc_body.h"
 #include "simulation/herc_impact.h"
 #include "simulation/herc_loadout.h"
@@ -20,6 +21,8 @@ class herc_actor {
   herc_power power_state;
   herc_impact_state impact_state;
   weapon_bank armament;
+  std::pair<int16_t, vec3<int16_t>> section_centre(size_t section, bool last = false) const;
+  vec3<int32_t> section_position(size_t section, bool radial) const;
 
 public:
   herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<int16_t const> weapon_values = {});
@@ -35,6 +38,8 @@ public:
   herc_impact_state &impacts();
   /// Absorb shields and prepare a body-damage request; damage/effects execute after this boundary
   std::optional<herc_interception> intercept(impact_request const &request, impact_conditions const &conditions, std::function<void()> const &shield_warning = {});
+  /// Complete shielding, component damage, detachment, impact effects and salvage requests
+  std::optional<herc_interception> receive_impact(impact_request const &request, impact_conditions const &conditions, random_state &random, herc_damage_events const &events);
   weapon_bank &weapons();
   weapon_bank const &weapons() const;
   void update_power(frame_ratio ratio, bool free_energy = false);

@@ -1,6 +1,8 @@
 #include "herc_actor.h"
 #include <array>
 #include <stdexcept>
+#include <utility>
+#include "resources/model_tree.h"
 #include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
 
@@ -69,6 +71,118 @@ std::optional<herc_interception> herc_actor::intercept(impact_request const &req
   return result;
 }
 
+std::pair<int16_t, vec3<int16_t>> herc_actor::section_centre(size_t const section, bool const last) const {
+  std::optional<std::pair<int16_t, vec3<int16_t>>> centre;
+  for(auto const &part : loadout.collision) for(auto const &entry : part.sections) {
+    if(entry.section == static_cast<int16_t>(section)) {
+      centre.emplace(part.model_part, collision_bounds(entry.spheres).centre);
+      if(!last) return *centre;
+    }
+  }
+  if(centre) return *centre;
+  throw std::out_of_range{"damage section has no collision centre"};
+}
+
+vec3<int32_t> herc_actor::section_position(size_t const section, bool const radial) const {
+  auto const [part, centre]{section_centre(section, radial)};
+  // Radial damage's cached lookup tests > 0; detachment also transforms part zero.
+  if(radial ? part <= 0 : part < 0) return transform_point(centre, body_state.placement());
+  auto const node{find_model_part(source.models.roots.front(), part)};
+  if(!node || node->header.transform < 0) throw std::out_of_range{"damage section model transform"};
+  auto const local{transform_point(centre, body_state.model().transforms()[static_cast<size_t>(node->header.transform)])};
+  auto result{rotate_vector(local, body_state.placement())};
+  for(unsigned int axis{0}; axis != 3; ++axis) result[axis] = wrap_long(static_cast<int64_t>(result[axis]) + body_state.placement().translation[axis]);
+  return result;
+}
+
+std::optional<herc_interception> herc_actor::receive_impact(impact_request const &request, impact_conditions const &conditions, random_state &random, herc_damage_events const &events) {
+  if(!events.explosion || !events.debris) throw std::invalid_argument{"impact requires synchronous effect emitters"};
+  auto result{intercept(request, conditions, events.shield_warning)};
+  if(!result) return result;
+  auto const choose{[&](int16_t const bound){ return random.bounded(bound); }};
+  int constexpr probability_mask{4095};                                        // original Q12 chance draws
+  int constexpr radial_damage_chance{2050};
+  int constexpr probability_percent{41};
+  bool large_explosion{false};
+  auto const detach{[&](size_t const section){
+    auto const &piece{loadout.damage.components.at(section)};
+    auto const flag{[&](damage_section_flag const value){ return (piece.flags & std::to_underlying(value)) != 0; }};
+    if(!large_explosion && piece.cell_sequence >= 0 && flag(damage_section_flag::attached_effect) && events.attached_smoke) {
+      auto const [part, centre]{section_centre(section)};
+      events.attached_smoke(part, centre);
+    }
+    auto const position{section_position(section, false)};
+    if(!large_explosion) {
+      large_explosion = flag(damage_section_flag::large_explosion);
+      events.explosion(large_explosion ? 17 : 10, position, random);
+    }
+    events.debris(3, position, random);
+  }};
+  auto const damage{[&](size_t const section, int16_t const amount){
+    if(events.body_damage) events.body_damage(section, amount);
+    if(conditions.player && conditions.invulnerable && !conditions.difficulty_override) return;
+    large_explosion = false;                                                   // suppression lasts only for this section/dependent cascade
+    damage_section(section, amount, choose, detach);
+  }};
+  auto effects{&request.damage.shield_effects};
+  int16_t debris_group{-1};
+  bool destroyed{false};
+  if(result->body) {
+    auto const &body{*result->body};
+    auto const previous{components.fraction(body.section) >> 5};
+    damage(body.section, body.direct);
+    if(body.radial != 0) {
+      int32_t constexpr radius{500};
+      for(size_t section{0}; section != components.state().present.size(); ++section) {
+        if(!components.state().present[section] || (random.next() & probability_mask) >= radial_damage_chance) continue;
+        auto const position{section_position(section, true)};
+        vec3<int32_t> delta;
+        for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(result->position[axis]) - position[axis]);
+        auto const distance{fast_distance(delta)};
+        if(distance < radius) damage(section, wrap_word(body.radial * (radius - distance) / radius));
+      }
+    }
+    auto const fraction{components.fraction(body.section)};
+    destroyed = fraction == 256;
+    if((fraction >> 5) == previous) {
+      effects = &request.damage.ground_effects;
+      debris_group = 1;
+    } else {
+      effects = &request.damage.armour_effects;
+      debris_group = 2;
+      if(body.section < 2 && conditions.player && events.cockpit_damage) events.cockpit_damage(body.section);
+      if(!destroyed && source.profile.weapons_can_detach && body.section >= weapon_section_first) {
+        int const threshold{(conditions.side == 0 ? 3 : 10) * probability_percent};
+        if((random.next() & probability_mask) < threshold) {
+          auto const equipment_slot{body.section - weapon_section_first};
+          for(size_t slot{0}; slot != armament.slots().size(); ++slot) {
+            if(!armament.slots()[slot] || armament.slots()[slot]->equipment_slot != static_cast<int8_t>(equipment_slot)) continue;
+            auto &weapon{armament.at(slot)};
+            if(!weapon.controls().disabled) {
+              weapon.controls().disabled = true;
+              if(source.mounts.at(slot).external() && events.weapon_ejected) events.weapon_ejected(slot);
+            }
+            if(conditions.side == 1 && events.salvage) {
+              auto const condition{wrap_word((500 * fraction + 512) >> 10)};
+              events.salvage(weapon.definition, wrap_word((wrap_word(256 - condition) * 100) >> 8));
+            }
+            large_explosion = false;
+            components.knock_off_weapon(body.section, choose, detach);
+            armament.disable_missing_sections(components.state().present);
+            body_state.apply_damage(components.state());
+            break;
+          }
+        }
+      }
+    }
+  }
+  if(!destroyed) {
+    events.explosion(effects->at(static_cast<size_t>(random.next() & 3)), result->position, random);
+    if(result->body) events.debris(debris_group, result->position, random);
+  }
+  return result;
+}
+
 void herc_actor::update_power(frame_ratio const ratio, bool const free_energy) {
   update_herc_power(power_state, components.state().consequences, ratio, [&](int16_t const budget){ return armament.allocate(-1, budget, ratio, free_energy); });
   body_state.update_weapons(armament);
@@ -86,9 +200,11 @@ std::vector<weapon_shot> herc_actor::discharge_slot(size_t const slot, vec2<int1
 herc_loadout const &herc_actor::definition() const { return loadout; }
 
 std::vector<size_t> herc_actor::damage_section(size_t const section, int16_t const amount, component_choice const &choose, section_detachment const &detach) {
+  bool const was_dead{components.state().consequences.dead};
   auto removed{components.hit(section, amount, source.profile.legs, choose, detach)};
   armament.disable_missing_sections(components.state().present);
   body_state.apply_damage(components.state());
+  if(!was_dead && components.state().consequences.dead) impact_state.detectable = false;
   return removed;
 }
 

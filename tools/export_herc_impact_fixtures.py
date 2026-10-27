@@ -10,8 +10,8 @@ out=bytearray(b'ESHERC01')+struct.pack('<H',len(data['checks']))
 def state(s):return struct.pack('<4hBBhi',*s['shields'],s['flags']['detectable'],s['flags']['shield_warning'],s['ecm_timer'],s['damage_received'])
 for field in data['checks']:
     out+=field['name'].encode()+b'\0'+struct.pack('<H'+'h'*len(field['equipment']),len(field['equipment']),*field['equipment'])
-    out+=struct.pack('<2hH',field['shield_height'],field['shield_radius'],len(field['cases']))
-    for r in field['cases']:
+    out+=struct.pack('<2hH',field['shield_height'],field['shield_radius'],len(field['cases'][:144]))
+    for r in field['cases'][:144]:
         out+=struct.pack('<3iHi5hBBhB',*r['position'],r['heading'],r['reach'],r['radius'],r['armour_damage'],r['shield_damage'],r['splash'],r['signature'],r['player'],r['attacker_side'],r['difficulty'],r['override'])
         out+=state(r['initial'])+state(r['final'])+struct.pack('<i',r['result'])
         damage=next((e for e in r['events']if e[0]=='damage'),None);radial=next((e for e in r['events']if e[0]=='radial'),None)
@@ -21,4 +21,4 @@ for field in data['checks']:
         out+=struct.pack('<BB',position is not None,sum(e==['speech',8]for e in r['events']))
         if position is not None:out+=struct.pack('<3i',*position)
 (root/'tests/fixtures/herc_impacts.bin').write_bytes(out)
-print(sum(len(r['cases'])for r in data['checks']),'original HERC interception references')
+print(sum(len(r['cases'][:144])for r in data['checks']),'original HERC interception references')

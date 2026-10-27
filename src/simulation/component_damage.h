@@ -36,11 +36,16 @@ class component_damage {
   bool distribute(size_t section, int16_t amount, component_choice const &choose);
   void remove(size_t section, component_choice const &choose, section_detachment const &detach, std::vector<size_t> &pending, std::vector<size_t> &removed);
   void update_consequences(int16_t legs);
+  std::vector<size_t> apply(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach);
 
 public:
   component_damage(damage_definition const &definition, damage_state initial);
   std::vector<size_t> hit(size_t section, int16_t amount, int16_t legs, component_choice const &choose, section_detachment const &detach = {});
   damage_state const &state() const;
+  /// Q8 total armour/internal damage; reference weights do not weight this measurement
+  int16_t fraction(size_t section) const;
+  /// Original weapon knock-off bypasses the ordinary presence and consequence wrapper
+  void knock_off_weapon(size_t section, component_choice const &choose, section_detachment const &detach);
 };
 
 } // namespace earthsiege

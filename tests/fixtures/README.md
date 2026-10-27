@@ -180,3 +180,15 @@ The reactor cases in `weapon_controls.bin` run original `0x14ee0` through its re
 `herc_impacts.bin` retains the interception boundary from 1,152 complete original HERC impact calls in `capture_herc_impacts.py`, across all eight starting chassis. The capture runs original damage and visual effects; speech/cockpit notifications are recorded UI boundaries. The C++ test checks initial geometry, shield absorption, difficulty scaling, missile sensor state, received-damage accounting, warning latches and the resulting 178 direct/radial body-damage requests. It does not yet compare the complete later damage/effect sequence, which remains retained in the analysis JSON. Refresh with `tools/export_herc_impact_fixtures.py ../earthsiege-reverse/analysis`.
 
 `effects.bin` retains 1,152 explosion constructors and 256 debris bursts (all definitions, 64 seeds) from `check_effect_creation.py`, plus 126 complete explosion animation traces / 3,046 updates from `capture_effect_updates.py`. Original factories, pools, model creation, light setup, sound requests and particle launch execute. Tests compare creation and final RNG, selected debris models, launch vectors, all primary/secondary cells, light intensities and expiry. Original definitions 16/17 read final-frame intensity 32 from the low byte of their adjacent 20,000-unit light-range field; C++ reproduces the alias explicitly. Export with `tools/export_effect_fixtures.py ../earthsiege-reverse/analysis`.
+
+`herc_damage.bin` retains 2,304 full original `0x13b44` incoming-ray executions
+from `capture_herc_impacts.py`, refreshed with `export_herc_damage_fixtures.py`.
+The original body/shield/component/effect factories run unchanged. Only speech and
+cockpit UI calls are host boundaries. The first 144 cases per chassis remain the
+separate interception fixtures; 128 more aim at a weapon across random seeds and
+both sides, followed by 16 player invulnerability/override cases. The C++ test
+compares complete component state, shield/sensor flags, damage cells, ordered
+damage/effect/UI/salvage requests and all 56 shared random words plus both indices.
+The independent explosion/debris factories execute in the callbacks, so no random
+draws are injected from expected results. Isolated bursts fit the original pools;
+this does not test pool exhaustion, persistent smoke controllers or a full replay.

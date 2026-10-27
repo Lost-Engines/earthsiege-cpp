@@ -1,7 +1,9 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
+#include "simulation/random_state.h"
 #include "vectorstorm/vector/vector3.h"
 
 namespace earthsiege {
@@ -18,6 +20,21 @@ struct impact_conditions {
   uint8_t attacker_side{0};
   int16_t difficulty{0};
   bool difficulty_override{false};
+  uint8_t side{1};
+  bool invulnerable{false};
+};
+
+/// Effect emitters execute synchronously, including their shared random draws.
+/// Explosion/debris callbacks are required; the remaining notifications are optional.
+struct herc_damage_events {
+  std::function<void(int16_t, vec3<int32_t> const &, random_state &)> explosion;
+  std::function<void(int16_t, vec3<int32_t> const &, random_state &)> debris;
+  std::function<void(int16_t, vec3<int16_t> const &)> attached_smoke;
+  std::function<void(size_t)> weapon_ejected;
+  std::function<void(int16_t, int16_t)> salvage;
+  std::function<void()> shield_warning;
+  std::function<void(size_t)> cockpit_damage;
+  std::function<void(size_t, int16_t)> body_damage;
 };
 
 struct body_damage_request {

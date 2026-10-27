@@ -58,9 +58,34 @@ void component_damage::remove(size_t const section, component_choice const &choo
   for(size_t i{0}; i != definition.components.size(); ++i) if(current.present[i] && definition.components[i].parent == static_cast<int>(section)) pending.push_back(i);
 }
 
-std::vector<size_t> component_damage::hit(size_t const section, int16_t amount, int16_t const legs, component_choice const &choose, section_detachment const &detach) {
+int16_t component_damage::fraction(size_t const section) const {
+  auto const &piece{definition.components.at(section)};
+  int32_t capacity{piece.armour};
+  int32_t damage{current.armour.at(section) == -1 ? piece.armour : current.armour.at(section)};
+  for(auto const &entry : piece.dependents) {
+    auto const slot{static_cast<size_t>(entry.component)};
+    auto const maximum{definition.hit_points.at(slot)};
+    capacity += maximum;
+    damage += current.internal.at(slot) == -1 ? maximum : current.internal.at(slot);
+  }
+  if(capacity == 0) throw std::domain_error{"zero section damage capacity"};
+  return wrap_word(wrap_long(static_cast<int64_t>(damage) * 256) / capacity);
+}
+
+std::vector<size_t> component_damage::hit(size_t const section, int16_t const amount, int16_t const legs, component_choice const &choose, section_detachment const &detach) {
+  if(current.present.at(section) == 0) return {};
+  auto removed{apply(section, amount, choose, detach)};
+  update_consequences(legs);
+  return removed;
+}
+
+void component_damage::knock_off_weapon(size_t const section, component_choice const &choose, section_detachment const &detach) {
+  current.present.at(section) = 0;
+  apply(section, 10000, choose, detach);
+}
+
+std::vector<size_t> component_damage::apply(size_t const section, int16_t amount, component_choice const &choose, section_detachment const &detach) {
   std::vector<size_t> removed;
-  if(current.present.at(section) == 0) return removed;
   auto const &piece{definition.components.at(section)};
   if(accumulate_damage(amount, piece.armour, current.armour[section])) {
     if(!distribute(section, amount, choose)) {
@@ -75,7 +100,6 @@ std::vector<size_t> component_damage::hit(size_t const section, int16_t amount, 
       }
     }
   }
-  update_consequences(legs);
   return removed;
 }
 
