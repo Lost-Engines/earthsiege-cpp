@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/model_bindings.cpp
+  src/resources/model_bindings.h
   src/render/bitmap_raster.cpp
   src/render/bitmap_raster.h
   src/render/line_raster.cpp
@@ -79,6 +81,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(model_bindings_test tests/model_bindings_test.cpp)
+  target_link_libraries(model_bindings_test PRIVATE earthsiege_core)
+  add_test(NAME model_bindings COMMAND model_bindings_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/model_bindings.bin")
   add_executable(bitmap_raster_test tests/bitmap_raster_test.cpp)
   target_link_libraries(bitmap_raster_test PRIVATE earthsiege_core)
   add_test(NAME bitmap_raster COMMAND bitmap_raster_test "${PROJECT_SOURCE_DIR}/tests/fixtures/bitmap_raster.bin")

@@ -92,3 +92,9 @@ boundaries; isolated whole-object bounding rejection is disabled. Fixtures
 include original data names, orientations, positions, pose inputs and whole
 64,000-pixel checksums. No model data is replaced with test-only geometry.
 Regenerate with `python3 tools/export_model_render_fixtures.py ../earthsiege-reverse/analysis`.
+
+`model_bindings.bin` records all 16 HERC cross-detail binding sets, with 7,227
+part and BSP transform fields checked after original 0x19ba0/0x19ac4 execution.
+The original 50-byte row indexing, static -1 part behavior and restricted BSP
+remapping are retained. Regenerate with
+`python3 tools/export_binding_fixtures.py ../earthsiege-reverse/analysis`.
