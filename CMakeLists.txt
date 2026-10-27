@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/locomotion.cpp
+  src/simulation/locomotion.h
+  src/simulation/arctangent_table.h
   src/resources/herc_profile.cpp
   src/resources/herc_profile.h
   src/simulation/aim_control.cpp
@@ -87,6 +90,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(locomotion_test tests/locomotion_test.cpp)
+  target_link_libraries(locomotion_test PRIVATE earthsiege_core)
+  add_test(NAME locomotion COMMAND locomotion_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/locomotion.bin" "${PROJECT_SOURCE_DIR}/tests/fixtures/direction_angles.bin")
   add_executable(aim_control_test tests/aim_control_test.cpp)
   target_link_libraries(aim_control_test PRIVATE earthsiege_core)
   add_test(NAME aim_controls COMMAND aim_control_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/aim_control.bin")

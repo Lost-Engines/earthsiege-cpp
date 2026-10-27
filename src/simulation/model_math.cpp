@@ -1,5 +1,7 @@
 #include "model_math.h"
 #include <bit>
+#include <cstdlib>
+#include "arctangent_table.h"
 #include "cosine_table.h"
 #include "fixed_math.h"
 
@@ -36,6 +38,23 @@ auto model_cosine(uint16_t const angle)->int16_t {
   int const sample{(signed_angle >> 4) + ((signed_angle >> 3) & 1)};
   unsigned int const index{static_cast<unsigned int>(sample < 0 ? -sample : sample)};
   return index < 1024 ? cosine_table[index] : static_cast<int16_t>(-cosine_table[2048 - index]);
+}
+
+uint16_t direction_angle(int32_t const x, int32_t const y) {
+  /// Original octant lookup, including rounding without carry into the high word
+  auto const ax{static_cast<uint64_t>(std::abs(static_cast<int64_t>(x)))};
+  auto const ay{static_cast<uint64_t>(std::abs(static_cast<int64_t>(y)))};
+  auto const ratio_angle{[](uint64_t const small, uint64_t const large) {
+    if(small == 0) return 0;
+    auto const product{small * 512};
+    auto const rounded{(product & ~uint64_t{0xffffffff}) | static_cast<uint32_t>(product + (large >> 1))};
+    auto const index{static_cast<size_t>(rounded / large)};
+    return static_cast<int>(index * 4 + arctangent_table.at(index));
+  }};
+  int angle{ay <= ax ? ratio_angle(ay, ax) : 4096 - ratio_angle(ax, ay)};
+  if(x < 0) angle = 8192 - angle;
+  if(y < 0) angle = 16384 - angle;
+  return static_cast<uint16_t>(angle * 4);
 }
 
 auto rotation_transform(vec3<uint16_t> const &angles)->model_transform {
@@ -96,6 +115,16 @@ auto rotate_vector(vec3<int32_t> const &vector, model_transform const &transform
 
 auto inverse_rotate_vector(vec3<int32_t> const &vector, model_transform const &transform)->vec3<int32_t> {
   return rotate(vector, transform, true);
+}
+
+model_transform inverse_transform(model_transform const &source) {
+  auto inverse{source};
+  for(unsigned int column{0}; column != 3; ++column) {
+    for(unsigned int row{0}; row != 3; ++row) inverse.basis.at(column, row) = source.basis.at(row, column);
+  }
+  vec3<int32_t> const translation{wrap_long(-static_cast<int64_t>(source.translation.x)), wrap_long(-static_cast<int64_t>(source.translation.y)), wrap_long(-static_cast<int64_t>(source.translation.z))};
+  inverse.translation = rotate_vector(translation, inverse);
+  return inverse;
 }
 
 auto compose_transforms(model_transform const &local, model_transform const &parent)->model_transform {

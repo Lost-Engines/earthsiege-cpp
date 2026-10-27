@@ -15,16 +15,6 @@
 namespace earthsiege {
 namespace {
 
-model_transform inverse_transform(model_transform const &source) {
-  auto inverse{source};
-  for(unsigned int column{0}; column != 3; ++column) {
-    for(unsigned int row{0}; row != 3; ++row) inverse.basis.at(column, row) = source.basis.at(row, column);
-  }
-  vec3<int32_t> const translation{wrap_long(-static_cast<int64_t>(source.translation.x)), wrap_long(-static_cast<int64_t>(source.translation.y)), wrap_long(-static_cast<int64_t>(source.translation.z))};
-  inverse.translation = rotate_vector(translation, inverse);
-  return inverse;
-}
-
 uint32_t packed_material(material_slot const slot) {
   return static_cast<uint16_t>(slot.value) | static_cast<uint32_t>(slot.flags) << 16;
 }

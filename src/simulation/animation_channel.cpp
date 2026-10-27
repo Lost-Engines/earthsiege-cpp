@@ -57,6 +57,18 @@ void animation_channel::request_sequence(animation_index const sequence, bool co
   current.exit_frame = -1;
 }
 
+void animation_channel::cancel_request() {
+  current.requested_sequence = current.exit_frame = -1;
+  current.flags = animation_channel_flags::arrived;
+  current.stop_on_arrival = false;
+}
+
+void animation_channel::rebase_motion() {
+  /// Start the next world movement at the current interpolated root pose
+  current.accumulated = model_transform{};
+  if(current.has_motion && current.duration != 0) current.accumulated = inverse_transform(root_motion());
+}
+
 void animation_channel::set_rate(animation_rate const rate) {
   /// Changing direction re-searches a queued transition from the current frame
   bool const direction_changed{(current.rate < 0) != (rate < 0)};
