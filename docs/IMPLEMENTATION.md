@@ -20,6 +20,7 @@ Working components:
 - Original palette shade indexing and all eight texture-remap levels, generated from retained six-bit VGA colours. All 144 original remap tables and 32,256 independently verified shade lookups agree.
 - Native model/terrain projection and near-plane polygon clipping, including texture coordinates and Gouraud shade values. All 3,200 original polygon references agree, including the original strict/inclusive near-plane difference and wrapping arithmetic.
 - Original two-pass viewport clipping, side-dependent integer polygon edges and solid fills. Tests match 6,000 clip results, 5,999 edge tables and 360 complete original VGA polygon rasters.
+- Native affine textured polygons in both column and row scan directions, including top clipping, signed Q16 rounding, inclusive spans and the differing transparency rules with/without a lighting remap. All 600 complete original VGA raster references agree.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
 Next work proceeds through mission placement, 3Space software rendering and animation, HERC movement/collision/weapons, AI and mission rules, cockpit and shell/campaign integration, then complete sound/presentation playback. These remain implementation work; the current menu is not a playable game.

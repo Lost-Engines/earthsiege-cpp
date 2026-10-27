@@ -62,3 +62,10 @@ clips from 0x788e4. Another 360 cases run the complete original flat-polygon pat
 check all 64,000 indexed pixels, including untouched background. Captures cover
 both windings, screen crossings, degenerate edges and inclusive endpoints.
 Regenerate with `python3 tools/export_raster_fixtures.py ../earthsiege-reverse/analysis`.
+
+`texture_raster.bin` contains a test bitmap and translation table plus 600
+complete original 0x534ac polygon framebuffer checksums. Both column (0x7394a)
+and row (0x735a4) writers execute through the VGA adapter, including clipping,
+Q16 rounding, transparent zero and translated zero. A single rectangle is used
+for row-mode clipping; arbitrary cockpit clip masks remain integration work.
+Regenerate with `python3 tools/export_texture_fixtures.py ../earthsiege-reverse/analysis`.
