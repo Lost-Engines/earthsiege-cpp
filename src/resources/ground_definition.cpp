@@ -35,7 +35,7 @@ ground_catalogue::ground_catalogue(resource_store const &resources)
     p.burst_centre = vec3<int16_t>{v[9], v[10], v[11]}; p.burst_half_extent = vec3<int16_t>{v[12], v[13], v[14]};
     p.weak_point = vec3<int16_t>{v[15], v[16], v[17]}; p.weak_point_radius = v[18];
     p.animation_rates = {v[19], v[20]}; p.cell_sequence = v[21]; p.cell_period = v[22];
-    p.contact_radius = v[24]; p.target_height = v[25];
+    p.contact_radius = v[24]; p.target_height = v[25]; p.can_retaliate = v[26] != 0;
     if(p.type != static_cast<int>(index) || p.channels < 0 || p.channels > 2) file.fail("unsupported base definition");
     p.collision = read_collision_parts(collisions);
     definitions.push_back(std::move(p));

@@ -81,6 +81,7 @@ public:
   void dispatch_groups(std::function<void(size_t)> const &dispatch);
   void scan_areas(std::span<observed_actor const> observations);
   void perceive(std::span<observed_actor const> observations, frame_ratio ratio, random_state &random, std::function<bool(size_t,size_t)> const &line_of_sight, std::function<void(size_t,size_t)> const &noticed = {});
+  bool eligible(std::span<observed_actor const> observations, size_t observer, size_t candidate) const;
   std::optional<size_t> select(std::span<observed_actor const> observations, size_t observer, target_selection_flags flags, std::optional<size_t> hud_target, random_state &random) const;
 };
 } // namespace earthsiege

@@ -148,6 +148,17 @@ void herc_actor::direct_damage(size_t const section, int16_t const amount, rando
   damage_section(section, amount, [&](int16_t const bound){ return random.bounded(bound); }, [&](size_t const detached){ detach_section(detached, large_explosion, random, events); });
 }
 
+void herc_actor::radial_damage(vec3<int32_t> const &centre, int16_t const radius, int16_t const amount, random_state &random, herc_damage_events const &events, bool const invulnerable) {
+  for(size_t section{0}; section != components.state().present.size(); ++section) {
+    if(!components.state().present[section] || (random.next() & 4095) >= 2050) continue;
+    auto const position{section_position(section, true)};
+    vec3<int32_t> delta;
+    for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(centre[axis]) - position[axis]);
+    auto const distance{fast_distance(delta)};
+    if(distance < radius && !invulnerable) direct_damage(section, wrap_word(wrap_long(static_cast<int64_t>(amount) * (radius - distance)) / radius), random, events);
+  }
+}
+
 void herc_actor::random_damage(int16_t const chance, int16_t const magnitude, random_state &random, herc_damage_events const &events) {
   if(magnitude == 0) return;
   for(size_t section{0}; section != components.state().present.size(); ++section) {
@@ -296,12 +307,39 @@ herc_loadout const &herc_actor::definition() const { return loadout; }
 herc_profile const &herc_actor::profile() const { return source.profile; }
 int16_t herc_actor::combat_rating() const { return cached_combat_rating; }
 
+void herc_actor::notify_damage_changes(std::function<void(damage_consequences const &, damage_consequences const &)> callback) { consequence_notification = std::move(callback); }
+int16_t herc_actor::internal_damage_fraction(size_t const component) const {
+  auto const value{components.state().internal.at(component)};
+  if(value < 0) return 256;
+  auto const capacity{loadout.damage.hit_points.at(component)};
+  if(capacity == 0) throw std::domain_error{"zero internal damage capacity"};
+  return wrap_word(static_cast<int32_t>(value) * 256 / capacity);
+}
+int16_t herc_actor::total_damage_fraction() const {
+  int32_t damage{0}, capacity{0};
+  auto const &state{components.state()};
+  for(size_t i{0}; i != state.armour.size(); ++i) {
+    auto const maximum{loadout.damage.components.at(i).armour};
+    capacity += maximum; damage += state.armour[i] < 0 ? maximum : state.armour[i];
+  }
+  for(size_t i{0}; i != loadout.damage.hit_points.size(); ++i) {
+    auto const maximum{loadout.damage.hit_points[i]};
+    capacity += maximum; damage += state.internal[i] < 0 ? maximum : state.internal[i];
+  }
+  if(capacity == 0) throw std::domain_error{"zero HERC damage capacity"};
+  return wrap_word(wrap_long(static_cast<int64_t>(damage) * 256) / capacity);
+}
+int16_t herc_actor::choose_aimed_component(herc_actor const &target, random_state &random) const {
+  return select_herc_aimed_component(components, armament.slots().size(), target.damage().present, target.body().movement().collapsed, random);
+}
+
 std::vector<size_t> herc_actor::damage_section(size_t const section, int16_t const amount, component_choice const &choose, section_detachment const &detach) {
-  bool const was_dead{components.state().consequences.dead};
+  auto const previous{components.state().consequences};
   auto removed{components.hit(section, amount, source.profile.legs, choose, detach)};
   armament.disable_missing_sections(components.state().present);
   body_state.apply_damage(components.state());
-  if(!was_dead && components.state().consequences.dead) impact_state.detectable = false;
+  if(!previous.dead && components.state().consequences.dead) impact_state.detectable = false;
+  if(consequence_notification && previous != components.state().consequences) consequence_notification(previous, components.state().consequences);
   return removed;
 }
 

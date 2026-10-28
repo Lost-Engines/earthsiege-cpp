@@ -51,6 +51,7 @@ struct herc_profile {
   int16_t base_combat_rating{0};
   std::array<int16_t, 10> internal_damage_penalties{};
   int16_t legs{0};
+  bool remove_when_destroyed{false};
   int16_t shield_capacity{0};
   int16_t shield_height{0};
   int16_t shield_radius{0};

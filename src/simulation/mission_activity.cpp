@@ -114,6 +114,17 @@ void mission_activity::perceive(std::span<observed_actor const> const observatio
     .line_of_sight{line_of_sight}, .orientation_offset{[&](size_t i){return observations[i].view_offset;}},
     .within_view{[&](size_t i,int16_t bearing){return actors[i].kind==actor_kind::base || within_actor_view(observations[i].heading,bearing);}}, .noticed{noticed}});
 }
+bool mission_activity::eligible(std::span<observed_actor const> const observations, size_t const observer, size_t const candidate) const {
+  auto const &own{actors.at(observer)}, &target{actors.at(candidate)};
+  auto const &first{observations[observer]}, &second{observations[candidate]};
+  if(groups[own.group].side == groups[target.group].side || second.dead || second.removed || waiting(candidate)) return false;
+  target_candidate const a{.position{vec3<int32_t>{first.position}}, .known{own.awareness.known}, .target{}, .controller_attacking{}};
+  target_candidate const b{.position{vec3<int32_t>{second.position}}, .known{}, .seen{target.awareness.seen}, .target{}, .controller_attacking{}};
+  if(!recognizes(a, b, candidate)) return false;
+  auto const &group{groups[own.group]};
+  if(actors[group.members.front()].player && settings.objective_kind == 3 && group.representative == candidate && !observations[group.members.front()].objective_event) return false;
+  return true;
+}
 std::optional<size_t> mission_activity::select(std::span<observed_actor const> const observations, size_t const observer, target_selection_flags const flags, std::optional<size_t> const hud_target, random_state &random) const {
   if(observations.size()!=actors.size()) throw std::invalid_argument{"mission observation count"};
   std::vector<target_candidate> candidates;

@@ -31,6 +31,7 @@ herc_profile read_herc_profile(bytes const source) {
   result.base_combat_rating = word(66);
   for(size_t i{0}; i != result.internal_damage_penalties.size(); ++i) result.internal_damage_penalties[i] = word(124 + i * 2);
   result.legs = word(72);
+  result.remove_when_destroyed = word(74) != 0;
   result.shield_capacity = word(190);
   result.shield_height = word(22);
   result.shield_radius = word(24);

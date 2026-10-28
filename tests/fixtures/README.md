@@ -340,3 +340,15 @@ constructing actors. Refresh with `export_mission_flyer_frame_fixtures.py`.
   including target-change latches, damage-window clocks and full RNG. Power,
   equipment queries, rating refresh and HUD presentation are explicit boundaries.
   Refresh with `export_herc_sensor_fixtures.py` from `capture_herc_sensors.py`.
+
+`mission_world_frames.bin` supersedes the isolated flyer world frames. The
+original executable runs every active group in all four recorded missions, at
+ratios 64, 256 and 450, for 960 frames. Groups are changed to side zero and made
+active to isolate navigation from hostile combat. Native checks cover HERC
+position, Euler angles, movement/aim rates, animation cells, controller clocks
+and ticks, route cursors, collision recovery, damage arrays/flags, reserve and
+shield power, combat strength, flyer movement/controllers, and full RNG state.
+The capture also retains auxiliary scratch timers and collision bias for
+diagnostics; those fields are not all independently exposed by the session.
+Audio/HUD calls and the original unused tenth combat-metric read are explicit
+capture boundaries. Source: `capture_mission_herc_frames.py` in the analysis tree.

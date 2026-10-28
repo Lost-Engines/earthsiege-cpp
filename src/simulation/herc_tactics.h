@@ -47,6 +47,7 @@ struct herc_attack_inputs {
 struct herc_attack_callbacks {
   std::function<void(movement_request const &)> move;
   std::function<void(int16_t)> aim;                                         // signed target-relative facing, used by weapon selection
+  std::function<bool()> completed{};                                          // live check after firing; fixture inputs remain the fallback
 };
 
 /// Obstruction/skirting entry precedes this pass. Return whether the controller

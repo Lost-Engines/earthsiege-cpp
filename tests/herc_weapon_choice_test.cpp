@@ -50,7 +50,8 @@ int main(int argc, char **argv) try {
       state.ecm_remaining = file.integer<int16_t>(); auto delay{file.integer<int16_t>()}; random_state random{read_random(file)};
       auto const selected{file.integer<int16_t>()}; bool const detectable{file.integer<uint8_t>() != 0}, unavailable{file.integer<uint8_t>() != 0}; auto const final_delay{file.integer<int16_t>()};
       std::vector<uint8_t> expected(file.integer<uint8_t>()), actual;
-      for(auto &v : expected) v = file.integer<uint8_t>(); auto const expected_rng{read_random(file)};
+      for(auto &v : expected) v = file.integer<uint8_t>();
+      auto const expected_rng{read_random(file)};
       auto const result{select_herc_weapon(bank, definitions, state, kind, distance, facing, random, delay, [&](bool front){ actual.push_back(static_cast<uint8_t>(front)); return shields[front ? 0 : 1]; }, [&]{ actual.push_back(2); })};
       if((result ? static_cast<int>(*result) : -1) != selected || state.detectable != detectable || state.unavailable != unavailable || delay != final_delay || actual != expected) file.fail(label + " weapon choice/state");
       auto const &rng{random.snapshot()};

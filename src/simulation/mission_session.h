@@ -9,6 +9,9 @@
 #include "simulation/mission_activity.h"
 #include "simulation/flyer_attack.h"
 #include "simulation/herc_actor.h"
+#include "simulation/herc_orders.h"
+#include "simulation/herc_sensors.h"
+#include "simulation/herc_fire_control.h"
 #include "simulation/ground_actor.h"
 #include "simulation/flyer_actor.h"
 #include "simulation/scenery_world.h"
@@ -66,6 +69,24 @@ class mission_session {
     bool waiting{false};
     bool player_roster{false};
     bool contact_received{false};
+    bool skip_decision{false};
+    bool obstructed{false};
+    bool radar_active{false};
+    bool objective_event{false};
+    int16_t requested_speed{0};
+    int16_t collision_bias{0};
+    int16_t aim_tolerance{0};
+    int16_t stop_status{0};
+    vec3<int32_t> command_position{};
+    std::optional<size_t> designated{};
+    std::optional<size_t> followed{};
+    herc_attack_state attack{};
+    herc_travel_state travel{};
+    herc_flee_state flee{};
+    herc_skirt_state skirt{};
+    herc_ram_state ram{};
+    herc_fire_state fire{};
+    herc_sensor_state sensors{};
   };
   struct flyer_member {
     std::unique_ptr<flyer_actor> actor;
@@ -104,10 +125,29 @@ class mission_session {
   std::vector<observed_actor> observe() const;
   int16_t actor_speed(size_t index) const;
   void navigate_flyer(size_t index);
+  void dispatch_herc(size_t index, frame_ratio ratio);
+  void enter_herc(size_t index, behavior type);
+  void resume_herc_orders(size_t index);
+  void reconsider_herc(size_t index);
+  void navigate_herc(size_t index, frame_ratio ratio);
+  void move_herc(size_t index, movement_request const &request, frame_ratio ratio);
+  void aim_herc(size_t index, size_t target, int16_t facing, frame_ratio ratio);
+  void advance_herc(size_t index, frame_ratio ratio, bool ramming = false);
+  void update_herc_sensors(size_t index, frame_ratio ratio);
+  bool contact_herc(size_t index);
+  void damage_consequences_changed(size_t index, damage_consequences const &previous, damage_consequences const &current);
+  void movement_event_received(size_t index, movement_event event);
+  std::vector<contact_actor> contact_bodies() const;
+  herc_combat_position combat_position(size_t index) const;
+  vec3<int32_t> guard_anchor(size_t index) const;
+  bool herc_target_completed(size_t index) const;
+  bool enter_skirting(size_t index);
+  bool target_path_blocked(size_t index) const;
   void dispatch_flyer(size_t index, frame_ratio ratio);
   void advance_base(size_t index, frame_ratio ratio);
   std::optional<int32_t> obstacle_distance(avoidance_probe kind, vec3<int32_t> const &start, vec3<int32_t> const &end) const;
   size_t player_index{0};
+  int16_t mission_event_delay{0};
   std::vector<actor_contact> frame_contacts;
   random_state random;
   world_effects effects;

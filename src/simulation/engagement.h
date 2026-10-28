@@ -28,6 +28,7 @@ struct engagement_callbacks {
   std::function<void()> navigate;
   std::function<std::optional<size_t>(target_selection_flags)> select;
   std::function<void()> attack;
+  std::function<void(behavior)> enter{};
 };
 
 void patrol_engagement(engagement_mode mode, engagement_state &state, size_t actor, std::span<target_relationship> relationships, target_objective const &objective, frame_ratio ratio, uint16_t &world_stagger, engagement_callbacks const &callbacks);

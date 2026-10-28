@@ -25,6 +25,7 @@ class herc_actor {
   bool salvage_excluded{false};
   int16_t cached_combat_rating{0};
   bool combat_rating_valid{false};
+  std::function<void(damage_consequences const &, damage_consequences const &)> consequence_notification;
   void detach_section(size_t section, bool &large_explosion, random_state &random, herc_damage_events const &events);
   void apply_aim(herc_aim_request const &request, frame_ratio ratio);
   std::pair<int16_t, vec3<int16_t>> section_centre(size_t section, bool last = false) const;
@@ -39,6 +40,10 @@ public:
   herc_body const &body() const;
   herc_profile const &profile() const;
   int16_t combat_rating() const;
+  int16_t total_damage_fraction() const;
+  int16_t internal_damage_fraction(size_t component) const;
+  int16_t choose_aimed_component(herc_actor const &target, random_state &random) const;
+  void notify_damage_changes(std::function<void(damage_consequences const &, damage_consequences const &)> callback);
   void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   damage_state const &damage() const;
   herc_power const &power() const;
@@ -64,6 +69,7 @@ public:
   void restore_condition(herc_condition const &condition);
   void apply_starting_condition(int16_t condition, random_state &random, herc_damage_events const &events);
   void random_damage(int16_t chance, int16_t magnitude, random_state &random, herc_damage_events const &events);
+  void radial_damage(vec3<int32_t> const &centre, int16_t radius, int16_t amount, random_state &random, herc_damage_events const &events, bool invulnerable = false);
   void direct_damage(size_t section, int16_t amount, random_state &random, herc_damage_events const &events);
   /// Direct armour/component damage; projectile shielding and impact effects are separate stages
   std::vector<size_t> damage_section(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach = {});

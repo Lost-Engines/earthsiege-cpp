@@ -46,6 +46,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
       .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, equipment, position, angles, values)},
       .attachments{}, .source{actor.source}, .group{actor.group}, .side{placements.groups.at(actor.group).mode},
       .waiting{script.groups.at(actor.group).trigger >= 0}, .player_roster{actor.player_roster},
+      .requested_speed{!actor.player_roster && script.hercs.at(actor.source).field_mask[1] >= 0 ? script.hercs.at(actor.source).field_mask[1] : int16_t{0}},
     };
     for(auto const &part : member.actor->body().weapons().parts()) member.attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});
     if(actor.player_controlled) controlled = crew.size();
@@ -73,6 +74,11 @@ mission_session::mission_session(resource_store const &resources, mission_script
     auto const condition{script.bases.at(placement.source).initial_value};
     bases.push_back({std::make_unique<ground_actor>(ground_definitions, static_cast<size_t>(placement.definition), side, condition, *placement.position, placement.angles), placement.source, placement.group, side, script.groups.at(placement.group).trigger >= 0});
   }
+  for(size_t i{0}; i != crew.size(); ++i) {
+    auto const &condition{crew[i].actor->damage().consequences};
+    auto &decision{activity->decisions()[i]}; decision.dead = condition.dead; decision.disabled = condition.disabled;
+    crew[i].actor->notify_damage_changes([this, i](damage_consequences const &before, damage_consequences const &after){damage_consequences_changed(i, before, after);});
+  }
   cycle_weapon();
 }
 
@@ -90,6 +96,7 @@ herc_body const &mission_session::player() const {
 void mission_session::step(herc_controls const &controls, int16_t const time_ratio, bool const fire) {
   frame_contacts.clear();
   frame_notices.clear();
+  for(auto &member : crew) member.actor->begin_frame();
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
@@ -105,32 +112,22 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
     }
     return input;
   }, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); });
-  crew.at(player_index).actor->step(controls, time_ratio, [&](herc_body const &candidate){
-    std::vector<contact_actor> bodies;
-    bodies.reserve(crew.size() + bases.size());
-    for(auto const &member : crew) { auto body{member.actor->body().contact_geometry()}; body.waiting = member.waiting; bodies.push_back(body); }
-    for(auto const &member : bases) bodies.push_back({.position{vec3<int32_t>{member.actor->placement().translation}}, .angles{}, .radius{member.actor->profile().contact_radius}, .gait_rate{0}, .mass_factor{0}, .impact_height{0}, .herc{false}, .waiting{member.waiting}});
-    if(auto const hit{find_actor_contact(bodies, player_index)}) {
-      if(hit->other < crew.size()) crew.at(hit->other).contact_received = true;
-      frame_contacts.push_back(*hit);                                          // retain damage dispatch for the component-damage consumer
-      return true;
-    }
-    if(scenery_contact_height(terrain.colliders(), candidate.movement().position) != 0) return true;
-    std::vector<scenery_collider> buildings;
-    for(auto const &member : bases) if(auto collider{member.actor->occupancy()}) buildings.push_back(*collider);
-    return scenery_contact_height(buildings, candidate.movement().position) != 0;
-  });
-  fire_selected(fire);
   activity->dispatch_groups([&](size_t const actor){
-    if(actor>=flyer_id(0) && actor<base_id(0))dispatch_flyer(actor-flyer_id(0),time_ratio);
+    if(actor < crew.size()) dispatch_herc(actor, time_ratio);
+    else if(actor < base_id(0)) dispatch_flyer(actor - flyer_id(0), time_ratio);
   });
+  crew.at(player_index).actor->prepare_player(controls, time_ratio, [&](movement_event event){movement_event_received(player_index, event);});
+  fire_selected(fire);
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
   auto const observations{observe()};
   activity->scan_areas(observations);
   activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);});
-  for(auto &member : crew) if(!member.waiting && !member.actor->damage().consequences.dead) member.actor->update_power(time_ratio, settings.free_weapons());
+  for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && !crew[i].actor->damage().consequences.dead) {
+    crew[i].actor->update_power(time_ratio, settings.free_weapons());
+    update_herc_sensors(i, time_ratio);
+  }
   // Phase-five reclamation follows firing: expired objects occupy their slots
   // through this frame's simulation, as in the original shared pools.
   effects.collect();

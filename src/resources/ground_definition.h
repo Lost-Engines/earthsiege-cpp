@@ -26,6 +26,7 @@ struct ground_profile {
   int16_t cell_period{0};
   int16_t contact_radius{0};
   int16_t target_height{0};
+  bool can_retaliate{false};
   std::array<int16_t, 27> source{};                                          // remaining fields retained until their consumers are ported
   std::vector<collision_part> collision;
 };

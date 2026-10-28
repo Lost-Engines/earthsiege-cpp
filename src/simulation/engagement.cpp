@@ -41,7 +41,8 @@ void patrol_engagement(engagement_mode const mode, engagement_state &state, size
   if(!target) return;
   if(retreat) {
     state.aimed_component = -1;
-    enter_behavior(state.controller, behavior::fleeing, world_stagger);
+    if(callbacks.enter) callbacks.enter(behavior::fleeing);
+    else enter_behavior(state.controller, behavior::fleeing, world_stagger);
   } else {
     if(!flyer) state.attack_requested = true;
     callbacks.attack();

@@ -110,7 +110,7 @@ bool attack_with_herc(behavior const type, herc_attack_state &state, int16_t &co
     default: throw std::invalid_argument{"not a HERC attack movement controller"};
   }
   callbacks.aim(geometry.facing_error);
-  bool const finished{input.actor_incapacitated || ((type == behavior::attacking_base || type == behavior::attacking_flyer) ? input.target_incapacitated : input.target_completed)};
+  bool const finished{callbacks.completed ? callbacks.completed() : input.actor_incapacitated || ((type == behavior::attacking_base || type == behavior::attacking_flyer) ? input.target_incapacitated : input.target_completed)};
   if(finished && command == 4) command = 0;
   return finished;
 }

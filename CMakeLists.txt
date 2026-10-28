@@ -99,6 +99,7 @@ add_library(earthsiege_core
   src/simulation/actor_contact.h
   src/shell/mission_view.cpp
   src/shell/mission_view.h
+  src/simulation/mission_hercs.cpp
   src/simulation/mission_session.cpp
   src/simulation/mission_session.h
   src/resources/name_table.cpp
@@ -255,9 +256,9 @@ if(BUILD_TESTING)
   add_executable(herc_tactics_test tests/herc_tactics_test.cpp)
   target_link_libraries(herc_tactics_test PRIVATE earthsiege_core)
   add_test(NAME herc_tactics COMMAND herc_tactics_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_tactics.bin")
-  add_executable(mission_flyer_frames_test tests/mission_flyer_frames_test.cpp)
-  target_link_libraries(mission_flyer_frames_test PRIVATE earthsiege_core)
-  add_test(NAME mission_flyer_frames COMMAND mission_flyer_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_flyer_frames.bin")
+  add_executable(mission_world_frames_test tests/mission_world_frames_test.cpp)
+  target_link_libraries(mission_world_frames_test PRIVATE earthsiege_core)
+  add_test(NAME mission_world_frames COMMAND mission_world_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_world_frames.bin")
   add_executable(target_geometry_test tests/target_geometry_test.cpp)
   target_link_libraries(target_geometry_test PRIVATE earthsiege_core)
   add_test(NAME target_geometry COMMAND target_geometry_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/target_geometry.bin")

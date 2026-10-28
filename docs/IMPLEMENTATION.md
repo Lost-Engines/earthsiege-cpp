@@ -346,3 +346,13 @@ acquisition updates, including distance-derived timers, channel-specific gates,
 HUD lock state, delayed target-change consumption, damage-window reset and full
 RNG. Power, equipment queries and HUD drawing are explicit boundaries in this
 fixture; mission integration supplies them separately.
+
+The mission session now dispatches live HERC navigation and combat controllers,
+including route/formation following, guard, travel, retreat, skirting and ramming.
+Movement consumes the previous controls; player preparation follows group
+dispatch, and power/ECM/seeker updates follow perception. The composed navigation
+path matches 960 original frames / 17,760 HERC and flyer observations, with exact
+random state. These replace the earlier flyer-only frame fixture, whose omitted
+HERC dispatch also omitted the shared controller-entry staggering. Full hostile
+combat, impact reactions and player objective/cockpit integration remain the next
+integration checks; this is still not a complete playable game.

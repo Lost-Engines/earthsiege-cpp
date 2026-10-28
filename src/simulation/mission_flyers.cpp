@@ -6,10 +6,12 @@
 namespace earthsiege {
 std::vector<observed_actor> mission_session::observe() const {
   std::vector<observed_actor> result;
-  for(auto const &member:crew){
+  for(size_t index{0}; index != crew.size(); ++index){
+    auto const &member{crew[index]};
     auto const &body{member.actor->body()};auto const &damage{member.actor->damage().consequences};
     result.push_back({.position{vec3<int32_t>{body.movement().position}},.heading{body.movement().angles.z},.view_offset{body.torso().angle}, .strength{member.actor->combat_rating()},
-      .dead{damage.dead},.disabled{damage.disabled},.detectable{member.actor->impacts().detectable}});
+      .dead{damage.dead},.disabled{damage.disabled},.detectable{member.actor->impacts().detectable},
+      .removed{body.movement().collapsed},.unavailable{activity->decisions()[index].unavailable},.objective_event{member.objective_event}});
   }
   for(auto const &member:flyers)result.push_back({.position{vec3<int32_t>{member.actor->motion().position}},.heading{member.actor->angles().z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()}});
   for(auto const &member:bases)result.push_back({.position{vec3<int32_t>{member.actor->placement().translation}},.heading{transform_angles(member.actor->placement()).z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()}});

@@ -28,6 +28,8 @@ struct grenade_weapon {
 
 struct ecm_weapon {
   weapon_controls controls;
+  bool enabled{false};
+  bool pulse{false};
 };
 
 struct weapon_state {
