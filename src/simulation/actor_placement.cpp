@@ -43,6 +43,10 @@ placement_catalogue::placement_catalogue(resource_store const &resources) {
   }
 }
 
+vec3<int32_t> const &placement_catalogue::formation_offset(actor_kind const kind, size_t const formation, size_t const follower) const {
+  return formations.at(kind_index(kind)).at(formation).at(follower);
+}
+
 mission_placement placement_catalogue::place(mission_script const &script, player_roster const &player) const {
   if(script.groups.empty()) throw std::runtime_error{"mission has no player group"};
   mission_placement result;

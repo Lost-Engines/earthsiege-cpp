@@ -37,6 +37,12 @@ ground_actor::ground_actor(ground_catalogue const &resources, size_t const selec
 ground_profile const &ground_actor::profile() const { return catalogue.profile(type); }
 int16_t ground_actor::damage() const { return accumulated_damage; }
 bool ground_actor::dead() const { return destroyed; }
+bool ground_actor::is_detectable() const { return !destroyed && (type == 5 || type == 6); }
+bool ground_actor::is_turret() const { return type == 8; }
+vec3<int32_t> ground_actor::target_position() const { return transform_point({0, 0, profile().target_height}, transform); }
+std::optional<scenery_collider> ground_actor::obstruction() const {
+  return wreck_ready || profile().collision.empty() ? std::optional<scenery_collider>{heightfield()} : std::nullopt;
+}
 model_instance const &ground_actor::instance() const {
   if(wreck_ready) return wreck;
   return std::visit([](auto const &body) -> model_instance const & {

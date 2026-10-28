@@ -7,17 +7,20 @@
 #include "resources/resource_store.h"
 #include "simulation/actor_placement.h"
 #include "simulation/hit_dispatch.h"
+#include "simulation/flyer_navigation.h"
+#include "simulation/model_math.h"
+#include "simulation/fixed_math.h"
 
 namespace earthsiege {
 
 mission_session::mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random, mission_counters initial_counters)
-  : settings{script.header}, counters{initial_counters}, terrain{resources, script.header}, ground_definitions{resources},
+  : settings{script.header}, layout{resources}, routes{script.routes}, points{script.points}, terrain{resources, script.header}, ground_definitions{resources},
     weapon_definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))},
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
     random{std::move(initial_random)}, effects{resources}, projectiles{resources, weapon_definitions} {
-  counters[7] = 0;                                                           // original world loader clears its per-mission counter
-  auto const placements{placement_catalogue{resources}.place(script, roster)};
+  auto const placements{layout.place(script, roster)};
+  activity=std::make_unique<mission_activity>(script,placements,initial_counters);
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
   std::optional<size_t> controlled;
   for(auto const &actor : placements.actors[static_cast<size_t>(actor_kind::herc)]) {
@@ -62,7 +65,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     auto &definition{flyer_definitions[placement.definition]};
     if(!definition) definition = std::make_unique<flyer_definition>(read_flyer_definition(resources,flyer_names.at(static_cast<size_t>(placement.definition))));
     auto const side{placements.groups.at(placement.group).mode};
-    flyers.push_back({std::make_unique<flyer_actor>(*definition,*placement.position,placement.angles),placement.source,placement.group,side,script.groups.at(placement.group).trigger >= 0});
+    flyers.push_back({std::make_unique<flyer_actor>(*definition,*placement.position,placement.angles),{},false,placement.source,placement.group,side,script.groups.at(placement.group).trigger >= 0});
   }
   for(auto const &placement : placements.actors[static_cast<size_t>(actor_kind::base)]) {
     if(!placement.position) throw std::runtime_error{"base has an undefined negative-formation position"};
@@ -73,7 +76,8 @@ mission_session::mission_session(resource_store const &resources, mission_script
   cycle_weapon();
 }
 
-mission_counters const &mission_session::mission_variables() const { return counters; }
+mission_counters const &mission_session::mission_variables() const { return activity->variables(); }
+mission_activity const &mission_session::activity_state() const { return *activity; }
 
 scenery_world const &mission_session::scenery() const {
   return terrain;
@@ -86,12 +90,19 @@ herc_body const &mission_session::player() const {
 void mission_session::step(herc_controls const &controls, int16_t const time_ratio, bool const fire) {
   frame_contacts.clear();
   frame_notices.clear();
+  for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
+  for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
+  for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
+  for(size_t index{0}; index != bases.size(); ++index) if(!bases[index].waiting) advance_base(index, time_ratio);
   effects.advance(time_ratio);
   projectiles.advance(time_ratio, [&](projectile_owner &owner){
-    // Target acquisition/controller policy is still separate. The inspection
-    // currently fires unguided; retained target handles are resolved here later.
     projectile_guidance input;
     input.player_owner = owner.actor == player_index;
+    input.owner_tracks_target = activity->targets()[owner.actor].selected == owner.target;
+    if(owner.target) {
+      input.target_position = target_position(*owner.target, owner.target_component);
+      input.target_detectable = observe().at(*owner.target).detectable;
+    }
     return input;
   }, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); });
   crew.at(player_index).actor->step(controls, time_ratio, [&](herc_body const &candidate){
@@ -110,8 +121,16 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
     return scenery_contact_height(buildings, candidate.movement().position) != 0;
   });
   fire_selected(fire);
+  activity->dispatch_groups([&](size_t const actor){
+    if(actor>=flyer_id(0) && actor<base_id(0))dispatch_flyer(actor-flyer_id(0),time_ratio);
+  });
+  for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
+  for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
+  for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
+  auto const observations{observe()};
+  activity->scan_areas(observations);
+  activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);});
   for(auto &member : crew) if(!member.waiting && !member.actor->damage().consequences.dead) member.actor->update_power(time_ratio, settings.free_weapons());
-  for(size_t index{0}; index != bases.size(); ++index) if(!bases[index].waiting) bases[index].actor->advance(time_ratio, random, base_damage_events(index));
   // Phase-five reclamation follows firing: expired objects occupy their slots
   // through this frame's simulation, as in the original shared pools.
   effects.collect();
@@ -167,6 +186,12 @@ ground_damage_events mission_session::base_damage_events(size_t const index) {
   events.explosion = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition, position, rng); };
   events.debris = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition, position, rng); };
   events.attached_smoke = [&, index](vec3<int16_t> const &position){ frame_notices.push_back({combat_notice_kind::attached_smoke, base_id(index), -1, 1, vec3<int32_t>{position}}); };
+  events.destroyed = [&, index] {
+    auto const id{base_id(index)};
+    activity->notify_destroyed(id, observe());
+    if(auto const trigger{activity->actor(id).hit_trigger}) activity->activate(*trigger);
+  };
+
   return events;
 }
 
@@ -177,10 +202,17 @@ size_t mission_session::actor_group(size_t const index) const {
   if(index < base_id(0)) return flyers[index - flyer_id(0)].group;
   return bases.at(index - base_id(0)).group;
 }
-flyer_damage_events mission_session::flyer_events(size_t const) {
+flyer_damage_events mission_session::flyer_events(size_t const index) {
   flyer_damage_events events;
   events.explosion = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition,position,rng); };
   events.debris = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition,position,rng); };
+  events.destroyed = [&, index] {
+    auto const id{flyer_id(index)};
+    activity->notify_destroyed(id, observe());
+    if(auto const trigger{activity->actor(id).hit_trigger}) activity->activate(*trigger);
+    enter_behavior(activity->decisions()[id].controller, behavior::flyer_dead, activity->entry_stagger());
+  };
+
   return events;
 }
 
@@ -194,7 +226,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
     if(crew[index].group == actor_group(owner.actor)) group.push_back(index);
     actors.push_back({
       .position{vec3<int32_t>{victim.body().movement().position}}, .group{crew[index].group}, .side{crew[index].side},
-      .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
+      .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{false}, .quiet{activity->actor(index).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(index).contact_trigger},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         auto const events{damage_events(index)};
         impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{actors[index].side}, .invulnerable{settings.player_is_invulnerable()}};
@@ -210,7 +242,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
     if(member.group == actor_group(owner.actor)) group.push_back(flyer_id(index));
     actors.push_back({
       .position{vec3<int32_t>{member.actor->placement().translation}}, .group{member.group}, .side{member.side},
-      .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{member.actor->dead()}, .quiet{false}, .hit_enemy{false}, .trigger{},
+      .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{member.actor->dead()}, .quiet{activity->actor(flyer_id(index)).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(flyer_id(index)).contact_trigger},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{flyers[index].side}};
         auto const result{flyers[index].actor->receive_impact(incoming,conditions,random,flyer_events(index),owner.actor == player_index && owner.target == flyer_id(index))};
@@ -224,7 +256,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
     if(member.group == actor_group(owner.actor)) group.push_back(base_id(index));
     actors.push_back({
       .position{vec3<int32_t>{member.actor->placement().translation}}, .group{member.group}, .side{member.side},
-      .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
+      .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{false}, .quiet{activity->actor(base_id(index)).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(base_id(index)).contact_trigger},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{bases[index].side}};
         auto const result{bases[index].actor->receive_impact(incoming, conditions, random, base_damage_events(index))};
@@ -234,6 +266,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
     });
   }
   impact_world world{actors, terrain.colliders(), random, {}};
+  world.events.trigger = [&](size_t const index){ activity->activate(index); };
   world.events.effect = [&](vec3<int32_t> const &position, int16_t const definition){ effects.add_explosion(definition, position, random); };
   world.events.friendly_warning = [&](size_t const actor){ frame_notices.push_back({combat_notice_kind::friendly_warning, actor, 0, 0, {}}); };
   return dispatch_impact(request, {owner.actor, owner.actor == player_index, group, std::nullopt}, world);

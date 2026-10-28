@@ -93,6 +93,13 @@ std::optional<vec3<int32_t>> intersect_heightfield(collision_heightfield const &
   return std::nullopt;
 }
 
+std::optional<scenery_hit> intersect_scenery_segment(std::span<scenery_collider const> const objects, vec3<int32_t> const &start, vec3<int32_t> const &end, int16_t const radius) {
+  auto const delta{difference(end,start)};
+  vec3<uint16_t> const angles{direction_angle(fast_distance_2d({delta.x,delta.y}),delta.z),0,bearing_angle(start,end)};
+  auto ray{rotation_transform(angles)}; ray.translation=start;
+  return intersect_scenery(objects,ray,fast_distance(delta),radius);
+}
+
 std::optional<scenery_hit> intersect_scenery(std::span<scenery_collider const> const objects, model_transform const &ray, int32_t reach, int16_t const radius) {
   /// Preserve candidate order and shortening after a hit, including the early near-hit exit
   auto const inverse_ray{inverse_transform(ray)};

@@ -281,3 +281,17 @@ leading, firing gates and muzzle transforms execute unchanged. Refresh using
 analysis captures with the corresponding names. Target-selection fixture version
 2 adds 1,500 cases using the real base/flyer strength virtual callback (constant
 class 1 and no RNG), retaining the previous 3,000 HERC-callback cases.
+
+`target_geometry.bin` comes from `capture_target_geometry.py`: 1,536 original
+virtual target selectors and 9,180 articulated component positions in all four
+recorded mission starts, under varied placements and launch orientations.
+`destruction_counters.bin` comes from `capture_destruction_counters.py`: 2,160
+original group/actor counter notifications, including repeats and overflow.
+Refresh both with `export_target_geometry_fixtures.py`.
+
+`mission_flyer_frames.bin` comes from `capture_mission_flyer_frames.py` and covers
+960 complete world navigation frames / 8,640 flyer states. All groups are active
+on side zero; HERC controller bodies and audio are explicit boundaries. Original
+flyer controllers, base updates, existing effects, geometry, perception and shared
+randomness execute. The harness initializes the original behavior tables before
+constructing actors. Refresh with `export_mission_flyer_frame_fixtures.py`.

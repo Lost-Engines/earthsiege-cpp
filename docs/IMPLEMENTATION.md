@@ -251,3 +251,32 @@ Controller wrappers also cross their callback slots: advance runs first, then
 decision, using the previous update's controls for movement. Native callback
 labels now express that order. The independent 1,200 dispatch fixtures continue
 to pass with unchanged behavior.
+
+The live session now dispatches flyer controllers through group activation,
+route/formation navigation, avoidance, patrol/search acquisition and attack;
+active turrets use their existing original tracking/firing loop. World perception
+and power allocation retain the original phase order. Flyer/base destruction
+notifies group and actor counters, fires the destruction trigger and stops dead
+flyer movement. Hostile hits activate their contact triggers.
+
+The original-world integration fixture covers 960 frames (8,640 complete flyer
+states) across two recorded missions and three frame ratios. Groups are activated
+on the same side to isolate navigation; HERC controller bodies and audio are
+explicit boundaries. Original bases, existing effects, scenery queries, group
+dispatch, area scans, perception and shared randomness execute. These are not
+full combat replay comparisons. The existing firing/effect smoke check explicitly
+disables unlimited ammunition and puts groups on the same side, so enemy fire
+cannot invalidate its final projectile-retirement check.
+
+Missiles retain the selected HERC component at launch and resolve its current
+articulated position every update. Targets without a component use the original
+HERC camera node, base target-height offset or flyer origin. All 1,536 original
+target choices and 9,180 component positions agree. The selector's pitch/roll
+ranking (without yaw) is preserved. These checks also exposed and fixed missing
+time-zero animation evaluation during HERC equipment setup; some enemy chassis
+have an initial aiming pose that differs from their raw model defaults.
+
+Group/actor destruction accounting matches 2,160 original notifications, including
+live/dead/disabled group members, repeated notifications, shared counter slots
+and signed overflow. Group accounting precedes individual accounting. Counter
+notifications are repeatable; spatial/contact trigger latches remain one-shot.

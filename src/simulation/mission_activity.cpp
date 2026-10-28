@@ -1,6 +1,7 @@
 #include "mission_activity.h"
 #include <map>
 #include <stdexcept>
+#include "simulation/fixed_math.h"
 
 namespace earthsiege {
 namespace {
@@ -30,6 +31,7 @@ mission_activity::mission_activity(mission_script const &script, mission_placeme
     auto const &source{placement.groups[i]}; auto const &record{script.groups.at(i)};
     mission_group_activity entry{source.kind,source.argument,source.formation,record.route,0,source.mode,reference(record.trigger),{},{},{}};
     for(auto const member : source.members) entry.members.push_back(offsets.at(static_cast<size_t>(member.kind))+member.slot);
+    entry.counter=record.extra[1]; entry.counter_operation=record.extra[2];
     groups.push_back(std::move(entry));
   }
   for(size_t i{0}; i != groups.size(); ++i) {
@@ -51,6 +53,7 @@ mission_group_activity const &mission_activity::group(size_t const index) const 
 mission_group_activity &mission_activity::group(size_t const index) { return groups.at(index); }
 std::span<mission_group_activity const> mission_activity::all_groups() const { return groups; }
 std::span<engagement_state> mission_activity::decisions() { return controllers; }
+std::span<engagement_state const> mission_activity::decisions() const { return controllers; }
 std::span<target_relationship> mission_activity::targets() { return relationships; }
 uint16_t &mission_activity::entry_stagger() { return stagger; }
 size_t mission_activity::size() const { return actors.size(); }
@@ -58,6 +61,25 @@ bool mission_activity::waiting(size_t const index) const { return groups.at(acto
 mission_counters const &mission_activity::variables() const { return counters; }
 bool mission_activity::triggered(size_t const index) const { return triggers.latched(index); }
 void mission_activity::activate(size_t const index) { triggers.activate(index,counters); }
+void mission_activity::notify_destroyed(size_t const index, std::span<observed_actor const> const observations) {
+  if(observations.size() != actors.size()) throw std::invalid_argument{"mission observation count"};
+  auto const apply{[&](int16_t slot, int16_t operation) {
+    if(slot < 0) return;
+    auto &value{counters.at(static_cast<size_t>(slot))};
+    if(operation == 1) value = 0;
+    else if(operation == 2) value = wrap_word(value + 1);
+    else if(operation >= 13 && operation <= 16) value = static_cast<int16_t>(operation - 12);
+  }};
+  auto const &actor{actors.at(index)};
+  auto const &group{groups.at(actor.group)};
+  bool defeated{true};
+  for(auto const member : group.members) if(member != index && !observations[member].dead && !observations[member].disabled) { defeated = false; break; }
+  // Group accounting precedes individual accounting. Unlike spatial triggers,
+  // these notifications are not latched; a repeated call repeats the operation.
+  if(defeated) apply(group.counter, group.counter_operation);
+  apply(actor.counter, actor.counter_operation);
+}
+
 target_objective mission_activity::objective(size_t const index) const {
   auto const &entry{groups.at(actors.at(index).group)};
   if(entry.members.empty()) throw std::runtime_error{"target selection requires a group leader"};

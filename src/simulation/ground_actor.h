@@ -73,6 +73,9 @@ public:
   ground_profile const &profile() const;
   int16_t damage() const;
   bool dead() const;
+  bool is_detectable() const;
+  bool is_turret() const;
+  vec3<int32_t> target_position() const;
   bool is_wreck() const;
   int16_t remaining_bursts() const;
   int16_t burst_timer() const;
@@ -90,6 +93,7 @@ public:
   scene_model model() const;
   /// Only static bases participate in the original ground-height occupancy pass.
   std::optional<scenery_collider> occupancy() const;
+  std::optional<scenery_collider> obstruction() const;
 };
 
 } // namespace earthsiege

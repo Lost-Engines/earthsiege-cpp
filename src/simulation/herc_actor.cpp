@@ -92,6 +92,34 @@ vec3<int32_t> herc_actor::section_position(size_t const section, bool const radi
   return result;
 }
 
+vec3<int32_t> herc_actor::target_position(int16_t const component) const {
+  if(component >= 0) return section_position(static_cast<size_t>(component), true);
+  auto const node{find_model_part(source.models.roots.front(), source.profile.camera_part)};
+  if(!node) return vec3<int32_t>{body_state.movement().position};
+  auto const local{body_state.model().transforms()[static_cast<size_t>(node->header.transform)].translation};
+  auto position{rotate_vector(local, body_state.placement())};
+  for(unsigned int axis{0}; axis != 3; ++axis) position[axis] = wrap_long(static_cast<int64_t>(position[axis]) + body_state.movement().position[axis]);
+  return position;
+}
+
+int16_t herc_actor::target_component(vec3<int32_t> const &origin, vec3<uint16_t> const &angles) const {
+  int32_t best{0x1000000};
+  int16_t selected{-1};
+  auto const magnitude{[](int16_t value){ return value == -32768 ? 32767 : std::abs(static_cast<int>(value)); }};
+  // The original subtracts all three angles, but ranks pitch and roll only.
+  // Yaw does not participate; ties retain the first present damage section.
+  for(size_t i{0}; i != components.state().present.size(); ++i) {
+    if(!components.state().present[i]) continue;
+    auto const point{target_position(static_cast<int16_t>(i))};
+    vec3<int32_t> delta;
+    for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(point[axis]) - origin[axis]);
+    auto const pitch{direction_angle(fast_distance_2d({delta.x, delta.y}), delta.z)};
+    auto const score{magnitude(wrap_word(pitch - angles.x)) + magnitude(wrap_word(-angles.y))};
+    if(score < best) { best = score; selected = static_cast<int16_t>(i); }
+  }
+  return selected;
+}
+
 void herc_actor::detach_section(size_t const section, bool &large_explosion, random_state &random, herc_damage_events const &events) {
   auto const &piece{loadout.damage.components.at(section)};
   auto const flag{[&](damage_section_flag const value){ return (piece.flags & std::to_underlying(value)) != 0; }};

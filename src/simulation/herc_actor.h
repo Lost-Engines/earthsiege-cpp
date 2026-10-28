@@ -50,6 +50,8 @@ public:
   std::vector<weapon_shot> discharge_slot(size_t slot, vec2<int16_t> const &aim, bool free_ammunition = false);
   herc_loadout const &definition() const;
   bool allows_salvage() const;
+  int16_t target_component(vec3<int32_t> const &source, vec3<uint16_t> const &angles) const;
+  vec3<int32_t> target_position(int16_t component = -1) const;
   void restore_condition(herc_condition const &condition);
   void apply_starting_condition(int16_t condition, random_state &random, herc_damage_events const &events);
   void random_damage(int16_t chance, int16_t magnitude, random_state &random, herc_damage_events const &events);

@@ -29,6 +29,8 @@ struct mission_group_activity {
   std::vector<size_t> members;
   std::vector<size_t> objectives;
   std::optional<size_t> representative;
+  int16_t counter{-1};
+  int16_t counter_operation{-1};
 };
 
 struct observed_actor {
@@ -66,6 +68,7 @@ public:
   mission_group_activity &group(size_t index);
   std::span<mission_group_activity const> all_groups() const;
   std::span<engagement_state> decisions();
+  std::span<engagement_state const> decisions() const;
   std::span<target_relationship> targets();
   uint16_t &entry_stagger();
   size_t size() const;
@@ -73,6 +76,7 @@ public:
   mission_counters const &variables() const;
   bool triggered(size_t index) const;
   void activate(size_t index);
+  void notify_destroyed(size_t index, std::span<observed_actor const> observations);
   target_objective objective(size_t index) const;
   void dispatch_groups(std::function<void(size_t)> const &dispatch);
   void scan_areas(std::span<observed_actor const> observations);

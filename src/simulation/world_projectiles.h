@@ -11,6 +11,7 @@ inline size_t constexpr projectile_capacity{160};                            // 
 struct projectile_owner {
   size_t actor{0};
   std::optional<size_t> target;
+  int16_t target_component{-1};
 };
 
 struct live_projectile {

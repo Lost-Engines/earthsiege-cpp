@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/mission_flyers.cpp
   src/simulation/mission_activity.cpp
   src/simulation/mission_activity.h
   src/simulation/flyer_attack.cpp
@@ -203,6 +204,15 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mission_flyer_frames_test tests/mission_flyer_frames_test.cpp)
+  target_link_libraries(mission_flyer_frames_test PRIVATE earthsiege_core)
+  add_test(NAME mission_flyer_frames COMMAND mission_flyer_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_flyer_frames.bin")
+  add_executable(target_geometry_test tests/target_geometry_test.cpp)
+  target_link_libraries(target_geometry_test PRIVATE earthsiege_core)
+  add_test(NAME target_geometry COMMAND target_geometry_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/target_geometry.bin")
+  add_executable(destruction_counters_test tests/destruction_counters_test.cpp)
+  target_link_libraries(destruction_counters_test PRIVATE earthsiege_core)
+  add_test(NAME destruction_counters COMMAND destruction_counters_test "${PROJECT_SOURCE_DIR}/tests/fixtures/destruction_counters.bin")
   add_executable(mission_activity_test tests/mission_activity_test.cpp)
   target_link_libraries(mission_activity_test PRIVATE earthsiege_core)
   add_test(NAME mission_activity COMMAND mission_activity_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_activity.bin")

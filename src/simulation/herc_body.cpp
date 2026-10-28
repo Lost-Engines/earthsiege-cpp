@@ -15,6 +15,9 @@ herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &
   body_channel = rig.add_channel(source.profile.movement.forward_stop_sequence);
   if(source.profile.torso.sequence >= 0) torso_channel = rig.add_channel(source.profile.torso.sequence);
   if(source.profile.elevation.sequence >= 0) elevation_channel = rig.add_channel(source.profile.elevation.sequence);
+  // Equipping the original actor evaluates all channels at time zero before
+  // binding weapon geometry. Some enemy chassis differ from the raw defaults.
+  rig.update_pose();
 }
 
 void herc_body::place(vec3<int32_t> const &position, vec3<uint16_t> const &angles) {

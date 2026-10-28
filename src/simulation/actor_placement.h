@@ -60,6 +60,7 @@ class placement_catalogue {
 
 public:
   explicit placement_catalogue(resource_store const &resources);
+  vec3<int32_t> const &formation_offset(actor_kind kind, size_t formation, size_t follower) const;
   mission_placement place(mission_script const &script, player_roster const &player) const;
 };
 

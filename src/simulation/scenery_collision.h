@@ -23,6 +23,8 @@ int32_t scenery_contact_height(std::span<scenery_collider const> objects, vec3<i
 
 int32_t scenery_height(collision_heightfield const &field, vec2<int32_t> const &point, int16_t radius = 0);
 std::optional<vec3<int32_t>> intersect_heightfield(collision_heightfield const &field, vec3<int32_t> const &start, vec3<int32_t> const &end, int16_t radius = 0);
+/// Original endpoint wrapper uses a fast-distance reach and quantized Euler ray.
+std::optional<scenery_hit> intersect_scenery_segment(std::span<scenery_collider const> objects, vec3<int32_t> const &start, vec3<int32_t> const &end, int16_t radius = 0);
 std::optional<scenery_hit> intersect_scenery(std::span<scenery_collider const> objects, model_transform const &ray, int32_t reach, int16_t radius = 0);
 
 } // namespace earthsiege

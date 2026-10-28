@@ -18,7 +18,10 @@ int main(int const argc, char **argv) try {
   size_t rendered{0}, live_shots{0}, live_effects{0};
   for(unsigned int demo{1}; demo != 5; ++demo) {
     auto const tape{earthsiege::read_input_tape(earthsiege::read_file(resources.root() / "TAPES" / ("DEMO" + std::to_string(demo) + ".TAP")))};
-    auto const script{earthsiege::read_mission_script(tape.starting_files[std::to_underlying(earthsiege::tape_file::script)])};
+    auto script{earthsiege::read_mission_script(tape.starting_files[std::to_underlying(earthsiege::tape_file::script)])};
+    // Isolate the player firing/effect lifecycle from autonomous hostile fire.
+    script.header.unlimited_weapons = 0;
+    for(auto &group : script.groups) group.mode = 0;
     auto const roster{earthsiege::read_player_roster(tape.starting_files[std::to_underlying(earthsiege::tape_file::player)])};
     earthsiege::mission_session session{resources, script, roster};
     earthsiege::framebuffer frame;
