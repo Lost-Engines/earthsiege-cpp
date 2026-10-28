@@ -202,8 +202,12 @@ class mission_compiler {
       if(!condition_enabled(active, condition)) continue;
       update(header.terrain, static_cast<terrain_kind>(patch[0]), terrain_kind::temperate);
       update(header.zone, patch[1], int16_t{});
-      // patch[2] changes a shell scratch value; runtime difficulty is supplied separately
-      for(unsigned int field{}; field < header.settings.size(); ++field) update(header.settings[field], patch[field + 3], int16_t{});
+      // patch[2] changes a shell scratch value; campaign mode is supplied separately.
+      update(header.objective_kind, patch[3], int16_t{});
+      update(header.objective_variant, patch[4], int16_t{});
+      update(header.unlimited_weapons, patch[5], int16_t{});
+      update(header.invulnerable_player, patch[6], int16_t{});
+      update(header.difficulty, patch[7], int16_t{});
       update(header.world_variant, patch[8], int16_t{});
       update(header.palette_variant, patch[9], int16_t{});
     }
@@ -282,14 +286,14 @@ class mission_compiler {
   }
 
 public:
-  mission_compiler(bytes source, std::span<int16_t const> flags, random_state &generator, int16_t difficulty) :
+  mission_compiler(bytes source, std::span<int16_t const> flags, random_state &generator, int16_t campaign_mode) :
     file{source, "source mission"},
     random{generator} {
     if(file.integer<uint16_t>() != 5) file.fail("unsupported source mission revision");
     auto const conditions{read_conditions(file)};
     active = evaluate_conditions(conditions, flags, random);
     header.terrain = terrain_kind::temperate;
-    header.difficulty = difficulty;
+    header.campaign_mode = campaign_mode;
   }
 
   auto compile()->compiled_mission {
@@ -319,8 +323,8 @@ public:
 
 } // namespace
 
-auto compile_mission(bytes source, std::span<int16_t const> campaign_flags, random_state &random, int16_t difficulty)->compiled_mission {
-  return mission_compiler{source, campaign_flags, random, difficulty}.compile();
+auto compile_mission(bytes source, std::span<int16_t const> campaign_flags, random_state &random, int16_t campaign_mode)->compiled_mission {
+  return mission_compiler{source, campaign_flags, random, campaign_mode}.compile();
 }
 
 } // namespace earthsiege

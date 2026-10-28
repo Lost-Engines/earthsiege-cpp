@@ -10,12 +10,13 @@
 
 namespace earthsiege {
 
-mission_session::mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random)
-  : terrain{resources, script.header}, ground_definitions{resources},
+mission_session::mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random, mission_counters initial_counters)
+  : settings{script.header}, counters{initial_counters}, terrain{resources, script.header}, ground_definitions{resources},
     weapon_definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))},
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
     random{std::move(initial_random)}, effects{resources}, projectiles{resources, weapon_definitions} {
+  counters[7] = 0;                                                           // original world loader clears its per-mission counter
   auto const placements{placement_catalogue{resources}.place(script, roster)};
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
   std::optional<size_t> controlled;
@@ -72,6 +73,8 @@ mission_session::mission_session(resource_store const &resources, mission_script
   cycle_weapon();
 }
 
+mission_counters const &mission_session::mission_variables() const { return counters; }
+
 scenery_world const &mission_session::scenery() const {
   return terrain;
 }
@@ -107,7 +110,7 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
     return scenery_contact_height(buildings, candidate.movement().position) != 0;
   });
   fire_selected(fire);
-  for(auto &member : crew) if(!member.waiting && !member.actor->damage().consequences.dead) member.actor->update_power(time_ratio);
+  for(auto &member : crew) if(!member.waiting && !member.actor->damage().consequences.dead) member.actor->update_power(time_ratio, settings.free_weapons());
   for(size_t index{0}; index != bases.size(); ++index) if(!bases[index].waiting) bases[index].actor->advance(time_ratio, random, base_damage_events(index));
   // Phase-five reclamation follows firing: expired objects occupy their slots
   // through this frame's simulation, as in the original shared pools.
@@ -142,7 +145,7 @@ void mission_session::fire_selected(bool const pressed) {
   if(auto *elf{weapon.elf()}) trigger = poll_elf_trigger(weapon.controls(), *elf, pressed);
   if(!trigger || !weapon.ready(weapon_definitions.weapons.at(static_cast<size_t>(weapon.definition)))) return;
   vec2<int16_t> const aim{actor.body().elevation().angle, actor.body().torso().angle};
-  for(auto const &shot : actor.discharge_slot(*selected_weapon, aim)) {
+  for(auto const &shot : actor.discharge_slot(*selected_weapon, aim, settings.free_weapons())) {
     projectiles.launch({player_index, std::nullopt}, shot, random, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); });
   }
 }
@@ -194,7 +197,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         auto const events{damage_events(index)};
-        impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{0}, .difficulty_override{false}, .side{actors[index].side}};
+        impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{actors[index].side}, .invulnerable{settings.player_is_invulnerable()}};
         auto const result{crew[index].actor->receive_impact(incoming, conditions, random, events)};
         auto const &state{crew[index].actor->damage().consequences};
         actors[index].dead = state.dead; actors[index].disabled = state.disabled;
@@ -209,7 +212,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .position{vec3<int32_t>{member.actor->placement().translation}}, .group{member.group}, .side{member.side},
       .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{member.actor->dead()}, .quiet{false}, .hit_enemy{false}, .trigger{},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
-        impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .side{flyers[index].side}};
+        impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{flyers[index].side}};
         auto const result{flyers[index].actor->receive_impact(incoming,conditions,random,flyer_events(index),owner.actor == player_index && owner.target == flyer_id(index))};
         actors[flyer_id(index)].dead = flyers[index].actor->dead();
         return result;
@@ -223,7 +226,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .position{vec3<int32_t>{member.actor->placement().translation}}, .group{member.group}, .side{member.side},
       .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
-        impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .side{bases[index].side}};
+        impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{bases[index].side}};
         auto const result{bases[index].actor->receive_impact(incoming, conditions, random, base_damage_events(index))};
         actors[base_id(index)].dead = bases[index].actor->dead();
         return result;

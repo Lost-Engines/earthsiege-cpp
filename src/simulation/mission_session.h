@@ -79,6 +79,8 @@ class mission_session {
     uint8_t side{0};
     bool waiting{false};
   };
+  mission_header settings;
+  mission_counters counters;
   scenery_world terrain;
   ground_catalogue ground_definitions;
   std::vector<base_member> bases;
@@ -107,12 +109,13 @@ class mission_session {
   std::vector<scene_model> herc_models(bool roster_only);
 
 public:
-  mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random = random_state{});
+  mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random = random_state{}, mission_counters initial_counters = {});
   mission_session(mission_session const &) = delete;
   mission_session(mission_session &&) = delete;
   mission_session &operator=(mission_session const &) = delete;
   mission_session &operator=(mission_session &&) = delete;
   scenery_world const &scenery() const;
+  mission_counters const &mission_variables() const;
   herc_body const &player() const;
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);

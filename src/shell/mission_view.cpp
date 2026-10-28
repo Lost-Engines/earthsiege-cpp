@@ -16,7 +16,8 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources, uns
   auto const tape{read_input_tape(read_file(resources.root() / "TAPES" / ("DEMO" + std::to_string(demo) + ".TAP")))};
   auto const script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
   auto const roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
-  return std::make_unique<mission_session>(resources, script, roster);
+  auto const counters{read_mission_counters(tape.starting_files[std::to_underlying(tape_file::campaign_flags)])};
+  return std::make_unique<mission_session>(resources, script, roster, random_state{}, counters);
 }
 
 } // namespace

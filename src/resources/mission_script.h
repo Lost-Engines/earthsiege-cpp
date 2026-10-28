@@ -35,11 +35,22 @@ enum class target_kind : int16_t {
 struct mission_header {
   terrain_kind terrain{};
   int16_t zone{};
+  int16_t campaign_mode{};                                                   // GO selects 0 for instant action, 1 for campaign
+  int16_t objective_kind{};
+  int16_t objective_variant{};                                               // retained shell objective selector
+  int16_t unlimited_weapons{};
+  int16_t invulnerable_player{};
   int16_t difficulty{};
-  std::array<int16_t, 5> settings{};                                            // retained fields whose gameplay meanings are still being traced
   int16_t world_variant{};
   int16_t palette_variant{};
+
+  bool free_weapons() const { return campaign_mode == 0 && unlimited_weapons == 1; }
+  bool player_is_invulnerable() const { return campaign_mode == 0 && invulnerable_player == 1; }
+  int32_t detection_range() const { return world_variant == 1 ? 30000 : 60000; }
 };
+
+using mission_counters = std::array<int16_t, 100>;
+mission_counters read_mission_counters(bytes source);
 
 struct mission_route {
   std::vector<mission_reference> points;

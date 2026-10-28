@@ -121,8 +121,12 @@ auto read_mission_script(bytes source)->mission_script {
   result.header = mission_header{
     .terrain{static_cast<terrain_kind>(file.integer<int16_t>())},
     .zone{file.integer<int16_t>()},
+    .campaign_mode{file.integer<int16_t>()},
+    .objective_kind{file.integer<int16_t>()},
+    .objective_variant{file.integer<int16_t>()},
+    .unlimited_weapons{file.integer<int16_t>()},
+    .invulnerable_player{file.integer<int16_t>()},
     .difficulty{file.integer<int16_t>()},
-    .settings{words<5>(file)},
     .world_variant{file.integer<int16_t>()},
     .palette_variant{file.integer<int16_t>()},
   };
@@ -136,6 +140,13 @@ auto read_mission_script(bytes source)->mission_script {
   result.bases = table(file, [&file]{ return read_bases_record(file); });
   result.groups = table(file, [&file]{ return read_groups_record(file); });
   result.consumed = file.position();                                          // the original writer leaves stale tails in existing files
+  return result;
+}
+
+mission_counters read_mission_counters(bytes source) {
+  binary_reader file{source, "mission counters"};
+  auto const result{words<100>(file)};
+  file.require_end();
   return result;
 }
 

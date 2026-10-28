@@ -39,8 +39,12 @@ auto signatures(earthsiege::mission_script const &script)->std::array<uint32_t, 
   fixture_values values;
   values.word(std::to_underlying(script.header.terrain));
   values.word(script.header.zone);
+  values.word(script.header.campaign_mode);
+  values.word(script.header.objective_kind);
+  values.word(script.header.objective_variant);
+  values.word(script.header.unlimited_weapons);
+  values.word(script.header.invulnerable_player);
   values.word(script.header.difficulty);
-  values.words(script.header.settings);
   values.word(script.header.world_variant);
   values.word(script.header.palette_variant);
   result[0] = values.checksum();

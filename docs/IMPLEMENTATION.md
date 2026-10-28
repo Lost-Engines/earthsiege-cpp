@@ -221,3 +221,17 @@ The ordinary HERC/flyer view cone preserves signed angle subtraction without
 wrapping; static bases have an unrestricted view. Detection range comes from
 the mission environment setting (30,000 or 60,000), independently of the
 100,000 sighting and 120,000 retained-contact ranges.
+
+## Mission options and starting counters
+
+The third compiled-header word is campaign mode, not difficulty. The source
+compiler and reader now name campaign mode, objective fields, unlimited weapons,
+player immunity and actual difficulty separately. Existing compiler fingerprints
+verify the unchanged binary layout. The inspection session now respects the
+recorded weapon-power/ammunition and player-immunity settings and supplies the
+correct difficulty to all three actor impact paths. Campaign mode suppresses
+the optional cheats and selects the original campaign damage multiplier.
+
+The shell's 100 signed mission counters are retained from the recorded starting
+files, with counter 7 cleared on simulation entry as in DBSIM. This supplies the
+state needed by spatial triggers and later objective reporting.
