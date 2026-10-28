@@ -419,3 +419,9 @@ ownership. No interactive widget drawing is claimed by these fixtures.
   `export_scanner_display_fixtures.py`. Actor construction and complete scanner
   drawing execute original code; actor positions/flags and camera heading are
   explicit controlled inputs. No radar projection or filtering is substituted.
+
+- `communications_displays.bin` (`ESCOMM01`): 240 original FLASH COMM frames and
+  resulting command indices, including selected/disabled rows and both toggle
+  alternatives. Capture: `capture_communications_display.py`; import:
+  `export_communications_display_fixtures.py`. Original row setters and complete
+  label/hotkey drawing execute; wingmate order delivery is outside this fixture.

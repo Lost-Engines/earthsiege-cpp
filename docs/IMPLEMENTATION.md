@@ -486,3 +486,8 @@ strict range cutoffs, fixed-point bearing projection, friend/foe and actor-kind
 colours, selection brackets, active/passive labels, disabled/dead/waiting filters
 and blinking last-known enemy positions. Distance readouts preserve the original
 integer conversion and four-digit padding.
+
+FLASH COMM text and emitted command indices match 240 original frames covering
+all six choices, selection highlights, disabled entries, and the EMCON/HOLD YOUR
+FIRE alternatives. Shortcut-letter colours and row geometry follow the original
+DFN labels. Command delivery to wingmates is a separate remaining UI consumer.
