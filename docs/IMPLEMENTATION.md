@@ -69,7 +69,7 @@ Working components:
 - Original point/line and transparent bitmap drawing: 6,000 clipped line rasters and 500 scaled bitmap rasters agree, including the original sampling and cropping quirks.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
-Remaining integration: audio, attached smoke and ejected-weapon motion; connect full controller scheduling, target/weapon selection and AI; implement flyer/ground actors and full mission outcomes; connect cockpit widgets, shell/campaign flow, sound and presentations. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
+Remaining integration: audio, attached smoke and ejected-weapon motion; connect full HERC controller scheduling, target/weapon selection and AI, and full mission outcomes; connect cockpit widgets, shell/campaign flow, sound and presentations. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
 
 Some retained handoff fields have provisional names (`argument`, `initial_value`, `extra`, numbered trigger links) until their original consumers establish their roles. Tests compare their exact values regardless of naming. The original handoff writer does not truncate reused files, so the parser deliberately accepts stale trailing bytes after its declared tables.
 
@@ -196,8 +196,8 @@ Flyer pitch/bank/turn/altitude controls and movement are reconstructed separatel
 from controller policy: 2,304 original steps and 4,608 obstacle queries agree.
 Motion is per dispatch; only the avoidance timer scales with elapsed time. The
 original zero-initialized obstacle-distance comparison is preserved and documented
-in the research. Route/attack policy and active mission scheduling remain to be
-connected before flyers fly and fight in the inspection session.
+in the research. Route/attack policy and active mission scheduling are now connected as described
+in the mission integration section below.
 
 Flyer route and formation navigation now matches 1,200 original cases, including
 closed-route advancement, circling the final waypoint, full leader-matrix
@@ -206,7 +206,7 @@ updates match all four attack phases, lead, steering, missile/bullet selection,
 refire gates and RNG; 78 recorded projectile requests match their muzzle positions
 and angles. Six actual original rocket launches verify inherited forward speed,
 including signed-word wrapping. HERC launches retain their existing zero inherited
-speed. These consumers are ready for the mission's controller/perception scheduler.
+speed. These consumers are now connected to the mission controller/perception scheduler.
 
 ## Complete perception pass
 
@@ -280,3 +280,21 @@ Group/actor destruction accounting matches 2,160 original notifications, includi
 live/dead/disabled group members, repeated notifications, shared counter slots
 and signed overflow. Group accounting precedes individual accounting. Counter
 notifications are repeatable; spatial/contact trigger latches remain one-shot.
+
+
+## HERC tactical decisions
+
+The attack, flank, face-off, base-attack and flyer-attack policies match 3,200
+original decisions, including scratch timers, movement/aim ordering and command
+reset. Their obstruction and firing consumers remain explicit boundaries. The
+base attack preserves two locomotion calls and the original negative far-range
+constant rather than silently correcting it.
+
+Combat assessment matches 1,848 original live-loadout ratings and aimed-component
+choices, and 2,048 retreat decisions. Chassis base rating and internal-damage
+penalties have named profile fields. Cached ratings now feed world observations
+and refresh in the original post-perception phase after hit invalidation.
+Ammunition availability, damage thresholds, attacker counts and shared randomness
+are retained. The original component selector's use of the observer's damage is
+intentional here. The unused tenth metric output beyond the original nine-slot
+allocation is excluded from the research capture and never accessed by C++.

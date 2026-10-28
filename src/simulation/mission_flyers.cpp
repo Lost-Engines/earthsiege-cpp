@@ -8,7 +8,7 @@ std::vector<observed_actor> mission_session::observe() const {
   std::vector<observed_actor> result;
   for(auto const &member:crew){
     auto const &body{member.actor->body()};auto const &damage{member.actor->damage().consequences};
-    result.push_back({.position{vec3<int32_t>{body.movement().position}},.heading{body.movement().angles.z},.view_offset{body.torso().angle},
+    result.push_back({.position{vec3<int32_t>{body.movement().position}},.heading{body.movement().angles.z},.view_offset{body.torso().angle}, .strength{member.actor->combat_rating()},
       .dead{damage.dead},.disabled{damage.disabled},.detectable{member.actor->impacts().detectable}});
   }
   for(auto const &member:flyers)result.push_back({.position{vec3<int32_t>{member.actor->motion().position}},.heading{member.actor->angles().z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()}});

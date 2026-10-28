@@ -22,6 +22,8 @@ class herc_actor {
   herc_impact_state impact_state;
   weapon_bank armament;
   bool salvage_excluded{false};
+  int16_t cached_combat_rating{0};
+  bool combat_rating_valid{false};
   void detach_section(size_t section, bool &large_explosion, random_state &random, herc_damage_events const &events);
   std::pair<int16_t, vec3<int16_t>> section_centre(size_t section, bool last = false) const;
   vec3<int32_t> section_position(size_t section, bool radial) const;
@@ -33,6 +35,8 @@ public:
   herc_actor &operator=(herc_actor const &) = delete;
   herc_actor &operator=(herc_actor &&) = delete;
   herc_body const &body() const;
+  herc_profile const &profile() const;
+  int16_t combat_rating() const;
   void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   damage_state const &damage() const;
   herc_power const &power() const;

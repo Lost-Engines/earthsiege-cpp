@@ -48,6 +48,8 @@ struct herc_profile {
   int16_t position_height{0};
   int16_t collision_radius{0};
   int16_t mass_factor{0};
+  int16_t base_combat_rating{0};
+  std::array<int16_t, 10> internal_damage_penalties{};
   int16_t legs{0};
   int16_t shield_capacity{0};
   int16_t shield_height{0};

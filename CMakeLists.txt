@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_assessment.cpp
+  src/simulation/herc_assessment.h
+  src/simulation/herc_tactics.cpp
+  src/simulation/herc_tactics.h
   src/simulation/mission_flyers.cpp
   src/simulation/mission_activity.cpp
   src/simulation/mission_activity.h
@@ -204,6 +208,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(herc_assessment_test tests/herc_assessment_test.cpp)
+  target_link_libraries(herc_assessment_test PRIVATE earthsiege_core)
+  add_test(NAME herc_assessment COMMAND herc_assessment_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_assessment.bin")
+  add_executable(herc_tactics_test tests/herc_tactics_test.cpp)
+  target_link_libraries(herc_tactics_test PRIVATE earthsiege_core)
+  add_test(NAME herc_tactics COMMAND herc_tactics_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_tactics.bin")
   add_executable(mission_flyer_frames_test tests/mission_flyer_frames_test.cpp)
   target_link_libraries(mission_flyer_frames_test PRIVATE earthsiege_core)
   add_test(NAME mission_flyer_frames COMMAND mission_flyer_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_flyer_frames.bin")

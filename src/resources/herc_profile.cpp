@@ -28,6 +28,8 @@ herc_profile read_herc_profile(bytes const source) {
   result.position_height = word(20);
   result.collision_radius = word(110);
   result.mass_factor = word(76);
+  result.base_combat_rating = word(66);
+  for(size_t i{0}; i != result.internal_damage_penalties.size(); ++i) result.internal_damage_penalties[i] = word(124 + i * 2);
   result.legs = word(72);
   result.shield_capacity = word(190);
   result.shield_height = word(22);

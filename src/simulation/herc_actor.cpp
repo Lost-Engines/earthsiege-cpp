@@ -4,6 +4,7 @@
 #include <utility>
 #include "resources/model_tree.h"
 #include "simulation/fixed_math.h"
+#include "simulation/herc_assessment.h"
 #include "simulation/impact_damage.h"
 #include "simulation/model_math.h"
 
@@ -48,6 +49,7 @@ std::optional<herc_interception> herc_actor::intercept(impact_request const &req
   auto remaining{shield_damage};
   auto const shield{intercept_shield(power_state.shields, remaining, source.profile.shield_height, source.profile.shield_radius, request.reach, actor_to_ray)};
   if(!shield) return std::nullopt;
+  combat_rating_valid = false;
   impact_state.damage_received = wrap_long(static_cast<int64_t>(impact_state.damage_received) + shield_damage - remaining);
   herc_interception result;
   result.distance = wrap_long(static_cast<int64_t>(*shield) + 1);
@@ -254,6 +256,10 @@ std::optional<herc_interception> herc_actor::receive_impact(impact_request const
 void herc_actor::update_power(frame_ratio const ratio, bool const free_energy) {
   update_herc_power(power_state, components.state().consequences, ratio, [&](int16_t const budget){ return armament.allocate(-1, budget, ratio, free_energy); });
   body_state.update_weapons(armament);
+  if(!combat_rating_valid) {
+    cached_combat_rating = herc_combat_rating(source.profile, loadout.damage, components.state(), armament, weapon_definitions);
+    combat_rating_valid = true;
+  }
 }
 
 std::vector<weapon_shot> herc_actor::discharge_slot(size_t const slot, vec2<int16_t> const &aim, bool const free_ammunition) {
@@ -266,6 +272,8 @@ std::vector<weapon_shot> herc_actor::discharge_slot(size_t const slot, vec2<int1
 }
 
 herc_loadout const &herc_actor::definition() const { return loadout; }
+herc_profile const &herc_actor::profile() const { return source.profile; }
+int16_t herc_actor::combat_rating() const { return cached_combat_rating; }
 
 std::vector<size_t> herc_actor::damage_section(size_t const section, int16_t const amount, component_choice const &choose, section_detachment const &detach) {
   bool const was_dead{components.state().consequences.dead};
