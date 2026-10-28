@@ -6,6 +6,13 @@
 
 namespace earthsiege {
 
+/// Percentage condition stored by the shell, independently of live damage arrays.
+struct herc_condition {
+  std::array<int16_t, 13> armour{};
+  std::array<int16_t, 10> internal{};
+  std::array<int16_t, 10> equipment{};
+};
+
 struct player_herc {
   int16_t slot{0};
   int16_t field{0};
@@ -13,9 +20,7 @@ struct player_herc {
   std::vector<int16_t> weapons;
   std::vector<int16_t> weapon_values;
   int16_t extra{0};
-  std::array<int16_t, 13> components{};
-  std::array<int16_t, 10> modules_a{};
-  std::array<int16_t, 10> modules_b{};
+  herc_condition condition;
 };
 
 struct player_roster {

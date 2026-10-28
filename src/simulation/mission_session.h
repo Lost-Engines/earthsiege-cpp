@@ -24,12 +24,27 @@ struct combat_notice {
   vec3<int32_t> position;
 };
 
-/// Own mission terrain, player-roster combat and live projectiles/effects while controllers are integrated
+struct mission_herc_view {
+  size_t source;
+  size_t group;
+  uint8_t side;
+  bool waiting;
+  bool player_roster;
+  bool player;
+  herc_actor const &actor;
+};
+
+/// Own mission terrain, HERC combat and live projectiles/effects while controllers are integrated
 class mission_session {
   struct crew_member {
     herc_definition const *definition;
     std::unique_ptr<herc_actor> actor;
     std::vector<model_attachment> attachments;
+    size_t source{0};
+    size_t group{0};
+    uint8_t side{0};
+    bool waiting{false};
+    bool player_roster{false};
     bool contact_received{false};
   };
   scenery_world terrain;
@@ -47,9 +62,11 @@ class mission_session {
   std::vector<combat_notice> frame_notices;
   std::optional<int32_t> impact(projectile_owner const &owner, impact_request const &request);
   void fire_selected(bool pressed);
+  herc_damage_events damage_events(size_t actor);
+  std::vector<scene_model> herc_models(bool roster_only);
 
 public:
-  mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster);
+  mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random = random_state{});
   mission_session(mission_session const &) = delete;
   mission_session(mission_session &&) = delete;
   mission_session &operator=(mission_session const &) = delete;
@@ -67,6 +84,8 @@ public:
   std::vector<scene_object> visible_objects();
   std::span<actor_contact const> contacts() const;
   std::vector<scene_model> roster_models();
+  std::vector<mission_herc_view> hercs() const;
+  random_state::state const &random_snapshot() const;
   camera_target view_target() const;
   camera_state make_camera(camera_mode mode) const;
 };

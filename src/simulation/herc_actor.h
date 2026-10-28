@@ -21,6 +21,8 @@ class herc_actor {
   herc_power power_state;
   herc_impact_state impact_state;
   weapon_bank armament;
+  bool salvage_excluded{false};
+  void detach_section(size_t section, bool &large_explosion, random_state &random, herc_damage_events const &events);
   std::pair<int16_t, vec3<int16_t>> section_centre(size_t section, bool last = false) const;
   vec3<int32_t> section_position(size_t section, bool radial) const;
 
@@ -31,6 +33,7 @@ public:
   herc_actor &operator=(herc_actor const &) = delete;
   herc_actor &operator=(herc_actor &&) = delete;
   herc_body const &body() const;
+  void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   damage_state const &damage() const;
   herc_power const &power() const;
   herc_power &power();
@@ -46,6 +49,11 @@ public:
   /// Readiness and group/trigger policy are checked by the controller before discharge
   std::vector<weapon_shot> discharge_slot(size_t slot, vec2<int16_t> const &aim, bool free_ammunition = false);
   herc_loadout const &definition() const;
+  bool allows_salvage() const;
+  void restore_condition(herc_condition const &condition);
+  void apply_starting_condition(int16_t condition, random_state &random, herc_damage_events const &events);
+  void random_damage(int16_t chance, int16_t magnitude, random_state &random, herc_damage_events const &events);
+  void direct_damage(size_t section, int16_t amount, random_state &random, herc_damage_events const &events);
   /// Direct armour/component damage; projectile shielding and impact effects are separate stages
   std::vector<size_t> damage_section(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach = {});
   std::optional<component_hit> component_hit_test(model_transform const &actor_to_ray, int32_t reach, int16_t radius) const;

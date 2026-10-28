@@ -5,6 +5,7 @@
 
 namespace earthsiege {
 
+inline size_t constexpr herc_internal_slots{21};
 inline size_t constexpr weapon_section_first{19};
 inline size_t constexpr weapon_internal_first{12};
 

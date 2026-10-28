@@ -18,10 +18,40 @@ bool accumulate_damage(int16_t &amount, int16_t const capacity, int16_t &current
 }
 
 component_damage::component_damage(damage_definition const &source, damage_state initial) : definition{source}, current{std::move(initial)} {
-  if(current.internal.size() != definition.hit_points.size() || current.armour.size() != definition.components.size() || current.present.size() != definition.components.size()) throw std::invalid_argument{"damage state does not match its definition"};
+  if(current.internal.size() < definition.hit_points.size() || current.armour.size() != definition.components.size() || current.present.size() != definition.components.size()) throw std::invalid_argument{"damage state does not match its definition"};
 }
 
 damage_state const &component_damage::state() const { return current; }
+
+void component_damage::restore_condition(herc_condition const &condition) {
+  auto const amount{[](int16_t const percent, int16_t const capacity){ return wrap_word((100 - percent) * capacity / 100); }};
+  for(size_t section{0}; section != 19; ++section) current.armour.at(section) = section < condition.armour.size() ? amount(condition.armour[section], definition.components.at(section).armour) : int16_t{0};
+  for(size_t part{0}; part != 12; ++part) current.internal.at(part) = part != 9 && part < condition.internal.size() ? amount(condition.internal[part], definition.hit_points.at(part)) : int16_t{0};
+  // DOS iterates ten times despite allocating only nine equipment slots. Retain
+  // the tenth saved percentage, but do not reproduce its out-of-bounds write.
+  for(size_t slot{0}; 19 + slot < current.armour.size() && 12 + slot < definition.hit_points.size() && slot < condition.equipment.size(); ++slot) {
+    auto const armour{definition.components.at(19 + slot).armour};
+    auto const internal{definition.hit_points.at(12 + slot)};
+    auto const damage{amount(condition.equipment[slot], wrap_word(armour + internal))};
+    if(armour < damage) {
+      current.armour[19 + slot] = -1;
+      auto const remainder{wrap_word(damage - armour)};
+      current.internal[12 + slot] = internal < remainder ? int16_t{-1} : remainder;
+    } else current.armour[19 + slot] = damage;                                 // the original leaves this internal value alone
+  }
+}
+
+void component_damage::apply_starting_impairments(int16_t const condition) {
+  if(condition >= 0 && condition < 20) current.consequences.disabled = true;
+  else if(condition >= 20 && condition < 40) current.internal.at(5) = definition.hit_points.at(5);
+}
+
+int16_t component_damage::section_capacity(size_t const section) const {
+  auto const &piece{definition.components.at(section)};
+  auto total{piece.armour};
+  for(auto const &entry : piece.dependents) total = wrap_word(total + definition.hit_points.at(static_cast<size_t>(entry.component)));
+  return total;
+}
 
 bool component_damage::distribute(size_t const section, int16_t amount, component_choice const &choose) {
   auto const &dependencies{definition.components.at(section).dependents};

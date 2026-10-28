@@ -13,9 +13,11 @@ herc_actor::herc_actor(herc_definition const &definition, weapon_catalogue const
     body_state{definition, weapons, templates, equipment, position, angles},
     components{loadout.damage, initial_herc_damage(loadout, body_state.model().cell_frames().size())},
     power_state{.reserve{herc_power_capacity}, .shields{static_cast<int16_t>(definition.profile.shield_capacity >> 1), static_cast<int16_t>(definition.profile.shield_capacity >> 1), shield_balance_one / 2, definition.profile.shield_capacity}},
-    armament{weapons, templates, definition.mounts, equipment, weapon_values} {}
+    armament{weapons, templates, definition.mounts, equipment, weapon_values},
+    salvage_excluded{definition.profile.salvage_value == 0} {}
 
 herc_body const &herc_actor::body() const { return body_state; }
+void herc_actor::place(vec3<int32_t> const &position, vec3<uint16_t> const &angles) { body_state.place(position, angles); }
 earthsiege::damage_state const &herc_actor::damage() const { return components.state(); }
 herc_power const &herc_actor::power() const { return power_state; }
 herc_power &herc_actor::power() { return power_state; }
@@ -95,6 +97,60 @@ vec3<int32_t> herc_actor::section_position(size_t const section, bool const radi
   return result;
 }
 
+void herc_actor::detach_section(size_t const section, bool &large_explosion, random_state &random, herc_damage_events const &events) {
+  auto const &piece{loadout.damage.components.at(section)};
+  auto const flag{[&](damage_section_flag const value){ return (piece.flags & std::to_underlying(value)) != 0; }};
+  if(!large_explosion && piece.cell_sequence >= 0 && flag(damage_section_flag::attached_effect) && events.attached_smoke) {
+    auto const [part, centre]{section_centre(section)};
+    events.attached_smoke(part, centre);
+  }
+  auto const position{section_position(section, false)};
+  if(!large_explosion) {
+    large_explosion = flag(damage_section_flag::large_explosion);
+    events.explosion(large_explosion ? 17 : 10, position, random);
+  }
+  events.debris(3, position, random);
+}
+
+bool herc_actor::allows_salvage() const { return !salvage_excluded; }
+
+void herc_actor::restore_condition(herc_condition const &condition) { components.restore_condition(condition); }
+
+void herc_actor::direct_damage(size_t const section, int16_t const amount, random_state &random, herc_damage_events const &events) {
+  if(!events.explosion || !events.debris) throw std::invalid_argument{"damage requires synchronous effect emitters"};
+  if(events.body_damage) events.body_damage(section, amount);
+  bool large_explosion{false};
+  damage_section(section, amount, [&](int16_t const bound){ return random.bounded(bound); }, [&](size_t const detached){ detach_section(detached, large_explosion, random, events); });
+}
+
+void herc_actor::random_damage(int16_t const chance, int16_t const magnitude, random_state &random, herc_damage_events const &events) {
+  if(magnitude == 0) return;
+  for(size_t section{0}; section != components.state().present.size(); ++section) {
+    if(!components.state().present[section] || (random.next() & 255) >= chance) continue;
+    auto const multiplier{random.bounded(magnitude) + (magnitude >> 1)};
+    auto const amount{wrap_word((components.section_capacity(section) * multiplier + 128) >> 8)};
+    direct_damage(section, amount, random, events);
+  }
+}
+
+void herc_actor::apply_starting_condition(int16_t const condition, random_state &random, herc_damage_events const &events) {
+  int16_t magnitude{0};
+  if(condition >= 0 && condition < 80) {
+    if(condition < 20) {
+      direct_damage((random.next() & 1) ? 7 : 8, 32000, random, events);
+      if(source.profile.legs > 2) direct_damage((random.next() & 1) ? 13 : 14, 32000, random, events);
+      magnitude = 150;
+      body_state.mark_collapsed();
+    } else if(condition < 40) magnitude = 120;
+    else if(condition < 60) magnitude = 80;
+    else magnitude = 50;
+    components.apply_starting_impairments(condition);
+    if(condition < 40) salvage_excluded = true;
+  }
+  random_damage(static_cast<int16_t>(magnitude + 25), magnitude, random, events);
+  body_state.apply_damage(components.state());
+}
+
 std::optional<herc_interception> herc_actor::receive_impact(impact_request const &request, impact_conditions const &conditions, random_state &random, herc_damage_events const &events) {
   if(!events.explosion || !events.debris) throw std::invalid_argument{"impact requires synchronous effect emitters"};
   auto result{intercept(request, conditions, events.shield_warning)};
@@ -105,18 +161,7 @@ std::optional<herc_interception> herc_actor::receive_impact(impact_request const
   int constexpr probability_percent{41};
   bool large_explosion{false};
   auto const detach{[&](size_t const section){
-    auto const &piece{loadout.damage.components.at(section)};
-    auto const flag{[&](damage_section_flag const value){ return (piece.flags & std::to_underlying(value)) != 0; }};
-    if(!large_explosion && piece.cell_sequence >= 0 && flag(damage_section_flag::attached_effect) && events.attached_smoke) {
-      auto const [part, centre]{section_centre(section)};
-      events.attached_smoke(part, centre);
-    }
-    auto const position{section_position(section, false)};
-    if(!large_explosion) {
-      large_explosion = flag(damage_section_flag::large_explosion);
-      events.explosion(large_explosion ? 17 : 10, position, random);
-    }
-    events.debris(3, position, random);
+    detach_section(section, large_explosion, random, events);
   }};
   auto const damage{[&](size_t const section, int16_t const amount){
     if(events.body_damage) events.body_damage(section, amount);

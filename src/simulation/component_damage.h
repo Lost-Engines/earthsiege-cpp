@@ -2,6 +2,7 @@
 #include <functional>
 #include <vector>
 #include "resources/combat.h"
+#include "resources/player_roster.h"
 
 namespace earthsiege {
 
@@ -42,6 +43,11 @@ public:
   component_damage(damage_definition const &definition, damage_state initial);
   std::vector<size_t> hit(size_t section, int16_t amount, int16_t legs, component_choice const &choose, section_detachment const &detach = {});
   damage_state const &state() const;
+  /// Shell percentages restore accumulators without recomputing cells or consequence flags.
+  void restore_condition(herc_condition const &condition);
+  /// Authored wreck/reactor presets, before the random starting-damage pass.
+  void apply_starting_impairments(int16_t condition);
+  int16_t section_capacity(size_t section) const;
   /// Q8 total armour/internal damage; reference weights do not weight this measurement
   int16_t fraction(size_t section) const;
   /// Original weapon knock-off bypasses the ordinary presence and consequence wrapper

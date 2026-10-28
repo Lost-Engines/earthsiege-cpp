@@ -13,9 +13,16 @@ namespace earthsiege {
 herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> const equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles)
   : source{definition}, rig{std::get<shape_part>(definition.models.roots.front().content)}, armament{definition.models.roots.front(), definition.mounts, equipment, weapons, templates}, movement_state{.position{vec3<int32_t>{position}}, .angles{vec3<uint16_t>{angles}}} {
   body_channel = rig.add_channel(source.profile.movement.forward_stop_sequence);
-  torso_channel = rig.add_channel(source.profile.torso.sequence);
-  elevation_channel = rig.add_channel(source.profile.elevation.sequence);
+  if(source.profile.torso.sequence >= 0) torso_channel = rig.add_channel(source.profile.torso.sequence);
+  if(source.profile.elevation.sequence >= 0) elevation_channel = rig.add_channel(source.profile.elevation.sequence);
 }
+
+void herc_body::place(vec3<int32_t> const &position, vec3<uint16_t> const &angles) {
+  movement_state.position = position;
+  movement_state.angles = angles;
+}
+
+void herc_body::mark_collapsed() { movement_state.collapsed = true; }
 
 void herc_body::apply_damage(damage_consequences const &consequences) {
   damage = {consequences.disabled, consequences.movement_light, consequences.movement_heavy};
@@ -55,8 +62,8 @@ bool herc_body::step_requested(int16_t const speed, int16_t const steering, vec2
 bool herc_body::advance_body(vec2<int16_t> const &aim, int16_t const time_ratio, std::function<bool(herc_body const &)> const &contact) {
   update_aim(torso_state, source.profile.torso, aim.x, time_ratio);
   update_aim(elevation_state, source.profile.elevation, aim.y, time_ratio);
-  rig.channel(torso_channel).set_phase(source.profile.torso.sequence, static_cast<int16_t>(static_cast<uint16_t>(torso_state.angle) >> 2));
-  rig.channel(elevation_channel).set_phase(source.profile.elevation.sequence, static_cast<int16_t>(static_cast<uint16_t>(elevation_state.angle) >> 2));
+  if(torso_channel) rig.channel(*torso_channel).set_phase(source.profile.torso.sequence, static_cast<int16_t>(static_cast<uint16_t>(torso_state.angle) >> 2));
+  if(elevation_channel) rig.channel(*elevation_channel).set_phase(source.profile.elevation.sequence, static_cast<int16_t>(static_cast<uint16_t>(elevation_state.angle) >> 2));
   std::optional<animation_rig> saved;
   if(contact) saved.emplace(rig);
   auto const position{movement_state.position};

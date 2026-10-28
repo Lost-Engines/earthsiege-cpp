@@ -246,3 +246,16 @@ patrol/search decisions and 256 flyer group entries from `check_engagement.py`.
 Navigation, target scoring and HERC attack strategy are explicit boundaries;
 target ownership, timers, controller entry and flyer broadcast run unchanged.
 Refresh with `export_controller_fixtures.py` and `export_engagement_fixtures.py`.
+
+`starting_damage.bin` retains 1,792 original NPC condition calls across all
+sixteen HERCs and 384 original shell percentage restores across the eight playable
+chassis. Effects and shared primary randomness execute unchanged in the capture;
+C++ independently creates explosions/debris between damage draws. The capture
+also probes unsupported enemy-roster restores for research; those are excluded
+from the native shell contract (the Spider overreads its capacity table).
+Refresh using `tools/export_starting_damage_fixtures.py ../earthsiege-reverse/analysis`.
+
+`mission_hercs.bin` checks all 56 pre-tick HERCs in the four recorded worlds,
+including source/group identity, side, waiting gate, pose, damage and shared RNG.
+It supplies the captured initial RNG, not captured damage, to the native mission
+constructor. Refresh using `tools/export_mission_herc_fixtures.py ../earthsiege-reverse/analysis`.

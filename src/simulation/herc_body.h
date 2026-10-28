@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <optional>
 #include "resources/herc_definition.h"
 #include "simulation/actor_contact.h"
 #include "simulation/aim_control.h"
@@ -30,12 +31,14 @@ class herc_body {
   aiming_state torso_state;
   aiming_state elevation_state;
   size_t body_channel{0};
-  size_t torso_channel{0};
-  size_t elevation_channel{0};
+  std::optional<size_t> torso_channel;
+  std::optional<size_t> elevation_channel;
   bool advance_body(vec2<int16_t> const &aim, int16_t time_ratio, std::function<bool(herc_body const &)> const &contact);
 
 public:
   herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles);
+  void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
+  void mark_collapsed();
   void apply_damage(damage_consequences const &consequences);
   void apply_damage(damage_state const &state);
   void update_weapons(weapon_bank const &bank);

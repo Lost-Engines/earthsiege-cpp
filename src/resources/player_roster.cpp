@@ -20,9 +20,9 @@ player_roster read_player_roster(bytes const source) {
     for(int weapon{0}; weapon != weapons; ++weapon) herc.weapons.push_back(file.integer<int16_t>());
     for(int weapon{0}; weapon != weapons; ++weapon) herc.weapon_values.push_back(file.integer<int16_t>());
     herc.extra = file.integer<int16_t>();
-    for(auto &value : herc.components) value = file.integer<int16_t>();
-    for(auto &value : herc.modules_a) value = file.integer<int16_t>();
-    for(auto &value : herc.modules_b) value = file.integer<int16_t>();
+    for(auto &value : herc.condition.armour) value = file.integer<int16_t>();
+    for(auto &value : herc.condition.internal) value = file.integer<int16_t>();
+    for(auto &value : herc.condition.equipment) value = file.integer<int16_t>();
     result.hercs.push_back(std::move(herc));
   }
   std::ranges::copy(file.take(result.flags.size()), result.flags.begin());

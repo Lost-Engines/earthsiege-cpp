@@ -10,32 +10,51 @@
 
 namespace earthsiege {
 
-mission_session::mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster)
+mission_session::mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random)
   : terrain{resources, script.header},
     weapon_definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))},
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
-    effects{resources}, projectiles{resources, weapon_definitions} {
+    random{std::move(initial_random)}, effects{resources}, projectiles{resources, weapon_definitions} {
   auto const placements{placement_catalogue{resources}.place(script, roster)};
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
   std::optional<size_t> controlled;
   for(auto const &actor : placements.actors[static_cast<size_t>(actor_kind::herc)]) {
-    if(!actor.player_roster) continue;
-    if(!actor.position) throw std::runtime_error{"player roster has an undefined formation position"};
+    if(!actor.position) throw std::runtime_error{"mission contains an undefined negative-formation position"};
     auto &definition{definitions[actor.definition]};
     if(!definition) definition = std::make_unique<herc_definition>(read_herc_definition(resources, names.at(static_cast<size_t>(actor.definition))));
-    auto const &loadout{roster.hercs.at(actor.source - script.hercs.size())};
+    std::span<int16_t const> equipment, values;
+    vec3<int32_t> position{0, 0, -1};
+    vec3<uint16_t> angles{32768, 32768, 0};
+    if(actor.player_roster) {
+      auto const &loadout{roster.hercs.at(actor.source - script.hercs.size())};
+      equipment = loadout.weapons; values = loadout.weapon_values;
+    } else {
+      auto const &spawn{script.hercs.at(actor.source)};
+      equipment = spawn.weapons; values = spawn.ammunition;
+      if(spawn.position >= 0) { position = script.points.at(static_cast<size_t>(spawn.position)); position.z += definition->profile.position_height; }
+      if(spawn.heading >= 0) angles = vec3<uint16_t>{0, 0, decode_mission_heading(script.headings.at(static_cast<size_t>(spawn.heading)))};
+    }
+    // Starting damage executes before group placement, including effects at an
+    // unresolved actor's original sentinel position. Place the complete roster later.
     crew_member member{
       .definition{definition.get()},
-      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, loadout.weapons, *actor.position, actor.angles, loadout.weapon_values)},
-      .attachments{},
+      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, equipment, position, angles, values)},
+      .attachments{}, .source{actor.source}, .group{actor.group}, .side{placements.groups.at(actor.group).mode},
+      .waiting{script.groups.at(actor.group).trigger >= 0}, .player_roster{actor.player_roster},
     };
     for(auto const &part : member.actor->body().weapons().parts()) member.attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});
     if(actor.player_controlled) controlled = crew.size();
     crew.push_back(std::move(member));
+    if(actor.player_roster) crew.back().actor->restore_condition(roster.hercs.at(actor.source - script.hercs.size()).condition);
+    else crew.back().actor->apply_starting_condition(script.hercs.at(actor.source).initial_condition, random, damage_events(crew.size() - 1));
   }
   if(!controlled) throw std::runtime_error{"mission has no controlled roster HERC"};
   player_index = *controlled;
+  for(size_t index{0}; index != crew.size(); ++index) {
+    auto const &placement{placements.actors[static_cast<size_t>(actor_kind::herc)][index]};
+    crew[index].actor->place(*placement.position, placement.angles);
+  }
   cycle_weapon();
 }
 
@@ -61,7 +80,7 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
   crew.at(player_index).actor->step(controls, time_ratio, [&](herc_body const &candidate){
     std::vector<contact_actor> bodies;
     bodies.reserve(crew.size());
-    for(auto const &member : crew) bodies.push_back(member.actor->body().contact_geometry());
+    for(auto const &member : crew) { auto body{member.actor->body().contact_geometry()}; body.waiting = member.waiting; bodies.push_back(body); }
     if(auto const hit{find_actor_contact(bodies, player_index)}) {
       crew.at(hit->other).contact_received = true;
       frame_contacts.push_back(*hit);                                          // retain damage dispatch for the component-damage consumer
@@ -70,7 +89,7 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
     return scenery_contact_height(terrain.colliders(), candidate.movement().position) != 0;
   });
   fire_selected(fire);
-  for(auto &member : crew) if(!member.actor->damage().consequences.dead) member.actor->update_power(time_ratio);
+  for(auto &member : crew) if(!member.waiting && !member.actor->damage().consequences.dead) member.actor->update_power(time_ratio);
   // Phase-five reclamation follows firing: expired objects occupy their slots
   // through this frame's simulation, as in the original shared pools.
   effects.collect();
@@ -109,6 +128,18 @@ void mission_session::fire_selected(bool const pressed) {
   }
 }
 
+herc_damage_events mission_session::damage_events(size_t const index) {
+  herc_damage_events events;
+  events.explosion = [&, index](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition, position, rng); };
+  events.debris = [&, index](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition, position, rng); };
+  events.attached_smoke = [&, index](int16_t const part, vec3<int16_t> const &position){ frame_notices.push_back({combat_notice_kind::attached_smoke, index, part, 0, vec3<int32_t>{position}}); };
+  events.weapon_ejected = [&, index](size_t const slot){ frame_notices.push_back({combat_notice_kind::ejected_weapon, index, static_cast<int16_t>(slot), 0, {}}); };
+  events.salvage = [&, index](int16_t const weapon, int16_t const quality){ frame_notices.push_back({combat_notice_kind::salvage, index, weapon, quality, {}}); };
+  events.shield_warning = [&, index]{ frame_notices.push_back({combat_notice_kind::shield_warning, index, 0, 0, {}}); };
+  events.cockpit_damage = [&, index](size_t const part){ frame_notices.push_back({combat_notice_kind::cockpit_damage, index, static_cast<int16_t>(part), 0, {}}); };
+  return events;
+}
+
 std::optional<int32_t> mission_session::impact(projectile_owner const &owner, impact_request const &request) {
   std::vector<impact_actor> actors;
   std::vector<size_t> group;
@@ -116,19 +147,12 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
   for(size_t index{0}; index != crew.size(); ++index) {
     auto &victim{*crew[index].actor};
     auto const &damage{victim.damage().consequences};
-    group.push_back(index);
+    if(crew[index].group == crew.at(owner.actor).group) group.push_back(index);
     actors.push_back({
-      .position{vec3<int32_t>{victim.body().movement().position}}, .group{0}, .side{0},
-      .waiting{false}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
+      .position{vec3<int32_t>{victim.body().movement().position}}, .group{crew[index].group}, .side{crew[index].side},
+      .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
-        herc_damage_events events;
-        events.explosion = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition, position, rng); };
-        events.debris = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition, position, rng); };
-        events.attached_smoke = [&](int16_t const part, vec3<int16_t> const &position){ frame_notices.push_back({combat_notice_kind::attached_smoke, index, part, 0, vec3<int32_t>{position}}); };
-        events.weapon_ejected = [&](size_t const slot){ frame_notices.push_back({combat_notice_kind::ejected_weapon, index, static_cast<int16_t>(slot), 0, {}}); };
-        events.salvage = [&](int16_t const weapon, int16_t const quality){ frame_notices.push_back({combat_notice_kind::salvage, index, weapon, quality, {}}); };
-        events.shield_warning = [&]{ frame_notices.push_back({combat_notice_kind::shield_warning, index, 0, 0, {}}); };
-        events.cockpit_damage = [&](size_t const part){ frame_notices.push_back({combat_notice_kind::cockpit_damage, index, static_cast<int16_t>(part), 0, {}}); };
+        auto const events{damage_events(index)};
         impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{0}, .difficulty_override{false}, .side{actors[index].side}};
         auto const result{crew[index].actor->receive_impact(incoming, conditions, random, events)};
         auto const &state{crew[index].actor->damage().consequences};
@@ -144,7 +168,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
 }
 
 std::vector<scene_object> mission_session::visible_objects() {
-  auto models{roster_models()};
+  auto models{herc_models(false)};
   effects.append_models(models);
   std::vector<scene_object> result;
   result.reserve(models.size() + projectiles.live().size());
@@ -155,10 +179,24 @@ std::vector<scene_object> mission_session::visible_objects() {
 
 std::span<actor_contact const> mission_session::contacts() const { return frame_contacts; }
 
-std::vector<scene_model> mission_session::roster_models() {
+std::vector<scene_model> mission_session::roster_models() { return herc_models(true); }
+
+std::vector<mission_herc_view> mission_session::hercs() const {
+  std::vector<mission_herc_view> result;
+  for(size_t index{0}; index != crew.size(); ++index) {
+    auto const &member{crew[index]};
+    result.push_back({member.source, member.group, member.side, member.waiting, member.player_roster, index == player_index, *member.actor});
+  }
+  return result;
+}
+
+random_state::state const &mission_session::random_snapshot() const { return random.snapshot(); }
+
+std::vector<scene_model> mission_session::herc_models(bool const roster_only) {
   std::vector<scene_model> result;
   result.reserve(crew.size());
   for(auto &member : crew) {
+    if(roster_only ? !member.player_roster : member.waiting) continue;
     size_t index{0};
     for(auto const &part : member.actor->body().weapons().parts()) member.attachments.at(index++).geometry = part.geometry && !part.disabled ? &*part.geometry : nullptr;
     result.push_back({

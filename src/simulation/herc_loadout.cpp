@@ -42,7 +42,8 @@ herc_loadout assemble_herc_loadout(herc_definition const &body, std::span<int16_
 
 damage_state initial_herc_damage(herc_loadout const &loadout, size_t const cell_sequences) {
   damage_state result;
-  result.internal.resize(loadout.damage.hit_points.size(), 0);
+  if(loadout.damage.hit_points.size() > herc_internal_slots) throw std::invalid_argument{"HERC internal definition exceeds its live slots"};
+  result.internal.resize(herc_internal_slots, 0);
   result.armour.resize(loadout.damage.components.size(), 0);
   result.cells.resize(cell_sequences, 0);
   // Original memset(..., 1) fills each signed word with 0x0101; consumers test nonzero.

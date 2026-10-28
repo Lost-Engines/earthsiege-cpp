@@ -4,7 +4,7 @@ The native game is being built from the supplied Earthsiege 1.0 data and origina
 
 Working components:
 
-- An owned mission session joins the original terrain, player roster, animated bodies, mounted weapons and model-attached cameras. `--inspect-demo 1–4` exposes these starting states in the native window with held movement/aiming and free/orbit/attached camera controls. Its fixed 25 ms inspection updates are separate from full frame scheduling; it does not substitute inactive scenery or player-roster bodies for enemy activation, combat or AI.
+- An owned mission session joins the original terrain, full HERC roster, animated bodies, mounted weapons and model-attached cameras. `--inspect-demo 1–4` exposes these starting states in the native window with held movement/aiming and free/orbit/attached camera controls. Its fixed 25 ms inspection updates are separate from full frame scheduling; it does not substitute inactive scenery or player-roster bodies for enemy activation, combat or AI.
 
 - All seven original VOL archives, bounded resource lookup and independent payload checks.
 - Indexed artwork, VGA palettes/shade ramps and DFN fonts; native 320×200 software framebuffer and square-pixel SDL2 window.
@@ -48,7 +48,7 @@ Working components:
 - Typed weapon, projectile, component-damage and collision definitions match 36 original-reader-checked resources, including 17 weapons, 19 projectiles, 17 damage files and 18 collision files. The original malformed HOVTANK damage layout remains an explicit rejection.
 - Damaged HERC movement now matches 2,880 additional complete original body states across all eight playable chassis. Light/heavy speed penalties, signed collision-recovery countdowns, disabled animation requests, collapse timing and event order are retained; collapse damage/audio run at an explicit callback before root movement.
 - Named HERC movement/aiming profiles and native torso/elevation acceleration, averaged angular integration and angle limits. All 13,440 physical aiming cases across sixteen chassis agree.
-- Original moving-body occupancy matches 5,600 scene queries across every height field; radius and altitude remain unused in that original consumer. Actor contact and ramming match 1,400 cases, including 91 damaging impacts and local articulated hit heights. HERC collision response matches 1,920 sequential updates across eight chassis, preserving saved skeletal state, reverse/clamped speed, second probes, unchanged Euler angles during rollback and direct stop reset during transitions. The inspection session now blocks on scenery and roster members; component damage consumes the retained contact dispatch separately.
+- Original moving-body occupancy matches 5,600 scene queries across every height field; radius and altitude remain unused in that original consumer. Actor contact and ramming match 1,400 cases, including 91 damaging impacts and local articulated hit heights. HERC collision response matches 1,920 sequential updates across eight chassis, preserving saved skeletal state, reverse/clamped speed, second probes, unchanged Euler angles during rollback and direct stop reset during transitions. The inspection session now blocks on scenery and active HERCs; component damage consumes the retained contact dispatch separately.
 - Prepared AI speed/steering requests share the native gait and aiming implementation with player controls while retaining the distinct absolute-speed semantics. Another 1,280 complete original body states agree across all eight playable chassis. Avoidance and damaged/disabled modifiers are applied by their separate consumers.
 - Owned HERC bodies combine equipment geometry, runtime animation priorities, movement, torso/elevation controls and shared skeletal poses. All 1,280 original combined updates across eight playable chassis agree on position, angles, control state and every pose/matrix; the owned actor connects these to damage and weapon subsystems.
 - Original normal-player locomotion couples throttle, gait transitions, stationary/moving steering and authored root movement. All 11,520 original states across eight playable HERCs and three frame ratios agree; another 4,104 original direction-angle cases agree, including low-word rounding without carry. Collision rollback and disabled/damaged movement now have separate original-backed consumers.
@@ -114,3 +114,29 @@ attacker counts remain owned state. Another 256 flyer group attacks agree,
 including dead-member retention, target propagation and per-member entry stagger.
 Attack strategies, actual navigation callbacks and full world scheduling are
 subsequent integration boundaries, not substituted by generic pursuit behavior.
+
+## Authored HERC starting conditions
+
+The mission session now constructs every referenced HERC in original source
+order, then the player's roster, and applies final group placement after starting
+damage. It retains group ownership, side and activation gates; waiting groups do
+not appear, collide or receive shots. Player-roster-only rendering remains an
+explicit comparison view. All 56 HERC starts in the four recorded missions match
+original placement, damage arrays/cells, group state and final shared randomness.
+
+Starting condition restoration matches 384 original shell-roster cases across
+the eight playable chassis. Armour, internal and equipment percentage arrays now
+have explicit names. Restoration preserves the original untouched equipment
+internal values and does not prematurely derive damage cells or impairment flags.
+The original writes a tenth equipment result beyond its allocated arrays; native
+code preserves the saved field but operates on the nine valid slots.
+
+Another 1,792 original NPC initial-condition calls match across all sixteen
+chassis, including threshold boundaries, detached sections, ordered effects,
+weapon disabling, salvage exclusion, collapse latch and shared randomness.
+Effects execute during initialization, before formation placement. The Spider's
+missing torso/elevation channels are optional, as in the original; its live
+internal-damage storage still has 21 entries despite its twelve-entry capacity
+resource. Shell restoration of a Spider is unsupported by the original shell and
+would read beyond that capacity table; native code does not reproduce that read.
+AI decisions and flyer/ground-object ownership remain integration work.

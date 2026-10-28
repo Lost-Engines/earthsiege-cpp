@@ -52,6 +52,7 @@ struct herc_profile {
   int16_t shield_capacity{0};
   int16_t shield_height{0};
   int16_t shield_radius{0};
+  int16_t salvage_value{0};
   bool weapons_can_detach{false};
   int16_t camera_part{0};
   vec3<int16_t> camera_offset;
