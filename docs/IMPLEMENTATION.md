@@ -97,3 +97,10 @@ complete beam drawings match every VGA pixel, including near-plane clipping and
 the original handling of projected zero-area ribbons. ELF consumes the shared
 random stream for each interior/end pair; its original twenty-face index limit
 is checked. Projectiles, HERCs and effects share scenery painter ordering.
+
+Native target eligibility/ranking now matches 3,000 original selections and
+complete RNG states, including player-led wingmate restrictions, objective
+priority, retaliation, controller state, attacker sharing and stable tie order.
+Recognition, contact sharing, trigger activation and the asymmetric visibility
+cache match another 1,110 original cases. They are reusable simulation consumers;
+the mission scheduler still needs to populate and advance their actor context.

@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/perception.cpp
+  src/simulation/perception.h
+  src/simulation/target_selection.cpp
+  src/simulation/target_selection.h
   src/simulation/world_projectiles.cpp
   src/simulation/world_projectiles.h
   src/simulation/beam_effect.cpp
@@ -179,6 +183,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(perception_test tests/perception_test.cpp)
+  target_link_libraries(perception_test PRIVATE earthsiege_core)
+  add_test(NAME perception COMMAND perception_test "${PROJECT_SOURCE_DIR}/tests/fixtures/perception.bin")
+  add_executable(target_selection_test tests/target_selection_test.cpp)
+  target_link_libraries(target_selection_test PRIVATE earthsiege_core)
+  add_test(NAME target_selection COMMAND target_selection_test "${PROJECT_SOURCE_DIR}/tests/fixtures/target_selection.bin")
   add_executable(mission_combat_test tests/mission_combat_test.cpp)
   target_link_libraries(mission_combat_test PRIVATE earthsiege_core)
   add_test(NAME mission_combat COMMAND mission_combat_test "${PROJECT_SOURCE_DIR}/assets")

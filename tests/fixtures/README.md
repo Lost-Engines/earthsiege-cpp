@@ -228,3 +228,11 @@ state and shared RNG word is checked. Refresh with
 four demo starting rosters against native scenery. It checks resource consumption,
 projectile/effect creation and eventual reclamation and renders 256 combined
 frames. This integration check is not an original full-mission replay.
+
+`target_selection.bin` captures all inputs, decisions and 58-word/index RNG
+states from 3,000 original `0xddf4` calls (`check_target_selection.py`). Observer
+and group leader can differ. All native eligibility/scoring helpers and strength
+assessment execute. `perception.bin` retains the 1,110 recognition, sharing and
+visibility-cache cases from `check_perception.py`; fresh sight tests use empty
+scenery, while sharing runs the real trigger/counter methods. Refresh with
+`export_target_selection_fixtures.py` and `export_perception_fixtures.py`.
