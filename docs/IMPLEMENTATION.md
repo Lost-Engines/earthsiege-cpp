@@ -491,3 +491,8 @@ FLASH COMM text and emitted command indices match 240 original frames covering
 all six choices, selection highlights, disabled entries, and the EMCON/HOLD YOUR
 FIRE alternatives. Shortcut-letter colours and row geometry follow the original
 DFN labels. Command delivery to wingmates is a separate remaining UI consumer.
+
+NAV MAP matches 288 original frames across all 24 environment variants. It uses
+the original fixed overhead camera, map palette ramps, stored static-zone order
+and five-pixel centre cross. The original map can be empty where the zone has no
+terrain inside the viewport; it does not show dynamic radar contacts.

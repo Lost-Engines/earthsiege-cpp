@@ -425,3 +425,10 @@ ownership. No interactive widget drawing is claimed by these fixtures.
   alternatives. Capture: `capture_communications_display.py`; import:
   `export_communications_display_fixtures.py`. Original row setters and complete
   label/hotkey drawing execute; wingmate order delivery is outside this fixture.
+
+`navigation_displays.bin` contains 288 original navigation-map checksums, world
+headers, display rectangles and camera inputs. Capture uses the unchanged original
+world loader and map renderer, with its map-angle static constructor and initialized
+default/current display contexts. All 24 environment variants, varied headings,
+roll, positions and two display bounds are covered. Rebuild with
+`tools/export_navigation_display_fixtures.py ../earthsiege-reverse/analysis`.
