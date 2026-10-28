@@ -336,3 +336,7 @@ constructing actors. Refresh with `export_mission_flyer_frame_fixtures.py`.
   `export_herc_auxiliary_fixtures.py` from `capture_herc_auxiliary.py`.
 - `herc_guard.bin`: 2,048 guard/drive-off decisions and ordered external consumers.
   Refresh with `export_herc_guard_fixtures.py` from `capture_herc_guard.py`.
+- `herc_sensors.bin`: 4,096 original post-frame ECM/interference/seeker updates,
+  including target-change latches, damage-window clocks and full RNG. Power,
+  equipment queries, rating refresh and HUD presentation are explicit boundaries.
+  Refresh with `export_herc_sensor_fixtures.py` from `capture_herc_sensors.py`.

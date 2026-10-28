@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_sensors.cpp
+  src/simulation/herc_sensors.h
   src/simulation/herc_guard.cpp
   src/simulation/herc_guard.h
   src/simulation/herc_orders.cpp
@@ -220,6 +222,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(herc_sensors_test tests/herc_sensors_test.cpp)
+  target_link_libraries(herc_sensors_test PRIVATE earthsiege_core)
+  add_test(NAME herc_sensors COMMAND herc_sensors_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_sensors.bin")
   add_executable(herc_guard_test tests/herc_guard_test.cpp)
   target_link_libraries(herc_guard_test PRIVATE earthsiege_core)
   add_test(NAME herc_guard COMMAND herc_guard_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_guard.bin")

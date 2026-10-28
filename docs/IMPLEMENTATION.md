@@ -340,3 +340,9 @@ Guard and drive-off policies match 2,048 original decisions, including candidate
 priority, assigned-attacker weighting, anchor-relative movement, target clearing
 and the completion check after firing. These verified policies precede full live
 HERC dispatch; they do not yet constitute a completed playable mission loop.
+
+The post-frame sensor owner matches 4,096 original ECM/interference and missile
+acquisition updates, including distance-derived timers, channel-specific gates,
+HUD lock state, delayed target-change consumption, damage-window reset and full
+RNG. Power, equipment queries and HUD drawing are explicit boundaries in this
+fixture; mission integration supplies them separately.
