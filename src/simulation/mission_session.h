@@ -169,6 +169,7 @@ class mission_session {
   world_effects effects;
   world_projectiles projectiles;
   std::unique_ptr<player_armament> player_weapons;
+  int32_t player_weapon_range{};
   player_input_router input_router;
   std::optional<size_t> displayed_target;
   void advance_frame(player_input &input, frame_ratio ratio, std::function<void()> const &prepare_player);
@@ -198,8 +199,13 @@ public:
   void cycle_weapon();
   void set_auto_tracking(bool enabled);
   void toggle_weapon_pair();
-  player_input_actions step_player(player_input input, frame_ratio ratio, bool external_control = false);
+  player_input_actions step_player(player_input input, frame_ratio ratio, bool external_control = false, rectangle aiming_viewport = {0, 0, 320, 200});
   void update_player_interface();
+  void initialise_weapon_instruments();
+  void exchange_weapon_instruments(frame_ratio ratio);
+  void weapon_group_control(unsigned int button);
+  void weapon_control(unsigned int control_number, bool secondary);
+  void weapon_charge_request(unsigned int control_number, int32_t value);
   int16_t exchange_player_instruments(int16_t requested_throttle, std::optional<bool> shield_to_front = {});
   void clear_player_input();
   bool player_command(uint16_t code);

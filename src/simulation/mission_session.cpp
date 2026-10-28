@@ -174,6 +174,7 @@ void mission_session::set_displayed_target(std::optional<size_t> const target) {
 void mission_session::clear_player_input() { input_router.clear_device_state(); }
 bool mission_session::player_command(uint16_t const code) {
   if(player_weapons->command(code)) return true;
+  if(code >= 2 && code <= 10) return player_weapons->click_control(code - 2, false); // 1..9
   if(code == 14) input_router.request_centre();                             // Backspace
   else if(code == 15) cycle_target();                                       // Tab; view-specific gating belongs to the cockpit
   else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; }
@@ -192,12 +193,14 @@ void mission_session::cycle_target() {
   cockpit_observer const observer{vec3<int32_t>{body.movement().position}, body.movement().angles.z, body.torso().angle, crew[player_index].side, settings.detection_range()};
   displayed_target = cycle_cockpit_target(candidates, observer, displayed_target);
 }
-player_input_actions mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control) {
+player_input_actions mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control, rectangle const aiming_viewport) {
   player_input_actions actions;
   advance_frame(input, ratio, [&]{
     if(input.command) player_command(input.command);
     auto &actor{*crew[player_index].actor};
     player_input_context context{.external_control{external_control}, .disabled{actor.damage().consequences.disabled}, .auto_tracking{player_weapons->auto_tracking()}, .position{vec3<int32_t>{actor.body().movement().position}}, .target{}};
+    context.viewport_min = {aiming_viewport.left, aiming_viewport.top};
+    context.viewport_max = {aiming_viewport.right, aiming_viewport.bottom};
     if(auto const selected{activity->targets()[player_index].selected}) {
       auto const observations{observe()};
       vec3<int16_t> offset;
@@ -217,6 +220,13 @@ int16_t mission_session::exchange_player_instruments(int16_t const requested_thr
   if(shield_to_front) change_shield_balance(actor.power().shields, *shield_to_front);
   return actor.exchange_throttle(requested_throttle);
 }
+void mission_session::initialise_weapon_instruments() { player_weapons->initialise_displays(); exchange_weapon_instruments(0); }
+void mission_session::exchange_weapon_instruments(frame_ratio const ratio) {
+  player_weapons->exchange_displays(player_weapon_range, crew[player_index].sensors.locks, ratio);
+}
+void mission_session::weapon_group_control(unsigned int const button) { player_weapons->request_group_control(button); }
+void mission_session::weapon_control(unsigned int const control_number, bool const secondary) { player_weapons->click_control(control_number, secondary); }
+void mission_session::weapon_charge_request(unsigned int const control_number, int32_t const value) { player_weapons->request_charge(control_number, value); }
 void mission_session::update_player_interface() {
   auto &member{crew[player_index]};
   auto &relationship{activity->targets()[player_index]};
@@ -228,8 +238,10 @@ void mission_session::update_player_interface() {
     for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(target[axis]) - position[axis]);
     distance = fast_distance(delta);
   }
+  player_weapon_range = distance;
   player_weapons->finish_manual_guidance();
   player_weapons->update_selection(distance, member.sensors.locks);
+  player_weapons->exchange_group_controls();
   player_weapons->refresh_pairs();
   // The original HUD exchanges target ownership after weapons and power. Enter
   // changes the displayed target first; guidance sees it on the following frame.

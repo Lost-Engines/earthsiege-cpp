@@ -1,5 +1,6 @@
 #include "mission_view.h"
 #include <array>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -29,6 +30,7 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
     reactor{resources, cockpit.layout},
     throttle{resources, cockpit.layout},
     shields{resources, cockpit.layout},
+    weapons{resources, cockpit.layout},
     display_colours{session->scenery().colours()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
@@ -36,6 +38,16 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   update_camera(camera, session->view_target());
   instruments.add_slider(throttle.slider_layout(), 0);
   for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
+  session->initialise_weapon_instruments();
+  auto const rows{session->player_weapon_controls().displays()};
+  for(size_t i{}; i < rows.size(); ++i) {
+    auto const &row{rows[i]};
+    weapon_control_binding binding{i, instruments.add_button(weapons.button_bounds(row.control_number, row.kind)), {}, row.state.requested_charge};
+    if(row.kind == weapon_instrument_kind::energy) binding.slider = instruments.add_slider(weapons.charge_slider(row.control_number), row.state.requested_charge);
+    weapon_controls.push_back(binding);
+  }
+  auto const groups{weapons.group_bounds()};
+  for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
 }
 
 void mission_view::key(held_key const key, bool const pressed, bool const alt) {
@@ -55,7 +67,19 @@ void mission_view::consume_pointer_events() {
   if(camera.mode == camera_mode::attached) for(auto const &event : pointer_events) {
     if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right)}) {
       if(action->index == 0) requested_throttle = static_cast<int16_t>(throttle.slider_layout().vertical ? -action->value : action->value);
-      else if(action->value & 1) shield_to_front = action->index == 1;
+      else if(action->index < 3) { if(action->value & 1) shield_to_front = action->index == 1; }
+      else {
+        if(action->value & 1) for(size_t i{}; i < weapon_groups.size(); ++i)
+          if(action->index == weapon_groups[i]) session->weapon_group_control(static_cast<unsigned int>(i));
+        for(auto &binding : weapon_controls) {
+          auto const &row{session->player_weapon_controls().displays()[binding.row]};
+          if(action->index == binding.button) session->weapon_control(row.control_number, (action->value & 2) != 0);
+          else if(binding.slider == action->index) {
+            binding.requested_charge = std::clamp(action->value, 0, 1024);
+            session->weapon_charge_request(row.control_number, binding.requested_charge);
+          }
+        }
+      }
     }
   }
   pointer_events.clear();
@@ -101,7 +125,7 @@ void mission_view::step(bool const control, bool const zoom) {
   input.fire = keys.fire || (control && zoom);
   input.enter = keys.enter;
   if(!commands.empty()) { input.command=commands.front(); commands.pop_front(); }
-  auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control)};
+  auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control, cockpit.layout.bounds(0x450))};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
   shield_to_front.reset();
@@ -110,6 +134,23 @@ void mission_view::step(bool const control, bool const zoom) {
     instruments.set_value(0, requested_throttle);
   }
   session->update_player_interface();
+  session->exchange_weapon_instruments(ratio_from_period(25, nominal_frame_milliseconds));
+  for(auto &binding : weapon_controls) {
+    auto const &state{session->player_weapon_controls().displays()[binding.row].state};
+    auto const update_enabled{[&](size_t const index){
+      if((instruments.at(index).face == control_face::disabled) != state.disabled) instruments.enable(index, !state.disabled);
+    }};
+    update_enabled(binding.button);
+    if(binding.slider) {
+      update_enabled(*binding.slider);
+      // The original setter leaves a live drag alone unless the requested
+      // value changed; keyboard changes override the drag on that exchange.
+      if(binding.requested_charge != state.requested_charge) {
+        binding.requested_charge = state.requested_charge;
+        instruments.set_value(*binding.slider, state.requested_charge);
+      }
+    }
+  }
   update_camera(camera, session->view_target());
 }
 
@@ -146,6 +187,15 @@ void mission_view::draw() {
     update_shield_colours(display_colours, static_cast<int32_t>(shield.front) * 1024 / shield.capacity,
                          static_cast<int32_t>(shield.rear) * 1024 / shield.capacity);
     shields.draw(frame, shield.balance, {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);
+    for(auto const &binding : weapon_controls) {
+      auto const &row{session->player_weapon_controls().displays()[binding.row]};
+      std::optional<int> boundary;
+      if(binding.slider) { instruments.painted(*binding.slider); boundary = instruments.at(*binding.slider).boundary; }
+      weapons.draw(frame, row.control_number, row.kind, row.name, row.state, std::to_underlying(instruments.at(binding.button).face), boundary, x, y);
+    }
+    std::array<unsigned int, 5> faces;
+    for(size_t i{}; i < faces.size(); ++i) faces[i] = std::to_underlying(instruments.at(weapon_groups[i]).face);
+    weapons.draw_groups(frame, session->player_weapon_controls().current_group(), faces, x, y);
   }
 }
 

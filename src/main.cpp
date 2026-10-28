@@ -58,7 +58,7 @@ auto command(SDL_Keycode const code, bool const alt)->std::optional<uint16_t> {
     case SDLK_KP_MINUS: scan=74; break;
     case SDLK_KP_PLUS: scan=78; break;
     default:
-      if(alt && code>=SDLK_1 && code<=SDLK_9) scan=static_cast<uint16_t>(2+code-SDLK_1);
+      if(code>=SDLK_1 && code<=SDLK_9) scan=static_cast<uint16_t>(2+code-SDLK_1);
       else return std::nullopt;
   }
   return static_cast<uint16_t>(scan | (alt ? 0x200 : 0));
@@ -114,7 +114,7 @@ auto main(int argc, char *argv[])->int try {
       "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
       "F1 cockpit, F2 orbit, F3 free camera; P pauses, Escape returns to menu.\n"
       "F7 lower instruments, F8 forward, F9 left, F10 right cockpit view.\n"
-      "Space fires; W/Alt+W selects weapons; Enter/Tab selects targets; R toggles radar.\n"
+      "Space fires; 1–9 or W/Alt+W selects weapons; Enter/Tab selects targets; R toggles radar.\n"
       "Hold right mouse to aim; both buttons centre aim. Backspace recentres.\n"
       "B changes weapon groups; Alt+1–9 edits a group; +/- adjusts charge; Z restores charge settings.\n"
       "This inspection view includes mission AI and combat; the cockpit is still being integrated.\n";

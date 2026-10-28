@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/interface_strings.cpp
+  src/simulation/weapon_display.cpp
+  src/render/weapon_instruments.cpp
   src/shell/pointer_controls.cpp
   src/render/slider_geometry.cpp
   src/render/shield_instruments.cpp
@@ -237,6 +240,15 @@ if(BUILD_TESTING)
   add_executable(pointer_controls_test tests/pointer_controls_test.cpp)
   target_link_libraries(pointer_controls_test PRIVATE earthsiege_core)
   add_test(NAME pointer_controls COMMAND pointer_controls_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/pointer_controls.bin")
+  add_executable(weapon_group_test tests/weapon_group_test.cpp)
+  target_link_libraries(weapon_group_test PRIVATE earthsiege_core)
+  add_test(NAME weapon_groups COMMAND weapon_group_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/weapon_groups.bin")
+  add_executable(weapon_display_test tests/weapon_display_test.cpp)
+  target_link_libraries(weapon_display_test PRIVATE earthsiege_core)
+  add_test(NAME weapon_display COMMAND weapon_display_test "${PROJECT_SOURCE_DIR}/tests/fixtures/weapon_display.bin")
+  add_executable(weapon_instruments_test tests/weapon_instruments_test.cpp)
+  target_link_libraries(weapon_instruments_test PRIVATE earthsiege_core)
+  add_test(NAME weapon_instruments COMMAND weapon_instruments_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/weapon_instruments.bin")
   add_executable(shield_instruments_test tests/shield_instruments_test.cpp)
   target_link_libraries(shield_instruments_test PRIVATE earthsiege_core)
   add_test(NAME shield_instruments COMMAND shield_instruments_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/shield_instruments.bin")

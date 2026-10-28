@@ -4,6 +4,7 @@
 #include "render/scenery_renderer.h"
 #include "render/instrument_bars.h"
 #include "render/shield_instruments.h"
+#include "render/weapon_instruments.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
 #include "shell/pointer_controls.h"
@@ -19,6 +20,15 @@ class mission_view {
   reactor_gauge reactor;
   throttle_gauge throttle;
   shield_instruments shields;
+  weapon_instruments weapons;
+  struct weapon_control_binding {
+    size_t row;
+    size_t button;
+    std::optional<size_t> slider;
+    int32_t requested_charge;
+  };
+  std::vector<weapon_control_binding> weapon_controls;
+  std::array<size_t, 5> weapon_groups;
   cockpit_view panel{cockpit_view::forward};
   palette display_colours;
   scenery_renderer renderer;

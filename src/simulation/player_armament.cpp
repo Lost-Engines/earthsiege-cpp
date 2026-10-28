@@ -1,5 +1,6 @@
 #include "player_armament.h"
 #include <stdexcept>
+#include <algorithm>
 #include "simulation/fixed_math.h"
 #include "simulation/herc_weapon_selection.h"
 
@@ -12,6 +13,56 @@ player_armament::player_armament(weapon_bank &weapons, weapon_catalogue const &c
   for(size_t slot{0}; slot != mounts.size(); ++slot) if(auto const &weapon{bank.slots()[slot]}; weapon && !std::holds_alternative<ecm_weapon>(weapon->mechanism)) {
     groups[0][slot] = true;
     if(selected < 0) selected = static_cast<int16_t>(slot);
+  }
+}
+void player_armament::initialise_displays() {
+  instrument_rows.clear();
+  for(size_t slot{}; slot < mounts.size(); ++slot) if(auto const &weapon{bank.slots()[slot]}) {
+    if(mounts[slot].control_number < 0) continue;
+    weapon_instrument_state state;
+    // 0xa97c initially copies the native capacitor setting; the first state
+    // exchange converts it to the slider's Q10 units via the setting latch.
+    if(auto const *energy{weapon->energy()}) state.requested_charge = energy->setting;
+    instrument_rows.push_back({slot, static_cast<unsigned int>(mounts[slot].control_number), instrument_kind(*weapon), weapon_display_name(*weapon, definitions), state});
+  }
+}
+std::span<weapon_display const> player_armament::displays() const { return instrument_rows; }
+void player_armament::request_group_control(unsigned int const button) {
+  if(button < groups.size()) requested_group = static_cast<uint8_t>(button);
+  else if(button == 3) requested_link = true;
+  else if(button == 4) requested_tracking = !requested_tracking.value_or(tracking);
+}
+void player_armament::exchange_group_controls() {
+  // Original 0xcf78 performs automatic selection first, then these UI writes.
+  // B has already changed the bank and overrides a pending mouse group choice.
+  if(requested_group && !keyboard_group_changed) change_group(*requested_group);
+  requested_group.reset(); keyboard_group_changed = false;
+  if(requested_tracking) set_tracking(*requested_tracking);
+  requested_tracking.reset();
+  if(requested_link) toggle_pair();
+  requested_link = false;
+}
+bool player_armament::click_control(unsigned int const control_number, bool const secondary) {
+  for(auto &row : instrument_rows) if(row.control_number == control_number) {
+    if(row.kind == weapon_instrument_kind::ecm) { row.state.selected = !row.state.selected; return true; }
+    if(secondary) return toggle_category(static_cast<int8_t>(control_number));
+    if(!available(row.bank_slot)) return false;
+    select(row.bank_slot);
+    held_selection = true;
+    return true;
+  }
+  return false;
+}
+void player_armament::request_charge(unsigned int const control_number, int32_t const value) {
+  for(auto &row : instrument_rows) if(row.control_number == control_number && row.kind == weapon_instrument_kind::energy)
+    row.state.requested_charge = std::clamp(value, 0, 1024);
+}
+void player_armament::exchange_displays(int32_t const distance, std::array<bool, 5> const &locks, frame_ratio const ratio) {
+  for(auto &row : instrument_rows) {
+    auto const slot{row.bank_slot};
+    bool const is_selected{selected == static_cast<int>(slot) ||
+      (pairs[slot] && selected == static_cast<int>(slot) + mounts[slot].paired_slot_offset)};
+    exchange_weapon_display(bank.at(slot), row.state, selectable(slot, distance, locks), groups[group][slot], is_selected, ratio);
   }
 }
 int16_t player_armament::selection() const { return selected; }
@@ -166,7 +217,7 @@ bool player_armament::fire(bool const pressed, std::function<void(size_t)> const
 bool player_armament::command(uint16_t const code) {
   switch(code) {
     case 44: default_charge(); break;                                        // Z
-    case 48: cycle_group(); break;                                           // B
+    case 48: cycle_group(); keyboard_group_changed = true; break;                                           // B
     case 17: cycle(); held_selection = false; break;                          // W
     case 529: cycle(-1); held_selection = false; break;                       // Alt+W
     case 12: case 13: case 74: case 78: adjust_charge(code == 13 || code == 78); break;

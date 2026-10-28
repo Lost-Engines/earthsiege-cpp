@@ -2,6 +2,7 @@
 #include <array>
 #include <functional>
 #include "simulation/weapon_bank.h"
+#include "simulation/weapon_display.h"
 
 namespace earthsiege {
 
@@ -19,12 +20,24 @@ class player_armament {
   bool tracking{false};
   bool manual_fired{false};
   bool manual_active{false};
+  std::vector<weapon_display> instrument_rows;
+  std::optional<uint8_t> requested_group;
+  std::optional<bool> requested_tracking;
+  bool requested_link{false};
+  bool keyboard_group_changed{false};
   bool available(size_t slot) const;
   bool ready(size_t slot) const;
   bool poll_trigger(size_t slot, bool pressed, bool &release) const;
 
 public:
   player_armament(weapon_bank &weapons, weapon_catalogue const &catalogue, std::span<weapon_mount const> attachment_points);
+  void initialise_displays();
+  std::span<weapon_display const> displays() const;
+  void request_group_control(unsigned int button);
+  void exchange_group_controls();
+  bool click_control(unsigned int control_number, bool secondary);
+  void request_charge(unsigned int control_number, int32_t value);
+  void exchange_displays(int32_t distance, std::array<bool, 5> const &locks, frame_ratio ratio);
   int16_t selection() const;
   uint8_t current_group() const;
   bool included(size_t group_index, size_t slot) const;
