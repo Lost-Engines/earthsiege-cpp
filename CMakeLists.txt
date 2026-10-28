@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/engagement.cpp
+  src/simulation/engagement.h
+  src/simulation/controller.cpp
+  src/simulation/controller.h
   src/simulation/perception.cpp
   src/simulation/perception.h
   src/simulation/target_selection.cpp
@@ -183,6 +187,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(engagement_test tests/engagement_test.cpp)
+  target_link_libraries(engagement_test PRIVATE earthsiege_core)
+  add_test(NAME engagement COMMAND engagement_test "${PROJECT_SOURCE_DIR}/tests/fixtures/engagement.bin")
+  add_executable(controller_test tests/controller_test.cpp)
+  target_link_libraries(controller_test PRIVATE earthsiege_core)
+  add_test(NAME controllers COMMAND controller_test "${PROJECT_SOURCE_DIR}/tests/fixtures/controllers.bin")
   add_executable(perception_test tests/perception_test.cpp)
   target_link_libraries(perception_test PRIVATE earthsiege_core)
   add_test(NAME perception COMMAND perception_test "${PROJECT_SOURCE_DIR}/tests/fixtures/perception.bin")

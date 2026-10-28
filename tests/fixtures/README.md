@@ -236,3 +236,13 @@ assessment execute. `perception.bin` retains the 1,110 recognition, sharing and
 visibility-cache cases from `check_perception.py`; fresh sight tests use empty
 scenery, while sharing runs the real trigger/counter methods. Refresh with
 `export_target_selection_fixtures.py` and `export_perception_fixtures.py`.
+
+`controllers.bin` combines `check_controllers.py` (27 tables, 162 entries,
+62 selections and 480 status results) with `capture_controller_dispatch.py`
+(1,200 original outer dispatch calls). Behavior callbacks are explicit recording
+thunks; state-entry calls execute original instructions. Callback translations
+are invalidated whenever those thunks change. `engagement.bin` retains 3,600
+patrol/search decisions and 256 flyer group entries from `check_engagement.py`.
+Navigation, target scoring and HERC attack strategy are explicit boundaries;
+target ownership, timers, controller entry and flyer broadcast run unchanged.
+Refresh with `export_controller_fixtures.py` and `export_engagement_fixtures.py`.

@@ -104,3 +104,13 @@ priority, retaliation, controller state, attacker sharing and stable tie order.
 Recognition, contact sharing, trigger activation and the asymmetric visibility
 cache match another 1,110 original cases. They are reusable simulation consumers;
 the mission scheduler still needs to populate and advance their actor context.
+
+Controller definitions and dispatch now match all 27 original records, 162 entry
+traces, 62 order selections, 480 displayed statuses and 1,200 complete outer
+dispatches. The dispatcher preserves reconsider/update/movement order, immediate
+state changes, first-entry latches, stagger and suppression of one movement phase.
+Patrol/search engagement matches 3,600 original decisions; target references and
+attacker counts remain owned state. Another 256 flyer group attacks agree,
+including dead-member retention, target propagation and per-member entry stagger.
+Attack strategies, actual navigation callbacks and full world scheduling are
+subsequent integration boundaries, not substituted by generic pursuit behavior.
