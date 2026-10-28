@@ -440,3 +440,11 @@ render candidates are static scenery and panorama detail is disabled. Captures
 include flashes outliving their projectile and impact checks at a removed
 missile's retained pose. Rebuild with
 `tools/export_missile_display_fixtures.py ../earthsiege-reverse/analysis`.
+
+`mfd_state.bin` (`ESMFD001`) contains 600 original healthy parent-controller
+transitions, including child paint dispatch, all page/range/selection state,
+refresh flags/deadlines and enabled button faces. Capture uses real constructors,
+page setters, button callbacks and the parent update; child painters are recorded
+boundaries, independently verified by the individual raster fixtures. It does
+not cover instrument damage flicker. Rebuild with
+`tools/export_mfd_state_fixtures.py ../earthsiege-reverse/analysis`.

@@ -503,3 +503,10 @@ and last-position impact detection. All player rockets update the watched slot;
 only EO selection controls automatic page switching. The shared map shading keeps
 original texture translations. These captures explicitly disable panorama detail;
 shared high-detail backgrounds and live MFD/controller integration remain work.
+
+The healthy parent MFD controller matches 600 original state and child-dispatch
+transitions. This covers page changes, the two-stage repaint, strict 30-tick
+STATUS/NAV/TARGET refresh, immediate scanner/camera updates, EO automatic page
+selection and manual overrides, hidden/external views, range cycling and
+communications scrolling past disabled choices. Damage-induced flicker and the
+live mission bindings remain separate work.
