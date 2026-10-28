@@ -1,21 +1,9 @@
 #include "navigation_display.h"
-#include <numeric>
 #include "simulation/model_math.h"
 
 namespace earthsiege {
-namespace {
-palette map_palette(palette result) {
-  for(size_t ramp{}; ramp < 16; ramp += 2) {
-    auto &values{result.shade_ramps.at(ramp)};
-    values.resize(16);
-    std::iota(values.begin(), values.end(), uint16_t{16});
-  }
-  return result;
-}
-} // namespace
-
 navigation_display::navigation_display(framebuffer &buffer, scenery_world const &source)
-  : target{buffer}, world{source}, colours{map_palette(source.colours())}, models{buffer, colours} {}
+  : target{buffer}, world{source}, colours{source.colours()}, models{buffer, colours} { apply_cockpit_map_shading(colours); }
 
 void navigation_display::draw(rectangle const &bounds, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights) {
   scoped_framebuffer_clip clip{target, nullptr};

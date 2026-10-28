@@ -496,3 +496,10 @@ NAV MAP matches 288 original frames across all 24 environment variants. It uses
 the original fixed overhead camera, map palette ramps, stored static-zone order
 and five-pixel centre cross. The original map can be empty where the zone has no
 terrain inside the viewport; it does not show dynamic radar contacts.
+
+MISSILE CAM matches 94 original indexed frames and tracking transitions: readiness
+and lock labels, live static scenery, explosion blinking, projectile retirement
+and last-position impact detection. All player rockets update the watched slot;
+only EO selection controls automatic page switching. The shared map shading keeps
+original texture translations. These captures explicitly disable panorama detail;
+shared high-detail backgrounds and live MFD/controller integration remain work.

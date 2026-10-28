@@ -1,9 +1,18 @@
 #include "palette_shading.h"
 #include <algorithm>
+#include <numeric>
 #include <stdexcept>
 #include "simulation/fixed_math.h"
 
 namespace earthsiege {
+
+void apply_cockpit_map_shading(palette &target) {
+  for(size_t ramp{}; ramp < 16; ramp += 2) {
+    auto &values{target.shade_ramps.at(ramp)};
+    values.resize(16);
+    std::iota(values.begin(), values.end(), uint16_t{16});
+  }
+}
 
 uint8_t shade_colour(std::span<uint16_t const> const ramp, uint8_t const intensity) {
   if(ramp.empty()) throw std::invalid_argument{"empty palette shade ramp"};

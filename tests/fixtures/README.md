@@ -432,3 +432,11 @@ world loader and map renderer, with its map-angle static constructor and initial
 default/current display contexts. All 24 environment variants, varied headings,
 roll, positions and two display bounds are covered. Rebuild with
 `tools/export_navigation_display_fixtures.py ../earthsiege-reverse/analysis`.
+
+`missile_displays.bin` contains 94 original missile-camera rasters and retained
+state transitions. Real projectile/explosion factories and pool retirement run;
+inputs control position, ammunition/lock flags and retirement schedule. Live
+render candidates are static scenery and panorama detail is disabled. Captures
+include flashes outliving their projectile and impact checks at a removed
+missile's retained pose. Rebuild with
+`tools/export_missile_display_fixtures.py ../earthsiege-reverse/analysis`.

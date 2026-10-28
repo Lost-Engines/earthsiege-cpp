@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/missile_display.cpp
   src/render/navigation_display.cpp
   src/render/communications_display.cpp
   src/render/scanner_display.cpp
@@ -249,6 +250,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(missile_display_test tests/missile_display_test.cpp)
+  target_link_libraries(missile_display_test PRIVATE earthsiege_core)
+  add_test(NAME missile_displays COMMAND missile_display_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/missile_displays.bin")
   add_executable(navigation_display_test tests/navigation_display_test.cpp)
   target_link_libraries(navigation_display_test PRIVATE earthsiege_core)
   add_test(NAME navigation_displays COMMAND navigation_display_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/navigation_displays.bin")
