@@ -19,11 +19,20 @@ vec3<int32_t> world_point(vec3<int32_t> const &point, model_transform const &pla
 scenery_renderer::scenery_renderer(framebuffer &target, scenery_world const &source, distance_shade_bindings bindings) : world{source}, colours{source.colours()}, shading{source.environment(), std::move(bindings)}, models{target, colours} {
 }
 
-std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_model const> const actors) {
+std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_model const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground) {
   auto camera{rotation_transform(angles)};
   camera.translation = position;
   model_view view;
   view.camera = inverse_transform(camera);
+  for(auto const &flash : ground) {
+    vec3<int32_t> delta;
+    for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(flash.position[axis]) - position[axis]);
+    if(fast_distance(delta) >= 30000) continue;
+    flash.position.z = 0;
+    model_transform placement;
+    placement.translation = flash.position;
+    models.draw(flash.root, flash.instance, placement, view, {}, dynamic ? dynamic->current() : lights);
+  }
   std::vector<scene_order_entry> entries;
   std::vector<size_t> indices;
   auto const objects{world.objects()};
@@ -63,17 +72,20 @@ std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<u
       auto const &actor{actors[index - objects.size()]};
       auto const radius{actor.roots.front().header.radius};
       shading.apply(colours, distance, actor.native_class, radius, split_highlights);
-      auto const eye{inverse_transform(compose_transforms(actor.placement, view.camera)).translation};
+      auto const object_lights{dynamic ? dynamic->select(actor.placement.translation, radius) : lights};
+      auto const &placement{actor.placement};
+      auto const eye{inverse_transform(compose_transforms(placement, view.camera)).translation};
       auto detail{actor.detail};
       detail.projection_shift = view.projection.perspective_shift;
       auto const root{actor.roots.size() == 1 ? 0 : actor_detail_index(actor.roots.size(), actor.detail_thresholds, radius, eye, detail)};
-      models.draw(actor.roots[root], actor.instance, actor.placement, view, actor.textures, lights, actor.attachments);
+      models.draw(actor.roots[root], actor.instance, placement, view, actor.textures, object_lights, actor.attachments);
       continue;
     }
     auto const &object{objects[index]};
     auto const &root{world.terrain().roots.at(object.shape)};
     shading.apply(colours, distance, 0, root.header.radius, split_highlights);
-    models.draw(root, object.model, object.placement, view, world.textures(), lights);
+    auto const object_lights{dynamic ? dynamic->select(object.placement.translation, root.header.radius) : lights};
+    models.draw(root, object.model, object.placement, view, world.textures(), object_lights);
   }
   return order;
 }

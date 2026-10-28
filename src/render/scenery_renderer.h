@@ -2,6 +2,7 @@
 #include <span>
 #include <vector>
 #include "render/distance_shading.h"
+#include "render/effect_lighting.h"
 #include "render/model_renderer.h"
 #include "simulation/scenery_world.h"
 
@@ -17,6 +18,14 @@ struct scene_model {
   std::span<model_attachment const> attachments;
   std::span<int32_t const> detail_thresholds;
   model_detail detail;
+
+};
+
+/// The original flat-effect pass precedes terrain/actor sorting and places Z at ground on draw.
+struct ground_flash {
+  model_part const &root;
+  model_instance const &instance;
+  vec3<int32_t> &position;
 };
 
 /// Render owned scenery with the original distance ramps and whole-scene painter tree
@@ -28,7 +37,7 @@ class scenery_renderer {
 
 public:
   scenery_renderer(framebuffer &target, scenery_world const &world, distance_shade_bindings bindings);
-  std::vector<size_t> draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights = false, std::span<scene_model const> actors = {});
+  std::vector<size_t> draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights = false, std::span<scene_model const> actors = {}, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {});
 };
 
 } // namespace earthsiege

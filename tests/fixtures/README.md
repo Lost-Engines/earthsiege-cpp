@@ -211,3 +211,5 @@ order, every live state and primary/secondary cell, final shared RNG and reused
 slot IDs. The three-light controller limit is exercised. Persistent smoke, actor
 combat and effect rasterization are outside these explicit schedules. Refresh
 using `tools/export_effect_world_fixtures.py`.
+
+`effect_lighting.bin` records 456 original per-object selections and 3,250 live manager operations from `check_light_manager.py` and `capture_effect_lighting.py`. Selection uses source/cache lifetime and registration order, including zero intensity, saturation, reuse and the game initializer's 2000/10 attenuation arguments. `effect_render.bin` records 72 complete original VGA frames from `capture_effect_render.py`, with authentic effect factories/updates, terrain, textures, dynamic lighting and the independent flat-effect pass. Requests and update schedules are explicit fixture inputs, not a complete mission replay.

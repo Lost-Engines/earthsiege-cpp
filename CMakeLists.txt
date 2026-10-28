@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/effect_lighting.cpp
+  src/render/effect_lighting.h
   src/simulation/world_effects.cpp
   src/simulation/world_effects.h
   src/simulation/object_pool.h
@@ -173,6 +175,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(effect_render_test tests/effect_render_test.cpp)
+  target_link_libraries(effect_render_test PRIVATE earthsiege_core)
+  add_test(NAME effect_render COMMAND effect_render_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/effect_render.bin")
+  add_executable(effect_lighting_test tests/effect_lighting_test.cpp)
+  target_link_libraries(effect_lighting_test PRIVATE earthsiege_core)
+  add_test(NAME effect_lighting COMMAND effect_lighting_test "${PROJECT_SOURCE_DIR}/tests/fixtures/effect_lighting.bin")
   add_executable(camera_test tests/camera_test.cpp)
   target_link_libraries(camera_test PRIVATE earthsiege_core)
   add_test(NAME camera COMMAND camera_test "${PROJECT_SOURCE_DIR}/tests/fixtures/camera.bin")
