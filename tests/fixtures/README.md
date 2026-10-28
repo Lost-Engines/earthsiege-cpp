@@ -412,3 +412,10 @@ ownership. No interactive widget drawing is claimed by these fixtures.
   `tools/export_mfd_control_fixtures.py`. All six original page constructors run;
   button drawing is isolated from page content. Each GAU parent is translated
   into the visible test viewport without changing its child geometry.
+
+- `scanner_displays.bin` (`ESSCAN01`): 480 original scanner paints with 25 actors,
+  ten headings, three ranges, both blink phases, radar modes and eight visibility/
+  damage/waiting scenarios. Source: `capture_scanner_display.py`; import:
+  `export_scanner_display_fixtures.py`. Actor construction and complete scanner
+  drawing execute original code; actor positions/flags and camera heading are
+  explicit controlled inputs. No radar projection or filtering is substituted.

@@ -480,3 +480,9 @@ range cycling now match 472 original button frames and 72 range transitions acro
 all eight cockpits. This also establishes the original initial STATUS page and
 30,000/80,000/120,000 scanner ranges; remaining page consumers are still being
 connected.
+
+Scanner rendering matches 480 original frames containing 25 contacts, including
+strict range cutoffs, fixed-point bearing projection, friend/foe and actor-kind
+colours, selection brackets, active/passive labels, disabled/dead/waiting filters
+and blinking last-known enemy positions. Distance readouts preserve the original
+integer conversion and four-digit padding.

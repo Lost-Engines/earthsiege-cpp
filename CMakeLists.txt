@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/scanner_display.cpp
   src/render/mfd_instruments.cpp
   src/resources/paper_doll.cpp
   src/render/damage_display.cpp
@@ -246,6 +247,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(scanner_display_test tests/scanner_display_test.cpp)
+  target_link_libraries(scanner_display_test PRIVATE earthsiege_core)
+  add_test(NAME scanner_displays COMMAND scanner_display_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/scanner_displays.bin")
   add_executable(mfd_instruments_test tests/mfd_instruments_test.cpp)
   target_link_libraries(mfd_instruments_test PRIVATE earthsiege_core)
   add_test(NAME mfd_instruments COMMAND mfd_instruments_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mfd_controls.bin")
