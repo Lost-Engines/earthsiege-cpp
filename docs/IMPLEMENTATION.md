@@ -207,3 +207,17 @@ refire gates and RNG; 78 recorded projectile requests match their muzzle positio
 and angles. Six actual original rocket launches verify inherited forward speed,
 including signed-word wrapping. HERC launches retain their existing zero inherited
 speed. These consumers are ready for the mission's controller/perception scheduler.
+
+## Complete perception pass
+
+The world perception pass now agrees with 2,304 original updates and 14,824
+ordered visibility, orientation, view-cone and notification callbacks. Captures
+include waiting/dead/disabled actors, the player-last scan, asymmetric visibility
+clocks, shared sightings, contact expiry, trigger actions and full RNG state.
+Line-of-sight results are controlled at the collision boundary; this establishes
+the world policy, not yet its integration with all live geometry.
+
+The ordinary HERC/flyer view cone preserves signed angle subtraction without
+wrapping; static bases have an unrestricted view. Detection range comes from
+the mission environment setting (30,000 or 60,000), independently of the
+100,000 sighting and 120,000 retained-contact ranges.
