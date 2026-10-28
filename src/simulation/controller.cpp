@@ -75,13 +75,13 @@ int16_t herc_status(behavior const type, bool const disabled, bool const dead, i
   return *definition.status;
 }
 
-void dispatch_controller(controller_state &state, bool &skip_movement, frame_ratio const ratio, controller_callbacks const &callbacks) {
+void dispatch_controller(controller_state &state, bool &skip_decision, frame_ratio const ratio, controller_callbacks const &callbacks) {
   if(!state.type) return;
   if(state.reconsider_remaining == 0 && callbacks.reconsider) callbacks.reconsider(*state.type);
   if(!describe(state.type.value()).holds_countdown()) state.reconsider_remaining = std::max(0, wrap_long(static_cast<int64_t>(state.reconsider_remaining) - ratio));
-  if(callbacks.update) callbacks.update(*state.type);
-  if(skip_movement) skip_movement = false;
-  else if(callbacks.movement && callbacks.movement(*state.type)) state.reconsider_remaining = 0;
+  if(callbacks.advance) callbacks.advance(*state.type);
+  if(skip_decision) skip_decision = false;
+  else if(callbacks.decide && callbacks.decide(*state.type)) state.reconsider_remaining = 0;
   finish_controller_update(state);
 }
 

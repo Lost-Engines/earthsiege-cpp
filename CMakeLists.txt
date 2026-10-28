@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/mission_activity.cpp
+  src/simulation/mission_activity.h
   src/simulation/flyer_attack.cpp
   src/simulation/flyer_attack.h
   src/simulation/flyer_navigation.cpp
@@ -201,6 +203,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mission_activity_test tests/mission_activity_test.cpp)
+  target_link_libraries(mission_activity_test PRIVATE earthsiege_core)
+  add_test(NAME mission_activity COMMAND mission_activity_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_activity.bin")
   add_executable(engagement_test tests/engagement_test.cpp)
   target_link_libraries(engagement_test PRIVATE earthsiege_core)
   add_test(NAME engagement COMMAND engagement_test "${PROJECT_SOURCE_DIR}/tests/fixtures/engagement.bin")

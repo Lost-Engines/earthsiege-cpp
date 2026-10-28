@@ -72,8 +72,8 @@ int main(int const argc, char **argv) try {
     std::vector<std::pair<uint8_t,uint8_t>> events;
     earthsiege::dispatch_controller(input.controller,input.skip,ratio,{
       .reconsider{[&](earthsiege::behavior type){ events.emplace_back(0,static_cast<uint8_t>(type)); if(reconsider >= 0) earthsiege::enter_behavior(input.controller,static_cast<earthsiege::behavior>(reconsider),input.stagger); }},
-      .update{[&](earthsiege::behavior type){ events.emplace_back(1,static_cast<uint8_t>(type)); if(update >= 0) earthsiege::enter_behavior(input.controller,static_cast<earthsiege::behavior>(update),input.stagger); if(skip_update) input.skip = true; }},
-      .movement{[&](earthsiege::behavior type){ events.emplace_back(2,static_cast<uint8_t>(type)); return movement_result; }},
+      .advance{[&](earthsiege::behavior type){ events.emplace_back(1,static_cast<uint8_t>(type)); if(update >= 0) earthsiege::enter_behavior(input.controller,static_cast<earthsiege::behavior>(update),input.stagger); if(skip_update) input.skip = true; }},
+      .decide{[&](earthsiege::behavior type){ events.emplace_back(2,static_cast<uint8_t>(type)); return movement_result; }},
     });
     auto const count{file.integer<uint8_t>()};
     if(events.size() != count) file.fail("dispatch event count " + std::to_string(i));

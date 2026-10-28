@@ -20,7 +20,7 @@ int32_t q10(int32_t const value, int16_t const factor) { return wrap_long(static
 
 size_t assess_strength(target_candidate const &observer, target_candidate const &target, random_state &random) {
   if(!observer.compares_combat_strength) return 1;
-  if(target.kind != actor_kind::herc) return 0;
+  if(target.kind != combat_actor_kind::herc) return 0;
   // The original masks by 1000, rather than taking a remainder or uniform range.
   auto const first{wrap_word(observer.strength + (random.next() & 1000))};
   auto const second{wrap_word(target.strength + (random.next() & 1000))};

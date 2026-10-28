@@ -42,10 +42,12 @@ int16_t herc_status(behavior type, bool disabled, bool dead, int16_t command);
 
 struct controller_callbacks {
   std::function<void(behavior)> reconsider;
-  std::function<void(behavior)> update;
-  std::function<bool(behavior)> movement;
+  std::function<void(behavior)> advance;
+  std::function<bool(behavior)> decide;
 };
+/// Advance with the previous controls, then decide the next controls. Actor
+/// vtable +0x18 calls behavior +0x1c, and vtable +0x1c calls behavior +0x18.
 /// Callbacks may enter a new behavior; later phases observe that new state.
-void dispatch_controller(controller_state &state, bool &skip_movement, frame_ratio ratio, controller_callbacks const &callbacks);
+void dispatch_controller(controller_state &state, bool &skip_decision, frame_ratio ratio, controller_callbacks const &callbacks);
 
 } // namespace earthsiege

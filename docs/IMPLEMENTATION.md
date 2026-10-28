@@ -235,3 +235,19 @@ the optional cheats and selects the original campaign damage multiplier.
 The shell's 100 signed mission counters are retained from the recorded starting
 files, with counter 7 cleared on simulation entry as in DBSIM. This supplies the
 state needed by spatial triggers and later objective reporting.
+
+## Mission activity ownership
+
+The mission activity owner now preserves original actor ordinals, group member
+order, objective links, counters, activation gates, controller entry state,
+contact knowledge and target references. All 128 group/trigger/perception passes
+from the four recorded worlds agree with original execution, including callback
+order and full random state. Controller bodies and sight-line results are
+explicit boundaries in these integration fixtures.
+
+Runtime combat categories are HERC/base/flyer, while the mission format uses
+HERC/flyer/base; the two now have separate enums and an explicit conversion.
+Controller wrappers also cross their callback slots: advance runs first, then
+decision, using the previous update's controls for movement. Native callback
+labels now express that order. The independent 1,200 dispatch fixtures continue
+to pass with unchanged behavior.

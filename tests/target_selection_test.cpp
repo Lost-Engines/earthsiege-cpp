@@ -41,7 +41,7 @@ int main(int const argc, char **argv) try {
     for(size_t index{0}; index != actor_count; ++index) {
       auto &a{actors[index]};
       for(unsigned int axis{0}; axis != 3; ++axis) a.position[axis] = file.integer<int32_t>();
-      a.heading = file.integer<uint16_t>(); a.kind = static_cast<earthsiege::actor_kind>(file.integer<int16_t>());
+      a.heading = file.integer<uint16_t>(); a.kind = static_cast<earthsiege::combat_actor_kind>(file.integer<int16_t>());
       a.side = file.integer<uint8_t>(); a.strength = file.integer<int16_t>();
       auto const known{file.take(actor_count)}; knowledge[index].assign(known.begin(), known.end()); a.known = knowledge[index];
       a.seen = file.integer<uint8_t>(); a.dead = file.integer<uint8_t>(); a.removed = file.integer<uint8_t>();

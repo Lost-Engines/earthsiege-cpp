@@ -6,10 +6,16 @@
 
 namespace earthsiege {
 
+// Runtime combat categories differ from the mission file's HERC/flyer/base order.
+enum class combat_actor_kind : int16_t { herc, base, flyer };
+constexpr combat_actor_kind combat_kind(actor_kind kind) {
+  return kind == actor_kind::herc ? combat_actor_kind::herc : kind == actor_kind::base ? combat_actor_kind::base : combat_actor_kind::flyer;
+}
+
 struct target_candidate {
   vec3<int32_t> position;
   uint16_t heading{0};
-  actor_kind kind{actor_kind::herc};
+  combat_actor_kind kind{combat_actor_kind::herc};
   uint8_t side{0};
   int16_t strength{0};
   std::span<uint8_t const> known;
