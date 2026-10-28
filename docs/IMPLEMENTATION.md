@@ -298,3 +298,13 @@ Ammunition availability, damage thresholds, attacker counts and shared randomnes
 are retained. The original component selector's use of the observer's damage is
 intentional here. The unused tenth metric output beyond the original nine-slot
 allocation is excluded from the research capture and never accessed by C++.
+
+## HERC weapon selection
+
+AI weapon selection matches 2,448 original decisions across 34 mixed banks,
+including readiness, strict range limits, seeker locks, shield-aware scoring,
+radar activation, the unarmed event and complete random state. The unused
+grenade definition is deliberately outside this claim: its selector addresses
+past the original projectile array and its original spawn factory does nothing.
+It is not assigned a fabricated projectile definition. Target leading, aim
+convergence and controller firing are the next consumers.

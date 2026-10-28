@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_weapon_selection.cpp
+  src/simulation/herc_weapon_selection.h
   src/simulation/herc_assessment.cpp
   src/simulation/herc_assessment.h
   src/simulation/herc_tactics.cpp
@@ -208,6 +210,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(herc_weapon_choice_test tests/herc_weapon_choice_test.cpp)
+  target_link_libraries(herc_weapon_choice_test PRIVATE earthsiege_core)
+  add_test(NAME herc_weapon_choice COMMAND herc_weapon_choice_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_weapon_choice.bin")
   add_executable(herc_assessment_test tests/herc_assessment_test.cpp)
   target_link_libraries(herc_assessment_test PRIVATE earthsiege_core)
   add_test(NAME herc_assessment COMMAND herc_assessment_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_assessment.bin")
