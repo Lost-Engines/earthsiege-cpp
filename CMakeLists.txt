@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/instrument_bars.cpp
   src/resources/cockpit.cpp
   src/simulation/player_targeting.cpp
   src/simulation/player_input.cpp
@@ -230,6 +231,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(reactor_gauge_test tests/reactor_gauge_test.cpp)
+  target_link_libraries(reactor_gauge_test PRIVATE earthsiege_core)
+  add_test(NAME reactor_gauges COMMAND reactor_gauge_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/reactor_gauges.bin")
   add_executable(cockpit_scene_test tests/cockpit_scene_test.cpp)
   target_link_libraries(cockpit_scene_test PRIVATE earthsiege_core)
   add_test(NAME cockpit_scenery COMMAND cockpit_scene_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/cockpit_scenery.bin")

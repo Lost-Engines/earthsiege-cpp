@@ -37,6 +37,7 @@ struct screen_region {
 /// Inclusive window spans from an original ED cockpit clipping resource.
 struct screen_mask {
   std::vector<screen_region> regions;
+  void translate(int x, int y);
   std::array<std::vector<scanline_span>, screen_height> rows;
   bool contains(int x, int y) const;
 };

@@ -2,6 +2,7 @@
 #include <deque>
 #include <memory>
 #include "render/scenery_renderer.h"
+#include "render/instrument_bars.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
 #include "simulation/mission_session.h"
@@ -13,6 +14,7 @@ class mission_view {
   std::unique_ptr<mission_session> session;
   framebuffer frame;
   cockpit_artwork cockpit;
+  reactor_gauge reactor;
   cockpit_view panel{cockpit_view::forward};
   palette display_colours;
   scenery_renderer renderer;

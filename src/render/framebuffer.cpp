@@ -18,6 +18,20 @@ bool screen_region::contains(int x, int y) const {
   return x >= span.left && x <= span.right;
 }
 
+void screen_mask::translate(int x, int y) {
+  for(auto &row : rows) row.clear();
+  for(auto &region : regions) {
+    region.first_row += y;
+    for(size_t i{}; i < region.spans.size(); ++i) {
+      auto &span{region.spans[i]}; span.left += x; span.right += x;
+      int const row{region.first_row + static_cast<int>(i)};
+      if(row < 0 || row >= static_cast<int>(screen_height)) continue;
+      scanline_span const visible{std::max(0, span.left), std::min(static_cast<int>(screen_width) - 1, span.right)};
+      if(visible.left <= visible.right) rows[static_cast<size_t>(row)].push_back(visible);
+    }
+  }
+}
+
 bool screen_mask::contains(int x, int y) const {
   if(y < 0 || y >= static_cast<int>(rows.size())) return false;
   return std::ranges::any_of(rows[static_cast<size_t>(y)], [x](scanline_span span){ return x >= span.left && x <= span.right; });

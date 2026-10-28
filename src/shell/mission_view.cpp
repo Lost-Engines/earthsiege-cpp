@@ -26,6 +26,7 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources, uns
 mission_view::mission_view(resource_store const &resources, unsigned int const demo)
   : session{demo_start(resources, demo)},
     cockpit{read_cockpit(resources, read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())))},
+    reactor{resources, cockpit.layout},
     display_colours{session->scenery().colours()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
@@ -96,13 +97,17 @@ void mission_view::draw() {
     view.projection.centre = {centre[0], centre[1]};
     view.bounds = window.bounds;
   }
-  scoped_framebuffer_clip clip{frame, inside ? &window.mask : nullptr};
-  background_view const background{.pitch{camera.angles.x}, .roll{camera.angles.y}, .projection_shift{view.projection.perspective_shift}, .centre{vec2<int32_t>{view.projection.centre}}, .offset{0, 0}, .bounds{view.bounds}};
-  draw_background_bands(frame, make_background_bands(session->scenery().environment(), background), background.bounds);
-  auto const objects{session->visible_objects(!inside)};
-  auto &effects{session->visual_effects()};
-  auto const ground{effects.ground_flashes()};
-  renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground, view);
+  {
+    scoped_framebuffer_clip clip{frame, inside ? &window.mask : nullptr};
+    background_view const background{.pitch{camera.angles.x}, .roll{camera.angles.y}, .projection_shift{view.projection.perspective_shift}, .centre{vec2<int32_t>{view.projection.centre}}, .offset{0, 0}, .bounds{view.bounds}};
+    draw_background_bands(frame, make_background_bands(session->scenery().environment(), background), background.bounds);
+    auto const objects{session->visible_objects(!inside)};
+    auto &effects{session->visual_effects()};
+    auto const ground{effects.ground_flashes()};
+    renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground, view);
+  }
+  if(inside) reactor.draw(frame, static_cast<int32_t>(session->player_actor().power().reserve) * 1024 / herc_power_capacity,
+                          -window.instrument_origin[0], -window.instrument_origin[1]);
 }
 
 framebuffer const &mission_view::image() const { return frame; }
