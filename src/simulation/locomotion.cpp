@@ -48,7 +48,7 @@ void update_player_movement(locomotion_state &state, movement_profile const &pro
   update_requested_movement(state, profile, channel, desired, steering_input, damage, ratio, events);
 }
 
-void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t desired, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events) {
+void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t desired, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) {
   if(damage.disabled) {
     desired = 0;
     steering_input = 0;
@@ -56,6 +56,7 @@ void update_requested_movement(locomotion_state &state, movement_profile const &
     state.collision_recovery = std::max(0, wrap_long(static_cast<int64_t>(state.collision_recovery) - ratio));
     desired = state.collision_recovery != 0 ? (state.reverse_recovery ? profile.reverse_rate : profile.forward_rate) : std::clamp(desired, profile.reverse_rate, profile.forward_rate);
   }
+  if(!damage.disabled && avoidance) avoidance(desired, steering_input);
   if(damage.heavy) desired = scale(desired, heavy_damage_speed_q10, 10);
   else if(damage.light) desired = scale(desired, light_damage_speed_q10, 10);
   auto const &pose{channel.state()};

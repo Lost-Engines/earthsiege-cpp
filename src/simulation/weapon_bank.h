@@ -35,6 +35,7 @@ struct weapon_state {
   int8_t equipment_slot{0};
   std::optional<size_t> projectile;
   std::variant<capacitor, elf_capacitor, ammunition_weapon, grenade_weapon, ecm_weapon> mechanism;
+  vec3<int16_t> convergence;                                               // independent pitch/yaw corrections for this mount
   weapon_controls &controls();
   weapon_controls const &controls() const;
   capacitor *energy();

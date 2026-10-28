@@ -1,6 +1,7 @@
 #pragma once
 #include <utility>
 #include "simulation/herc_body.h"
+#include "simulation/herc_aiming.h"
 #include "simulation/herc_impact.h"
 #include "simulation/herc_loadout.h"
 #include "simulation/herc_power.h"
@@ -25,6 +26,7 @@ class herc_actor {
   int16_t cached_combat_rating{0};
   bool combat_rating_valid{false};
   void detach_section(size_t section, bool &large_explosion, random_state &random, herc_damage_events const &events);
+  void apply_aim(herc_aim_request const &request, frame_ratio ratio);
   std::pair<int16_t, vec3<int16_t>> section_centre(size_t section, bool last = false) const;
   vec3<int32_t> section_position(size_t section, bool radial) const;
 
@@ -50,6 +52,9 @@ public:
   weapon_bank &weapons();
   weapon_bank const &weapons() const;
   void update_power(frame_ratio ratio, bool free_energy = false);
+  vec3<int16_t> aim_at(vec3<int32_t> const &point, frame_ratio ratio);
+  void centre_aim(int32_t distance, frame_ratio ratio);
+  std::vector<weapon_shot> discharge_aimed_slot(size_t slot, bool free_ammunition = false);
   /// Readiness and group/trigger policy are checked by the controller before discharge
   std::vector<weapon_shot> discharge_slot(size_t slot, vec2<int16_t> const &aim, bool free_ammunition = false);
   herc_loadout const &definition() const;
@@ -64,6 +69,10 @@ public:
   std::vector<size_t> damage_section(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach = {});
   std::optional<component_hit> component_hit_test(model_transform const &actor_to_ray, int32_t reach, int16_t radius) const;
   bool step(herc_controls const &controls, frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, movement_event_sink const &events = {});
+  void begin_frame();
+  void prepare_player(herc_controls const &controls, frame_ratio ratio, movement_event_sink const &events = {});
+  void prepare_requested(int16_t speed, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});
+  bool advance(frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, std::function<void()> const &blocked = {});
   void recover_from_collision(int32_t duration, bool reverse);
 };
 

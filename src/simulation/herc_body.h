@@ -33,7 +33,6 @@ class herc_body {
   size_t body_channel{0};
   std::optional<size_t> torso_channel;
   std::optional<size_t> elevation_channel;
-  bool advance_body(vec2<int16_t> const &aim, int16_t time_ratio, std::function<bool(herc_body const &)> const &contact);
 
 public:
   herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles);
@@ -44,6 +43,13 @@ public:
   void update_weapons(weapon_bank const &bank);
   void recover_from_collision(int32_t duration, bool reverse);
   std::span<movement_event const> movement_events() const;
+  // Inputs/controllers prepare channels separately from the world's advance phase.
+  void begin_frame();
+  void prepare_player(herc_controls const &controls, frame_ratio ratio, movement_event_sink const &events = {});
+  void prepare_requested(int16_t speed, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});
+  void prepare_aim(vec2<int16_t> const &input, frame_ratio ratio);
+  bool advance(frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, std::function<void()> const &blocked = {});
+  model_transform aiming_pivot() const;
   /// Advance player controls; return whether either contact probe blocked motion
   bool step(herc_controls const &controls, int16_t time_ratio, std::function<bool(herc_body const &)> const &contact = {}, movement_event_sink const &events = {});
   bool step_requested(int16_t speed, int16_t steering, vec2<int16_t> const &aim, int16_t time_ratio, std::function<bool(herc_body const &)> const &contact = {}, movement_event_sink const &events = {});

@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_fire_control.cpp
+  src/simulation/herc_fire_control.h
+  src/simulation/herc_aiming.cpp
+  src/simulation/herc_aiming.h
   src/simulation/herc_weapon_selection.cpp
   src/simulation/herc_weapon_selection.h
   src/simulation/herc_assessment.cpp
@@ -210,6 +214,18 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(herc_fire_control_test tests/herc_fire_control_test.cpp)
+  target_link_libraries(herc_fire_control_test PRIVATE earthsiege_core)
+  add_test(NAME herc_fire_control COMMAND herc_fire_control_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_fire_control.bin")
+  add_executable(herc_target_aim_test tests/herc_target_aim_test.cpp)
+  target_link_libraries(herc_target_aim_test PRIVATE earthsiege_core)
+  add_test(NAME herc_target_aim COMMAND herc_target_aim_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_target_aim.bin")
+  add_executable(herc_aimed_body_test tests/herc_aimed_body_test.cpp)
+  target_link_libraries(herc_aimed_body_test PRIVATE earthsiege_core)
+  add_test(NAME herc_aimed_body COMMAND herc_aimed_body_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_aimed_body.bin")
+  add_executable(herc_aiming_test tests/herc_aiming_test.cpp)
+  target_link_libraries(herc_aiming_test PRIVATE earthsiege_core)
+  add_test(NAME herc_aiming COMMAND herc_aiming_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_aiming.bin")
   add_executable(herc_weapon_choice_test tests/herc_weapon_choice_test.cpp)
   target_link_libraries(herc_weapon_choice_test PRIVATE earthsiege_core)
   add_test(NAME herc_weapon_choice COMMAND herc_weapon_choice_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_weapon_choice.bin")

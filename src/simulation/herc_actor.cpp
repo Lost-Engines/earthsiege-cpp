@@ -262,6 +262,27 @@ void herc_actor::update_power(frame_ratio const ratio, bool const free_energy) {
   }
 }
 
+void herc_actor::apply_aim(herc_aim_request const &request, frame_ratio const ratio) {
+  body_state.prepare_aim(request.controls, ratio);
+  for(size_t i{0}; i != armament.slots().size(); ++i) if(armament.slots()[i]) {
+    auto &weapon{armament.at(i)};
+    auto const offset{weapon_mount_offset(source.mounts.at(i), weapon_definitions.weapons.at(static_cast<size_t>(weapon.definition)))};
+    weapon.convergence = herc_weapon_convergence(offset, source.profile.camera_offset.z, request.convergence_distance);
+  }
+}
+vec3<int16_t> herc_actor::aim_at(vec3<int32_t> const &point, frame_ratio const ratio) {
+  auto const request{aim_herc_at(point, body_state.placement(), body_state.aiming_pivot(), source.profile.camera_offset.z)};
+  apply_aim(request, ratio);
+  return vec3<int16_t>{request.errors};
+}
+void herc_actor::centre_aim(int32_t const distance, frame_ratio const ratio) {
+  apply_aim(centre_herc_aim(body_state.torso().angle, body_state.elevation().angle, distance), ratio);
+}
+std::vector<weapon_shot> herc_actor::discharge_aimed_slot(size_t const slot, bool const free_ammunition) {
+  auto const &angles{armament.at(slot).convergence};
+  return discharge_slot(slot, {angles.x, angles.z}, free_ammunition);
+}
+
 std::vector<weapon_shot> herc_actor::discharge_slot(size_t const slot, vec2<int16_t> const &aim, bool const free_ammunition) {
   auto &weapon{armament.at(slot)};
   auto const &mount{source.mounts.at(slot)};
@@ -291,6 +312,11 @@ std::optional<component_hit> herc_actor::component_hit_test(model_transform cons
 bool herc_actor::step(herc_controls const &controls, frame_ratio const ratio, std::function<bool(herc_body const &)> const &contact, movement_event_sink const &events) {
   return body_state.step(controls, ratio, contact, events);
 }
+
+void herc_actor::begin_frame() { body_state.begin_frame(); }
+void herc_actor::prepare_player(herc_controls const &controls, frame_ratio const ratio, movement_event_sink const &events) { body_state.prepare_player(controls, ratio, events); }
+void herc_actor::prepare_requested(int16_t const speed, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) { body_state.prepare_requested(speed, steering, ratio, events, avoidance); }
+bool herc_actor::advance(frame_ratio const ratio, std::function<bool(herc_body const &)> const &contact, std::function<void()> const &blocked) { return body_state.advance(ratio, contact, blocked); }
 
 void herc_actor::recover_from_collision(int32_t const duration, bool const reverse) { body_state.recover_from_collision(duration, reverse); }
 

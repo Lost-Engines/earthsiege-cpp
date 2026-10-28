@@ -313,3 +313,17 @@ constructing actors. Refresh with `export_mission_flyer_frame_fixtures.py`.
   projectile selector is excluded. Refresh with
   `tools/export_herc_weapon_choice_fixtures.py` from the analysis capture
   `capture_herc_weapon_choice.py`.
+
+- `herc_aiming.bin`: 1,792 original world-point/recentering updates and 6,368
+  weapon convergence angles. `export_herc_aiming_fixtures.py` consumes
+  `missions/herc-aiming.json` from `capture_herc_aiming.py`.
+- `herc_target_aim.bin`: 3,072 original torso-cone/range aim-point selections.
+  Refresh with `export_herc_target_aim_fixtures.py`.
+- `herc_fire_control.bin`: 3,072 lead/accuracy/retention/fire-gate decisions,
+  620 spawn requests and complete RNG. Selection, target speed, aim errors and
+  spawning are recorded boundaries. Refresh with `export_herc_fire_fixtures.py`.
+- `herc_aimed_body.bin`: 512 composed eight-chassis advance/next-control/aim/fire
+  frames, 453 muzzle requests and complete articulated state. Contact and audio
+  are explicit boundaries; selected weapons are replenished to isolate geometry.
+  Refresh with `export_herc_aimed_body_fixtures.py` from the analysis capture
+  `capture_herc_aimed_body.py`.

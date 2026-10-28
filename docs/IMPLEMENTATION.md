@@ -306,5 +306,19 @@ including readiness, strict range limits, seeker locks, shield-aware scoring,
 radar activation, the unarmed event and complete random state. The unused
 grenade definition is deliberately outside this claim: its selector addresses
 past the original projectile array and its original spawn factory does nothing.
-It is not assigned a fabricated projectile definition. Target leading, aim
-convergence and controller firing are the next consumers.
+It is not assigned a fabricated projectile definition. Target leading, convergence and fire-policy consumers are covered below.
+
+## Articulated aim and fire control
+
+Torso-cone and component-range decisions match 3,072 original calls. World-point
+aiming/recentering matches 1,792 updates and 6,368 per-weapon convergence angles.
+Original enemy accuracy, signed-word lead arithmetic, ELF retention and firing
+gates match 3,072 decisions and 620 ordered firing requests with complete RNG.
+
+HERC ownership now separates control preparation from physical advancement. Each
+weapon owns its convergence correction; projectile creation consumes it with the
+current articulated pose. A composed eight-chassis capture verifies 512 frames,
+all hierarchy matrices and 453 projectile launches. Contacts, audio and actual
+projectile construction are explicit boundaries in this fixture. The existing
+91 checks pass after this split; the composed fixture is an additional check.
+Full HERC mission dispatch and player target-lock/HUD integration continue.
