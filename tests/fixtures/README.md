@@ -405,3 +405,10 @@ ownership. No interactive widget drawing is claimed by these fixtures.
   valid component counts remain unchanged. Covers eight human chassis, all armour
   and internal regions, health bands, retained name-font state and real ground/
   flyer targets. Parent MFD scheduling/buttons are a separate integration layer.
+
+- `mfd_controls.bin` (`ESMFDUI1`): 472 original button renders, complete control/
+  display bounds and availability, plus 72 range cycles across all eight cockpits.
+  Capture: `earthsiege-reverse/tools/capture_mfd_controls.py`; import:
+  `tools/export_mfd_control_fixtures.py`. All six original page constructors run;
+  button drawing is isolated from page content. Each GAU parent is translated
+  into the visible test viewport without changing its child geometry.

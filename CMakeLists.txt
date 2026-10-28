@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/mfd_instruments.cpp
   src/resources/paper_doll.cpp
   src/render/damage_display.cpp
   src/resources/presentation.cpp
@@ -245,6 +246,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mfd_instruments_test tests/mfd_instruments_test.cpp)
+  target_link_libraries(mfd_instruments_test PRIVATE earthsiege_core)
+  add_test(NAME mfd_instruments COMMAND mfd_instruments_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mfd_controls.bin")
   add_executable(damage_display_test tests/damage_display_test.cpp)
   target_link_libraries(damage_display_test PRIVATE earthsiege_core)
   add_test(NAME damage_displays COMMAND damage_display_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/damage_displays.bin")

@@ -474,3 +474,9 @@ The PDG reader retains all three views and mount records; diagram palette remaps
 and the stateful target-name font follow the original. The parent MFD controls,
 remaining pages and their live integration are still in progress. Full shell,
 campaign presentation and audio remain required before this is a playable game.
+
+MFD control artwork, all thirteen button bounds, page-dependent availability and
+range cycling now match 472 original button frames and 72 range transitions across
+all eight cockpits. This also establishes the original initial STATUS page and
+30,000/80,000/120,000 scanner ranges; remaining page consumers are still being
+connected.
