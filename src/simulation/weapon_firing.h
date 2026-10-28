@@ -22,6 +22,7 @@ struct weapon_shot {
   int16_t charge{-1};
   int32_t range{0};
   weapon_muzzle muzzle;
+  int16_t inherited_speed{0};                                              // skimmer rockets add local forward speed to the 500-unit launch speed
 };
 
 weapon_muzzle prepare_weapon_muzzle(weapon_mount const &mount, weapon_definition const &definition, model_part const &root, std::span<model_transform const> transforms, model_transform const &placement, vec2<int16_t> const &aim);

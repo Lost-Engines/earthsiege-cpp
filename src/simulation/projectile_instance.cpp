@@ -51,7 +51,7 @@ projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalog
   flight_state.subtype = static_cast<uint8_t>(source.subtype);
   flight_state.position = shot.muzzle.position;
   flight_state.angles = shot.muzzle.angles;
-  flight_state.speed = source.kind == projectile_kind::rocket ? rocket_start_speed : source.speed;
+  flight_state.speed = source.kind == projectile_kind::rocket ? wrap_word(rocket_start_speed + shot.inherited_speed) : source.speed;
   flight_state.animation_remaining = source.kind == projectile_kind::rocket ? initial_rocket_clock : motions.bullets.at(flight_state.subtype).animation_period;
   flight_state.cells.resize(shape.cell_frame_counts.size(), 0);
   for(auto const count : shape.cell_frame_counts) cell_counts.push_back(static_cast<uint16_t>(count));

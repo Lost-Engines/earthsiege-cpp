@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/flyer_attack.cpp
+  src/simulation/flyer_attack.h
+  src/simulation/flyer_navigation.cpp
+  src/simulation/flyer_navigation.h
   src/simulation/flyer_motion.cpp
   src/simulation/flyer_motion.h
   src/resources/flyer_definition.cpp
@@ -248,6 +252,12 @@ if(BUILD_TESTING)
   add_executable(herc_damage_test tests/herc_damage_test.cpp)
   target_link_libraries(herc_damage_test PRIVATE earthsiege_core)
   add_test(NAME herc_damage COMMAND herc_damage_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_damage.bin")
+  add_executable(flyer_attack_test tests/flyer_attack_test.cpp)
+  target_link_libraries(flyer_attack_test PRIVATE earthsiege_core)
+  add_test(NAME flyer_attack COMMAND flyer_attack_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/flyer_attack.bin")
+  add_executable(flyer_navigation_test tests/flyer_navigation_test.cpp)
+  target_link_libraries(flyer_navigation_test PRIVATE earthsiege_core)
+  add_test(NAME flyer_navigation COMMAND flyer_navigation_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/flyer_navigation.bin")
   add_executable(flyer_motion_test tests/flyer_motion_test.cpp)
   target_link_libraries(flyer_motion_test PRIVATE earthsiege_core)
   add_test(NAME flyer_motion COMMAND flyer_motion_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/flyer_motion.bin")

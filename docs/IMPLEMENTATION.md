@@ -198,3 +198,12 @@ Motion is per dispatch; only the avoidance timer scales with elapsed time. The
 original zero-initialized obstacle-distance comparison is preserved and documented
 in the research. Route/attack policy and active mission scheduling remain to be
 connected before flyers fly and fight in the inspection session.
+
+Flyer route and formation navigation now matches 1,200 original cases, including
+closed-route advancement, circling the final waypoint, full leader-matrix
+horizontal formation offsets and speed requests. A further 3,072 leader attack
+updates match all four attack phases, lead, steering, missile/bullet selection,
+refire gates and RNG; 78 recorded projectile requests match their muzzle positions
+and angles. Six actual original rocket launches verify inherited forward speed,
+including signed-word wrapping. HERC launches retain their existing zero inherited
+speed. These consumers are ready for the mission's controller/perception scheduler.
