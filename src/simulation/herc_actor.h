@@ -58,6 +58,7 @@ public:
   weapon_bank &weapons();
   weapon_bank const &weapons() const;
   void update_power(frame_ratio ratio, bool free_energy = false, int16_t selected_weapon = -1);
+  int16_t exchange_throttle(int16_t requested);
   void apply_player_controls(player_input_actions const &actions, frame_ratio ratio, movement_event_sink const &events = {});
   vec3<int16_t> aim_at(vec3<int32_t> const &point, frame_ratio ratio);
   void centre_aim(int32_t distance, frame_ratio ratio);

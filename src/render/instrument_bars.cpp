@@ -97,21 +97,20 @@ throttle_gauge::throttle_gauge(resource_store const &resources, cockpit_layout c
   thumb_extent = vertical ? static_cast<int>(thumb.height) : 12;
 }
 
+slider_geometry throttle_gauge::slider_layout() const { return {slider, vertical, thumb_extent, -1024, 1024}; }
 rectangle throttle_gauge::thumb_bounds(int32_t const requested) const {
-  auto result{slider};
-  int const travel{(vertical ? slider.bottom - slider.top : slider.right - slider.left) - thumb_extent};
-  int const scale{travel * 65536 / 2048};
-  int const extent{((std::clamp(requested, -1024, 1024) + 1024) * scale) >> 16};
-  if(vertical) { result.bottom -= extent; result.top = result.bottom - thumb_extent; }
-  else { result.left += extent; result.right = result.left + thumb_extent; }
-  return result;
+  auto const layout{slider_layout()};
+  return layout.thumb_at(layout.boundary_for_value(requested));
 }
 
 void throttle_gauge::draw(framebuffer &target, int32_t const speed, int32_t const requested, int const offset_x, int const offset_y) const {
+  draw_at(target, speed, thumb_bounds(requested), offset_x, offset_y);
+}
+
+void throttle_gauge::draw_at(framebuffer &target, int32_t const speed, rectangle const &position, int const offset_x, int const offset_y) const {
   scoped_framebuffer_clip clip{target, nullptr};
   for(size_t i{}; i < bars.size(); ++i)
     bitmap_bar(target, translated(bars[i], offset_x, offset_y), vertical, lamps[1], lamps[i == 0 ? 0 : 2], speed, i == 0 ? 1024 : -1024);
-  auto const position{thumb_bounds(requested)};
   target.image(thumb, position.left + offset_x, position.top + offset_y, true);
 }
 

@@ -2,6 +2,7 @@
 #include <array>
 #include <optional>
 #include "render/framebuffer.h"
+#include "render/slider_geometry.h"
 #include "resources/cockpit.h"
 
 namespace earthsiege {
@@ -34,7 +35,9 @@ class throttle_gauge {
   int thumb_extent;
 public:
   throttle_gauge(resource_store const &resources, cockpit_layout const &layout);
+  slider_geometry slider_layout() const;
   rectangle thumb_bounds(int32_t requested) const;
+  void draw_at(framebuffer &target, int32_t speed, rectangle const &thumb_position, int offset_x = 0, int offset_y = 0) const;
   void draw(framebuffer &target, int32_t speed, int32_t requested, int offset_x = 0, int offset_y = 0) const;
 };
 

@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/shell/pointer_controls.cpp
+  src/render/slider_geometry.cpp
   src/render/shield_instruments.cpp
   src/render/instrument_bars.cpp
   src/resources/cockpit.cpp
@@ -232,6 +234,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(pointer_controls_test tests/pointer_controls_test.cpp)
+  target_link_libraries(pointer_controls_test PRIVATE earthsiege_core)
+  add_test(NAME pointer_controls COMMAND pointer_controls_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/pointer_controls.bin")
   add_executable(shield_instruments_test tests/shield_instruments_test.cpp)
   target_link_libraries(shield_instruments_test PRIVATE earthsiege_core)
   add_test(NAME shield_instruments COMMAND shield_instruments_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/shield_instruments.bin")

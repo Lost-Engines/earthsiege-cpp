@@ -212,6 +212,11 @@ player_input_actions mission_session::step_player(player_input input, frame_rati
   });
   return actions;
 }
+int16_t mission_session::exchange_player_instruments(int16_t const requested_throttle, std::optional<bool> const shield_to_front) {
+  auto &actor{*crew[player_index].actor};
+  if(shield_to_front) change_shield_balance(actor.power().shields, *shield_to_front);
+  return actor.exchange_throttle(requested_throttle);
+}
 void mission_session::update_player_interface() {
   auto &member{crew[player_index]};
   auto &relationship{activity->targets()[player_index]};

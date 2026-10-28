@@ -200,6 +200,7 @@ public:
   void toggle_weapon_pair();
   player_input_actions step_player(player_input input, frame_ratio ratio, bool external_control = false);
   void update_player_interface();
+  int16_t exchange_player_instruments(int16_t requested_throttle, std::optional<bool> shield_to_front = {});
   void clear_player_input();
   bool player_command(uint16_t code);
   void cycle_target();

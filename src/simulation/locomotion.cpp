@@ -34,7 +34,7 @@ int constexpr heavy_damage_speed_q10{400};
 
 } // anonymous namespace
 
-void update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events) {
+bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events) {
   /// Preserve per-update throttle and acceleration; only root-motion time is scaled
   bool const forward{std::abs(throttle_input) > throttle_direction_threshold ? throttle_input <= 0 : state.throttle >= 0};
   if(forward) steering_input = wrap_word(-steering_input);
@@ -46,6 +46,7 @@ void update_player_movement(locomotion_state &state, movement_profile const &pro
   }
   auto const desired{scale(state.throttle, state.throttle < 0 ? -profile.reverse_rate : profile.forward_rate, 10)};
   update_requested_movement(state, profile, channel, desired, steering_input, damage, ratio, events);
+  return throttle_change != 0;
 }
 
 void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t desired, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) {

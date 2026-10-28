@@ -56,10 +56,15 @@ void herc_body::prepare_player(herc_controls const &controls, frame_ratio const 
 }
 void herc_body::prepare_player_movement(int16_t const throttle, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events) {
   auto const notify{[&](movement_event const event){ frame_movement_events.push_back(event); if(events) events(event); }};
-  update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), throttle, steering, damage, ratio, notify);
+  if(update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), throttle, steering, damage, ratio, notify)) throttle_command_pending = true;
 }
 void herc_body::reset_aim_angles() { torso_state.angle = 0; elevation_state.angle = 0; }
-void herc_body::stop_throttle() { movement_state.throttle = 0; }
+void herc_body::stop_throttle() { movement_state.throttle = 0; throttle_command_pending = true; }
+int16_t herc_body::exchange_throttle(int16_t const requested) {
+  if(!throttle_command_pending) movement_state.throttle = requested;
+  throttle_command_pending = false;
+  return movement_state.throttle;
+}
 
 void herc_body::prepare_requested(int16_t const speed, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) {
   auto const notify{[&](movement_event const event){ frame_movement_events.push_back(event); if(events) events(event); }};

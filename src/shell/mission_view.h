@@ -6,6 +6,7 @@
 #include "render/shield_instruments.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
+#include "shell/pointer_controls.h"
 #include "simulation/mission_session.h"
 
 namespace earthsiege {
@@ -25,6 +26,11 @@ class mission_view {
   keyboard_input keyboard;
   bool paused{false};
   player_input pointer;
+  pointer_controls instruments;
+  std::deque<player_input> pointer_events;
+  int16_t requested_throttle{};
+  std::optional<bool> shield_to_front;
+  void consume_pointer_events();
   std::deque<uint16_t> commands;
 
 public:

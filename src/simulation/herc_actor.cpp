@@ -343,6 +343,7 @@ void herc_actor::prepare_player(herc_controls const &controls, frame_ratio const
   body_state.prepare_player_movement(controls.throttle, controls.steering, ratio, events);
   apply_aim({{}, {controls.torso, controls.elevation}, 0}, ratio);
 }
+int16_t herc_actor::exchange_throttle(int16_t const requested) { return body_state.exchange_throttle(requested); }
 void herc_actor::apply_player_controls(player_input_actions const &actions, frame_ratio const ratio, movement_event_sink const &events) {
   if(actions.reset_aim) body_state.reset_aim_angles();
   if(actions.movement && !actions.move_flyer) body_state.prepare_player_movement(actions.movement->y, actions.movement->x, ratio, events);

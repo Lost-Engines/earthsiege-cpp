@@ -34,6 +34,8 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
     camera{session->make_camera(camera_mode::attached)} {
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
+  instruments.add_slider(throttle.slider_layout(), 0);
+  for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
 }
 
 void mission_view::key(held_key const key, bool const pressed, bool const alt) {
@@ -41,14 +43,30 @@ void mission_view::key(held_key const key, bool const pressed, bool const alt) {
 }
 
 void mission_view::command(uint16_t const code) { commands.push_back(code); }
-void mission_view::mouse_position(int const x, int const y) { pointer.mouse = {x,y}; }
+void mission_view::mouse_position(int const x, int const y) { pointer.mouse = {x,y}; pointer_events.push_back(pointer); }
 void mission_view::mouse_button(bool const right, bool const pressed) {
   (right ? pointer.right : pointer.left) = pressed;
+  pointer_events.push_back(pointer);
+}
+
+void mission_view::consume_pointer_events() {
+  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  instruments.window_bounds({origin[0], origin[1], origin[0] + 319, origin[1] + 199});
+  if(camera.mode == camera_mode::attached) for(auto const &event : pointer_events) {
+    if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right)}) {
+      if(action->index == 0) requested_throttle = static_cast<int16_t>(throttle.slider_layout().vertical ? -action->value : action->value);
+      else if(action->value & 1) shield_to_front = action->index == 1;
+    }
+  }
+  pointer_events.clear();
 }
 
 void mission_view::clear_input() {
   keyboard.clear();
   pointer.left = pointer.right = false;
+  pointer_events.clear();
+  instruments.reset_input();
+  shield_to_front.reset();
   commands.clear();
   session->clear_player_input();
   camera.angular_rates = vec3<int16_t>{0, 0, 0};
@@ -73,7 +91,8 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
 }
 
 void mission_view::step(bool const control, bool const zoom) {
-  if(paused) return;
+  if(paused) { pointer_events.clear(); return; }
+  consume_pointer_events();
   auto const keys{keyboard.sample(session->player_weapon_controls().manual_guidance())};
   player_input input{pointer};
   input.movement = {static_cast<int16_t>(keys.movement.x),static_cast<int16_t>(keys.movement.y)};
@@ -84,6 +103,12 @@ void mission_view::step(bool const control, bool const zoom) {
   if(!commands.empty()) { input.command=commands.front(); commands.pop_front(); }
   auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control)};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
+  auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
+  shield_to_front.reset();
+  if(requested_throttle != throttle_request) {
+    requested_throttle = throttle_request;
+    instruments.set_value(0, requested_throttle);
+  }
   session->update_player_interface();
   update_camera(camera, session->view_target());
 }
@@ -115,11 +140,12 @@ void mission_view::draw() {
     int const x{-window.instrument_origin[0]}, y{-window.instrument_origin[1]};
     reactor.draw(frame, static_cast<int32_t>(player.power().reserve) * 1024 / herc_power_capacity, x, y);
     int const speed_capacity{movement.gait_rate < 0 ? -profile.reverse_rate : profile.forward_rate};
-    throttle.draw(frame, static_cast<int32_t>(movement.gait_rate) * 1024 / speed_capacity, movement.throttle, x, y);
+    instruments.painted(0);
+    throttle.draw_at(frame, static_cast<int32_t>(movement.gait_rate) * 1024 / speed_capacity, instruments.at(0).painted_thumb, x, y);
     auto const &shield{player.power().shields};
     update_shield_colours(display_colours, static_cast<int32_t>(shield.front) * 1024 / shield.capacity,
                          static_cast<int32_t>(shield.rear) * 1024 / shield.capacity);
-    shields.draw(frame, shield.balance, {}, x, y);
+    shields.draw(frame, shield.balance, {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);
   }
 }
 

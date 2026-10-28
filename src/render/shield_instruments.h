@@ -14,6 +14,7 @@ class shield_instruments {
   font numbers;
 public:
   shield_instruments(resource_store const &resources, cockpit_layout const &layout);
+  std::array<rectangle, 2> const &button_bounds() const;
   /// Balance is Q10; the original numbers sum to 200 percent.
   void draw(framebuffer &target, int32_t balance, std::array<unsigned int, 2> button_faces = {}, int offset_x = 0, int offset_y = 0) const;
 };

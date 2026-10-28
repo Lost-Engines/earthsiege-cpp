@@ -41,6 +41,8 @@ shield_instruments::shield_instruments(resource_store const &resources, cockpit_
   for(size_t i{}; i < faces.size(); ++i) faces[i] = bank.at(58 + i);
 }
 
+std::array<rectangle, 2> const &shield_instruments::button_bounds() const { return buttons; }
+
 void shield_instruments::draw(framebuffer &target, int32_t const balance, std::array<unsigned int, 2> const button_faces, int const offset_x, int const offset_y) const {
   scoped_framebuffer_clip clip{target, nullptr};
   int const front{balance * 200 >> 10};
