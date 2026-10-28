@@ -167,6 +167,23 @@ std::optional<size_t> mission_session::weapon_selection() const {
 player_armament const &mission_session::player_weapon_controls() const { return *player_weapons; }
 herc_sensor_state const &mission_session::player_sensors() const { return crew[player_index].sensors; }
 std::optional<size_t> mission_session::target_selection() const { return displayed_target; }
+std::optional<hud_target_state> mission_session::target_marker() const {
+  if(!displayed_target) return {};
+  auto const index{*displayed_target};
+  int radius;
+  if(index < crew.size()) radius = crew[index].definition->models.roots.front().header.radius;
+  else if(index < base_id(0)) radius = flyers[index - flyer_id(0)].actor->model().roots.front().header.radius;
+  else radius = bases[index - base_id(0)].actor->model().roots.front().header.radius;
+  return hud_target_state{vec3<int32_t>{observe().at(index).position}, radius, activity->group(actor_group(index)).side, true, player_sensors().hud_locked};
+}
+std::optional<hud_waypoint_state> mission_session::next_waypoint() const {
+  auto const &group{activity->group(crew[player_index].group)};
+  if(group.route < 0) return {};
+  auto const &route{routes.at(static_cast<size_t>(group.route))};
+  int const next{group.route_cursor + 1};
+  if(next < 0 || static_cast<size_t>(next) >= route.points.size()) return {};
+  return hud_waypoint_state{vec3<int32_t>{points.at(static_cast<size_t>(route.points[static_cast<size_t>(next)]))}, static_cast<int16_t>(next)};
+}
 void mission_session::set_displayed_target(std::optional<size_t> const target) {
   if(target && *target >= activity->size()) throw std::out_of_range{"cockpit target"};
   displayed_target = target;

@@ -5,6 +5,7 @@
 #include "render/instrument_bars.h"
 #include "render/shield_instruments.h"
 #include "render/weapon_instruments.h"
+#include "render/navigation_instruments.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
 #include "shell/pointer_controls.h"
@@ -21,6 +22,8 @@ class mission_view {
   throttle_gauge throttle;
   shield_instruments shields;
   weapon_instruments weapons;
+  navigation_instruments navigation;
+  waypoint_instruments waypoints;
   struct weapon_control_binding {
     size_t row;
     size_t button;

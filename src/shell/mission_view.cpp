@@ -9,6 +9,7 @@
 #include "resources/name_table.h"
 #include "resources/resource_store.h"
 #include "simulation/frame_time.h"
+#include "simulation/model_math.h"
 
 namespace earthsiege {
 namespace {
@@ -31,6 +32,8 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
     throttle{resources, cockpit.layout},
     shields{resources, cockpit.layout},
     weapons{resources, cockpit.layout},
+    navigation{resources, cockpit.layout},
+    waypoints{resources, cockpit.layout},
     display_colours{session->scenery().colours()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
@@ -48,6 +51,9 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   }
   auto const groups{weapons.group_bounds()};
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
+  auto const &player{session->player_actor()};
+  navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
+                    player.body().elevation().angle, player.damage().consequences.disabled);
 }
 
 void mission_view::key(held_key const key, bool const pressed, bool const alt) {
@@ -107,6 +113,9 @@ void mission_view::change_camera(camera_mode const mode) {
   else camera = session->make_camera(mode);
   clear_input();
   update_camera(camera, session->view_target());
+  auto const &player{session->player_actor()};
+  navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
+                    player.body().elevation().angle, player.damage().consequences.disabled);
 }
 
 void mission_view::change_cockpit_view(cockpit_view const view) {
@@ -152,6 +161,9 @@ void mission_view::step(bool const control, bool const zoom) {
     }
   }
   update_camera(camera, session->view_target());
+  auto const &player{session->player_actor()};
+  navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
+                    player.body().elevation().angle, player.damage().consequences.disabled);
 }
 
 void mission_view::draw() {
@@ -196,6 +208,16 @@ void mission_view::draw() {
     std::array<unsigned int, 5> faces;
     for(size_t i{}; i < faces.size(); ++i) faces[i] = std::to_underlying(instruments.at(weapon_groups[i]).face);
     weapons.draw_groups(frame, session->player_weapon_controls().current_group(), faces, x, y);
+    navigation.draw(frame, x, y, session->player_weapon_controls().auto_tracking());
+    if(auto const marker{session->target_marker()}) {
+      auto camera_transform{rotation_transform(camera.angles)};
+      camera_transform.translation = camera.position;
+      if(auto const brackets{target_brackets(*marker, inverse_transform(camera_transform), view.projection)}) {
+        scoped_framebuffer_clip target_clip{frame, &window.mask};
+        draw_target_brackets(frame, *brackets, marker->locked, marker->side);
+      }
+    }
+    waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
 }
 

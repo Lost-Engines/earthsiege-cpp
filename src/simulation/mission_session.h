@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 #include "render/scenery_renderer.h"
+#include "render/target_instruments.h"
+#include "render/waypoint_instruments.h"
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
 #include "simulation/camera.h"
@@ -212,6 +214,8 @@ public:
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;
+  std::optional<hud_target_state> target_marker() const;
+  std::optional<hud_waypoint_state> next_waypoint() const;
   player_armament const &player_weapon_controls() const;
   herc_sensor_state const &player_sensors() const;
   mission_status mission_state(bool requested = false) const;
