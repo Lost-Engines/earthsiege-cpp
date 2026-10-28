@@ -8,6 +8,7 @@
 #include "simulation/camera.h"
 #include "simulation/herc_actor.h"
 #include "simulation/ground_actor.h"
+#include "simulation/flyer_actor.h"
 #include "simulation/scenery_world.h"
 #include "simulation/world_effects.h"
 #include "simulation/world_projectiles.h"
@@ -35,6 +36,14 @@ struct mission_herc_view {
   herc_actor const &actor;
 };
 
+struct mission_flyer_view {
+  size_t source;
+  size_t group;
+  uint8_t side;
+  bool waiting;
+  flyer_actor const &actor;
+};
+
 struct mission_base_view {
   size_t source;
   size_t group;
@@ -56,6 +65,13 @@ class mission_session {
     bool player_roster{false};
     bool contact_received{false};
   };
+  struct flyer_member {
+    std::unique_ptr<flyer_actor> actor;
+    size_t source{0};
+    size_t group{0};
+    uint8_t side{0};
+    bool waiting{false};
+  };
   struct base_member {
     std::unique_ptr<ground_actor> actor;
     size_t source{0};
@@ -71,6 +87,11 @@ class mission_session {
   std::vector<bitmap> weapon_textures;
   std::map<int16_t, std::unique_ptr<herc_definition>> definitions;
   std::vector<crew_member> crew;
+  std::map<int16_t, std::unique_ptr<flyer_definition>> flyer_definitions;
+  std::vector<flyer_member> flyers;
+  size_t flyer_id(size_t index) const;
+  size_t base_id(size_t index) const;
+  size_t actor_group(size_t index) const;
   size_t player_index{0};
   std::vector<actor_contact> frame_contacts;
   random_state random;
@@ -82,6 +103,7 @@ class mission_session {
   void fire_selected(bool pressed);
   herc_damage_events damage_events(size_t actor);
   ground_damage_events base_damage_events(size_t actor);
+  flyer_damage_events flyer_events(size_t actor);
   std::vector<scene_model> herc_models(bool roster_only);
 
 public:
@@ -105,6 +127,7 @@ public:
   std::vector<scene_model> roster_models();
   std::vector<mission_herc_view> hercs() const;
   std::vector<mission_base_view> ground_actors() const;
+  std::vector<mission_flyer_view> flying_actors() const;
   random_state::state const &random_snapshot() const;
   camera_target view_target() const;
   camera_state make_camera(camera_mode mode) const;

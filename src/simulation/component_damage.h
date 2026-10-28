@@ -37,11 +37,12 @@ class component_damage {
   bool distribute(size_t section, int16_t amount, component_choice const &choose);
   void remove(size_t section, component_choice const &choose, section_detachment const &detach, std::vector<size_t> &pending, std::vector<size_t> &removed);
   void update_consequences(int16_t legs);
-  std::vector<size_t> apply(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach);
 
 public:
   component_damage(damage_definition const &definition, damage_state initial);
   std::vector<size_t> hit(size_t section, int16_t amount, int16_t legs, component_choice const &choose, section_detachment const &detach = {});
+  /// Raw section damage shared by HERCs and flyers, without HERC-specific consequences.
+  std::vector<size_t> apply_section(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach = {});
   damage_state const &state() const;
   /// Shell percentages restore accumulators without recomputing cells or consequence flags.
   void restore_condition(herc_condition const &condition);

@@ -8,6 +8,12 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/flyer_motion.cpp
+  src/simulation/flyer_motion.h
+  src/resources/flyer_definition.cpp
+  src/resources/flyer_definition.h
+  src/simulation/flyer_actor.cpp
+  src/simulation/flyer_actor.h
   src/resources/ground_definition.cpp
   src/resources/ground_definition.h
   src/simulation/ground_actor.cpp
@@ -242,6 +248,15 @@ if(BUILD_TESTING)
   add_executable(herc_damage_test tests/herc_damage_test.cpp)
   target_link_libraries(herc_damage_test PRIVATE earthsiege_core)
   add_test(NAME herc_damage COMMAND herc_damage_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_damage.bin")
+  add_executable(flyer_motion_test tests/flyer_motion_test.cpp)
+  target_link_libraries(flyer_motion_test PRIVATE earthsiege_core)
+  add_test(NAME flyer_motion COMMAND flyer_motion_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/flyer_motion.bin")
+  add_executable(mission_flyers_test tests/mission_flyers_test.cpp)
+  target_link_libraries(mission_flyers_test PRIVATE earthsiege_core)
+  add_test(NAME mission_flyers COMMAND mission_flyers_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_flyers.bin")
+  add_executable(flyer_actors_test tests/flyer_actors_test.cpp)
+  target_link_libraries(flyer_actors_test PRIVATE earthsiege_core)
+  add_test(NAME flyer_actors COMMAND flyer_actors_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/flyer_actors.bin")
   add_executable(turret_firing_test tests/turret_firing_test.cpp)
   target_link_libraries(turret_firing_test PRIVATE earthsiege_core)
   add_test(NAME turret_firing COMMAND turret_firing_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/turret_firing.bin")

@@ -104,17 +104,17 @@ int16_t component_damage::fraction(size_t const section) const {
 
 std::vector<size_t> component_damage::hit(size_t const section, int16_t const amount, int16_t const legs, component_choice const &choose, section_detachment const &detach) {
   if(current.present.at(section) == 0) return {};
-  auto removed{apply(section, amount, choose, detach)};
+  auto removed{apply_section(section, amount, choose, detach)};
   update_consequences(legs);
   return removed;
 }
 
 void component_damage::knock_off_weapon(size_t const section, component_choice const &choose, section_detachment const &detach) {
   current.present.at(section) = 0;
-  apply(section, 10000, choose, detach);
+  apply_section(section, 10000, choose, detach);
 }
 
-std::vector<size_t> component_damage::apply(size_t const section, int16_t amount, component_choice const &choose, section_detachment const &detach) {
+std::vector<size_t> component_damage::apply_section(size_t const section, int16_t amount, component_choice const &choose, section_detachment const &detach) {
   std::vector<size_t> removed;
   auto const &piece{definition.components.at(section)};
   if(accumulate_damage(amount, piece.armour, current.armour[section])) {

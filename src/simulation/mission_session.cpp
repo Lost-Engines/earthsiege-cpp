@@ -55,6 +55,14 @@ mission_session::mission_session(resource_store const &resources, mission_script
     auto const &placement{placements.actors[static_cast<size_t>(actor_kind::herc)][index]};
     crew[index].actor->place(*placement.position, placement.angles);
   }
+  auto const flyer_names{read_resource_names(resources.read("simvol0", "nam/FLYERS.NAM"))};
+  for(auto const &placement : placements.actors[static_cast<size_t>(actor_kind::flyer)]) {
+    if(!placement.position) throw std::runtime_error{"flyer has an undefined negative-formation position"};
+    auto &definition{flyer_definitions[placement.definition]};
+    if(!definition) definition = std::make_unique<flyer_definition>(read_flyer_definition(resources,flyer_names.at(static_cast<size_t>(placement.definition))));
+    auto const side{placements.groups.at(placement.group).mode};
+    flyers.push_back({std::make_unique<flyer_actor>(*definition,*placement.position,placement.angles),placement.source,placement.group,side,script.groups.at(placement.group).trigger >= 0});
+  }
   for(auto const &placement : placements.actors[static_cast<size_t>(actor_kind::base)]) {
     if(!placement.position) throw std::runtime_error{"base has an undefined negative-formation position"};
     auto const side{placements.groups.at(placement.group).mode};
@@ -155,18 +163,32 @@ ground_damage_events mission_session::base_damage_events(size_t const index) {
   ground_damage_events events;
   events.explosion = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition, position, rng); };
   events.debris = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition, position, rng); };
-  events.attached_smoke = [&, index](vec3<int16_t> const &position){ frame_notices.push_back({combat_notice_kind::attached_smoke, crew.size() + index, -1, 1, vec3<int32_t>{position}}); };
+  events.attached_smoke = [&, index](vec3<int16_t> const &position){ frame_notices.push_back({combat_notice_kind::attached_smoke, base_id(index), -1, 1, vec3<int32_t>{position}}); };
+  return events;
+}
+
+size_t mission_session::flyer_id(size_t const index) const { return crew.size() + index; }
+size_t mission_session::base_id(size_t const index) const { return crew.size() + flyers.size() + index; }
+size_t mission_session::actor_group(size_t const index) const {
+  if(index < crew.size()) return crew[index].group;
+  if(index < base_id(0)) return flyers[index - flyer_id(0)].group;
+  return bases.at(index - base_id(0)).group;
+}
+flyer_damage_events mission_session::flyer_events(size_t const) {
+  flyer_damage_events events;
+  events.explosion = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition,position,rng); };
+  events.debris = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition,position,rng); };
   return events;
 }
 
 std::optional<int32_t> mission_session::impact(projectile_owner const &owner, impact_request const &request) {
   std::vector<impact_actor> actors;
   std::vector<size_t> group;
-  actors.reserve(crew.size() + bases.size()); group.reserve(crew.size() + bases.size());
+  actors.reserve(base_id(bases.size())); group.reserve(base_id(bases.size()));
   for(size_t index{0}; index != crew.size(); ++index) {
     auto &victim{*crew[index].actor};
     auto const &damage{victim.damage().consequences};
-    if(crew[index].group == crew.at(owner.actor).group) group.push_back(index);
+    if(crew[index].group == actor_group(owner.actor)) group.push_back(index);
     actors.push_back({
       .position{vec3<int32_t>{victim.body().movement().position}}, .group{crew[index].group}, .side{crew[index].side},
       .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
@@ -180,16 +202,30 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       }},
     });
   }
+  for(size_t index{0}; index != flyers.size(); ++index) {
+    auto const &member{flyers[index]};
+    if(member.group == actor_group(owner.actor)) group.push_back(flyer_id(index));
+    actors.push_back({
+      .position{vec3<int32_t>{member.actor->placement().translation}}, .group{member.group}, .side{member.side},
+      .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{member.actor->dead()}, .quiet{false}, .hit_enemy{false}, .trigger{},
+      .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
+        impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .side{flyers[index].side}};
+        auto const result{flyers[index].actor->receive_impact(incoming,conditions,random,flyer_events(index),owner.actor == player_index && owner.target == flyer_id(index))};
+        actors[flyer_id(index)].dead = flyers[index].actor->dead();
+        return result;
+      }},
+    });
+  }
   for(size_t index{0}; index != bases.size(); ++index) {
     auto const &member{bases[index]};
-    if(member.group == crew.at(owner.actor).group) group.push_back(crew.size() + index);
+    if(member.group == actor_group(owner.actor)) group.push_back(base_id(index));
     actors.push_back({
       .position{vec3<int32_t>{member.actor->placement().translation}}, .group{member.group}, .side{member.side},
       .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{false}, .quiet{false}, .hit_enemy{false}, .trigger{},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .side{bases[index].side}};
         auto const result{bases[index].actor->receive_impact(incoming, conditions, random, base_damage_events(index))};
-        actors[crew.size() + index].dead = bases[index].actor->dead();
+        actors[base_id(index)].dead = bases[index].actor->dead();
         return result;
       }},
     });
@@ -202,6 +238,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
 
 std::vector<scene_object> mission_session::visible_objects() {
   auto models{herc_models(false)};
+  for(auto const &member : flyers) if(!member.waiting && !member.actor->dead()) models.push_back(member.actor->model());
   for(auto const &member : bases) if(!member.waiting) models.push_back(member.actor->model());
   effects.append_models(models);
   std::vector<scene_object> result;
@@ -227,6 +264,12 @@ std::vector<mission_herc_view> mission_session::hercs() const {
 std::vector<mission_base_view> mission_session::ground_actors() const {
   std::vector<mission_base_view> result;
   for(auto const &member : bases) result.push_back({member.source, member.group, member.side, member.waiting, *member.actor});
+  return result;
+}
+
+std::vector<mission_flyer_view> mission_session::flying_actors() const {
+  std::vector<mission_flyer_view> result;
+  for(auto const &member : flyers) result.push_back({member.source,member.group,member.side,member.waiting,*member.actor});
   return result;
 }
 

@@ -182,3 +182,19 @@ Target ranking now also covers the ordinary actor virtual callback used by flyer
 and bases: it always reports comparable strength, without consuming random draws.
 This differs from the HERC's randomized comparison. The fixture retains the first
 3,000 HERC-callback cases and adds 1,500 ordinary-actor cases, with complete RNG.
+
+## Flyer actors and flight controls
+
+Mission sessions now own every referenced flyer alongside their HERCs and bases.
+Skimmers use their original model, ENEMY texture bank, single-section damage and
+immediate removal on destruction. The shared projectile path includes flyers and
+resolves owner groups independently of actor kind. Thirty-two complete original
+VGA frames, 768 rays, ten cumulative damage steps and all 18 demo-world flyer starts
+verify appearance, damage, effect ordering, random state and initial placement.
+
+Flyer pitch/bank/turn/altitude controls and movement are reconstructed separately
+from controller policy: 2,304 original steps and 4,608 obstacle queries agree.
+Motion is per dispatch; only the avoidance timer scales with elapsed time. The
+original zero-initialized obstacle-distance comparison is preserved and documented
+in the research. Route/attack policy and active mission scheduling remain to be
+connected before flyers fly and fight in the inspection session.
