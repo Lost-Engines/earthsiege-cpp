@@ -230,6 +230,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(cockpit_scene_test tests/cockpit_scene_test.cpp)
+  target_link_libraries(cockpit_scene_test PRIVATE earthsiege_core)
+  add_test(NAME cockpit_scenery COMMAND cockpit_scene_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/cockpit_scenery.bin")
   add_executable(cockpit_artwork_test tests/cockpit_artwork_test.cpp)
   target_link_libraries(cockpit_artwork_test PRIVATE earthsiege_core)
   add_test(NAME cockpit_artwork COMMAND cockpit_artwork_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/cockpit_artwork.bin")

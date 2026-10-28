@@ -385,8 +385,14 @@ ownership. No interactive widget drawing is claimed by these fixtures.
   VGA ports are host boundaries; model readers, poses, projection, lighting,
   clipping and rasterization execute original code. Constant projection isolates
   the mask path; these are not complete gameplay screenshots.
-- `cockpit_artwork.bin` (`ESCOCK01`): eight full rebased GAU layouts, all 32 VUE
+- `cockpit_artwork.bin` (`ESCOCK02`): eight full rebased GAU layouts, all 32 VUE
   records and DB panel CRCs, and chassis palette overrides. Original reader,
   selector and palette-helper comparisons are in `check_cockpits.py` and
   `check_cockpit_layout.py`. Both fixtures are imported by
   `tools/export_cockpit_fixtures.py`.
+
+- `cockpit_scenery.bin` (`ESCPWLD1`): 64 original complete scenery rasters and
+  painter orders through all 32 cockpit windows. Capture:
+  `earthsiege-reverse/tools/check_cockpit_scene.py`. Projection centres come from
+  original `0x5bf68`, recorded by `check_cockpits.py`; the artwork fixture also
+  verifies them. Backgrounds, actor activation and instruments are separate.

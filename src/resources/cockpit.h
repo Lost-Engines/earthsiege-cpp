@@ -13,6 +13,7 @@ struct cockpit_window {
   rectangle bounds;
   std::array<int32_t, 2> projection_origin;
   std::array<int32_t, 2> instrument_origin;
+  std::array<int32_t, 2> projection_centre() const;
   screen_mask mask;
   std::vector<uint8_t> unused_mask_bytes;
 };

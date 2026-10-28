@@ -9,7 +9,7 @@ int main(int argc, char **argv) try {
   resource_store resources{argv[1]};
   auto const bytes{read_file(argv[2])}; binary_reader file{bytes};
   auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != "ESCOCK01") file.fail("fixture version");
+  if(std::string(magic.begin(), magic.end()) != "ESCOCK02") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   auto const palette_bank{read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL"))};
   for(unsigned int i{}; i < count; ++i) {
@@ -24,6 +24,7 @@ int main(int argc, char **argv) try {
       { scoped_framebuffer_clip clip{frame, &w.mask}; cockpit.draw(frame, static_cast<cockpit_view>(view)); }
       if(frame.clip()) file.fail("clip scope leaked");
       if(crc32(frame.pixels()) != file.integer<uint32_t>()) file.fail(name + " bitmap/mirroring differs");
+      for(auto value : w.projection_centre()) if(value != file.integer<int32_t>()) file.fail(name + " projection centre differs");
     }
     auto world{read_palette(resources.read("simvol0", "dpl/WORLD0.DPL"))};
     apply_cockpit_colours(world, palette_bank, chassis);

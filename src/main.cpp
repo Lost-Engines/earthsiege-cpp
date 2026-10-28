@@ -112,7 +112,8 @@ auto main(int argc, char *argv[])->int try {
     scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo);
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
-      "F1 attached, F2 orbit, F3 free camera; P pauses, Escape returns to menu.\n"
+      "F1 cockpit, F2 orbit, F3 free camera; P pauses, Escape returns to menu.\n"
+      "F7 lower instruments, F8 forward, F9 left, F10 right cockpit view.\n"
       "Space fires; W/Alt+W selects weapons; Enter/Tab selects targets; R toggles radar.\n"
       "Hold right mouse to aim; both buttons centre aim. Backspace recentres.\n"
       "B changes weapon groups; Alt+1–9 edits a group; +/- adjusts charge; Z restores charge settings.\n"
@@ -144,9 +145,13 @@ auto main(int argc, char *argv[])->int try {
           else running = false;
         } else if(scene && focused) {
           if(event.key.keysym.sym == SDLK_p) scene->toggle_pause();
-          if(event.key.keysym.sym == SDLK_F1) scene->change_camera(earthsiege::camera_mode::attached);
+          if(event.key.keysym.sym == SDLK_F1) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
           if(event.key.keysym.sym == SDLK_F2) scene->change_camera(earthsiege::camera_mode::orbit);
           if(event.key.keysym.sym == SDLK_F3) scene->change_camera(earthsiege::camera_mode::free);
+          if(event.key.keysym.sym == SDLK_F7) scene->change_cockpit_view(earthsiege::cockpit_view::lower);
+          if(event.key.keysym.sym == SDLK_F8) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
+          if(event.key.keysym.sym == SDLK_F9) scene->change_cockpit_view(earthsiege::cockpit_view::left);
+          if(event.key.keysym.sym == SDLK_F10) scene->change_cockpit_view(earthsiege::cockpit_view::right);
         }
       }
       if(scene) {

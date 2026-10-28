@@ -21,17 +21,16 @@ vec3<int32_t> world_point(vec3<int32_t> const &point, model_transform const &pla
 scenery_renderer::scenery_renderer(framebuffer &buffer, scenery_world const &source, distance_shade_bindings bindings) : target{buffer}, world{source}, colours{source.colours()}, shading{source.environment(), std::move(bindings)}, models{buffer, colours} {
 }
 
-std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_model const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground) {
+std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_model const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground, model_view view) {
   std::vector<scene_object> visible;
   visible.reserve(actors.size());
   for(auto const &actor : actors) visible.emplace_back(actor);
-  return draw_objects(position, angles, lights, split_highlights, visible, dynamic, ground);
+  return draw_objects(position, angles, lights, split_highlights, visible, dynamic, ground, view);
 }
 
-std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_object const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground) {
+std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_object const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground, model_view view) {
   auto camera{rotation_transform(angles)};
   camera.translation = position;
-  model_view view;
   view.camera = inverse_transform(camera);
   for(auto const &flash : ground) {
     vec3<int32_t> delta;

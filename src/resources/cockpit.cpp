@@ -46,6 +46,12 @@ screen_mask read_screen_mask(bytes source, std::vector<uint8_t> *unused) {
   return result;
 }
 
+std::array<int32_t, 2> cockpit_window::projection_centre() const {
+  // Original 0x5bf68 subtracts the combined projection/layout origin from the
+  // viewport's top left. Side panels continue the forward image plane.
+  return {bounds.left - projection_origin[0] - instrument_origin[0], bounds.top - projection_origin[1] - instrument_origin[1]};
+}
+
 unsigned int cockpit_layout::weapon_count() const { return static_cast<unsigned int>(words[4]); }
 rectangle cockpit_layout::bounds(size_t byte_offset) const {
   if(byte_offset % 4) throw std::invalid_argument{"unaligned cockpit layout field"};

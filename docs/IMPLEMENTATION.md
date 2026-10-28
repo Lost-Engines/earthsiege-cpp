@@ -444,3 +444,18 @@ into a final pixel test changes edge rounding and Gouraud colour bands. Scene
 clipping is scoped, so cockpit artwork and instruments can draw independently.
 These captures isolate artwork and masked models; live instruments and complete
 cockpit frames are the next integration layer.
+
+
+## Live cockpit view
+
+The inspection scene now starts inside the player's cockpit. Attached views
+exclude the player's own exterior model and use the VUE projection and ED mask;
+external cameras retain the inspection viewport. Forward, lower, left and right
+artwork is available, with the original chassis palette. Instruments and view
+transitions remain subsequent integration work.
+
+All 32 projection centres match the original camera installer `0x5bf68`.
+Side panels extend the forward image plane, with centres at x = -160 and 480;
+they do not rotate the camera. Another 64 original full scenery frames verify
+all 32 masks and viewport projections, including distance shading and scene
+order. This capture isolates scenery from background and instrument painting.

@@ -57,6 +57,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
   }
   if(!controlled) throw std::runtime_error{"mission has no controlled roster HERC"};
   player_index = *controlled;
+  player_chassis_id = placements.actors[static_cast<size_t>(actor_kind::herc)][player_index].definition;
   for(size_t index{0}; index != crew.size(); ++index) {
     auto const &placement{placements.actors[static_cast<size_t>(actor_kind::herc)][index]};
     crew[index].actor->place(*placement.position, placement.angles);
@@ -89,6 +90,8 @@ mission_activity const &mission_session::activity_state() const { return *activi
 scenery_world const &mission_session::scenery() const {
   return terrain;
 }
+
+int16_t mission_session::player_chassis() const { return player_chassis_id; }
 
 herc_body const &mission_session::player() const {
   return crew.at(player_index).actor->body();
@@ -354,8 +357,8 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
   return result;
 }
 
-std::vector<scene_object> mission_session::visible_objects() {
-  auto models{herc_models(false)};
+std::vector<scene_object> mission_session::visible_objects(bool include_player) {
+  auto models{herc_models(false, include_player)};
   for(auto const &member : flyers) if(!member.waiting && !member.actor->dead()) models.push_back(member.actor->model());
   for(auto const &member : bases) if(!member.waiting) models.push_back(member.actor->model());
   effects.append_models(models);
@@ -393,11 +396,12 @@ std::vector<mission_flyer_view> mission_session::flying_actors() const {
 
 random_state::state const &mission_session::random_snapshot() const { return random.snapshot(); }
 
-std::vector<scene_model> mission_session::herc_models(bool const roster_only) {
+std::vector<scene_model> mission_session::herc_models(bool const roster_only, bool const include_player) {
   std::vector<scene_model> result;
   result.reserve(crew.size());
   for(auto &member : crew) {
     if(roster_only ? !member.player_roster : member.waiting) continue;
+    if(!include_player && &member == &crew[player_index]) continue;
     size_t index{0};
     for(auto const &part : member.actor->body().weapons().parts()) member.attachments.at(index++).geometry = part.geometry && !part.disabled ? &*part.geometry : nullptr;
     result.push_back({

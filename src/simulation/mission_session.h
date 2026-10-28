@@ -159,6 +159,7 @@ class mission_session {
   void advance_base(size_t index, frame_ratio ratio);
   std::optional<int32_t> obstacle_distance(avoidance_probe kind, vec3<int32_t> const &start, vec3<int32_t> const &end) const;
   size_t player_index{0};
+  int16_t player_chassis_id{0};
   mission_outcome_clock outcome_clock;
   std::optional<mission_status> pending_mission_prompt;
   std::pair<std::vector<objective_actor>, std::vector<objective_group>> objective_facts() const;
@@ -179,7 +180,7 @@ class mission_session {
   herc_damage_events damage_events(size_t actor);
   ground_damage_events base_damage_events(size_t actor);
   flyer_damage_events flyer_events(size_t actor);
-  std::vector<scene_model> herc_models(bool roster_only);
+  std::vector<scene_model> herc_models(bool roster_only, bool include_player = true);
 
 public:
   mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random = random_state{}, mission_counters initial_counters = {});
@@ -191,6 +192,7 @@ public:
   mission_counters const &mission_variables() const;
   mission_activity const &activity_state() const;
   herc_body const &player() const;
+  int16_t player_chassis() const;
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);
   void cycle_weapon();
@@ -215,7 +217,7 @@ public:
   world_effects &visual_effects();
   world_projectiles const &ordnance() const;
   std::span<combat_notice const> combat_notices() const;
-  std::vector<scene_object> visible_objects();
+  std::vector<scene_object> visible_objects(bool include_player = true);
   std::span<actor_contact const> contacts() const;
   std::vector<scene_model> roster_models();
   std::vector<mission_herc_view> hercs() const;

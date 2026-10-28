@@ -5,6 +5,7 @@
 #include <utility>
 #include "render/background_bands.h"
 #include "resources/input_tape.h"
+#include "resources/name_table.h"
 #include "resources/resource_store.h"
 #include "simulation/frame_time.h"
 
@@ -24,9 +25,11 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources, uns
 
 mission_view::mission_view(resource_store const &resources, unsigned int const demo)
   : session{demo_start(resources, demo)},
+    cockpit{read_cockpit(resources, read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())))},
+    display_colours{session->scenery().colours()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
-    camera{session->make_camera(camera_mode::orbit)} {
-  camera.orbit_angles.x = 0xf800;
+    camera{session->make_camera(camera_mode::attached)} {
+  apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
 }
 
@@ -61,6 +64,11 @@ void mission_view::change_camera(camera_mode const mode) {
   update_camera(camera, session->view_target());
 }
 
+void mission_view::change_cockpit_view(cockpit_view const view) {
+  panel = view;
+  change_camera(camera_mode::attached);
+}
+
 void mission_view::step(bool const control, bool const zoom) {
   if(paused) return;
   auto const keys{keyboard.sample(session->player_weapon_controls().manual_guidance())};
@@ -79,15 +87,25 @@ void mission_view::step(bool const control, bool const zoom) {
 
 void mission_view::draw() {
   frame.clear();
-  background_view const background{.pitch{camera.angles.x}, .roll{camera.angles.y}, .offset{0, 0}};
+  bool const inside{camera.mode == camera_mode::attached};
+  auto const &window{cockpit.windows[static_cast<size_t>(panel)]};
+  model_view view;
+  if(inside) {
+    cockpit.draw(frame, panel);
+    auto const centre{window.projection_centre()};
+    view.projection.centre = {centre[0], centre[1]};
+    view.bounds = window.bounds;
+  }
+  scoped_framebuffer_clip clip{frame, inside ? &window.mask : nullptr};
+  background_view const background{.pitch{camera.angles.x}, .roll{camera.angles.y}, .projection_shift{view.projection.perspective_shift}, .centre{vec2<int32_t>{view.projection.centre}}, .offset{0, 0}, .bounds{view.bounds}};
   draw_background_bands(frame, make_background_bands(session->scenery().environment(), background), background.bounds);
-  auto const objects{session->visible_objects()};
+  auto const objects{session->visible_objects(!inside)};
   auto &effects{session->visual_effects()};
   auto const ground{effects.ground_flashes()};
-  renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground);
+  renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground, view);
 }
 
 framebuffer const &mission_view::image() const { return frame; }
-palette const &mission_view::colours() const { return session->scenery().colours(); }
+palette const &mission_view::colours() const { return display_colours; }
 
 } // namespace earthsiege

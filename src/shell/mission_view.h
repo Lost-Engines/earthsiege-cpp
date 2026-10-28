@@ -2,6 +2,7 @@
 #include <deque>
 #include <memory>
 #include "render/scenery_renderer.h"
+#include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
 #include "simulation/mission_session.h"
 
@@ -11,6 +12,9 @@ namespace earthsiege {
 class mission_view {
   std::unique_ptr<mission_session> session;
   framebuffer frame;
+  cockpit_artwork cockpit;
+  cockpit_view panel{cockpit_view::forward};
+  palette display_colours;
   scenery_renderer renderer;
   camera_state camera;
   keyboard_input keyboard;
@@ -27,6 +31,7 @@ public:
   void clear_input();
   void toggle_pause();
   void change_camera(camera_mode mode);
+  void change_cockpit_view(cockpit_view view);
   void step(bool control, bool zoom);
   void draw();
   framebuffer const &image() const;
