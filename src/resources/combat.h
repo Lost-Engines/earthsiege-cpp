@@ -102,6 +102,7 @@ struct weapon_catalogue {
 
 damage_definition read_damage_definition(bytes source);
 std::vector<collision_part> read_collision_parts(bytes source);
+std::vector<collision_part> read_collision_parts(binary_reader &source);
 weapon_catalogue read_weapon_catalogue(bytes source);
 
 } // namespace earthsiege

@@ -139,4 +139,30 @@ missing torso/elevation channels are optional, as in the original; its live
 internal-damage storage still has 21 entries despite its twelve-entry capacity
 resource. Shell restoration of a Spider is unsupported by the original shell and
 would read beyond that capacity table; native code does not reproduce that read.
-AI decisions and flyer/ground-object ownership remain integration work.
+AI decisions and flyer ownership remain integration work.
+
+## Fixed mission actors
+
+The session owns all referenced bases, buildings, radar dishes and gun turrets,
+with separate friendly/enemy static and animated banks and a shared wreck bank.
+They render in the mission, participate in their original heightfield or circular
+contact tests, and receive projectile damage. Background cell/radar animations and
+the eight-stage destruction sequence run with their distinct original clocks.
+Weak points triple body damage; damage equal to capacity does not destroy a base.
+The collapsing intact geometry remains hittable until the final wreck transition.
+
+Seventy-two original construction cases and 288 untouched original VGA images
+match, as do 1,332 lifecycle operations and 1,728 rays through intact, collapsing
+and wrecked bases. Ordered damage effects and primary RNG are compared with
+explicit effect/mission-notification boundaries. Difficulty scaling is shared
+with HERC impacts. Active turret target acquisition/firing, kill credit, mission
+counter notifications and attached smoke are subsequent consumers.
+
+Both animated radar exports contain seven invalid BSP transform indices in their
+three distant detail levels: indices 2–4 with only two poses available. A native
+probe confirms DOS uses the following animation-channel allocation as matrices.
+The ground catalogue repairs only those invalid radar references to local-space
+planes, leaving raw assets untouched. Sixteen further VGA views execute the same
+explicit repair in the original renderer and compare the resulting pixels. This
+is a defined repair of an out-of-bounds read, not a claim of matching its unstable
+allocator-dependent result.

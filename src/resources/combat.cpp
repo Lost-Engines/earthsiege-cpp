@@ -43,6 +43,12 @@ damage_definition read_damage_definition(bytes const source) {
 
 std::vector<collision_part> read_collision_parts(bytes const source) {
   binary_reader file{source, "collision parts"};
+  auto result{read_collision_parts(file)};
+  file.require_end();
+  return result;
+}
+
+std::vector<collision_part> read_collision_parts(binary_reader &file) {
   std::vector<collision_part> result;
   auto const count{file.integer<uint16_t>()};
   for(unsigned int index{0}; index != count; ++index) {
@@ -52,7 +58,6 @@ std::vector<collision_part> read_collision_parts(bytes const source) {
     for(unsigned int section{0}; section != sections; ++section) part.sections.push_back(collision(file));
     result.push_back(std::move(part));
   }
-  file.require_end();
   return result;
 }
 

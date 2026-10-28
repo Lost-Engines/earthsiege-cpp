@@ -259,3 +259,15 @@ Refresh using `tools/export_starting_damage_fixtures.py ../earthsiege-reverse/an
 including source/group identity, side, waiting gate, pose, damage and shared RNG.
 It supplies the captured initial RNG, not captured damage, to the native mission
 constructor. Refresh using `tools/export_mission_herc_fixtures.py ../earthsiege-reverse/analysis`.
+
+`ground_actors.bin` comes from `capture_ground_actors.py`: all nine base types,
+both side banks and four initial conditions, with 288 complete untouched original
+VGA frames. Sixteen additional distant radar views explicitly repair seven invalid
+BSP transform indices in the original resource; those views verify the documented
+native repair rather than allocator-dependent out-of-bounds reads. Refresh with
+`export_ground_actor_fixtures.py`. `ground_combat.bin` contains 1,332 original
+background/damage operations and 1,728 rays across intact, collapsing and wrecked
+bases. Full animation transforms, cells, timers, damage, ordered requests and RNG
+are retained. Effect factories, kill credit, mission counters and attached smoke
+are explicit recording boundaries; turret target selection returns no target.
+Refresh with `export_ground_combat_fixtures.py` from `capture_ground_combat.py`.

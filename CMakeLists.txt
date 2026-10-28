@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/ground_definition.cpp
+  src/resources/ground_definition.h
+  src/simulation/ground_actor.cpp
+  src/simulation/ground_actor.h
   src/simulation/engagement.cpp
   src/simulation/engagement.h
   src/simulation/controller.cpp
@@ -238,6 +242,12 @@ if(BUILD_TESTING)
   add_executable(herc_damage_test tests/herc_damage_test.cpp)
   target_link_libraries(herc_damage_test PRIVATE earthsiege_core)
   add_test(NAME herc_damage COMMAND herc_damage_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_damage.bin")
+  add_executable(ground_combat_test tests/ground_combat_test.cpp)
+  target_link_libraries(ground_combat_test PRIVATE earthsiege_core)
+  add_test(NAME ground_combat COMMAND ground_combat_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/ground_combat.bin")
+  add_executable(ground_actors_test tests/ground_actors_test.cpp)
+  target_link_libraries(ground_actors_test PRIVATE earthsiege_core)
+  add_test(NAME ground_actors COMMAND ground_actors_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/ground_actors.bin")
   add_executable(mission_hercs_test tests/mission_hercs_test.cpp)
   target_link_libraries(mission_hercs_test PRIVATE earthsiege_core)
   add_test(NAME mission_hercs COMMAND mission_hercs_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_hercs.bin")

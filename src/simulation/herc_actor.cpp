@@ -4,6 +4,7 @@
 #include <utility>
 #include "resources/model_tree.h"
 #include "simulation/fixed_math.h"
+#include "simulation/impact_damage.h"
 #include "simulation/model_math.h"
 
 namespace earthsiege {
@@ -32,14 +33,8 @@ std::optional<herc_interception> herc_actor::intercept(impact_request const &req
   for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(placement.translation[axis]) - request.transform.translation[axis]);
   auto const maximum{wrap_long(static_cast<int64_t>(request.radius) + request.reach + source.profile.shield_radius)};
   if(fast_distance(delta) > maximum) return std::nullopt;
-  auto shield_damage{request.damage.shield};
-  auto armour_damage{request.damage.armour};
-  if(conditions.attacker_side == 0) {
-    std::array<int16_t, 4> constexpr multipliers{2800, 2000, 1400, 1000};
-    auto const multiplier{multipliers.at(conditions.difficulty_override ? 3 : static_cast<size_t>(conditions.difficulty))};
-    shield_damage = wrap_word((shield_damage * multiplier + 512) >> 10);
-    armour_damage = wrap_word((armour_damage * multiplier + 512) >> 10);
-  }
+  auto shield_damage{adjust_impact_damage(request.damage.shield, conditions)};
+  auto armour_damage{adjust_impact_damage(request.damage.armour, conditions)};
   if(!conditions.player && request.damage.missile_subtype) {
     auto const signature{*request.damage.missile_subtype};
     if((signature == 0 || signature == 1) && impact_state.ecm_remaining == 0) impact_state.detectable = true;
