@@ -264,8 +264,8 @@ std::optional<herc_interception> herc_actor::receive_impact(impact_request const
   return result;
 }
 
-void herc_actor::update_power(frame_ratio const ratio, bool const free_energy) {
-  update_herc_power(power_state, components.state().consequences, ratio, [&](int16_t const budget){ return armament.allocate(-1, budget, ratio, free_energy); });
+void herc_actor::update_power(frame_ratio const ratio, bool const free_energy, int16_t const selected_weapon) {
+  update_herc_power(power_state, components.state().consequences, ratio, [&](int16_t const budget){ return armament.allocate(selected_weapon, budget, ratio, free_energy); });
   body_state.update_weapons(armament);
   if(!combat_rating_valid) {
     cached_combat_rating = herc_combat_rating(source.profile, loadout.damage, components.state(), armament, weapon_definitions);
@@ -339,7 +339,21 @@ bool herc_actor::step(herc_controls const &controls, frame_ratio const ratio, st
 }
 
 void herc_actor::begin_frame() { body_state.begin_frame(); }
-void herc_actor::prepare_player(herc_controls const &controls, frame_ratio const ratio, movement_event_sink const &events) { body_state.prepare_player(controls, ratio, events); }
+void herc_actor::prepare_player(herc_controls const &controls, frame_ratio const ratio, movement_event_sink const &events) {
+  body_state.prepare_player_movement(controls.throttle, controls.steering, ratio, events);
+  apply_aim({{}, {controls.torso, controls.elevation}, 0}, ratio);
+}
+void herc_actor::apply_player_controls(player_input_actions const &actions, frame_ratio const ratio, movement_event_sink const &events) {
+  if(actions.reset_aim) body_state.reset_aim_angles();
+  if(actions.movement && !actions.move_flyer) body_state.prepare_player_movement(actions.movement->y, actions.movement->x, ratio, events);
+  switch(actions.aim) {
+    case player_aim_mode::none: break;
+    case player_aim_mode::manual: apply_aim({{}, vec2<int16_t>{actions.aiming}, actions.distance}, ratio); break;
+    case player_aim_mode::centre: centre_aim(actions.distance, ratio); break;
+    case player_aim_mode::target: aim_at(actions.target_point, ratio); break;
+  }
+  if(actions.stop) body_state.stop_throttle();
+}
 void herc_actor::prepare_requested(int16_t const speed, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) { body_state.prepare_requested(speed, steering, ratio, events, avoidance); }
 bool herc_actor::advance(frame_ratio const ratio, std::function<bool(herc_body const &)> const &contact, std::function<void()> const &blocked) { return body_state.advance(ratio, contact, blocked); }
 

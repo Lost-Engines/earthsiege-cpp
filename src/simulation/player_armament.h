@@ -47,6 +47,7 @@ public:
   void set_tracking(bool enabled);
   void hold_selection(bool held);
   void set_manual_guidance(bool active);
+  void finish_manual_guidance();
   /// Range and seeker locks affect automatic selection, not the trigger gate.
   bool selectable(size_t slot, int32_t distance, std::array<bool, 5> const &locks) const;
   void update_selection(int32_t distance, std::array<bool, 5> const &locks);

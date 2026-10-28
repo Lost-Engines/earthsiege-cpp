@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -16,7 +17,9 @@ int main(int argc,char **argv) try {
   using namespace earthsiege;if(argc!=3)return EXIT_FAILURE;
   resource_store resources{argv[1]};auto const bytes{read_file(argv[2])};binary_reader file{bytes};auto const magic{file.take(8)};
   auto const version{std::string(magic.begin(),magic.end())};
-  bool const extended{version=="ESWFRM03"};
+  bool const interactive{version=="ESWFRM05"};
+  bool const player_input_frames{version=="ESWFRM04" || interactive};
+  bool const extended{version=="ESWFRM03" || player_input_frames};
   if(!extended && version!="ESWFRM02")file.fail("fixture version");
   auto const count{file.integer<uint16_t>()};auto const expected_frames{file.integer<uint32_t>()};size_t frames{0},states{0};
   for(size_t trial{0};trial!=count;++trial) {
@@ -24,12 +27,36 @@ int main(int argc,char **argv) try {
     auto const tape{read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")))};
     auto script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
     for(auto &g:script.groups) {if(friendly)g.mode=0;g.trigger=-1;}
-    auto const roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
+    auto roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
     auto const counters{read_mission_counters(tape.starting_files[std::to_underlying(tape_file::campaign_flags)])};
+    if(interactive) {
+      auto const subtype{file.integer<int16_t>()};
+      if(subtype>=0) { auto &player{roster.hercs.at(static_cast<size_t>(roster.selected))};
+        for(size_t slot{0};slot!=player.weapons.size();++slot)if(player.weapons[slot]>=9 && player.weapons[slot]<=11)player.weapon_values[slot]=subtype;
+      }
+    }
     mission_session session{resources,script,roster,random_state{initial},counters};
     auto const steps{file.integer<uint16_t>()},nh{file.integer<uint16_t>()},nf{file.integer<uint16_t>()};
     for(size_t step{0};step!=steps;++step) {
-      session.step({},ratio);auto const hercs{session.hercs()};auto const flyers{session.flying_actors()};
+      if(player_input_frames) {
+        player_input input;
+        input.movement={file.integer<int16_t>(),file.integer<int16_t>()};
+        input.aiming={file.integer<int16_t>(),file.integer<int16_t>()};
+        input.camera={file.integer<int16_t>(),file.integer<int16_t>()};
+        input.mouse={file.integer<int32_t>(),file.integer<int32_t>()};
+        input.left=file.integer<uint8_t>()!=0;input.right=file.integer<uint8_t>()!=0;
+        input.fire=file.integer<uint8_t>()!=0;input.enter=file.integer<uint8_t>()!=0;
+        input.command=file.integer<uint16_t>();
+        if(interactive) {
+          auto const target{file.integer<int32_t>()};if(target!=-2)session.set_displayed_target(target<0?std::nullopt:std::optional<size_t>{static_cast<size_t>(target)});
+          auto const slot{file.integer<int16_t>()};if(slot>=0)session.select_weapon(static_cast<size_t>(slot));
+          auto const tracking{file.integer<int8_t>()};if(tracking>=0)session.set_auto_tracking(tracking!=0);
+          if(file.integer<uint8_t>())session.toggle_weapon_pair();
+          input.camera_source=static_cast<player_axis_pair>(file.integer<uint8_t>());
+        }
+        session.step_player(input,ratio);session.update_player_interface();
+      } else session.step({},ratio);
+      auto const hercs{session.hercs()};auto const flyers{session.flying_actors()};
       if(hercs.size()!=nh || flyers.size()!=nf)file.fail("actor count");
       bool matches{true};
       auto const prefix{std::to_string(demo)+"/"+std::to_string(ratio)+" frame "+std::to_string(step)};
@@ -97,6 +124,35 @@ int main(int argc,char **argv) try {
         check("prompt",std::to_underlying(session.take_mission_prompt().value_or(mission_status::none)));
         auto const &clock{session.mission_clock()};check("poll clock",clock.poll_remaining);check("confirmation clock",clock.confirm_remaining);check("pending",clock.pending);check("reported",std::to_underlying(clock.reported));
         auto const &progress{session.objective_progress()};check("arrival",progress.arrived);check("rescue",progress.rescued);check("announced",progress.target_announced);check("rescue stage",progress.rescue_stage);check("rescue clock",progress.rescue_remaining);
+      }
+      if(player_input_frames) {
+        auto const check{[&](std::string const &field,auto expected_value,auto actual_value){if(actual_value!=expected_value){std::cerr<<prefix<<' '<<field<<": expected "<<+expected_value<<", actual "<<+actual_value<<'\n';file.fail(field);}}};
+        auto const &controls{session.player_weapon_controls()};auto const &sensor{session.player_sensors()};
+        check("weapon selection",file.integer<int16_t>(),controls.selection());
+        check("weapon group",file.integer<uint8_t>(),controls.current_group());
+        check("hold selection",file.integer<uint8_t>()!=0,controls.holds_selection());
+        check("auto tracking",file.integer<uint8_t>()!=0,controls.auto_tracking());
+        check("manual fired",file.integer<uint8_t>()!=0,controls.manual_launched());
+        check("manual guidance",file.integer<uint8_t>()!=0,controls.manual_guidance());
+        auto const player_id{std::ranges::find_if(hercs,[](auto const &h){return h.player;})-hercs.begin()};
+        auto const ordinal{[](std::optional<size_t> value){return value ? static_cast<int32_t>(*value) : -1;}};
+        check("simulation target",file.integer<int32_t>(),ordinal(session.activity_state().targets()[static_cast<size_t>(player_id)].selected));
+        check("cockpit target",file.integer<int32_t>(),ordinal(session.target_selection()));
+        for(size_t i{0};i!=5;++i)check("lock "+std::to_string(i),file.integer<uint8_t>()!=0,sensor.locks[i]);
+        check("HUD lock",file.integer<uint8_t>()!=0,sensor.hud_locked);
+        auto const slots{session.player_actor().weapons().slots()};
+        check("weapon count",file.integer<uint16_t>(),slots.size());
+        for(size_t i{0};i!=slots.size();++i) {
+          auto const id{file.integer<int16_t>()};check("weapon identity",id,slots[i]?slots[i]->definition:-1);
+          if(id<0)continue;
+          auto const &weapon{*slots[i]};auto const label{"weapon "+std::to_string(i)};
+          check(label+" refire",file.integer<int16_t>(),weapon.controls().refire_remaining);
+          check(label+" disabled",file.integer<uint8_t>()!=0,weapon.controls().disabled);
+          check(label+" paired",file.integer<uint8_t>()!=0,controls.linked(i));
+          check(label+" amount",file.integer<int16_t>(),weapon.energy()?weapon.energy()->charge:weapon.ammunition()?weapon.ammunition()->rounds:-1);
+          check(label+" charge setting",file.integer<int16_t>(),weapon.energy()?weapon.energy()->setting:-1);
+          for(unsigned int axis{0};axis!=3;++axis)check(label+" convergence",file.integer<int16_t>(),weapon.convergence[axis]);
+        }
       }
       ++frames;
     }

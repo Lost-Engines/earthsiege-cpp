@@ -1,6 +1,17 @@
 #include "player_input.h"
 
 namespace earthsiege {
+vec2<int16_t> const &player_input::camera_input() const {
+  if(camera_source == player_axis_pair::movement) return movement;
+  if(camera_source == player_axis_pair::aiming) return aiming;
+  return camera;
+}
+void player_input::camera_input(vec2<int16_t> const &value) {
+  if(camera_source == player_axis_pair::movement) movement = value;
+  else if(camera_source == player_axis_pair::aiming) aiming = value;
+  else camera = value;
+}
+
 void player_input_router::request_centre() { centering = true; }
 void player_input_router::clear_device_state() { mouse_latched = false; mouse_response = {}; enter_held = false; }
 bool player_input_router::centred() const { return centering; }
@@ -13,7 +24,7 @@ player_input_actions player_input_router::route(player_input const &input, playe
   player_input_actions result;
   auto movement{context.external_control ? vec2<int16_t>{} : input.movement};
   result.aiming = context.external_control ? vec2<int16_t>{} : input.aiming;
-  if(context.external_control) { result.camera = input.camera; result.zoom = input.fire; }
+  if(context.external_control) { result.camera = input.camera_input(); result.zoom = input.fire; }
   if(!input.right) {
     mouse_latched = false;
     mouse_response = {};

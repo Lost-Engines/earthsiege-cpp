@@ -280,7 +280,7 @@ void mission_session::update_herc_sensors(size_t const index, frame_ratio const 
     if(auto const channel{weapon_lock_channel(*slot, weapon_definitions)})
       if(auto const supply{slot->ammunition()}) input.missile_counts[*channel] = wrap_word(input.missile_counts[*channel] + supply->rounds);
   }
-  if(input.player && selected_weapon) input.selected_channel = weapon_lock_channel(actor.weapons().slots()[*selected_weapon].value(), weapon_definitions);
+  if(auto const selected{weapon_selection()}; input.player && selected) input.selected_channel = weapon_lock_channel(actor.weapons().slots()[*selected].value(), weapon_definitions);
   auto &relationship{activity->targets()[index]};
   if(relationship.selected) {
     auto const target{*relationship.selected}; auto const observations{observe()};

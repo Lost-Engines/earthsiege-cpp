@@ -23,6 +23,7 @@ struct live_projectile {
 
 using world_impact_query = std::function<std::optional<int32_t>(projectile_owner const &, impact_request const &)>;
 using projectile_guidance_query = std::function<projectile_guidance(projectile_owner &)>;
+using projectile_guidance_feedback = std::function<void(projectile_owner const &, projectile_guidance const &)>;
 
 /// Own every projectile kind in one bounded, ordered pool with deferred reclamation.
 class world_projectiles {
@@ -39,7 +40,7 @@ class world_projectiles {
 public:
   world_projectiles(resource_store const &resources, weapon_catalogue const &definitions);
   std::optional<size_t> launch(projectile_owner owner, weapon_shot const &shot, random_state &random, world_impact_query const &hit);
-  void advance(frame_ratio ratio, projectile_guidance_query const &guidance, world_impact_query const &hit);
+  void advance(frame_ratio ratio, projectile_guidance_query const &guidance, world_impact_query const &hit, projectile_guidance_feedback const &feedback = {});
   void collect();
   void append_objects(std::vector<scene_object> &objects);
   object_pool<live_projectile> const &live() const;

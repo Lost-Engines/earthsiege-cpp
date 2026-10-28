@@ -25,6 +25,7 @@ bool player_armament::manual_guidance() const { return manual_active; }
 void player_armament::set_tracking(bool const enabled) { tracking = enabled; }
 void player_armament::hold_selection(bool const held) { held_selection = held; }
 void player_armament::set_manual_guidance(bool const active) { manual_active = active; }
+void player_armament::finish_manual_guidance() { if(manual_fired && !manual_active) { cycle(); held_selection = false; } }
 
 bool player_armament::available(size_t const slot) const {
   auto const &weapon{bank.slots()[slot]};

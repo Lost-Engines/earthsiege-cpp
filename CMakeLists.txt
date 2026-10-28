@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/player_targeting.cpp
   src/simulation/player_input.cpp
   src/simulation/player_armament.cpp
   src/simulation/mission_goals.cpp
@@ -228,6 +229,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(player_targeting_test tests/player_targeting_test.cpp)
+  target_link_libraries(player_targeting_test PRIVATE earthsiege_core)
+  add_test(NAME player_targeting COMMAND player_targeting_test "${PROJECT_SOURCE_DIR}/tests/fixtures/player_targeting.bin")
   add_executable(player_input_test tests/player_input_test.cpp)
   target_link_libraries(player_input_test PRIVATE earthsiege_core)
   add_test(NAME player_input COMMAND player_input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/player_input.bin")
@@ -282,6 +286,9 @@ if(BUILD_TESTING)
   add_executable(destruction_counters_test tests/destruction_counters_test.cpp)
   target_link_libraries(destruction_counters_test PRIVATE earthsiege_core)
   add_test(NAME destruction_counters COMMAND destruction_counters_test "${PROJECT_SOURCE_DIR}/tests/fixtures/destruction_counters.bin")
+  add_test(NAME mission_target_frames COMMAND mission_world_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_target_frames.bin")
+  add_test(NAME mission_manual_frames COMMAND mission_world_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_manual_frames.bin")
+  add_test(NAME mission_player_frames COMMAND mission_world_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_player_frames.bin")
   add_test(NAME mission_seeded_frames COMMAND mission_world_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_seeded_frames.bin")
   add_test(NAME mission_combat_frames COMMAND mission_world_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_combat_frames.bin")
   add_executable(mission_activity_test tests/mission_activity_test.cpp)

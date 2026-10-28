@@ -46,6 +46,9 @@ public:
   // Inputs/controllers prepare channels separately from the world's advance phase.
   void begin_frame();
   void prepare_player(herc_controls const &controls, frame_ratio ratio, movement_event_sink const &events = {});
+  void prepare_player_movement(int16_t throttle, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {});
+  void reset_aim_angles();
+  void stop_throttle();
   void prepare_requested(int16_t speed, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});
   void prepare_aim(vec2<int16_t> const &input, frame_ratio ratio);
   bool advance(frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, std::function<void()> const &blocked = {});

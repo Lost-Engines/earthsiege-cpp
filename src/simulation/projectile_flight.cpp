@@ -9,6 +9,7 @@ namespace {
 
 void guide(projectile_flight &state, projectile_guidance &input, frame_ratio const ratio) {
   if(state.subtype == rocket_manual_subtype && input.player_owner) {
+    input.manual_input_used = true;
     if(!input.manual_held) {
       state.target_present = false;
       state.subtype = 0;

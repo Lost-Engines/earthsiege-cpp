@@ -72,6 +72,7 @@ public:
   std::span<engagement_state> decisions();
   std::span<engagement_state const> decisions() const;
   std::span<target_relationship> targets();
+  std::span<target_relationship const> targets() const;
   uint16_t &entry_stagger();
   size_t size() const;
   bool waiting(size_t index) const;

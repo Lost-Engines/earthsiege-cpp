@@ -1,4 +1,5 @@
 #pragma once
+#include <deque>
 #include <memory>
 #include "render/scenery_renderer.h"
 #include "simulation/keyboard_input.h"
@@ -14,11 +15,15 @@ class mission_view {
   camera_state camera;
   keyboard_input keyboard;
   bool paused{false};
-  bool enter_held{false};
+  player_input pointer;
+  std::deque<uint16_t> commands;
 
 public:
   mission_view(resource_store const &resources, unsigned int demo);
   void key(held_key key, bool pressed, bool alt);
+  void command(uint16_t code);
+  void mouse_position(int x, int y);
+  void mouse_button(bool right, bool pressed);
   void clear_input();
   void toggle_pause();
   void change_camera(camera_mode mode);

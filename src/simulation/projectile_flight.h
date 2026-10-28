@@ -37,6 +37,7 @@ struct projectile_guidance {
   bool manual_held{false};
   vec2<int16_t> manual_axes;
   bool owner_guiding{false};
+  bool manual_input_used{false};                                          // player steering consumer ran, even when releasing guidance
 };
 
 enum class projectile_result { flying, expired, impact };

@@ -402,3 +402,27 @@ prompts, both countdowns, and player objective progress. This exposed an omitted
 projectile phase in the earlier research harness; the omission affected longer
 runs once the first projectile arrived, and is now corrected in the capture tool.
 Modal presentation and recorded player input remain outside this fixture.
+
+
+## Integrated player controls and target handoff
+
+The live inspection view now consumes the original player routing and weapon
+controller. W/Alt+W cycles weapons, Enter/Tab cycles forward targets, R toggles
+radar, and right mouse applies the original positional aiming response. Weapon
+groups and capacitor settings use the original commands. Focus loss clears held
+controls. External camera control continues the mission while suppressing fire.
+
+The original cockpit target predicate matches 4,096 captured cycles. Three
+composed 720-frame fixtures additionally match 41,040 HERC/flyer states, power,
+weapon resources, convergence, target references, lock states and random state.
+They include explicit cockpit target requests, paired fire, automatic tracking,
+and a controlled manual-missile ammunition variant. Camera application, audio,
+widget painting and selected UI callbacks remain declared capture boundaries.
+These are controlled mission comparisons, not recorded-demo replay claims.
+
+The HUD exchanges the selected target after the simulation and power phases.
+Manual missiles share the player's control-axis pair, so consumption by a missile
+also clears the corresponding movement/aim inputs. Releasing guidance retains
+its one-frame activity indication before the weapon list advances. The original
+actor-to-cockpit throttle exchange and complete instrument widgets remain active
+integration work.

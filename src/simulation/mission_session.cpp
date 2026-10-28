@@ -10,6 +10,7 @@
 #include "simulation/flyer_navigation.h"
 #include "simulation/model_math.h"
 #include "simulation/fixed_math.h"
+#include "simulation/player_targeting.h"
 
 namespace earthsiege {
 
@@ -79,7 +80,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     auto &decision{activity->decisions()[i]}; decision.dead = condition.dead; decision.disabled = condition.disabled;
     crew[i].actor->notify_damage_changes([this, i](damage_consequences const &before, damage_consequences const &after){damage_consequences_changed(i, before, after);});
   }
-  cycle_weapon();
+  player_weapons = std::make_unique<player_armament>(crew[player_index].actor->weapons(), weapon_definitions, crew[player_index].definition->mounts);
 }
 
 mission_counters const &mission_session::mission_variables() const { return activity->variables(); }
@@ -94,6 +95,14 @@ herc_body const &mission_session::player() const {
 }
 
 void mission_session::step(herc_controls const &controls, int16_t const time_ratio, bool const fire) {
+  player_input input{.movement{controls.steering, controls.throttle}, .aiming{controls.torso, controls.elevation}, .fire{fire}};
+  advance_frame(input, time_ratio, [&]{
+    crew.at(player_index).actor->prepare_player(controls, time_ratio, [&](movement_event event){movement_event_received(player_index, event);});
+    fire_selected(input.fire);
+  });
+}
+
+void mission_session::advance_frame(player_input &player_controls, frame_ratio const time_ratio, std::function<void()> const &prepare_player) {
   frame_contacts.clear();
   frame_notices.clear();
   for(auto &member : crew) member.actor->begin_frame();
@@ -102,22 +111,31 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
   for(size_t index{0}; index != bases.size(); ++index) if(!bases[index].waiting) advance_base(index, time_ratio);
   effects.advance(time_ratio);
+  player_weapons->set_manual_guidance(false);
   projectiles.advance(time_ratio, [&](projectile_owner &owner){
     projectile_guidance input;
     input.player_owner = owner.actor == player_index;
+    input.manual_held = player_controls.fire;
+    input.manual_axes = player_controls.camera_input();
+    if(owner.actor < crew.size()) input.interference = crew[owner.actor].sensors.interfered;
     input.owner_tracks_target = activity->targets()[owner.actor].selected == owner.target;
     if(owner.target) {
       input.target_position = target_position(*owner.target, owner.target_component);
       input.target_detectable = observe().at(*owner.target).detectable;
     }
     return input;
-  }, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); });
+  }, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); },
+  [&](projectile_owner const &owner, projectile_guidance const &feedback){
+    player_controls.fire = feedback.manual_held;
+    player_controls.camera_input(feedback.manual_axes);
+    if(feedback.manual_input_used) player_weapons->set_manual_guidance(true);
+    if(feedback.owner_guiding && owner.actor < crew.size()) crew[owner.actor].fire.skip_selection = true;
+  });
   activity->dispatch_groups([&](size_t const actor){
     if(actor < crew.size()) dispatch_herc(actor, time_ratio);
     else if(actor < base_id(0)) dispatch_flyer(actor - flyer_id(0), time_ratio);
   });
-  crew.at(player_index).actor->prepare_player(controls, time_ratio, [&](movement_event event){movement_event_received(player_index, event);});
-  fire_selected(fire);
+  prepare_player();
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
@@ -125,7 +143,7 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
   activity->scan_areas(observations);
   activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);});
   for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && !crew[i].actor->damage().consequences.dead) {
-    crew[i].actor->update_power(time_ratio, settings.free_weapons());
+    crew[i].actor->update_power(time_ratio, settings.free_weapons(), i == player_index ? player_weapons->selection() : int16_t{-1});
     update_herc_sensors(i, time_ratio);
   }
   if(auto const result{outcome_clock.advance(time_ratio, [&]{return mission_state();})}) pending_mission_prompt=result;
@@ -135,36 +153,94 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
   projectiles.collect();
 }
 
-bool mission_session::select_weapon(size_t const slot) {
-  auto const bank{crew.at(player_index).actor->weapons().slots()};
-  if(slot >= bank.size() || !bank[slot] || !bank[slot]->projectile) return false;
-  selected_weapon = slot;
+bool mission_session::select_weapon(size_t const slot) { return player_weapons->select(slot); }
+void mission_session::cycle_weapon() { player_weapons->cycle(); }
+void mission_session::set_auto_tracking(bool enabled) { player_weapons->set_tracking(enabled); }
+void mission_session::toggle_weapon_pair() { player_weapons->toggle_pair(); }
+std::optional<size_t> mission_session::weapon_selection() const {
+  auto const selected{player_weapons->selection()};
+  return selected < 0 ? std::nullopt : std::optional<size_t>{static_cast<size_t>(selected)};
+}
+player_armament const &mission_session::player_weapon_controls() const { return *player_weapons; }
+herc_sensor_state const &mission_session::player_sensors() const { return crew[player_index].sensors; }
+std::optional<size_t> mission_session::target_selection() const { return displayed_target; }
+void mission_session::set_displayed_target(std::optional<size_t> const target) {
+  if(target && *target >= activity->size()) throw std::out_of_range{"cockpit target"};
+  displayed_target = target;
+}
+void mission_session::clear_player_input() { input_router.clear_device_state(); }
+bool mission_session::player_command(uint16_t const code) {
+  if(player_weapons->command(code)) return true;
+  if(code == 14) input_router.request_centre();                             // Backspace
+  else if(code == 15) cycle_target();                                       // Tab; view-specific gating belongs to the cockpit
+  else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; }
+  else return false;
   return true;
 }
-
-void mission_session::cycle_weapon() {
-  auto const count{crew.at(player_index).actor->weapons().slots().size()};
-  for(size_t next{0}; next != count; ++next) if(select_weapon((selected_weapon.value_or(count - 1) + 1 + next) % count)) return;
-  selected_weapon.reset();
+void mission_session::cycle_target() {
+  auto const observations{observe()};
+  std::vector<cockpit_target> candidates;
+  auto const &knowledge{activity->actor(player_index).awareness};
+  for(size_t i{0}; i != observations.size(); ++i) {
+    auto const &actor{observations[i]};
+    candidates.push_back({vec3<int32_t>{actor.position}, activity->group(actor_group(i)).side, activity->actor(i).awareness.seen, knowledge.known[i] != 0, actor.dead, actor.disabled});
+  }
+  auto const &body{player()};
+  cockpit_observer const observer{vec3<int32_t>{body.movement().position}, body.movement().angles.z, body.torso().angle, crew[player_index].side, settings.detection_range()};
+  displayed_target = cycle_cockpit_target(candidates, observer, displayed_target);
 }
-
-std::optional<size_t> mission_session::weapon_selection() const { return selected_weapon; }
+player_input_actions mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control) {
+  player_input_actions actions;
+  advance_frame(input, ratio, [&]{
+    if(input.command) player_command(input.command);
+    auto &actor{*crew[player_index].actor};
+    player_input_context context{.external_control{external_control}, .disabled{actor.damage().consequences.disabled}, .auto_tracking{player_weapons->auto_tracking()}, .position{vec3<int32_t>{actor.body().movement().position}}, .target{}};
+    if(auto const selected{activity->targets()[player_index].selected}) {
+      auto const observations{observe()};
+      vec3<int16_t> offset;
+      if(*selected < crew.size()) offset = crew[*selected].actor->profile().camera_focus;
+      else if(*selected >= base_id(0)) offset.z = bases.at(*selected-base_id(0)).actor->profile().target_height;
+      context.target = player_input_target{vec3<int32_t>{observations[*selected].position}, vec3<int16_t>{offset}, observations[*selected].dead};
+    }
+    actions = input_router.route(input, context);
+    actor.apply_player_controls(actions, ratio, [&](movement_event event){movement_event_received(player_index, event);});
+    if(actions.fire_allowed) fire_selected(actions.fire);
+    if(actions.cycle_target) cycle_target();
+  });
+  return actions;
+}
+void mission_session::update_player_interface() {
+  auto &member{crew[player_index]};
+  auto &relationship{activity->targets()[player_index]};
+  int32_t distance{0};
+  if(relationship.selected) {
+    auto const target{combat_position(*relationship.selected).position};
+    auto const &position{member.actor->body().movement().position};
+    vec3<int32_t> delta;
+    for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(target[axis]) - position[axis]);
+    distance = fast_distance(delta);
+  }
+  player_weapons->finish_manual_guidance();
+  player_weapons->update_selection(distance, member.sensors.locks);
+  player_weapons->refresh_pairs();
+  // The original HUD exchanges target ownership after weapons and power. Enter
+  // changes the displayed target first; guidance sees it on the following frame.
+  if(relationship.selected != displayed_target) {
+    member.sensors.hud_locked = false;
+    assign_target(activity->targets(), player_index, displayed_target);
+    if(!displayed_target && player_weapons->auto_tracking()) input_router.request_centre();
+  }
+}
 herc_actor const &mission_session::player_actor() const { return *crew.at(player_index).actor; }
 world_effects &mission_session::visual_effects() { return effects; }
 world_projectiles const &mission_session::ordnance() const { return projectiles; }
 std::span<combat_notice const> mission_session::combat_notices() const { return frame_notices; }
 
 void mission_session::fire_selected(bool const pressed) {
-  auto &actor{*crew.at(player_index).actor};
-  if(!selected_weapon || actor.damage().consequences.dead || actor.damage().consequences.disabled) return;
-  auto &weapon{actor.weapons().at(*selected_weapon)};
-  bool trigger{pressed};
-  if(auto *elf{weapon.elf()}) trigger = poll_elf_trigger(weapon.controls(), *elf, pressed);
-  if(!trigger || !weapon.ready(weapon_definitions.weapons.at(static_cast<size_t>(weapon.definition)))) return;
-  vec2<int16_t> const aim{actor.body().elevation().angle, actor.body().torso().angle};
-  for(auto const &shot : actor.discharge_slot(*selected_weapon, aim, settings.free_weapons())) {
-    projectiles.launch({player_index, std::nullopt}, shot, random, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); });
-  }
+  auto &actor{*crew[player_index].actor};
+  player_weapons->fire(pressed, [&](size_t const slot){
+    for(auto const &shot : actor.discharge_aimed_slot(slot, settings.free_weapons())) launch(player_index, shot);
+  });
 }
 
 herc_damage_events mission_session::damage_events(size_t const index) {

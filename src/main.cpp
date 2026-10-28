@@ -44,6 +44,26 @@ auto held_key(SDL_Keycode const code)->std::optional<earthsiege::held_key> {
   }
 }
 
+auto command(SDL_Keycode const code, bool const alt)->std::optional<uint16_t> {
+  uint16_t scan;
+  switch(code) {
+    case SDLK_w: scan=17; break;
+    case SDLK_b: scan=48; break;
+    case SDLK_z: scan=44; break;
+    case SDLK_r: scan=19; break;
+    case SDLK_TAB: scan=15; break;
+    case SDLK_BACKSPACE: scan=14; break;
+    case SDLK_MINUS: scan=12; break;
+    case SDLK_EQUALS: scan=13; break;
+    case SDLK_KP_MINUS: scan=74; break;
+    case SDLK_KP_PLUS: scan=78; break;
+    default:
+      if(alt && code>=SDLK_1 && code<=SDLK_9) scan=static_cast<uint16_t>(2+code-SDLK_1);
+      else return std::nullopt;
+  }
+  return static_cast<uint16_t>(scan | (alt ? 0x200 : 0));
+}
+
 } // namespace
 
 auto main(int argc, char *argv[])->int try {
@@ -93,7 +113,10 @@ auto main(int argc, char *argv[])->int try {
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
       "F1 attached, F2 orbit, F3 free camera; P pauses, Escape returns to menu.\n"
-      "Space fires; Enter selects the next equipped weapon. AI, lock-on and cockpit are not yet active.\n";
+      "Space fires; W/Alt+W selects weapons; Enter/Tab selects targets; R toggles radar.\n"
+      "Hold right mouse to aim; both buttons centre aim. Backspace recentres.\n"
+      "B changes weapon groups; Alt+1–9 edits a group; +/- adjusts charge; Z restores charge settings.\n"
+      "This inspection view includes mission AI and combat; the cockpit is still being integrated.\n";
   }
   std::unique_ptr<earthsiege::window> display;
   if(!headless) display = std::make_unique<earthsiege::window>(scale);
@@ -128,7 +151,14 @@ auto main(int argc, char *argv[])->int try {
       }
       if(scene) {
         if(focused && (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat) {
-          if(auto const key{held_key(event.key.keysym.sym)}) scene->key(*key, event.type == SDL_KEYDOWN, (event.key.keysym.mod & KMOD_ALT) != 0);
+          bool const alt{(event.key.keysym.mod & KMOD_ALT)!=0};
+          if(auto const key{held_key(event.key.keysym.sym)}) scene->key(*key, event.type == SDL_KEYDOWN, alt);
+          if(event.type==SDL_KEYDOWN)if(auto const code{command(event.key.keysym.sym,alt)})scene->command(*code);
+        }
+        if(focused && event.type==SDL_MOUSEMOTION) scene->mouse_position(event.motion.x,event.motion.y);
+        if(focused && (event.type==SDL_MOUSEBUTTONDOWN || event.type==SDL_MOUSEBUTTONUP)) {
+          scene->mouse_position(event.button.x,event.button.y);
+          if(event.button.button==SDL_BUTTON_LEFT || event.button.button==SDL_BUTTON_RIGHT)scene->mouse_button(event.button.button==SDL_BUTTON_RIGHT,event.type==SDL_MOUSEBUTTONDOWN);
         }
       } else if(focused) {
         if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) menu.mouse_down(event.button.x, event.button.y);

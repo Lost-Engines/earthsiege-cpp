@@ -10,6 +10,8 @@
 #include "simulation/mission_objectives.h"
 #include "simulation/flyer_attack.h"
 #include "simulation/herc_actor.h"
+#include "simulation/player_armament.h"
+#include "simulation/player_input.h"
 #include "simulation/herc_orders.h"
 #include "simulation/herc_sensors.h"
 #include "simulation/herc_reactions.h"
@@ -165,7 +167,10 @@ class mission_session {
   random_state random;
   world_effects effects;
   world_projectiles projectiles;
-  std::optional<size_t> selected_weapon;
+  std::unique_ptr<player_armament> player_weapons;
+  player_input_router input_router;
+  std::optional<size_t> displayed_target;
+  void advance_frame(player_input &input, frame_ratio ratio, std::function<void()> const &prepare_player);
   std::vector<combat_notice> frame_notices;
   std::optional<int32_t> impact(projectile_owner const &owner, impact_request const &request);
   void fire_selected(bool pressed);
@@ -189,6 +194,17 @@ public:
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);
   void cycle_weapon();
+  void set_auto_tracking(bool enabled);
+  void toggle_weapon_pair();
+  player_input_actions step_player(player_input input, frame_ratio ratio, bool external_control = false);
+  void update_player_interface();
+  void clear_player_input();
+  bool player_command(uint16_t code);
+  void cycle_target();
+  void set_displayed_target(std::optional<size_t> target);
+  std::optional<size_t> target_selection() const;
+  player_armament const &player_weapon_controls() const;
+  herc_sensor_state const &player_sensors() const;
   mission_status mission_state(bool requested = false) const;
   int16_t result_grade() const;
   std::optional<mission_status> take_mission_prompt();

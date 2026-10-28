@@ -16,6 +16,7 @@ int main(int const argc, char **argv) try {
   auto const boolean{[&]{return integer() != 0;}};
   for(uint32_t row{0}; row != count; ++row) {
     earthsiege::player_input_context context;
+    context.viewport_max = {639, 479}; // deliberately larger fixture rectangle
     context.external_control = boolean(); context.controlled_flyer = boolean(); context.active = boolean(); context.disabled = boolean(); context.auto_tracking = boolean();
     bool const target{boolean()}, dead{boolean()};
     earthsiege::player_input input;

@@ -34,9 +34,17 @@ void mission_view::key(held_key const key, bool const pressed, bool const alt) {
   keyboard.event(key, pressed, alt);
 }
 
+void mission_view::command(uint16_t const code) { commands.push_back(code); }
+void mission_view::mouse_position(int const x, int const y) { pointer.mouse = {x,y}; }
+void mission_view::mouse_button(bool const right, bool const pressed) {
+  (right ? pointer.right : pointer.left) = pressed;
+}
+
 void mission_view::clear_input() {
   keyboard.clear();
-  enter_held = false;
+  pointer.left = pointer.right = false;
+  commands.clear();
+  session->clear_player_input();
   camera.angular_rates = vec3<int16_t>{0, 0, 0};
   camera.movement = 0;
 }
@@ -54,20 +62,18 @@ void mission_view::change_camera(camera_mode const mode) {
 }
 
 void mission_view::step(bool const control, bool const zoom) {
-  auto const input{keyboard.sample()};
   if(paused) return;
-  if(input.enter && !enter_held) session->cycle_weapon();
-  enter_held = input.enter;
-  if(control) steer_camera(camera, zoom, static_cast<int16_t>(input.movement.y), static_cast<int16_t>(input.movement.x));
-  else {
-    steer_camera(camera, false, 0, 0);
-    session->step({
-      .throttle{static_cast<int16_t>(input.movement.y)},
-      .steering{static_cast<int16_t>(input.movement.x)},
-      .torso{static_cast<int16_t>(input.aiming.x)},
-      .elevation{static_cast<int16_t>(input.aiming.y)},
-    }, ratio_from_period(25, nominal_frame_milliseconds), input.fire);                       // fixed inspection cadence; full mission scheduling is separate
-  }
+  auto const keys{keyboard.sample(session->player_weapon_controls().manual_guidance())};
+  player_input input{pointer};
+  input.movement = {static_cast<int16_t>(keys.movement.x),static_cast<int16_t>(keys.movement.y)};
+  input.aiming = {static_cast<int16_t>(keys.aiming.x),static_cast<int16_t>(keys.aiming.y)};
+  input.camera_source = player_axis_pair::movement;
+  input.fire = keys.fire || (control && zoom);
+  input.enter = keys.enter;
+  if(!commands.empty()) { input.command=commands.front(); commands.pop_front(); }
+  auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control)};
+  steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
+  session->update_player_interface();
   update_camera(camera, session->view_target());
 }
 

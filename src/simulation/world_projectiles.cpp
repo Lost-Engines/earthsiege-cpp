@@ -33,7 +33,7 @@ std::optional<size_t> world_projectiles::launch(projectile_owner const owner, we
   return projectiles.emplace(owner, shot, definitions, motions, bullet_models, rocket_models, retained_rocket_clocks[*slot]);
 }
 
-void world_projectiles::advance(frame_ratio const ratio, projectile_guidance_query const &guidance, world_impact_query const &hit) {
+void world_projectiles::advance(frame_ratio const ratio, projectile_guidance_query const &guidance, world_impact_query const &hit, projectile_guidance_feedback const &feedback) {
   projectiles.for_each_oldest([&](size_t const slot, live_projectile &projectile){
     if(projectiles.retiring(slot)) return;
     bool done;
@@ -43,6 +43,7 @@ void world_projectiles::advance(frame_ratio const ratio, projectile_guidance_que
       auto input{guidance ? guidance(projectile.owner) : projectile_guidance{}};
       if(!projectile.owner.target) flight.clear_target();
       done = flight.advance(ratio, input, [&](impact_request const &request){ return hit ? hit(projectile.owner, request) : std::nullopt; }) != projectile_result::flying;
+      if(feedback) feedback(projectile.owner, input);
     }
     if(done) projectiles.defer_erase(slot);
   });

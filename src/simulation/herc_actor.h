@@ -1,6 +1,7 @@
 #pragma once
 #include <utility>
 #include "simulation/herc_body.h"
+#include "simulation/player_input.h"
 #include "simulation/herc_aiming.h"
 #include "simulation/herc_impact.h"
 #include "simulation/herc_loadout.h"
@@ -56,7 +57,8 @@ public:
   std::optional<herc_interception> receive_impact(impact_request const &request, impact_conditions const &conditions, random_state &random, herc_damage_events const &events);
   weapon_bank &weapons();
   weapon_bank const &weapons() const;
-  void update_power(frame_ratio ratio, bool free_energy = false);
+  void update_power(frame_ratio ratio, bool free_energy = false, int16_t selected_weapon = -1);
+  void apply_player_controls(player_input_actions const &actions, frame_ratio ratio, movement_event_sink const &events = {});
   vec3<int16_t> aim_at(vec3<int32_t> const &point, frame_ratio ratio);
   void centre_aim(int32_t distance, frame_ratio ratio);
   std::vector<weapon_shot> discharge_aimed_slot(size_t slot, bool free_ammunition = false);
