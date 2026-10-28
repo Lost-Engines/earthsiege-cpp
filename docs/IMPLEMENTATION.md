@@ -322,3 +322,21 @@ all hierarchy matrices and 453 projectile launches. Contacts, audio and actual
 projectile construction are explicit boundaries in this fixture. The existing
 91 checks pass after this split; the composed fixture is an additional check.
 Full HERC mission dispatch and player target-lock/HUD integration continue.
+
+## HERC strategy and auxiliary controllers
+
+The strategy selector matches 2,560 original transitions, including target
+reference counts, follower alerts, repeated retreat assessment, order resumption
+and randomized HERC strength comparison. The shared ranking regression retains
+all 4,500 existing original selection cases.
+
+Travel, fleeing, skirting and ramming match 3,072 original decisions, preserving
+ordered consumers, scratch state and RNG. Fleeing's original direction word
+partially overwrites its timer; the port expresses that operation explicitly.
+Ramming burst substeps re-read position and heading after each physical advance.
+Skirting preserves the same-call scratch reset on a behavior transition.
+
+Guard and drive-off policies match 2,048 original decisions, including candidate
+priority, assigned-attacker weighting, anchor-relative movement, target clearing
+and the completion check after firing. These verified policies precede full live
+HERC dispatch; they do not yet constitute a completed playable mission loop.

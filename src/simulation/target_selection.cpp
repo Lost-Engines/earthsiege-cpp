@@ -20,14 +20,18 @@ int32_t q10(int32_t const value, int16_t const factor) { return wrap_long(static
 
 size_t assess_strength(target_candidate const &observer, target_candidate const &target, random_state &random) {
   if(!observer.compares_combat_strength) return 1;
-  if(target.kind != combat_actor_kind::herc) return 0;
-  // The original masks by 1000, rather than taking a remainder or uniform range.
-  auto const first{wrap_word(observer.strength + (random.next() & 1000))};
-  auto const second{wrap_word(target.strength + (random.next() & 1000))};
-  return saturated_magnitude(wrap_word(first - second)) < 400 ? 1 : first < second ? 2 : 0;
+  return static_cast<size_t>(compare_herc_strength(observer.strength, target.strength, target.kind, random));
 }
 
 } // anonymous namespace
+
+combat_balance compare_herc_strength(int16_t const own_strength, int16_t const target_strength, combat_actor_kind const target_kind, random_state &random) {
+  if(target_kind != combat_actor_kind::herc) return combat_balance::superior;
+  // Original masking by 1000 is deliberate; a uniform remainder changes choices.
+  auto const first{wrap_word(own_strength + (random.next() & 1000))};
+  auto const second{wrap_word(target_strength + (random.next() & 1000))};
+  return saturated_magnitude(wrap_word(first - second)) < 400 ? combat_balance::comparable : first < second ? combat_balance::inferior : combat_balance::superior;
+}
 
 bool recognizes(target_candidate const &observer, target_candidate const &target, size_t const target_index) {
   if(target_index >= observer.known.size()) throw std::out_of_range{"target ordinal exceeds awareness table"};

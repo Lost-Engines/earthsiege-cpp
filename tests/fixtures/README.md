@@ -327,3 +327,12 @@ constructing actors. Refresh with `export_mission_flyer_frame_fixtures.py`.
   are explicit boundaries; selected weapons are replenished to isolate geometry.
   Refresh with `export_herc_aimed_body_fixtures.py` from the analysis capture
   `capture_herc_aimed_body.py`.
+
+- `herc_strategy.bin`: 2,560 original strategy transitions with ordered selection,
+  retreat, follower and component boundaries, real behavior entry and full RNG.
+  Refresh with `export_herc_strategy_fixtures.py` from `capture_herc_strategy.py`.
+- `herc_auxiliary.bin`: 3,072 travel/flee/skirt/ram decisions; retains scratch
+  overlap, ordered movement/aim calls, target counts and complete RNG. Refresh with
+  `export_herc_auxiliary_fixtures.py` from `capture_herc_auxiliary.py`.
+- `herc_guard.bin`: 2,048 guard/drive-off decisions and ordered external consumers.
+  Refresh with `export_herc_guard_fixtures.py` from `capture_herc_guard.py`.

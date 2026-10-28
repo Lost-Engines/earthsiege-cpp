@@ -49,6 +49,9 @@ enum class target_selection_flags : uint8_t {
   ignore_bearing = 32,
 };
 
+enum class combat_balance : uint8_t { superior, comparable, inferior };
+combat_balance compare_herc_strength(int16_t own_strength, int16_t target_strength, combat_actor_kind target_kind, random_state &random);
+
 bool recognizes(target_candidate const &observer, target_candidate const &target, size_t target_index);
 /// Retains native candidate order, priority classes and all strength-assessment RNG draws.
 std::optional<size_t> select_target(std::span<target_candidate const> actors, size_t observer, target_selection_flags flags, target_objective const &objective, int16_t mission_kind, std::optional<size_t> hud_target, random_state &random);

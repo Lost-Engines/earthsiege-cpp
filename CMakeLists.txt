@@ -8,6 +8,12 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_guard.cpp
+  src/simulation/herc_guard.h
+  src/simulation/herc_orders.cpp
+  src/simulation/herc_orders.h
+  src/simulation/herc_strategy.cpp
+  src/simulation/herc_strategy.h
   src/simulation/herc_fire_control.cpp
   src/simulation/herc_fire_control.h
   src/simulation/herc_aiming.cpp
@@ -214,6 +220,15 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(herc_guard_test tests/herc_guard_test.cpp)
+  target_link_libraries(herc_guard_test PRIVATE earthsiege_core)
+  add_test(NAME herc_guard COMMAND herc_guard_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_guard.bin")
+  add_executable(herc_auxiliary_test tests/herc_auxiliary_test.cpp)
+  target_link_libraries(herc_auxiliary_test PRIVATE earthsiege_core)
+  add_test(NAME herc_auxiliary COMMAND herc_auxiliary_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_auxiliary.bin")
+  add_executable(herc_strategy_test tests/herc_strategy_test.cpp)
+  target_link_libraries(herc_strategy_test PRIVATE earthsiege_core)
+  add_test(NAME herc_strategy COMMAND herc_strategy_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_strategy.bin")
   add_executable(herc_fire_control_test tests/herc_fire_control_test.cpp)
   target_link_libraries(herc_fire_control_test PRIVATE earthsiege_core)
   add_test(NAME herc_fire_control COMMAND herc_fire_control_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_fire_control.bin")
