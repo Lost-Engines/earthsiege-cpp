@@ -69,8 +69,31 @@ Working components:
 - Original point/line and transparent bitmap drawing: 6,000 clipped line rasters and 500 scaled bitmap rasters agree, including the original sampling and cropping quirks.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
-Remaining integration: schedule projectiles and effects in the mission, connect effect drawing to the session, audio, attached smoke and ejected-weapon motion; connect controller scheduling, target/weapon selection and AI; implement flyer/ground actors and full mission outcomes; connect cockpit widgets, shell/campaign flow, sound and presentations. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
+Remaining integration: audio, attached smoke and ejected-weapon motion; connect full controller scheduling, target/weapon selection and AI; implement flyer/ground actors and full mission outcomes; connect cockpit widgets, shell/campaign flow, sound and presentations. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
 
 Some retained handoff fields have provisional names (`argument`, `initial_value`, `extra`, numbered trigger links) until their original consumers establish their roles. Tests compare their exact values regardless of naming. The original handoff writer does not truncate reused files, so the parser deliberately accepts stale trailing bytes after its declared tables.
 
 `tools/export_mission_fixtures.py` refreshes reference fixtures from the research captures. `tests/fixtures/README.md` records the source routines and controlled campaign/RNG states. Do not treat zero campaign flags or the fixtures' arbitrary RNG state as a new campaign's real initial state.
+
+The inspection mission now owns live projectiles and effects. Space consumes the
+selected weapon's ammunition/charge, launches ordinary/scaled bullets, rockets or
+beams, and dispatches terrain/scenery/HERC impacts with synchronous shared RNG.
+Four demo starting missions pass combined firing, consumption, impact, rendering
+and reclamation checks. Enter cycles eligible ordinary weapons as an inspection
+control; the original weapon-panel/group-fire policy is still separate work.
+
+The shared 160-slot projectile pool matches 540 original mixed frames, including
+oldest-first updates, deferred reclamation, launch slots, impact call counts,
+beam random consumption and all flight/model states. Missile animation clocks
+are explicitly retained across slot reuse: the original missile constructor
+leaves those bytes untouched, bullets leave them alone, and beams reset them.
+Fresh slots start at zero in the controlled original allocation. Standalone
+projectiles accept an explicit initial clock; no uninitialized C++ storage is used.
+A full pool safely drops additional bullets/rockets where the original wrappers
+would dereference a null allocation.
+
+All six beam variants have original geometry and palette colours. Fifty-two
+complete beam drawings match every VGA pixel, including near-plane clipping and
+the original handling of projected zero-area ribbons. ELF consumes the shared
+random stream for each interior/end pair; its original twenty-face index limit
+is checked. Projectiles, HERCs and effects share scenery painter ordering.

@@ -39,6 +39,7 @@ beam_path dispatch_beam(weapon_shot const &shot, weapon_catalogue const &definit
 class projectile_instance {
   projectile_definition const &source;
   projectile_motions const &motions;
+  model_part const &geometry_source;
   shape_part const &shape;
   projectile_flight flight_state;
   std::vector<uint16_t> cell_counts;
@@ -46,9 +47,11 @@ class projectile_instance {
   int16_t damage_scale{0};
 
 public:
-  projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullet_models, model_resource const &rocket_models, bool target_present = false);
+  projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullet_models, model_resource const &rocket_models, bool target_present = false, int16_t initial_rocket_clock = 0);
   projectile_flight const &flight() const;
   model_instance const &model() const;
+  model_part const &geometry() const;
+  void clear_target();
   model_transform placement() const;
   projectile_result advance(frame_ratio ratio, projectile_guidance &guidance, impact_query const &hit);
 };

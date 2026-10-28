@@ -21,6 +21,15 @@ struct scene_model {
 
 };
 
+struct scene_ribbon {
+  vec3<int32_t> position;
+  std::span<vec3<int32_t> const> points;
+  std::span<std::array<uint16_t, 4> const> faces;
+  uint8_t colour{0};
+};
+
+using scene_object = std::variant<scene_model, scene_ribbon>;
+
 /// The original flat-effect pass precedes terrain/actor sorting and places Z at ground on draw.
 struct ground_flash {
   model_part const &root;
@@ -30,6 +39,7 @@ struct ground_flash {
 
 /// Render owned scenery with the original distance ramps and whole-scene painter tree
 class scenery_renderer {
+  framebuffer &target;
   scenery_world const &world;
   palette colours;
   distance_shading shading;
@@ -38,6 +48,7 @@ class scenery_renderer {
 public:
   scenery_renderer(framebuffer &target, scenery_world const &world, distance_shade_bindings bindings);
   std::vector<size_t> draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights = false, std::span<scene_model const> actors = {}, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {});
+  std::vector<size_t> draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights, std::span<scene_object const> objects, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {});
 };
 
 } // namespace earthsiege

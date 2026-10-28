@@ -8,12 +8,23 @@
 #include "simulation/camera.h"
 #include "simulation/herc_actor.h"
 #include "simulation/scenery_world.h"
+#include "simulation/world_effects.h"
+#include "simulation/world_projectiles.h"
 
 namespace earthsiege {
 
 class resource_store;
 
-/// Own mission terrain and the player roster while other actor consumers are integrated
+enum class combat_notice_kind { attached_smoke, ejected_weapon, salvage, shield_warning, cockpit_damage, friendly_warning };
+struct combat_notice {
+  combat_notice_kind kind;
+  size_t actor{0};
+  int16_t part{0};
+  int16_t value{0};
+  vec3<int32_t> position;
+};
+
+/// Own mission terrain, player-roster combat and live projectiles/effects while controllers are integrated
 class mission_session {
   struct crew_member {
     herc_definition const *definition;
@@ -29,6 +40,13 @@ class mission_session {
   std::vector<crew_member> crew;
   size_t player_index{0};
   std::vector<actor_contact> frame_contacts;
+  random_state random;
+  world_effects effects;
+  world_projectiles projectiles;
+  std::optional<size_t> selected_weapon;
+  std::vector<combat_notice> frame_notices;
+  std::optional<int32_t> impact(projectile_owner const &owner, impact_request const &request);
+  void fire_selected(bool pressed);
 
 public:
   mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster);
@@ -38,7 +56,15 @@ public:
   mission_session &operator=(mission_session &&) = delete;
   scenery_world const &scenery() const;
   herc_body const &player() const;
-  void step(herc_controls const &controls, int16_t time_ratio);
+  void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
+  bool select_weapon(size_t slot);
+  void cycle_weapon();
+  std::optional<size_t> weapon_selection() const;
+  herc_actor const &player_actor() const;
+  world_effects &visual_effects();
+  world_projectiles const &ordnance() const;
+  std::span<combat_notice const> combat_notices() const;
+  std::vector<scene_object> visible_objects();
   std::span<actor_contact const> contacts() const;
   std::vector<scene_model> roster_models();
   camera_target view_target() const;

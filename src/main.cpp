@@ -93,7 +93,7 @@ auto main(int argc, char *argv[])->int try {
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
       "F1 attached, F2 orbit, F3 free camera; P pauses, Escape returns to menu.\n"
-      "Combat, AI and cockpit are not yet active.\n";
+      "Space fires; Enter selects the next equipped weapon. AI, lock-on and cockpit are not yet active.\n";
   }
   std::unique_ptr<earthsiege::window> display;
   if(!headless) display = std::make_unique<earthsiege::window>(scale);

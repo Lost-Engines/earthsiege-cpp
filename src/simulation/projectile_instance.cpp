@@ -7,10 +7,10 @@
 namespace earthsiege {
 namespace {
 
-shape_part const &projectile_shape(projectile_definition const &definition, projectile_motions const &motions, model_resource const &bullets, model_resource const &rockets) {
+model_part const &projectile_shape(projectile_definition const &definition, projectile_motions const &motions, model_resource const &bullets, model_resource const &rockets) {
   auto const subtype{static_cast<size_t>(definition.subtype)};
-  if(definition.kind == projectile_kind::bullet) return std::get<shape_part>(bullets.roots.at(static_cast<size_t>(motions.bullets.at(subtype).model)).content);
-  if(definition.kind == projectile_kind::rocket) return std::get<shape_part>(rockets.roots.at(static_cast<size_t>(motions.rockets.at(subtype).model)).content);
+  if(definition.kind == projectile_kind::bullet) return bullets.roots.at(static_cast<size_t>(motions.bullets.at(subtype).model));
+  if(definition.kind == projectile_kind::rocket) return rockets.roots.at(static_cast<size_t>(motions.rockets.at(subtype).model));
   throw std::invalid_argument{"projectile has no bullet/rocket model"};
 }
 
@@ -44,15 +44,15 @@ beam_path dispatch_beam(weapon_shot const &shot, weapon_catalogue const &definit
   return {vec3<int32_t>{shot.muzzle.transform.translation}, vec3<int32_t>{end}};
 }
 
-projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motion_data, model_resource const &bullet_models, model_resource const &rocket_models, bool const target_present)
+projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motion_data, model_resource const &bullet_models, model_resource const &rocket_models, bool const target_present, int16_t const initial_rocket_clock)
   : source{definitions.projectiles.at(shot.projectile)}, motions{motion_data},
-    shape{projectile_shape(source, motions, bullet_models, rocket_models)}, visual{shape}, damage_scale{shot.kind == shot_kind::scaled ? shot.charge : int16_t{0}} {
+    geometry_source{projectile_shape(source, motions, bullet_models, rocket_models)}, shape{std::get<shape_part>(geometry_source.content)}, visual{shape}, damage_scale{shot.kind == shot_kind::scaled ? shot.charge : int16_t{0}} {
   flight_state.kind = source.kind;
   flight_state.subtype = static_cast<uint8_t>(source.subtype);
   flight_state.position = shot.muzzle.position;
   flight_state.angles = shot.muzzle.angles;
   flight_state.speed = source.kind == projectile_kind::rocket ? rocket_start_speed : source.speed;
-  flight_state.animation_remaining = source.kind == projectile_kind::rocket ? motions.rockets.at(flight_state.subtype).animation_period : motions.bullets.at(flight_state.subtype).animation_period;
+  flight_state.animation_remaining = source.kind == projectile_kind::rocket ? initial_rocket_clock : motions.bullets.at(flight_state.subtype).animation_period;
   flight_state.cells.resize(shape.cell_frame_counts.size(), 0);
   for(auto const count : shape.cell_frame_counts) cell_counts.push_back(static_cast<uint16_t>(count));
   flight_state.target_present = source.kind == projectile_kind::rocket && target_present;
@@ -60,6 +60,8 @@ projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalog
 
 projectile_flight const &projectile_instance::flight() const { return flight_state; }
 model_instance const &projectile_instance::model() const { return visual; }
+model_part const &projectile_instance::geometry() const { return geometry_source; }
+void projectile_instance::clear_target() { flight_state.target_present = false; }
 
 model_transform projectile_instance::placement() const {
   auto result{rotation_transform(flight_state.angles)};

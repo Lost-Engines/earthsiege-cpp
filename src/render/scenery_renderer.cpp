@@ -1,7 +1,9 @@
 #include "scenery_renderer.h"
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 #include "render/scene_order.h"
+#include "render/polygon_raster.h"
 #include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
 
@@ -16,10 +18,17 @@ vec3<int32_t> world_point(vec3<int32_t> const &point, model_transform const &pla
 
 } // anonymous namespace
 
-scenery_renderer::scenery_renderer(framebuffer &target, scenery_world const &source, distance_shade_bindings bindings) : world{source}, colours{source.colours()}, shading{source.environment(), std::move(bindings)}, models{target, colours} {
+scenery_renderer::scenery_renderer(framebuffer &buffer, scenery_world const &source, distance_shade_bindings bindings) : target{buffer}, world{source}, colours{source.colours()}, shading{source.environment(), std::move(bindings)}, models{buffer, colours} {
 }
 
 std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_model const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground) {
+  std::vector<scene_object> visible;
+  visible.reserve(actors.size());
+  for(auto const &actor : actors) visible.emplace_back(actor);
+  return draw_objects(position, angles, lights, split_highlights, visible, dynamic, ground);
+}
+
+std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_object const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground) {
   auto camera{rotation_transform(angles)};
   camera.translation = position;
   model_view view;
@@ -53,14 +62,16 @@ std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<u
     indices.push_back(index);
   }
   for(size_t index{0}; index != actors.size(); ++index) {
-    auto const &actor{actors[index]};
-    if(actor.roots.empty()) throw std::invalid_argument{"scene actor has no model"};
-    auto const &origin{actor.placement.translation};
+    auto const *model{std::get_if<scene_model>(&actors[index])};
+    if(model && model->roots.empty()) throw std::invalid_argument{"scene actor has no model"};
+    auto const &origin{model ? model->placement.translation : std::get<scene_ribbon>(actors[index]).position};
+    auto const radius{model ? model->roots.front().header.radius : int16_t{0}};
+    auto const native_class{model ? model->native_class : int16_t{3}};
     if(origin.z < 0) continue;
     vec3<int32_t> delta;
     for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(origin[axis]) - position[axis]);
     auto const distance{fast_distance(delta)};
-    if(shading.culled(distance, actor.native_class, actor.roots.front().header.radius)) continue;
+    if(shading.culled(distance, native_class, radius)) continue;
     entries.push_back({.position{vec3<int32_t>{origin}}, .distance{distance}, .segment{std::nullopt}});
     indices.push_back(objects.size() + index);
   }
@@ -69,7 +80,32 @@ std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<u
     auto const distance{entries[index].distance};
     index = indices[index];
     if(index >= objects.size()) {
-      auto const &actor{actors[index - objects.size()]};
+      auto const &object{actors[index - objects.size()]};
+      if(auto const *ribbon{std::get_if<scene_ribbon>(&object)}) {
+        if(dynamic) dynamic->select(ribbon->position, 0);
+        shading.apply(colours, distance, 3, 0, split_highlights);
+        for(auto const &face : ribbon->faces) {
+          std::array<camera_vertex, 4> vertices;
+          for(size_t point{0}; point != face.size(); ++point) vertices[point].position = world_point(ribbon->points[face[point]], view.camera);
+          auto const projected{project_polygon(vertices, view.projection, projection_source::model)};
+          std::vector<vec2<int32_t>> points;
+          for(auto const &vertex : projected) points.push_back(vertex.position);
+          // The beam's two-sided fill detects winding before viewport clipping,
+          // reversing zero-area projected strips too (unlike model back-face tests).
+          int64_t area{0};
+          if(points.size() > 2) {
+            auto const *previous{&points.back()};
+            for(auto const &point : points) {
+              area += static_cast<int64_t>(previous->x) * point.y - static_cast<int64_t>(point.x) * previous->y;
+              previous = &point;
+            }
+            if(area < (int64_t{1} << 32) && (area < 0 || wrap_long(area) < 1)) std::ranges::reverse(points);
+          }
+          draw_solid_polygon(target, points, view.bounds, ribbon->colour, polygon_winding::preserve);
+        }
+        continue;
+      }
+      auto const &actor{std::get<scene_model>(object)};
       auto const radius{actor.roots.front().header.radius};
       shading.apply(colours, distance, actor.native_class, radius, split_highlights);
       auto const object_lights{dynamic ? dynamic->select(actor.placement.translation, radius) : lights};

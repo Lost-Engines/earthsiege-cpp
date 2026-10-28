@@ -213,3 +213,18 @@ combat and effect rasterization are outside these explicit schedules. Refresh
 using `tools/export_effect_world_fixtures.py`.
 
 `effect_lighting.bin` records 456 original per-object selections and 3,250 live manager operations from `check_light_manager.py` and `capture_effect_lighting.py`. Selection uses source/cache lifetime and registration order, including zero intensity, saturation, reuse and the game initializer's 2000/10 attenuation arguments. `effect_render.bin` records 72 complete original VGA frames from `capture_effect_render.py`, with authentic effect factories/updates, terrain, textures, dynamic lighting and the independent flat-effect pass. Requests and update schedules are explicit fixture inputs, not a complete mission replay.
+
+`beam_effects.bin` retains 52 complete original beam shapes, RNG states, lifetimes
+and VGA frames from `capture_beam_effects.py`. All six types are included; ELF
+cases stay within the original twenty-face index table. Refresh with
+`tools/export_beam_fixtures.py`. `projectile_world.bin` retains 540 mixed original
+bullet/rocket/beam frames from `capture_projectile_world.py`, using the real
+constructors, virtual updates, destructors and common 160-slot pool. The world-hit
+result is a controlled boundary. Every launch/retirement order, live flight/cell
+state and shared RNG word is checked. Refresh with
+`tools/export_projectile_world_fixtures.py`.
+
+`mission_combat_test` additionally exercises all eligible weapons in each of the
+four demo starting rosters against native scenery. It checks resource consumption,
+projectile/effect creation and eventual reclamation and renders 256 combined
+frames. This integration check is not an original full-mission replay.

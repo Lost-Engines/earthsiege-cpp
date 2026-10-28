@@ -14,6 +14,7 @@ class mission_view {
   camera_state camera;
   keyboard_input keyboard;
   bool paused{false};
+  bool enter_held{false};
 
 public:
   mission_view(resource_store const &resources, unsigned int demo);

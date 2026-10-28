@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/world_projectiles.cpp
+  src/simulation/world_projectiles.h
+  src/simulation/beam_effect.cpp
+  src/simulation/beam_effect.h
   src/render/effect_lighting.cpp
   src/render/effect_lighting.h
   src/simulation/world_effects.cpp
@@ -175,6 +179,15 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mission_combat_test tests/mission_combat_test.cpp)
+  target_link_libraries(mission_combat_test PRIVATE earthsiege_core)
+  add_test(NAME mission_combat COMMAND mission_combat_test "${PROJECT_SOURCE_DIR}/assets")
+  add_executable(projectile_world_test tests/projectile_world_test.cpp)
+  target_link_libraries(projectile_world_test PRIVATE earthsiege_core)
+  add_test(NAME projectile_world COMMAND projectile_world_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/projectile_world.bin")
+  add_executable(beam_effect_test tests/beam_effect_test.cpp)
+  target_link_libraries(beam_effect_test PRIVATE earthsiege_core)
+  add_test(NAME beam_effect COMMAND beam_effect_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/beam_effects.bin")
   add_executable(effect_render_test tests/effect_render_test.cpp)
   target_link_libraries(effect_render_test PRIVATE earthsiege_core)
   add_test(NAME effect_render COMMAND effect_render_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/effect_render.bin")

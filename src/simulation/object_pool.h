@@ -32,6 +32,7 @@ public:
   object_pool(object_pool &&) = delete;
   object_pool &operator=(object_pool &&) = delete;
   size_t available() const { return free_count; }
+  std::optional<size_t> next_free_slot() const { return free_head == end ? std::nullopt : std::optional<size_t>{free_head}; }
   size_t size() const { return slots.size() - free_count; }
   T &at(size_t const index) { return slots.at(index).value.value(); }
   T const &at(size_t const index) const { return slots.at(index).value.value(); }
