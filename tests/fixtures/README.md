@@ -352,3 +352,14 @@ The capture also retains auxiliary scratch timers and collision bias for
 diagnostics; those fields are not all independently exposed by the session.
 Audio/HUD calls and the original unused tenth combat-metric read are explicit
 capture boundaries. Source: `capture_mission_herc_frames.py` in the analysis tree.
+
+
+`mission_objectives.bin` contains 5,122 original completion/timer cases,
+16,000 debrief grades, 4,096 player objective updates, and 2,048 mixed objective
+worlds. Refresh with `tools/export_objective_fixtures.py`. Original consumers are
+0xecc0, 0xee84, 0xf0f0, 0xf454, 0xf4e7, 0xf744, 0xf930, 0xf99a and 0x15f80.
+
+`mission_seeded_frames.bin` adds 880 fully composed hostile frames with initialized
+RNG, moving-projectile dispatch/reclamation, and original objective evaluation.
+The 03 world-fixture format includes status, debrief grade, clocks, prompt events
+and player progress; 02 retains the earlier navigation/state-only observations.

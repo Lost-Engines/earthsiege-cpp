@@ -28,6 +28,7 @@ vec3<uint16_t> const &flyer_actor::angles() const { return flight.angles; }
 vec3<int16_t> const &flyer_actor::local_velocity() const { return flight.velocity; }
 vec3<int16_t> const &flyer_actor::angular_velocity() const { return flight.angular_step; }
 damage_state const &flyer_actor::damage() const { return components.state(); }
+int16_t flyer_actor::total_damage_fraction() const { return components.total_fraction(); }
 bool flyer_actor::dead() const { return destroyed; }
 bool flyer_actor::is_detectable() const { return detectable; }
 void flyer_actor::set_detectable(bool const value) { detectable = value; }

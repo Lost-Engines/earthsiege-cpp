@@ -37,7 +37,7 @@ mission_activity::mission_activity(mission_script const &script, mission_placeme
   for(size_t i{0}; i != groups.size(); ++i) {
     auto const &record{script.groups[i]}; auto &entry{groups[i]};
     if(record.target_type == target_kind::none) continue;
-    if(record.target_type == target_kind::group) entry.objectives=groups.at(static_cast<size_t>(record.target)).members;
+    if(record.target_type == target_kind::group) { entry.objective_group=static_cast<size_t>(record.target); entry.objectives=groups.at(*entry.objective_group).members; }
     else {
       auto const kind{static_cast<size_t>(record.target_type)-1};
       auto const found{sources.at(kind).find(static_cast<size_t>(record.target))};

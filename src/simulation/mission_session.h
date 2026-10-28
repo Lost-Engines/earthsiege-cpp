@@ -7,6 +7,7 @@
 #include "resources/player_roster.h"
 #include "simulation/camera.h"
 #include "simulation/mission_activity.h"
+#include "simulation/mission_objectives.h"
 #include "simulation/flyer_attack.h"
 #include "simulation/herc_actor.h"
 #include "simulation/herc_orders.h"
@@ -24,7 +25,7 @@ namespace earthsiege {
 
 class resource_store;
 
-enum class combat_notice_kind { attached_smoke, ejected_weapon, salvage, shield_warning, cockpit_damage, friendly_warning, under_attack };
+enum class combat_notice_kind { attached_smoke, ejected_weapon, salvage, shield_warning, cockpit_damage, friendly_warning, under_attack, mission_event };
 struct combat_notice {
   combat_notice_kind kind;
   size_t actor{0};
@@ -75,9 +76,9 @@ class mission_session {
     bool obstructed{false};
     bool radar_active{false};
     bool ignore_hud_target{false};
-    bool hit_enemy{false};
     std::optional<impact_obstruction> obstruction{};
-    bool objective_event{false};
+    player_objective_progress objectives{};
+    bool route_checked{false};
     int16_t requested_speed{0};
     int16_t collision_bias{0};
     int16_t aim_tolerance{0};
@@ -156,7 +157,10 @@ class mission_session {
   void advance_base(size_t index, frame_ratio ratio);
   std::optional<int32_t> obstacle_distance(avoidance_probe kind, vec3<int32_t> const &start, vec3<int32_t> const &end) const;
   size_t player_index{0};
-  int16_t mission_event_delay{0};
+  mission_outcome_clock outcome_clock;
+  std::optional<mission_status> pending_mission_prompt;
+  std::pair<std::vector<objective_actor>, std::vector<objective_group>> objective_facts() const;
+  void advance_player_objectives(size_t index, frame_ratio ratio);
   std::vector<actor_contact> frame_contacts;
   random_state random;
   world_effects effects;
@@ -185,6 +189,11 @@ public:
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);
   void cycle_weapon();
+  mission_status mission_state(bool requested = false) const;
+  int16_t result_grade() const;
+  std::optional<mission_status> take_mission_prompt();
+  mission_outcome_clock const &mission_clock() const;
+  player_objective_progress const &objective_progress() const;
   std::optional<size_t> weapon_selection() const;
   herc_actor const &player_actor() const;
   world_effects &visual_effects();

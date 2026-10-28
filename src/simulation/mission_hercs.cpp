@@ -255,7 +255,7 @@ void mission_session::aim_herc(size_t const index, size_t const target, int16_t 
     .select_weapon{[&](int32_t range, int16_t direction){
       auto &decision{activity->decisions()[index]};
       herc_weapon_selection_state state{member.sensors.locks, member.aim_tolerance, actor.impacts().ecm_remaining, actor.impacts().detectable, decision.unavailable};
-      auto const slot{select_herc_weapon(actor.weapons(), weapon_definitions, state, kind, range, direction, random, mission_event_delay,
+      auto const slot{select_herc_weapon(actor.weapons(), weapon_definitions, state, kind, range, direction, random, outcome_clock.poll_remaining,
         [&](bool front){if(target >= crew.size()) return int16_t{0}; auto const &shield{crew[target].actor->power().shields}; return front ? shield.front : shield.rear;},
         [&]{if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);})};
       actor.impacts().detectable = state.detectable; decision.unavailable = state.unavailable;
@@ -335,12 +335,7 @@ void mission_session::dispatch_herc(size_t const index, frame_ratio const ratio)
       switch(type) {
         case behavior::herc_deciding: case behavior::in_limbo: return false;
         case behavior::player:
-          if(group.members.front() == index && group.route >= 0) {
-            // Route arrival is checked here; player controls are prepared later.
-            auto cursor{group.route_cursor};
-            follow_route(actor.body().movement().position, actor.body().movement().angles.z, 0, routes.at(static_cast<size_t>(group.route)), points, cursor);
-            group.route_cursor = cursor;
-          }
+          advance_player_objectives(index, ratio);
           return false;
         case behavior::sleeping:
           assign_target(activity->targets(), index, std::nullopt);

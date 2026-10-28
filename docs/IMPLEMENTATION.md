@@ -69,7 +69,7 @@ Working components:
 - Original point/line and transparent bitmap drawing: 6,000 clipped line rasters and 500 scaled bitmap rasters agree, including the original sampling and cropping quirks.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
-Remaining integration: player target selection and weapon-panel controls, mission outcomes, attached smoke and ejected-weapon motion, cockpit widgets, shell/campaign flow, audio and presentations. Live autonomous HERC/flyer controllers and impact reactions are connected and independently checked below. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
+Remaining integration: player target selection and weapon-panel controls, outcome presentation, attached smoke and ejected-weapon motion, cockpit widgets, shell/campaign flow, audio and presentations. Live autonomous HERC/flyer controllers and impact reactions are connected and independently checked below. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
 
 Some retained handoff fields have provisional names (`argument`, `initial_value`, `extra`, numbered trigger links) until their original consumers establish their roles. Tests compare their exact values regardless of naming. The original handoff writer does not truncate reused files, so the parser deliberately accepts stale trailing bytes after its declared tables.
 
@@ -353,7 +353,7 @@ Movement consumes the previous controls; player preparation follows group
 dispatch, and power/ECM/seeker updates follow perception. The composed navigation
 path matches 960 original frames / 17,760 HERC and flyer observations, with exact
 random state. These replace the earlier flyer-only frame fixture, whose omitted
-HERC dispatch also omitted the shared controller-entry staggering. Player objective/cockpit integration remains unfinished; this is still not a complete playable game.
+HERC dispatch also omitted the shared controller-entry staggering. Player cockpit and outcome presentation remain unfinished; this is still not a complete playable game.
 
 
 ## Live hostile frames and retaliation
@@ -375,3 +375,28 @@ The hostile comparison also verifies that base-attack facing includes a gun
 turret's rotating yaw, as the original virtual direction query does. Using only
 the base orientation incorrectly changes the HERC's maneuver near the flank
 threshold. Audio messages remain recorded events pending playback integration.
+
+
+## Mission objectives and debrief decisions
+
+The live session now advances player route events, reconnaissance arrival and
+rescue dialogue, then evaluates mission outcomes after power/sensor updates. The
+outcome owner retains polling and confirmation clocks; the shell still needs to
+present the resulting prompts. Status checks match 5,122 original cases, debrief
+grades 16,000 cases, and player objective updates 4,096 cases. A further 2,048
+worlds verify group targets, escort safety, recognition, target routes and mixed
+member damage, including original signed-word accumulation.
+
+The original player stops before a repeated first point at the end of a closed
+route; autonomous followers retain their separate route behavior. Rescue timing
+uses the original signed longs 5,000, 5,000, -25,536, 0: the third delay expires
+on the next update. The alert flag used in debrief grading is shared with contact
+and hostile-hit notification, rather than being a separate kill counter.
+
+A stronger composed fixture matches 880 hostile frames / 16,720 HERC and flyer
+states using the original initialized, warmed random stream. It includes moving
+projectile updates and reclamation, and checks outcome status, debrief grades,
+prompts, both countdowns, and player objective progress. This exposed an omitted
+projectile phase in the earlier research harness; the omission affected longer
+runs once the first projectile arrived, and is now corrected in the capture tool.
+Modal presentation and recorded player input remain outside this fixture.

@@ -11,7 +11,7 @@ std::vector<observed_actor> mission_session::observe() const {
     auto const &body{member.actor->body()};auto const &damage{member.actor->damage().consequences};
     result.push_back({.position{vec3<int32_t>{body.movement().position}},.heading{body.movement().angles.z},.view_offset{body.torso().angle}, .strength{member.actor->combat_rating()},
       .dead{damage.dead},.disabled{damage.disabled},.detectable{member.actor->impacts().detectable},
-      .removed{body.movement().collapsed},.unavailable{activity->decisions()[index].unavailable},.objective_event{member.objective_event}, .ignore_hud_target{member.ignore_hud_target}});
+      .removed{body.movement().collapsed},.unavailable{activity->decisions()[index].unavailable},.objective_event{member.objectives.rescued}, .ignore_hud_target{member.ignore_hud_target}});
   }
   for(auto const &member:flyers)result.push_back({.position{vec3<int32_t>{member.actor->motion().position}},.heading{member.actor->angles().z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()}});
   for(auto const &member:bases)result.push_back({.position{vec3<int32_t>{member.actor->placement().translation}},.heading{transform_angles(member.actor->placement()).z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()}});

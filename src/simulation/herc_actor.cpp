@@ -315,20 +315,7 @@ int16_t herc_actor::internal_damage_fraction(size_t const component) const {
   if(capacity == 0) throw std::domain_error{"zero internal damage capacity"};
   return wrap_word(static_cast<int32_t>(value) * 256 / capacity);
 }
-int16_t herc_actor::total_damage_fraction() const {
-  int32_t damage{0}, capacity{0};
-  auto const &state{components.state()};
-  for(size_t i{0}; i != state.armour.size(); ++i) {
-    auto const maximum{loadout.damage.components.at(i).armour};
-    capacity += maximum; damage += state.armour[i] < 0 ? maximum : state.armour[i];
-  }
-  for(size_t i{0}; i != loadout.damage.hit_points.size(); ++i) {
-    auto const maximum{loadout.damage.hit_points[i]};
-    capacity += maximum; damage += state.internal[i] < 0 ? maximum : state.internal[i];
-  }
-  if(capacity == 0) throw std::domain_error{"zero HERC damage capacity"};
-  return wrap_word(wrap_long(static_cast<int64_t>(damage) * 256) / capacity);
-}
+int16_t herc_actor::total_damage_fraction() const { return components.total_fraction(); }
 int16_t herc_actor::choose_aimed_component(herc_actor const &target, random_state &random) const {
   return select_herc_aimed_component(components, armament.slots().size(), target.damage().present, target.body().movement().collapsed, random);
 }

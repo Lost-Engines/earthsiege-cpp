@@ -128,6 +128,7 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
     crew[i].actor->update_power(time_ratio, settings.free_weapons());
     update_herc_sensors(i, time_ratio);
   }
+  if(auto const result{outcome_clock.advance(time_ratio, [&]{return mission_state();})}) pending_mission_prompt=result;
   // Phase-five reclamation follows firing: expired objects occupy their slots
   // through this frame's simulation, as in the original shared pools.
   effects.collect();
@@ -273,7 +274,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
   std::optional<vec3<int32_t>> target;
   if(auto const selected{activity->targets()[owner.actor].selected}) target = combat_position(*selected).position;
   auto const result{dispatch_impact(request, {owner.actor, owner.actor == player_index, group, target}, world)};
-  if(owner.actor < crew.size() && actors[owner.actor].hit_enemy) crew[owner.actor].hit_enemy = true;
+  if(actors[owner.actor].hit_enemy) activity->actor(owner.actor).awareness.alerted = true;
   return result;
 }
 

@@ -40,6 +40,7 @@ public:
   vec3<int16_t> const &angular_velocity() const;
   damage_state const &damage() const;
   bool dead() const;
+  int16_t total_damage_fraction() const;
   bool is_detectable() const;
   void set_detectable(bool value);
   bool direct_damage(int16_t amount, random_state &random, flyer_damage_events const &events, bool player_locked_target = false);

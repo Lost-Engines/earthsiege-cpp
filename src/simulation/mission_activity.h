@@ -29,6 +29,7 @@ struct mission_group_activity {
   std::vector<size_t> members;
   std::vector<size_t> objectives;
   std::optional<size_t> representative;
+  std::optional<size_t> objective_group{};
   int16_t counter{-1};
   int16_t counter_operation{-1};
 };

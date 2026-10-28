@@ -51,6 +51,7 @@ public:
   int16_t section_capacity(size_t section) const;
   /// Q8 total armour/internal damage; reference weights do not weight this measurement
   int16_t fraction(size_t section) const;
+  int16_t total_fraction() const;
   /// Original weapon knock-off bypasses the ordinary presence and consequence wrapper
   void knock_off_weapon(size_t section, component_choice const &choose, section_detachment const &detach);
 };

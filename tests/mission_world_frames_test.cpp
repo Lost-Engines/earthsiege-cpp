@@ -15,7 +15,9 @@ std::vector<int16_t> words(earthsiege::binary_reader &file) {
 int main(int argc,char **argv) try {
   using namespace earthsiege;if(argc!=3)return EXIT_FAILURE;
   resource_store resources{argv[1]};auto const bytes{read_file(argv[2])};binary_reader file{bytes};auto const magic{file.take(8)};
-  if(std::string(magic.begin(),magic.end())!="ESWFRM02")file.fail("fixture version");
+  auto const version{std::string(magic.begin(),magic.end())};
+  bool const extended{version=="ESWFRM03"};
+  if(!extended && version!="ESWFRM02")file.fail("fixture version");
   auto const count{file.integer<uint16_t>()};auto const expected_frames{file.integer<uint32_t>()};size_t frames{0},states{0};
   for(size_t trial{0};trial!=count;++trial) {
     auto const demo{file.integer<uint16_t>()};bool const friendly{file.integer<uint8_t>()!=0};auto const ratio{file.integer<int16_t>()};auto const initial{random_input(file)};
@@ -89,6 +91,13 @@ int main(int argc,char **argv) try {
       }
       auto const expected{random_input(file)};auto const &actual{session.random_snapshot()};
       if(actual.words!=expected.words || actual.first!=expected.first || actual.second!=expected.second)file.fail(prefix+" RNG");
+      if(extended) {
+        auto const check{[&](char const *field,int actual_value){auto const expected_value{file.integer<int32_t>()};if(actual_value!=expected_value){std::cerr<<prefix<<' '<<field<<": expected "<<expected_value<<", actual "<<actual_value<<'\n';file.fail(field);}}};
+        check("outcome status",std::to_underlying(session.mission_state(true)));check("debrief grade",session.result_grade());
+        check("prompt",std::to_underlying(session.take_mission_prompt().value_or(mission_status::none)));
+        auto const &clock{session.mission_clock()};check("poll clock",clock.poll_remaining);check("confirmation clock",clock.confirm_remaining);check("pending",clock.pending);check("reported",std::to_underlying(clock.reported));
+        auto const &progress{session.objective_progress()};check("arrival",progress.arrived);check("rescue",progress.rescued);check("announced",progress.target_announced);check("rescue stage",progress.rescue_stage);check("rescue clock",progress.rescue_remaining);
+      }
       ++frames;
     }
   }

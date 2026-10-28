@@ -9,7 +9,8 @@ p.add_argument('capture',type=Path)
 p.add_argument('output',type=Path)
 a=p.parse_args()
 rows=json.loads(a.capture.read_text())['cases']
-out=bytearray(b'ESWFRM02')
+extended='outcome' in rows[0]['steps'][0]
+out=bytearray(b'ESWFRM03' if extended else b'ESWFRM02')
 def write(fmt,*v):out.extend(struct.pack('<'+fmt,*v))
 def random(v):write('56h2B',*v)
 def words(v):write('H',len(v));write('h'*len(v),*v)
@@ -25,5 +26,6 @@ for row in rows:
   for f in frame['flyers']:
    write('3i3H3h3hhhBHiB',*f['position'],*f['angles'],*f['velocity'],*f['rates'],f['strength'],f['timer'],f['obstacle'],f['controller'],f['clock'],f['detectable'])
   random(frame['random'])
+  if extended:write('12i',*frame['outcome'])
 a.output.write_bytes(out)
 print(len(rows),'cases;',sum(len(r['steps'])for r in rows),'frames;',len(out),'bytes')
