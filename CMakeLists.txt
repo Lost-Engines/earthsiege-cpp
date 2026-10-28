@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/presentation.cpp
+  src/render/presentation_player.cpp
+  src/render/clock_instrument.cpp
   src/render/waypoint_instruments.cpp
   src/render/target_instruments.cpp
   src/render/navigation_instruments.cpp
@@ -240,6 +243,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(presentation_test tests/presentation_test.cpp)
+  target_link_libraries(presentation_test PRIVATE earthsiege_core)
+  add_test(NAME presentations COMMAND presentation_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/presentation_programs.bin" "${PROJECT_SOURCE_DIR}/tests/fixtures/presentation_frames.bin")
+  add_executable(clock_instrument_test tests/clock_instrument_test.cpp)
+  target_link_libraries(clock_instrument_test PRIVATE earthsiege_core)
+  add_test(NAME clock_instruments COMMAND clock_instrument_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/clock_instruments.bin")
   add_executable(mission_instruments_test tests/mission_instruments_test.cpp)
   target_link_libraries(mission_instruments_test PRIVATE earthsiege_core)
   add_test(NAME mission_instruments COMMAND mission_instruments_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_instruments.bin")

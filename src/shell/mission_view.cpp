@@ -34,11 +34,15 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
     weapons{resources, cockpit.layout},
     navigation{resources, cockpit.layout},
     waypoints{resources, cockpit.layout},
+    clock{resources, cockpit.layout},
+    lamps{resources, "simvol0", "ttm/" + read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())) + ".TTM"},
     display_colours{session->scenery().colours()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
+  clock.refresh();
+  lamps.advance(0);
   instruments.add_slider(throttle.slider_layout(), 0);
   for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
   session->initialise_weapon_instruments();
@@ -119,12 +123,20 @@ void mission_view::change_camera(camera_mode const mode) {
 }
 
 void mission_view::change_cockpit_view(cockpit_view const view) {
+  if(panel != view) clock.refresh();
   panel = view;
   change_camera(camera_mode::attached);
 }
 
 void mission_view::step(bool const control, bool const zoom) {
   if(paused) { pointer_events.clear(); return; }
+  // The original 120 Hz timer invokes both UI clocks every second callback.
+  // Accumulate the nominal 60 Hz ticks separately from the 40 Hz physics loop.
+  elapsed_milliseconds += 25;
+  auto const now{static_cast<uint32_t>(elapsed_milliseconds * 60 / 1000)};
+  clock.update(now);
+  if(now != interface_ticks) lamps.advance(static_cast<int16_t>(now - interface_ticks));
+  interface_ticks = now;
   consume_pointer_events();
   auto const keys{keyboard.sample(session->player_weapon_controls().manual_guidance())};
   player_input input{pointer};
@@ -191,6 +203,8 @@ void mission_view::draw() {
     auto const &movement{player.body().movement()};
     auto const &profile{player.profile().movement};
     int const x{-window.instrument_origin[0]}, y{-window.instrument_origin[1]};
+    lamps.draw(frame, x, y);
+    clock.draw(frame, x, y);
     reactor.draw(frame, static_cast<int32_t>(player.power().reserve) * 1024 / herc_power_capacity, x, y);
     int const speed_capacity{movement.gait_rate < 0 ? -profile.reverse_rate : profile.forward_rate};
     instruments.painted(0);

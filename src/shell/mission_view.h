@@ -6,6 +6,8 @@
 #include "render/shield_instruments.h"
 #include "render/weapon_instruments.h"
 #include "render/navigation_instruments.h"
+#include "render/clock_instrument.h"
+#include "render/presentation_player.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
 #include "shell/pointer_controls.h"
@@ -24,6 +26,10 @@ class mission_view {
   weapon_instruments weapons;
   navigation_instruments navigation;
   waypoint_instruments waypoints;
+  clock_instrument clock;
+  presentation_player lamps;
+  uint64_t elapsed_milliseconds{};
+  uint32_t interface_ticks{};
   struct weapon_control_binding {
     size_t row;
     size_t button;
