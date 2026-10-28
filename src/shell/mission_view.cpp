@@ -27,6 +27,8 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   : session{demo_start(resources, demo)},
     cockpit{read_cockpit(resources, read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())))},
     reactor{resources, cockpit.layout},
+    throttle{resources, cockpit.layout},
+    shields{resources, cockpit.layout},
     display_colours{session->scenery().colours()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
@@ -106,8 +108,19 @@ void mission_view::draw() {
     auto const ground{effects.ground_flashes()};
     renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground, view);
   }
-  if(inside) reactor.draw(frame, static_cast<int32_t>(session->player_actor().power().reserve) * 1024 / herc_power_capacity,
-                          -window.instrument_origin[0], -window.instrument_origin[1]);
+  if(inside) {
+    auto const &player{session->player_actor()};
+    auto const &movement{player.body().movement()};
+    auto const &profile{player.profile().movement};
+    int const x{-window.instrument_origin[0]}, y{-window.instrument_origin[1]};
+    reactor.draw(frame, static_cast<int32_t>(player.power().reserve) * 1024 / herc_power_capacity, x, y);
+    int const speed_capacity{movement.gait_rate < 0 ? -profile.reverse_rate : profile.forward_rate};
+    throttle.draw(frame, static_cast<int32_t>(movement.gait_rate) * 1024 / speed_capacity, movement.throttle, x, y);
+    auto const &shield{player.power().shields};
+    update_shield_colours(display_colours, static_cast<int32_t>(shield.front) * 1024 / shield.capacity,
+                         static_cast<int32_t>(shield.rear) * 1024 / shield.capacity);
+    shields.draw(frame, shield.balance, {}, x, y);
+  }
 }
 
 framebuffer const &mission_view::image() const { return frame; }

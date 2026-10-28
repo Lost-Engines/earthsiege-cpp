@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/render/shield_instruments.cpp
   src/render/instrument_bars.cpp
   src/resources/cockpit.cpp
   src/simulation/player_targeting.cpp
@@ -231,6 +232,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(shield_instruments_test tests/shield_instruments_test.cpp)
+  target_link_libraries(shield_instruments_test PRIVATE earthsiege_core)
+  add_test(NAME shield_instruments COMMAND shield_instruments_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/shield_instruments.bin")
+  add_executable(throttle_gauge_test tests/throttle_gauge_test.cpp)
+  target_link_libraries(throttle_gauge_test PRIVATE earthsiege_core)
+  add_test(NAME throttle_gauges COMMAND throttle_gauge_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/throttle_gauges.bin")
   add_executable(reactor_gauge_test tests/reactor_gauge_test.cpp)
   target_link_libraries(reactor_gauge_test PRIVATE earthsiege_core)
   add_test(NAME reactor_gauges COMMAND reactor_gauge_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/reactor_gauges.bin")

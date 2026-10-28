@@ -24,4 +24,18 @@ public:
   void draw(framebuffer &target, int32_t value, int offset_x = 0, int offset_y = 0) const;
 };
 
+/// Original speed LEDs and requested-throttle thumb. Both values use Q10 units.
+class throttle_gauge {
+  bool vertical;
+  rectangle slider;
+  std::array<rectangle, 2> bars;
+  std::array<bitmap, 3> lamps;
+  bitmap thumb;
+  int thumb_extent;
+public:
+  throttle_gauge(resource_store const &resources, cockpit_layout const &layout);
+  rectangle thumb_bounds(int32_t requested) const;
+  void draw(framebuffer &target, int32_t speed, int32_t requested, int offset_x = 0, int offset_y = 0) const;
+};
+
 } // namespace earthsiege

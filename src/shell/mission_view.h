@@ -3,6 +3,7 @@
 #include <memory>
 #include "render/scenery_renderer.h"
 #include "render/instrument_bars.h"
+#include "render/shield_instruments.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
 #include "simulation/mission_session.h"
@@ -15,6 +16,8 @@ class mission_view {
   framebuffer frame;
   cockpit_artwork cockpit;
   reactor_gauge reactor;
+  throttle_gauge throttle;
+  shield_instruments shields;
   cockpit_view panel{cockpit_view::forward};
   palette display_colours;
   scenery_renderer renderer;
