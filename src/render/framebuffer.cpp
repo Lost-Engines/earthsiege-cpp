@@ -11,10 +11,27 @@ auto rectangle::contains(int x, int y) const->bool {
   return x >= left && x <= right && y >= top && y <= bottom;
 }
 
+bool screen_region::contains(int x, int y) const {
+  int const row{y - first_row};
+  if(row < 0 || static_cast<size_t>(row) >= spans.size()) return false;
+  auto const span{spans[static_cast<size_t>(row)]};
+  return x >= span.left && x <= span.right;
+}
+
+bool screen_mask::contains(int x, int y) const {
+  if(y < 0 || y >= static_cast<int>(rows.size())) return false;
+  return std::ranges::any_of(rows[static_cast<size_t>(y)], [x](scanline_span span){ return x >= span.left && x <= span.right; });
+}
+
+screen_mask const *framebuffer::clip() const { return mask; }
+void framebuffer::clip(screen_mask const *value) { mask = value; }
+scoped_framebuffer_clip::scoped_framebuffer_clip(framebuffer &buffer, screen_mask const *value) : target{buffer}, previous{buffer.clip()} { target.clip(value); }
+scoped_framebuffer_clip::~scoped_framebuffer_clip() { target.clip(previous); }
+
 void framebuffer::clear(uint8_t colour) { raster.fill(colour); }
 
 void framebuffer::pixel(int x, int y, uint8_t colour) {
-  if(x >= 0 && y >= 0 && x < static_cast<int>(screen_width) && y < static_cast<int>(screen_height)) {
+  if(x >= 0 && y >= 0 && x < static_cast<int>(screen_width) && y < static_cast<int>(screen_height) && (!mask || mask->contains(x, y))) {
     raster[static_cast<unsigned int>(y) * screen_width + static_cast<unsigned int>(x)] = colour;
   }
 }
@@ -26,8 +43,11 @@ void framebuffer::fill(rectangle area, uint8_t colour) {
   area.bottom = std::min(static_cast<int>(screen_height) - 1, area.bottom);
   if(area.left > area.right || area.top > area.bottom) return;
   for(int y{area.top}; y <= area.bottom; ++y) {
-    auto const begin{raster.begin() + y * screen_width + area.left};
-    if(area.left <= area.right) std::fill_n(begin, area.right - area.left + 1, colour);
+    auto const span_fill{[&](int left, int right){
+      if(left <= right) std::fill_n(raster.begin() + y * screen_width + left, right - left + 1, colour);
+    }};
+    if(mask) for(auto const span : mask->rows[static_cast<size_t>(y)]) span_fill(std::max(area.left, span.left), std::min(area.right, span.right));
+    else span_fill(area.left, area.right);
   }
 }
 

@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/resources/cockpit.cpp
   src/simulation/player_targeting.cpp
   src/simulation/player_input.cpp
   src/simulation/player_armament.cpp
@@ -229,6 +230,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(cockpit_artwork_test tests/cockpit_artwork_test.cpp)
+  target_link_libraries(cockpit_artwork_test PRIVATE earthsiege_core)
+  add_test(NAME cockpit_artwork COMMAND cockpit_artwork_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/cockpit_artwork.bin")
+  add_executable(cockpit_mask_test tests/cockpit_mask_test.cpp)
+  target_link_libraries(cockpit_mask_test PRIVATE earthsiege_core)
+  add_test(NAME cockpit_masks COMMAND cockpit_mask_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/cockpit_masks.bin")
   add_executable(player_targeting_test tests/player_targeting_test.cpp)
   target_link_libraries(player_targeting_test PRIVATE earthsiege_core)
   add_test(NAME player_targeting COMMAND player_targeting_test "${PROJECT_SOURCE_DIR}/tests/fixtures/player_targeting.bin")

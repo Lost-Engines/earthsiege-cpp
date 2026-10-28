@@ -378,3 +378,15 @@ explicit UI choices recorded by `player_world_capture.py`; the final variant
 sets player missile ammunition to type 3. `ESWFRM04/05` extend the mission fixture
 with player commands, weapon state, seeker locks and cockpit/simulation target
 ownership. No interactive widget drawing is claimed by these fixtures.
+
+- `cockpit_masks.bin` (`ESMASK01`): 96 complete original indexed model frames,
+  three models through all 32 ED masks, captured by
+  `earthsiege-reverse/tools/capture_cockpit_raster.py`. File I/O, allocation and
+  VGA ports are host boundaries; model readers, poses, projection, lighting,
+  clipping and rasterization execute original code. Constant projection isolates
+  the mask path; these are not complete gameplay screenshots.
+- `cockpit_artwork.bin` (`ESCOCK01`): eight full rebased GAU layouts, all 32 VUE
+  records and DB panel CRCs, and chassis palette overrides. Original reader,
+  selector and palette-helper comparisons are in `check_cockpits.py` and
+  `check_cockpit_layout.py`. Both fixtures are imported by
+  `tools/export_cockpit_fixtures.py`.

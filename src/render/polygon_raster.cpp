@@ -120,7 +120,7 @@ polygon_edges make_polygon_edges(std::span<vec2<int32_t> const> const points) {
   return result;
 }
 
-void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> const points, rectangle const bounds, uint8_t const colour, polygon_winding const winding) {
+static void draw_region(framebuffer &target, std::span<vec2<int32_t> const> const points, rectangle const bounds, uint8_t const colour, polygon_winding const winding, screen_region const *region) {
   auto clipped{clip_polygon_rectangle(points, bounds)};
   if(clipped.empty()) return;
   int64_t area{0};
@@ -134,7 +134,31 @@ void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> cons
   for(size_t row{0}; row != edges.spans.size(); ++row) {
     auto const &span{edges.spans[row]};
     auto const y{edges.first_row + static_cast<int>(row)};
-    if(span.left <= span.right) target.fill({span.left, y, span.right, y}, colour);
+    int left{span.left}, right{span.right};
+    if(region) {
+      int const mask_row{y - region->first_row};
+      if(mask_row < 0 || static_cast<size_t>(mask_row) >= region->spans.size()) continue;
+      auto const cutout{region->spans[static_cast<size_t>(mask_row)]};
+      left = std::max(left, cutout.left); right = std::min(right, cutout.right);
+    }
+    if(left <= right) target.fill({left, y, right, y}, colour);
+  }
+}
+
+void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> points, rectangle bounds, uint8_t colour, polygon_winding winding) {
+  auto const *mask{target.clip()};
+  if(!mask) { draw_region(target, points, bounds, colour, winding, nullptr); return; }
+  // The original rectangle regions clip geometry before building the edge table;
+  // curved regions instead intersect the completed scanline spans.
+  for(auto const &region : mask->regions) {
+    auto limits{bounds};
+    if(region.rectangular && !region.spans.empty()) {
+      limits.top = std::max(limits.top, region.first_row);
+      limits.bottom = std::min(limits.bottom, region.first_row + static_cast<int>(region.spans.size()) - 1);
+      limits.left = std::max(limits.left, region.spans.front().left);
+      limits.right = std::min(limits.right, region.spans.front().right);
+    }
+    draw_region(target, points, limits, colour, winding, &region);
   }
 }
 

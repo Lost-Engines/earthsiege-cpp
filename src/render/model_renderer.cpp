@@ -119,7 +119,7 @@ class model_draw {
       /// The original reverses geometry but leaves Gouraud/translated-texture attributes in place
       for(size_t index{0}; index < projected.size() / 2; ++index) std::swap(projected[index].position, projected[projected.size() - 1 - index].position);
     }
-    if(texture) draw_textured_polygon(target, projected, *texture, view.bounds, texture_shades[texture_shade_index(intensity)]);
+    if(texture) draw_textured_polygon(target, projected, *texture, view.bounds, texture_shades[texture_shade_index(intensity)], target.clip() ? texture_scan_direction::rows : texture_scan_direction::columns);
     else if(gouraud && projected.size() >= 3) draw_gouraud_polygon(target, projected, colours.shade_ramps.at(fill & 65535), view.bounds);
     else solid(projected, fill);
     if(!textured && line != fill) solid(projected, line, true);

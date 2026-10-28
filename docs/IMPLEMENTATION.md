@@ -426,3 +426,21 @@ also clears the corresponding movement/aim inputs. Releasing guidance retains
 its one-frame activity indication before the weapon list advances. The original
 actor-to-cockpit throttle exchange and complete instrument widgets remain active
 integration work.
+
+
+## Cockpit resources and clipping
+
+All eight cockpit layouts retain their 425 original GAU words, with the same
+selective parent-rectangle rebasing. All 32 view selections match the original
+bitmap loader and selector, including the shared mirrored left panel. Chassis
+palette banks and their repeated highlight colour match the native palette-copy
+helpers. ED mask tails are retained, including the unused COLOSSUS bytes.
+
+A further 96 complete original model rasters match through all 32 cockpit masks.
+The native renderer uses horizontal texture spans in this mode. For solid
+polygons, rectangular regions clip vertices before generating the edge table;
+curved regions intersect the completed edge spans. Combining those operations
+into a final pixel test changes edge rounding and Gouraud colour bands. Scene
+clipping is scoped, so cockpit artwork and instruments can draw independently.
+These captures isolate artwork and masked models; live instruments and complete
+cockpit frames are the next integration layer.
