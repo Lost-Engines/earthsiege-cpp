@@ -396,3 +396,12 @@ ownership. No interactive widget drawing is claimed by these fixtures.
   `earthsiege-reverse/tools/check_cockpit_scene.py`. Projection centres come from
   original `0x5bf68`, recorded by `check_cockpits.py`; the artwork fixture also
   verifies them. Backgrounds, actor activation and instruments are separate.
+
+- `damage_displays.bin` (`ESDAMAGE`): 1,200 original STATUS/TARGET renders from
+  `earthsiege-reverse/tools/capture_damage_display.py`, imported by
+  `tools/export_damage_display_fixtures.py`. Original world actors, constructors,
+  damage metrics and diagram/font drawing execute unmodified. Only the unused
+  tenth weapon metric's out-of-range scratch capacity/accumulator are padded;
+  valid component counts remain unchanged. Covers eight human chassis, all armour
+  and internal regions, health bands, retained name-font state and real ground/
+  flyer targets. Parent MFD scheduling/buttons are a separate integration layer.

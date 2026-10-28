@@ -459,3 +459,18 @@ Side panels extend the forward image plane, with centres at x = -160 and 480;
 they do not rotate the camera. Another 64 original full scenery frames verify
 all 32 masks and viewport projections, including distance shading and scene
 order. This capture isolates scenery from background and instrument painting.
+
+## Cockpit instruments and presentations
+
+Live throttle, reactor and shield gauges, weapon rows/groups, HUD targeting and
+waypoints now use the original update rules and indexed artwork. Clock scheduling
+matches 4,250 original frames; TTM playback matches 2,560 frames and all 123 decoded
+programs. The inspection view runs the original decorative lamp scripts.
+
+The shared STATUS/TARGET damage display now matches 1,200 original indexed frames,
+including all eight player chassis, per-section damage, health-colour boundaries,
+shield/death precedence, friendly/enemy/self labels and real ground/flyer targets.
+The PDG reader retains all three views and mount records; diagram palette remaps
+and the stateful target-name font follow the original. The parent MFD controls,
+remaining pages and their live integration are still in progress. Full shell,
+campaign presentation and audio remain required before this is a playable game.
