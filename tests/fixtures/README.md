@@ -363,3 +363,7 @@ worlds. Refresh with `tools/export_objective_fixtures.py`. Original consumers ar
 RNG, moving-projectile dispatch/reclamation, and original objective evaluation.
 The 03 world-fixture format includes status, debrief grade, clocks, prompt events
 and player progress; 02 retains the earlier navigation/state-only observations.
+
+`player_armament.bin`: 34 original player-bank constructors and 11,594 control updates, including 609 real weapon discharges. Projectile creation and mode-widget writes are recorded boundaries. Refresh with `export_player_armament_fixtures.py` from `capture_player_armament.py`.
+
+`player_input.bin`: 4,096 original player input routes, including every downstream request and persistent mouse/centering/Enter state. Downstream controllers, command dispatch and widget consumption are explicit boundaries. Refresh with `export_player_input_fixtures.py` from `capture_player_input.py`.

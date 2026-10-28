@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/player_input.cpp
+  src/simulation/player_armament.cpp
   src/simulation/mission_goals.cpp
   src/simulation/mission_objectives.cpp
   src/simulation/herc_reactions.cpp
@@ -226,6 +228,12 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(player_input_test tests/player_input_test.cpp)
+  target_link_libraries(player_input_test PRIVATE earthsiege_core)
+  add_test(NAME player_input COMMAND player_input_test "${PROJECT_SOURCE_DIR}/tests/fixtures/player_input.bin")
+  add_executable(player_armament_test tests/player_armament_test.cpp)
+  target_link_libraries(player_armament_test PRIVATE earthsiege_core)
+  add_test(NAME player_armament COMMAND player_armament_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/player_armament.bin")
   add_executable(mission_objectives_test tests/mission_objectives_test.cpp)
   target_link_libraries(mission_objectives_test PRIVATE earthsiege_core)
   add_test(NAME mission_objectives COMMAND mission_objectives_test "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_objectives.bin")

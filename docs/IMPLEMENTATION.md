@@ -4,6 +4,8 @@ The native game is being built from the supplied Earthsiege 1.0 data and origina
 
 Working components:
 
+- Original player weapon-list owner matches 34 loadouts / 11,594 sequential updates, including 609 discharges and paired weapons, ELF spin-up, grenade trigger release, editable groups, charge controls and automatic selection. The device-independent player input router matches 4,096 original calls, retaining mouse origins, nonlinear response, target tracking, centering, camera/flyer routing and Enter edges. Connecting these owners to the live session/cockpit follows these independent comparisons.
+
 - An owned mission session joins the original terrain, full HERC roster, animated bodies, mounted weapons and model-attached cameras. `--inspect-demo 1–4` exposes these starting states in the native window with held movement/aiming and free/orbit/attached camera controls. Its fixed 25 ms inspection updates are separate from full frame scheduling; it does not substitute inactive scenery or player-roster bodies for enemy activation, combat or AI.
 
 - All seven original VOL archives, bounded resource lookup and independent payload checks.

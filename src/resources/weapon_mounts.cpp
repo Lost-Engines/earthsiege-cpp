@@ -32,9 +32,10 @@ std::vector<weapon_mount> read_weapon_mounts(bytes const source) {
     mount.pitch_sequence = fields.integer<int16_t>();
     mount.yaw_sequence = fields.integer<int16_t>();
     mount.orientation = fields.integer<uint8_t>();
+    mount.control_number = fields.integer<int8_t>();
     fields.seek(16);
     mount.position = vec3<int16_t>{fields.integer<int16_t>(), fields.integer<int16_t>(), fields.integer<int16_t>()};
-    fields.seek(23);
+    mount.paired_slot_offset = fields.integer<int8_t>();
     mount.equipment_slot = fields.integer<int8_t>();
     result.push_back(mount);
   }

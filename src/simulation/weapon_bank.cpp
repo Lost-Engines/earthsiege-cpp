@@ -65,7 +65,7 @@ weapon_bank::weapon_bank(weapon_catalogue const &definitions, model_resource con
     auto const selected{equipment[slot]};
     if(selected < 0 || selected == empty_weapon_slot) { weapons.emplace_back(std::nullopt); continue; }
     auto const &definition{source.weapons.at(static_cast<size_t>(selected))};
-    weapon_state state{.definition{selected}, .equipment_slot{mount.equipment_slot}, .projectile{std::nullopt}, .mechanism{make_mechanism(selected, definition.magazine)}};
+    weapon_state state{.definition{selected}, .equipment_slot{mount.equipment_slot}, .projectile{std::nullopt}, .mechanism{make_mechanism(selected, definition.magazine)}, .convergence{}};
     if(definition.projectile == 21) {
       if(!values.empty() && slot >= values.size()) throw std::out_of_range{"weapon ammunition selection"};
       auto const subtype{values.empty() || values[slot] == 5 ? 0 : values[slot]};
