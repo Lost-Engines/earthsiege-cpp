@@ -69,7 +69,7 @@ Working components:
 - Original point/line and transparent bitmap drawing: 6,000 clipped line rasters and 500 scaled bitmap rasters agree, including the original sampling and cropping quirks.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
-Remaining integration: audio, attached smoke and ejected-weapon motion; connect full HERC controller scheduling, target/weapon selection and AI, and full mission outcomes; connect cockpit widgets, shell/campaign flow, sound and presentations. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
+Remaining integration: player target selection and weapon-panel controls, mission outcomes, attached smoke and ejected-weapon motion, cockpit widgets, shell/campaign flow, audio and presentations. Live autonomous HERC/flyer controllers and impact reactions are connected and independently checked below. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
 
 Some retained handoff fields have provisional names (`argument`, `initial_value`, `extra`, numbered trigger links) until their original consumers establish their roles. Tests compare their exact values regardless of naming. The original handoff writer does not truncate reused files, so the parser deliberately accepts stale trailing bytes after its declared tables.
 
@@ -353,6 +353,25 @@ Movement consumes the previous controls; player preparation follows group
 dispatch, and power/ECM/seeker updates follow perception. The composed navigation
 path matches 960 original frames / 17,760 HERC and flyer observations, with exact
 random state. These replace the earlier flyer-only frame fixture, whose omitted
-HERC dispatch also omitted the shared controller-entry staggering. Full hostile
-combat, impact reactions and player objective/cockpit integration remain the next
-integration checks; this is still not a complete playable game.
+HERC dispatch also omitted the shared controller-entry staggering. Player objective/cockpit integration remains unfinished; this is still not a complete playable game.
+
+
+## Live hostile frames and retaliation
+
+An additional 640 original frames from two hostile demo starts match 12,160
+HERC/flyer states, including controls, articulated aim, controllers, movement,
+power, damage, and shared random state. The navigation and hostile fixtures use
+the research harness's initial RNG state, not a complete original demo replay;
+standalone decision captures separately exercise varied RNG values.
+
+HERC retaliation and its long timers match 4,096 original cases. Player wingmates
+wait until accumulated damage exceeds 7,999 within a 30,000-unit window; other
+groups can react immediately. The 10,000-unit retaliation cooldown and 40,000-unit
+friendly-fire warning cooldown remain distinct. The HUD-target suppression flag
+is separate from the contact-alert latch. Hit dispatch now supplies live target
+references, group contact sharing, and the actual blocking object for skirting.
+
+The hostile comparison also verifies that base-attack facing includes a gun
+turret's rotating yaw, as the original virtual direction query does. Using only
+the base orientation incorrectly changes the HERC's maneuver near the flank
+threshold. Audio messages remain recorded events pending playback integration.

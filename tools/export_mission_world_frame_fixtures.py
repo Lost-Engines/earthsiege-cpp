@@ -9,13 +9,13 @@ p.add_argument('capture',type=Path)
 p.add_argument('output',type=Path)
 a=p.parse_args()
 rows=json.loads(a.capture.read_text())['cases']
-out=bytearray(b'ESWFRM01')
+out=bytearray(b'ESWFRM02')
 def write(fmt,*v):out.extend(struct.pack('<'+fmt,*v))
 def random(v):write('56h2B',*v)
 def words(v):write('H',len(v));write('h'*len(v),*v)
-write('H',len(rows))
+write('HI',len(rows),sum(len(r['steps'])for r in rows))
 for row in rows:
- write('Hh',row['demo'],row['ratio']);random(row['initial_random'])
+ write('HBh',row['demo'],row.get('friendly',True),row['ratio']);random(row['initial_random'])
  write('HHH',len(row['steps']),len(row['steps'][0]['hercs']),len(row['steps'][0]['flyers']))
  for frame in row['steps']:
   for h in frame['hercs']:

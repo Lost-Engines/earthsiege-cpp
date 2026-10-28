@@ -15,13 +15,13 @@ std::vector<int16_t> words(earthsiege::binary_reader &file) {
 int main(int argc,char **argv) try {
   using namespace earthsiege;if(argc!=3)return EXIT_FAILURE;
   resource_store resources{argv[1]};auto const bytes{read_file(argv[2])};binary_reader file{bytes};auto const magic{file.take(8)};
-  if(std::string(magic.begin(),magic.end())!="ESWFRM01")file.fail("fixture version");
-  auto const count{file.integer<uint16_t>()};size_t frames{0},states{0};
+  if(std::string(magic.begin(),magic.end())!="ESWFRM02")file.fail("fixture version");
+  auto const count{file.integer<uint16_t>()};auto const expected_frames{file.integer<uint32_t>()};size_t frames{0},states{0};
   for(size_t trial{0};trial!=count;++trial) {
-    auto const demo{file.integer<uint16_t>()};auto const ratio{file.integer<int16_t>()};auto const initial{random_input(file)};
+    auto const demo{file.integer<uint16_t>()};bool const friendly{file.integer<uint8_t>()!=0};auto const ratio{file.integer<int16_t>()};auto const initial{random_input(file)};
     auto const tape{read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")))};
     auto script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
-    for(auto &g:script.groups) {g.mode=0;g.trigger=-1;}
+    for(auto &g:script.groups) {if(friendly)g.mode=0;g.trigger=-1;}
     auto const roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
     auto const counters{read_mission_counters(tape.starting_files[std::to_underlying(tape_file::campaign_flags)])};
     mission_session session{resources,script,roster,random_state{initial},counters};
@@ -29,13 +29,14 @@ int main(int argc,char **argv) try {
     for(size_t step{0};step!=steps;++step) {
       session.step({},ratio);auto const hercs{session.hercs()};auto const flyers{session.flying_actors()};
       if(hercs.size()!=nh || flyers.size()!=nf)file.fail("actor count");
+      bool matches{true};
       auto const prefix{std::to_string(demo)+"/"+std::to_string(ratio)+" frame "+std::to_string(step)};
       for(size_t i{0};i!=nh;++i) {
         auto const label{prefix+" HERC "+std::to_string(i)};
         auto const &actor{hercs[i].actor};auto const &body{actor.body()};auto const &motion{body.movement()};
         auto const &decision{session.activity_state().decisions()[i]};auto const &controller{decision.controller};
         auto const check{[&](std::string const &field,auto expected,auto actual){
-          if(expected!=actual) {std::cerr<<label<<' '<<field<<": expected "<<expected<<", actual "<<actual<<'\n';file.fail(label+' '+field);}
+          if(expected!=actual) {std::cerr<<label<<' '<<field<<": expected "<<expected<<", actual "<<actual<<'\n';matches=false;}
         }};
         for(unsigned axis{0};axis!=3;++axis)check("position["+std::to_string(axis)+"]",file.integer<int32_t>(),motion.position[axis]);
         for(unsigned axis{0};axis!=3;++axis)check("angles["+std::to_string(axis)+"]",file.integer<uint16_t>(),motion.angles[axis]);
@@ -81,11 +82,16 @@ int main(int argc,char **argv) try {
         if(!controller.type || std::to_underlying(*controller.type)!=type || controller.reconsider_remaining!=clock)file.fail(label+" controller");
         ++states;
       }
+      if(!matches) {
+        std::cerr<<"Contacts:";
+        for(auto const &hit:session.contacts())std::cerr<<' '<<hit.other<<'/'<<hit.damage;
+        std::cerr<<'\n';file.fail(prefix+" state mismatch");
+      }
       auto const expected{random_input(file)};auto const &actual{session.random_snapshot()};
       if(actual.words!=expected.words || actual.first!=expected.first || actual.second!=expected.second)file.fail(prefix+" RNG");
       ++frames;
     }
   }
-  file.require_end();if(frames!=960)file.fail("frame coverage");
+  file.require_end();if(frames!=expected_frames)file.fail("frame coverage");
   std::cout<<frames<<" original world frames match, including "<<states<<" HERC/flyer states\n";return EXIT_SUCCESS;
 } catch(std::exception const &e){std::cerr<<e.what()<<'\n';return EXIT_FAILURE;}

@@ -11,6 +11,8 @@
 #include "simulation/herc_actor.h"
 #include "simulation/herc_orders.h"
 #include "simulation/herc_sensors.h"
+#include "simulation/herc_reactions.h"
+#include "simulation/hit_dispatch.h"
 #include "simulation/herc_fire_control.h"
 #include "simulation/ground_actor.h"
 #include "simulation/flyer_actor.h"
@@ -22,7 +24,7 @@ namespace earthsiege {
 
 class resource_store;
 
-enum class combat_notice_kind { attached_smoke, ejected_weapon, salvage, shield_warning, cockpit_damage, friendly_warning };
+enum class combat_notice_kind { attached_smoke, ejected_weapon, salvage, shield_warning, cockpit_damage, friendly_warning, under_attack };
 struct combat_notice {
   combat_notice_kind kind;
   size_t actor{0};
@@ -72,6 +74,9 @@ class mission_session {
     bool skip_decision{false};
     bool obstructed{false};
     bool radar_active{false};
+    bool ignore_hud_target{false};
+    bool hit_enemy{false};
+    std::optional<impact_obstruction> obstruction{};
     bool objective_event{false};
     int16_t requested_speed{0};
     int16_t collision_bias{0};
@@ -87,6 +92,7 @@ class mission_session {
     herc_ram_state ram{};
     herc_fire_state fire{};
     herc_sensor_state sensors{};
+    herc_reaction_state reactions{};
   };
   struct flyer_member {
     std::unique_ptr<flyer_actor> actor;
@@ -129,6 +135,9 @@ class mission_session {
   void enter_herc(size_t index, behavior type);
   void resume_herc_orders(size_t index);
   void reconsider_herc(size_t index);
+  void hit_reaction(size_t victim, size_t attacker, int16_t damage);
+  void friendly_fire_warning(size_t index);
+  vec3<int32_t> obstruction_position(size_t index) const;
   void navigate_herc(size_t index, frame_ratio ratio);
   void move_herc(size_t index, movement_request const &request, frame_ratio ratio);
   void aim_herc(size_t index, size_t target, int16_t facing, frame_ratio ratio);

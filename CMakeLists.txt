@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/herc_reactions.cpp
   src/simulation/herc_sensors.cpp
   src/simulation/herc_sensors.h
   src/simulation/herc_guard.cpp
@@ -223,6 +224,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(herc_reactions_test tests/herc_reactions_test.cpp)
+  target_link_libraries(herc_reactions_test PRIVATE earthsiege_core)
+  add_test(NAME herc_reactions COMMAND herc_reactions_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_reactions.bin")
   add_executable(herc_sensors_test tests/herc_sensors_test.cpp)
   target_link_libraries(herc_sensors_test PRIVATE earthsiege_core)
   add_test(NAME herc_sensors COMMAND herc_sensors_test "${PROJECT_SOURCE_DIR}/tests/fixtures/herc_sensors.bin")
@@ -265,6 +269,7 @@ if(BUILD_TESTING)
   add_executable(destruction_counters_test tests/destruction_counters_test.cpp)
   target_link_libraries(destruction_counters_test PRIVATE earthsiege_core)
   add_test(NAME destruction_counters COMMAND destruction_counters_test "${PROJECT_SOURCE_DIR}/tests/fixtures/destruction_counters.bin")
+  add_test(NAME mission_combat_frames COMMAND mission_world_frames_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_combat_frames.bin")
   add_executable(mission_activity_test tests/mission_activity_test.cpp)
   target_link_libraries(mission_activity_test PRIVATE earthsiege_core)
   add_test(NAME mission_activity COMMAND mission_activity_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_activity.bin")

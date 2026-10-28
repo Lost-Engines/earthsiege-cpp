@@ -24,15 +24,15 @@ herc_combat_position mission_session::combat_position(size_t const index) const 
   }
   if(index < base_id(0)) {auto const &actor{*flyers[index-flyer_id(0)].actor}; return {vec3<int32_t>{actor.motion().position}, actor.angles().z, 0};}
   auto const &actor{*bases.at(index-base_id(0)).actor};
-  return {vec3<int32_t>{actor.placement().translation}, transform_angles(actor.placement()).z, 0};
+  return {vec3<int32_t>{actor.placement().translation}, transform_angles(actor.placement()).z, actor.is_turret() ? actor.turret_aim().angles[1] : int16_t{0}};
 }
 
 std::vector<contact_actor> mission_session::contact_bodies() const {
   std::vector<contact_actor> result;
   for(auto const &member : crew) { auto body{member.actor->body().contact_geometry()}; body.waiting = member.waiting; result.push_back(body); }
   // Zero-radius flyers retain their actor ordinals in the original registry.
-  for(auto const &member : flyers) result.push_back({.position{vec3<int32_t>{member.actor->motion().position}}, .herc{false}, .waiting{member.waiting}});
-  for(auto const &member : bases) result.push_back({.position{vec3<int32_t>{member.actor->placement().translation}}, .radius{member.actor->profile().contact_radius}, .herc{false}, .waiting{member.waiting}});
+  for(auto const &member : flyers) result.push_back({.position{vec3<int32_t>{member.actor->motion().position}}, .angles{}, .herc{false}, .waiting{member.waiting}});
+  for(auto const &member : bases) result.push_back({.position{vec3<int32_t>{member.actor->placement().translation}}, .angles{}, .radius{member.actor->profile().contact_radius}, .herc{false}, .waiting{member.waiting}});
   return result;
 }
 
@@ -183,6 +183,30 @@ bool mission_session::target_path_blocked(size_t const index) const {
   return intersect_scenery_segment(terrain.colliders(), start, end).has_value();
 }
 
+void mission_session::friendly_fire_warning(size_t const index) {
+  if(index >= crew.size()) return;
+  warn_friendly_fire(crew[index].reactions, [&]{frame_notices.push_back({combat_notice_kind::friendly_warning, index, 0, 0, {}});});
+}
+void mission_session::hit_reaction(size_t const victim, size_t const attacker, int16_t const damage) {
+  if(victim >= crew.size()) {activity->share_contact(victim, attacker, observe()); return;}
+  auto &member{crew[victim]};auto const &group{activity->group(member.group)};
+  auto const leader{group.members.front()};
+  react_to_herc_hit(member.reactions, activity->decisions()[victim], activity->targets(), victim, attacker, damage,
+    {victim == player_index, member.group == crew[player_index].group, attacker == player_index, member.side == activity->group(actor_group(attacker)).side,
+     activity->actor(leader).player, activity->targets()[leader].selected == attacker, combat_kind(activity->actor(attacker).kind)},
+    member.ignore_hud_target, member.designated, {
+    .share_contact{[&]{activity->share_contact(victim, attacker, observe());}},
+    .friendly_warning{[&]{frame_notices.push_back({combat_notice_kind::friendly_warning, victim, 0, 0, {}});}},
+    .under_attack{[&]{frame_notices.push_back({combat_notice_kind::under_attack, victim, 0, 0, {}});}},
+    .select{[&]{return activity->select(observe(), victim, target_selection_flags::none, activity->targets()[player_index].selected, random);}},
+    .resume_orders{[&]{resume_herc_orders(victim);}}, .strategy{[&]{reconsider_herc(victim);}},
+  });
+}
+vec3<int32_t> mission_session::obstruction_position(size_t const index) const {
+  auto const obstacle{crew[index].obstruction.value()};
+  return obstacle.kind == obstruction_kind::actor ? combat_position(obstacle.index).position : vec3<int32_t>{terrain.colliders()[obstacle.index].placement.translation};
+}
+
 void mission_session::reconsider_herc(size_t const index) {
   auto &member{crew[index]}; auto &actor{*member.actor};
   auto const &group{activity->group(member.group)};
@@ -245,6 +269,8 @@ void mission_session::aim_herc(size_t const index, size_t const target, int16_t 
 
 void mission_session::update_herc_sensors(size_t const index, frame_ratio const ratio) {
   auto &member{crew[index]}; auto &actor{*member.actor}; auto const &body{actor.body()};
+  advance_herc_reactions(member.reactions, ratio);
+  if(index == player_index && actor.power().shields.front > 300 && actor.power().shields.rear > 300) actor.impacts().shield_warning = false;
   herc_sensor_inputs input{.position{vec3<int32_t>{body.movement().position}}, .heading{body.movement().angles.z}, .torso{body.torso().angle}, .player{index == player_index}, .selected_channel{}, .target{}};
   for(auto const &slot : actor.weapons().slots()) if(slot) {
     if(auto const ecm{std::get_if<ecm_weapon>(&slot->mechanism)}) {
@@ -334,7 +360,7 @@ void mission_session::dispatch_herc(size_t const index, frame_ratio const ratio)
           return incapacitated(state) || observations[target].dead || observations[target].disabled || observations[target].unavailable;
         }
         case behavior::skirting:
-          skirt_with_herc(member.skirt, index, combat_position(activity->targets()[index].selected.value()).position, member.obstructed, ratio, orders); return false;
+          skirt_with_herc(member.skirt, index, obstruction_position(index), member.obstructed, ratio, orders); return false;
         case behavior::ramming:
           ram_with_herc(member.ram, activity->targets(), index, ratio, random, orders); return false;
         case behavior::guarding: {

@@ -103,13 +103,21 @@ void mission_activity::scan_areas(std::span<observed_actor const> const observat
   }
   triggers.scan(observations[player].position,actors[player].group,views,counters);
 }
-void mission_activity::perceive(std::span<observed_actor const> const observations, frame_ratio const ratio, random_state &random, std::function<bool(size_t,size_t)> const &line_of_sight, std::function<void(size_t,size_t)> const &noticed) {
+std::vector<perception_actor> mission_activity::perception_views(std::span<observed_actor const> const observations) {
   if(observations.size()!=actors.size()) throw std::invalid_argument{"mission observation count"};
   std::vector<perception_actor> views;
   for(size_t i{0}; i!=actors.size(); ++i) {
     auto &state{actors[i]}; auto const &input{observations[i]};
     views.push_back({vec3<int32_t>{input.position},groups[state.group].side,waiting(i),state.contact_trigger,state.awareness,input.dead,input.disabled,state.player,input.detectable});
   }
+  return views;
+}
+void mission_activity::share_contact(size_t const observer, size_t const target, std::span<observed_actor const> const observations) {
+  auto const views{perception_views(observations)};
+  earthsiege::share_contact(views, observer, target, triggers, counters);
+}
+void mission_activity::perceive(std::span<observed_actor const> const observations, frame_ratio const ratio, random_state &random, std::function<bool(size_t,size_t)> const &line_of_sight, std::function<void(size_t,size_t)> const &noticed) {
+  auto const views{perception_views(observations)};
   advance_perception(views,ratio,settings.detection_range(),random,triggers,counters,{
     .line_of_sight{line_of_sight}, .orientation_offset{[&](size_t i){return observations[i].view_offset;}},
     .within_view{[&](size_t i,int16_t bearing){return actors[i].kind==actor_kind::base || within_actor_view(observations[i].heading,bearing);}}, .noticed{noticed}});

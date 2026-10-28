@@ -223,7 +223,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
     if(crew[index].group == actor_group(owner.actor)) group.push_back(index);
     actors.push_back({
       .position{vec3<int32_t>{victim.body().movement().position}}, .group{crew[index].group}, .side{crew[index].side},
-      .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{false}, .quiet{activity->actor(index).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(index).contact_trigger},
+      .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{activity->decisions()[index].unavailable}, .quiet{activity->actor(index).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(index).contact_trigger},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         auto const events{damage_events(index)};
         impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{actors[index].side}, .invulnerable{settings.player_is_invulnerable()}};
@@ -265,8 +265,16 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
   impact_world world{actors, terrain.colliders(), random, {}};
   world.events.trigger = [&](size_t const index){ activity->activate(index); };
   world.events.effect = [&](vec3<int32_t> const &position, int16_t const definition){ effects.add_explosion(definition, position, random); };
-  world.events.friendly_warning = [&](size_t const actor){ frame_notices.push_back({combat_notice_kind::friendly_warning, actor, 0, 0, {}}); };
-  return dispatch_impact(request, {owner.actor, owner.actor == player_index, group, std::nullopt}, world);
+  world.events.friendly_warning = [&](size_t actor){friendly_fire_warning(actor);};
+  world.events.react = [&](size_t victim, size_t attacker, int16_t damage){hit_reaction(victim, attacker, damage);};
+  world.events.obstructed = [&](impact_obstruction const obstacle){
+    if(owner.actor < crew.size()) {crew[owner.actor].obstruction = obstacle; crew[owner.actor].obstructed = true;}
+  };
+  std::optional<vec3<int32_t>> target;
+  if(auto const selected{activity->targets()[owner.actor].selected}) target = combat_position(*selected).position;
+  auto const result{dispatch_impact(request, {owner.actor, owner.actor == player_index, group, target}, world)};
+  if(owner.actor < crew.size() && actors[owner.actor].hit_enemy) crew[owner.actor].hit_enemy = true;
+  return result;
 }
 
 std::vector<scene_object> mission_session::visible_objects() {
