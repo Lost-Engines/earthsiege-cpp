@@ -9,6 +9,32 @@
 
 namespace earthsiege {
 
+struct turret_aim_state {
+  std::array<int16_t, 2> rates{};
+  std::array<int16_t, 2> angles{};
+};
+
+struct turret_target {
+  vec3<int32_t> position;
+  vec3<int16_t> offset;
+  vec3<uint16_t> angles;
+  int16_t speed{0};
+};
+
+struct turret_fire_state {
+  std::optional<size_t> target;
+  int16_t target_timer{0};
+  int16_t burst_timer{0};
+  int16_t refire_timer{0};
+  bool burst_phase{false};
+};
+
+struct turret_callbacks {
+  std::function<std::optional<size_t>()> select;
+  std::function<turret_target(size_t)> target;
+  std::function<void(weapon_shot const &)> fire;
+};
+
 struct ground_damage_events {
   std::function<void(int16_t, vec3<int32_t> const &, random_state &)> explosion;
   std::function<void(int16_t, vec3<int32_t> const &, random_state &)> debris;
@@ -31,6 +57,9 @@ class ground_actor {
   int16_t destruction_steps{0};
   int16_t destruction_timer{0};
   int16_t cell_timer{0};
+  turret_aim_state aiming;
+  turret_fire_state firing;
+  void advance_turret_cells(frame_ratio ratio);
   model_instance &intact_instance();
   scenery_collider heightfield() const;
   void advance_cell();
@@ -51,6 +80,11 @@ public:
   void direct_damage(int16_t amount, random_state &random, ground_damage_events const &events);
   std::optional<int32_t> receive_impact(impact_request const &request, impact_conditions const &conditions, random_state &random, ground_damage_events const &events);
   void advance(frame_ratio ratio, random_state &random, ground_damage_events const &events);
+  turret_aim_state const &turret_aim() const;
+  /// Return the pre-turn local pitch/yaw error, as used by the firing gate.
+  vec3<int16_t> track_point(vec3<int32_t> const &position);
+  turret_fire_state const &turret_fire() const;
+  void advance_turret(frame_ratio ratio, weapon_catalogue const &weapons, turret_callbacks const &callbacks);
   model_instance const &instance() const;
   model_transform const &placement() const;
   scene_model model() const;

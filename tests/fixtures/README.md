@@ -271,3 +271,13 @@ bases. Full animation transforms, cells, timers, damage, ordered requests and RN
 are retained. Effect factories, kill credit, mission counters and attached smoke
 are explicit recording boundaries; turret target selection returns no target.
 Refresh with `export_ground_combat_fixtures.py` from `capture_ground_combat.py`.
+
+`turret_tracking.bin` retains 1,536 original `0x3058` tracking updates, comparing
+errors, rates, angles and every articulated matrix. `turret_firing.bin` retains
+3,072 complete `0x3364` ticks with controlled target selection/offset/speed inputs
+and recorded bullet-construction boundaries. The original tracking, clocks,
+leading, firing gates and muzzle transforms execute unchanged. Refresh using
+`export_turret_tracking_fixtures.py` and `export_turret_firing_fixtures.py` from the
+analysis captures with the corresponding names. Target-selection fixture version
+2 adds 1,500 cases using the real base/flyer strength virtual callback (constant
+class 1 and no RNG), retaining the previous 3,000 HERC-callback cases.

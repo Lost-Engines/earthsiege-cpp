@@ -24,6 +24,7 @@ struct target_candidate {
   std::optional<size_t> target;
   int16_t attackers{0};
   std::optional<bool> controller_attacking;
+  bool compares_combat_strength{true};                                      // HERC override; ordinary actors always assess as comparable
 };
 
 struct target_objective {

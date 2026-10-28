@@ -166,3 +166,19 @@ planes, leaving raw assets untouched. Sixteen further VGA views execute the same
 explicit repair in the original renderer and compare the resulting pixels. This
 is a defined repair of an out-of-bounds read, not a claim of matching its unstable
 allocator-dependent result.
+
+## Gun turret tracking and fire control
+
+Gun-turret tracking matches 1,536 original updates, including local barrel-space
+errors, signed squared input response, rate acceleration, pitch stops, wrapping
+yaw and articulated channel phases. Another 3,072 original control ticks match
+target reacquisition, heading-only target lead, alternating burst windows,
+refire/cell clocks and both ordered muzzle requests. Target selection and target
+state are explicit inputs to this owner; projectile factories remain the shared
+world's responsibility. The live scheduler still needs to supply perception and
+target context before enabling active turrets in missions.
+
+Target ranking now also covers the ordinary actor virtual callback used by flyers
+and bases: it always reports comparable strength, without consuming random draws.
+This differs from the HERC's randomized comparison. The fixture retains the first
+3,000 HERC-callback cases and adds 1,500 ordinary-actor cases, with complete RNG.

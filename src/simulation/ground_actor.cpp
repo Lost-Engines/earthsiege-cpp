@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include "simulation/hit_volumes.h"
+#include "resources/model_tree.h"
 #include "simulation/impact_damage.h"
 #include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
@@ -143,12 +144,7 @@ void ground_actor::advance(frame_ratio const ratio, random_state &random, ground
   }
   if(destroyed) return;
   if(type == 8) {
-    // Turret muzzle cells stop when they reach the unlit frame. Firing restarts
-    // this timer; target tracking and shot production are a separate consumer.
-    if(cell_timer != 0 && tick(cell_timer)) {
-      advance_cell();
-      if(intact_instance().cell_frames()[static_cast<size_t>(profile().cell_sequence)] != 0) cell_timer = profile().cell_period;
-    }
+    advance_turret_cells(ratio);
     return;
   }
   if(profile().cell_sequence >= 0 && tick(cell_timer)) { cell_timer = profile().cell_period; advance_cell(); }
@@ -158,6 +154,94 @@ void ground_actor::advance(frame_ratio const ratio, random_state &random, ground
     for(int index{profile().channels}; index-- != 0;) { rig->channel(static_cast<size_t>(index)).rebase_motion(); rig->channel(static_cast<size_t>(index)).advance(100); }
     rig->update_pose();
   }
+}
+
+turret_aim_state const &ground_actor::turret_aim() const { return aiming; }
+
+vec3<int16_t> ground_actor::track_point(vec3<int32_t> const &position) {
+  if(type != 8 || destroyed) throw std::logic_error{"tracking requires a live gun turret"};
+  auto &rig{std::get<animation_rig>(intact)};
+  auto const barrel{find_model_part(catalogue.model(type, side), 2)};
+  if(!barrel || barrel->header.transform < 0) throw std::runtime_error{"gun turret has no barrel transform"};
+  auto const local_point{[](vec3<int32_t> const &point, model_transform const &inverse){
+    auto result{rotate_vector(point, inverse)};
+    for(unsigned int axis{0}; axis != 3; ++axis) result[axis] = wrap_long(static_cast<int64_t>(result[axis]) + inverse.translation[axis]);
+    return result;
+  }};
+  auto const local{local_point(local_point(position, inverse_transform(transform)), inverse_transform(rig.instance().transforms()[static_cast<size_t>(barrel->header.transform)]))};
+  vec3<int16_t> const error{
+    wrap_word(direction_angle(fast_distance_2d({local.x, local.y}), local.z)), 0,
+    wrap_word(static_cast<int32_t>(direction_angle(local.x, local.y)) - angle_quarter_turn),
+  };
+  std::array<int, 2> const inputs{std::clamp(error.x >> 3, -256, 256), -std::clamp(error.z >> 3, -256, 256)};
+  std::array<int16_t, 2> constexpr maximum_rate{2000, 2500}, acceleration{200, 800}, minimum_angle{-4000, -32768}, maximum_angle{4000, 32767};
+  for(size_t axis{0}; axis != 2; ++axis) {
+    auto const shaped{wrap_word((inputs[axis] * std::abs(inputs[axis]) + 128) >> 8)};
+    auto const desired{wrap_word((maximum_rate[axis] * shaped + 128) >> 8)};
+    auto &rate{aiming.rates[axis]};
+    if(desired < rate) rate = std::max(desired, wrap_word(rate - acceleration[axis]));
+    else if(desired > rate) rate = std::min(desired, wrap_word(rate + acceleration[axis]));
+    aiming.angles[axis] = std::clamp(wrap_word(aiming.angles[axis] + rate), minimum_angle[axis], maximum_angle[axis]);
+    rig.channel(axis).set_phase(static_cast<int16_t>(axis), static_cast<int16_t>(static_cast<uint16_t>(aiming.angles[axis]) >> 2));
+  }
+  for(size_t axis{2}; axis-- != 0;) { rig.channel(axis).rebase_motion(); rig.channel(axis).advance(100); }
+  rig.update_pose();
+  return vec3<int16_t>{error};
+}
+
+turret_fire_state const &ground_actor::turret_fire() const { return firing; }
+
+void ground_actor::advance_turret_cells(frame_ratio const ratio) {
+  // The unlit frame stops its own timer; firing restarts it.
+  if(cell_timer == 0) return;
+  cell_timer = std::max<int16_t>(0, wrap_word(cell_timer - ratio));
+  if(cell_timer != 0) return;
+  advance_cell();
+  if(intact_instance().cell_frames()[static_cast<size_t>(profile().cell_sequence)] != 0) cell_timer = profile().cell_period;
+}
+
+void ground_actor::advance_turret(frame_ratio const ratio, weapon_catalogue const &weapons, turret_callbacks const &callbacks) {
+  if(type != 8 || destroyed) throw std::logic_error{"turret control requires a live gun turret"};
+  if(!callbacks.select || !callbacks.target || !callbacks.fire) throw std::invalid_argument{"turret control callbacks are incomplete"};
+  auto const tick{[&](int16_t &timer){ timer = std::max<int16_t>(0, wrap_word(timer - ratio)); return timer == 0; }};
+  if(tick(firing.target_timer)) {
+    firing.target = callbacks.select();
+    firing.target_timer = 10000;
+  }
+  advance_turret_cells(ratio);
+  if(!firing.target) return;                                                  // burst/refire clocks freeze without a target
+  auto const target{callbacks.target(*firing.target)};
+  vec3<int32_t> delta;
+  for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(target.position[axis]) - transform.translation[axis]);
+  auto const distance{fast_distance(delta)};
+  vec3<int32_t> aim;
+  for(unsigned int axis{0}; axis != 3; ++axis) aim[axis] = wrap_long(static_cast<int64_t>(target.position[axis]) + target.offset[axis]);
+  int32_t constexpr maximum_range{40000};
+  // The original uses projectile record 2's speed for lead, then looks up the
+  // emitted bullet by kind/subtype. Keep those independently authored choices.
+  auto const lead_speed{weapons.projectiles.at(2).speed};
+  if(distance < maximum_range && lead_speed > 0 && target.speed != 0) {
+    auto const lead{wrap_word(wrap_word(distance >> 3) * (target.speed * 8) / lead_speed)};
+    model_transform forward{rotation_transform({0, 0, target.angles.z})};
+    auto const movement{rotate_vector({0,lead,0},forward)};
+    for(unsigned int axis{0}; axis != 3; ++axis) aim[axis] = wrap_long(static_cast<int64_t>(aim[axis]) + movement[axis]);
+  }
+  auto const error{track_point(aim)};
+  if(tick(firing.burst_timer)) { firing.burst_phase = !firing.burst_phase; firing.burst_timer = 10000; }
+  bool const ready{tick(firing.refire_timer)};
+  if(!ready || !firing.burst_phase || error.x < -1000 || error.x >= 1000 || error.z < -1000 || error.z >= 1000 || distance >= maximum_range) return;
+  auto const projectile{std::ranges::find_if(weapons.projectiles, [](projectile_definition const &p){ return p.kind == projectile_kind::bullet && p.subtype == 2; })};
+  if(projectile == weapons.projectiles.end()) throw std::runtime_error{"turret bullet definition is missing"};
+  auto const part{find_model_part(catalogue.model(type,side),2)};
+  auto const muzzle_transform{compose_transforms(instance().transforms()[static_cast<size_t>(part->header.transform)],transform)};
+  auto const angles{transform_angles(muzzle_transform)};
+  for(int16_t const x : {int16_t{300}, int16_t{-300}}) {
+    weapon_shot shot{.kind{shot_kind::bullet}, .projectile{static_cast<size_t>(projectile - weapons.projectiles.begin())}, .charge{-1}, .range{0},
+      .muzzle{model_transform{muzzle_transform}, transform_point({x,400,0},muzzle_transform), vec3<uint16_t>{angles}}};
+    callbacks.fire(shot);
+  }
+  firing.refire_timer = 1500;
+  cell_timer = 1;
 }
 
 } // namespace earthsiege

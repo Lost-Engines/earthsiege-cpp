@@ -22,7 +22,7 @@ int main(int const argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const data{earthsiege::read_file(argv[1])}; earthsiege::binary_reader file{data};
   auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != "ESTARG01") file.fail("fixture version");
+  if(std::string(magic.begin(), magic.end()) != "ESTARG02") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   for(size_t row{0}; row != count; ++row) {
     auto const flags{static_cast<earthsiege::target_selection_flags>(file.integer<uint8_t>())};
@@ -49,7 +49,7 @@ int main(int const argc, char **argv) try {
       a.player = file.integer<uint8_t>(); a.ignore_hud_target = file.integer<uint8_t>();
       bool const controller{file.integer<uint8_t>() != 0}, active{file.integer<uint8_t>() != 0};
       if(controller) a.controller_attacking = active;
-      a.target = optional(file); a.attackers = file.integer<int16_t>();
+      a.target = optional(file); a.attackers = file.integer<int16_t>(); a.compares_combat_strength = file.integer<uint8_t>() != 0;
     }
     auto const selected{earthsiege::select_target(actors, 0, flags, group, mission, hud, rng)};
     if(selected != expected) file.fail("target selection " + std::to_string(row));
@@ -57,6 +57,7 @@ int main(int const argc, char **argv) try {
     if(state.words != expected_random.words || state.first != expected_random.first || state.second != expected_random.second) file.fail("target selection RNG " + std::to_string(row));
   }
   file.require_end();
+  if(count != 4500) file.fail("target selection coverage differs");
   std::cout << count << " original target selections and complete random states agree\n";
   return EXIT_SUCCESS;
 } catch(std::exception const &error) {
