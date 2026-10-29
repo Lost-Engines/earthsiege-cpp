@@ -76,6 +76,10 @@ void advance_construction(hangar &roster,service_prices const &prices) {
 void discard_destroyed_equipment(player_herc &herc) {
   for(size_t i{};i<herc.weapons.size();++i)if(!herc.condition.equipment.at(i)){herc.weapons[i]=17;herc.condition.equipment[i]=100;}
 }
+void normalize_hangar_equipment(player_herc &herc) {
+  discard_destroyed_equipment(herc);
+  for(size_t i{};i<herc.weapons.size();++i)if(herc.weapons[i]>=9&&herc.weapons[i]<=11&&herc.weapon_values.at(i)==5)herc.weapon_values[i]=0;
+}
 int32_t chassis_recovery(player_herc const &herc,service_prices const &prices) {
   auto const &p{prices.chassis.at(static_cast<size_t>(herc.chassis))};auto const armour{armour_groups(herc.condition)};int32_t value{};
   for(size_t i{};i<armour.size();++i)value+=p.armour[i]*armour[i]/100;

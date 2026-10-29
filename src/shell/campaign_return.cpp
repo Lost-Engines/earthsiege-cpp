@@ -38,7 +38,7 @@ campaign_debrief return_from_mission(career_record &career,hangar &roster,missio
     if(returned>=result.crew.size())throw std::runtime_error{"mission return lacks an active crew member"};
     auto const &r{result.crew[returned++]};auto h{roster.find(c.hangar_slot)};
     if(!h)throw std::runtime_error{"mission return crew refers to a missing HERC"};
-    h->condition=r.condition;discard_destroyed_equipment(*h);c.health=h->condition.internal[9];c.current=r.statistics;
+    h->condition=r.condition;normalize_hangar_equipment(*h);c.health=h->condition.internal[9];c.current=r.statistics;
     for(size_t i{};i<3;++i){c.total[i]=wrap_word(c.total[i]+r.statistics[i]);debrief.statistics[i]=wrap_word(debrief.statistics[i]+r.statistics[i]);}
     c.rank=pilot_rank(c.total[0]);
   }

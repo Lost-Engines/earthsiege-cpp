@@ -21,6 +21,7 @@ void apply_repair_policy(career_state &state,hangar &roster,service_prices const
 void advance_construction(hangar &roster,service_prices const &prices);
 /// GO 0x23883's destroyed-weapon cleanup when rebuilding a shell HERC.
 void discard_destroyed_equipment(player_herc &herc);
+void normalize_hangar_equipment(player_herc &herc);
 /// Credits recovered from chassis components; mounted weapons handled separately.
 int32_t chassis_recovery(player_herc const &herc,service_prices const &prices);
 } // namespace earthsiege

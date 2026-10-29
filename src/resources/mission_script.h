@@ -51,6 +51,7 @@ struct mission_header {
 
 using mission_counters = std::array<int16_t, 100>;
 mission_counters read_mission_counters(bytes source);
+std::vector<uint8_t> write_mission_counters(mission_counters const &counters);
 
 struct mission_route {
   std::vector<mission_reference> points;
@@ -141,6 +142,7 @@ struct mission_script {
 };
 
 auto read_mission_script(bytes source)->mission_script;
+std::vector<uint8_t> write_mission_script(mission_script const &script);
 auto decode_mission_heading(int16_t stored)->native_angle;
 
 } // namespace earthsiege

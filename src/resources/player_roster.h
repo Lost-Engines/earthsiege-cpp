@@ -30,5 +30,6 @@ struct player_roster {
 };
 
 player_roster read_player_roster(bytes source);
+std::vector<uint8_t> write_player_roster(player_roster const &roster);
 
 } // namespace earthsiege
