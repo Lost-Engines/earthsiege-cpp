@@ -855,3 +855,6 @@ The opening reveal uses nominal 120 Hz ticks. Blocking original input/fade
 boundaries remain presentation-owner work; the current host remains responsive.
 
 Full rebuild: all 194 CTest checks pass (20.27 seconds).
+
+Full rebuild: all 196 CTest checks pass (20.84 seconds). The live cockpit
+smoke capture also renders the horizon through its original aperture.
