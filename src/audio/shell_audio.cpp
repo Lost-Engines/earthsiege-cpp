@@ -50,8 +50,12 @@ void shell_audio::speak(std::string_view name,bool enabled){
  bank.bind(1,resources.read("speech",path));bank.set_volume(1,100);bank.play(1);
 }
 void shell_audio::stop_speech(){bank.stop(1);}
+void shell_audio::door(bool closing){
+ bank.stop(2);if(!effects_enabled||suspended)return;
+ bank.bind(2,resources.read("shell0",closing?"res32/menuclsa.raw":"res32/menuopn2.raw"));bank.set_volume(2,100);bank.play(2);
+}
 void shell_audio::suspend(){
- suspended=true;if(music)music->stop();clear_sample();stop_speech();output.clear();
+ suspended=true;if(music)music->stop();clear_sample();stop_speech();bank.stop(2);output.clear();
 }
 void shell_audio::resume(){if(!suspended)return;suspended=false;if(wanted>=0)start_song();}
 void shell_audio::advance(unsigned timer_ticks){

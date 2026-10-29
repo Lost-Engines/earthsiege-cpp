@@ -62,6 +62,7 @@ public:
   void cancel_press();
   auto current_palette() const->palette const &;
   auto id() const->unsigned int;
+  unsigned region()const{return region_number;}
 };
 
 } // namespace earthsiege

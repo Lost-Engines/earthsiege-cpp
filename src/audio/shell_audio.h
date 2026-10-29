@@ -35,6 +35,7 @@ public:
  void clear_sample();
  void speak(std::string_view sample,bool enabled);
  void stop_speech();
+ void door(bool closing);
  void advance(unsigned timer_ticks=1);
  std::vector<int16_t> take_output();
  int song_id()const{return track;}

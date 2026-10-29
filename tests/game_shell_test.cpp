@@ -11,7 +11,7 @@ struct temporary_saves {
  explicit temporary_saves(std::filesystem::path const &root):path{root/("shell-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))}{}
  ~temporary_saves(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}
 };
-void skip_speech(game_shell &shell){for(unsigned i{};shell.presentation_active()&&i<64;++i)shell.key(1);require(!shell.presentation_active(),"speech skip terminates");}
+void skip_speech(game_shell &shell){for(unsigned i{};shell.presentation_active()&&i<64;++i){if(shell.transition_active())shell.advance(20);else shell.key(1);}require(!shell.presentation_active(),"speech skip terminates");}
 void click(game_shell &shell,uint16_t action){auto c{shell.current_dialog().find(action)};if(!c||!c->enabled){std::cerr<<"click "<<action<<" on screen "<<shell.screen()<<"\n";throw std::runtime_error{"click target enabled"};}int x{(c->bounds.left+c->bounds.right)/2},y{(c->bounds.top+c->bounds.bottom)/2};shell.mouse_down(x,y);shell.mouse_up(x,y);skip_speech(shell);}
 void screen(game_shell const &shell,unsigned expected){if(shell.screen()!=expected){std::cerr<<"screen "<<shell.screen()<<" expected "<<expected<<'\n';throw std::runtime_error{"screen transition"};}framebuffer f;shell.draw(f);require(std::ranges::any_of(f.pixels(),[](uint8_t v){return v!=0;}),"screen draws");}
 }

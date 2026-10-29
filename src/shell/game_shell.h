@@ -1,6 +1,7 @@
 #pragma once
 #include "shell/dialog.h"
 #include "render/shell_cinematic.h"
+#include "render/shell_door.h"
 #include <deque>
 #include "audio/shell_audio.h"
 #include "shell/bay_scene.h"
@@ -25,6 +26,10 @@ class game_shell {
   game_state game;
   std::unique_ptr<dialog> menu;
   std::unique_ptr<shell_cinematic> cinematic;
+  std::unique_ptr<shell_door> door_motion;
+  void start_door(bool closing,framebuffer const &,palette const &);
+  void finish_door();
+  unsigned visible_region()const;
   std::deque<std::pair<std::string,int>> movies;
   unsigned movie_destination{};
   bool startup_movies{},cinematics_enabled{true};
@@ -88,7 +93,8 @@ class game_shell {
 public:
   game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17);
   unsigned int screen()const{return cinematic?0:speech?speech_screen:menu->id();}
-  bool presentation_active()const{return speech!=nullptr||cinematic!=nullptr;}
+  bool presentation_active()const{return speech!=nullptr||cinematic!=nullptr||door_motion!=nullptr;}
+  bool transition_active()const{return door_motion!=nullptr;}
   bool quit_requested()const{return quitting;}
   bool ready_to_launch()const{return launch_requested;}
   preferences const &settings()const{return preferences_;}
@@ -107,6 +113,6 @@ public:
   void advance(unsigned timer_ticks=3);
   std::vector<int16_t> take_audio(){return audio.take_output();}
   void draw(framebuffer &target)const;
-  palette const &colours()const{return cinematic?cinematic->colours():speech?speech_palette:menu->current_palette();}
+  palette const &colours()const{return door_motion?door_motion->colours():cinematic?cinematic->colours():speech?speech_palette:menu->current_palette();}
 };
 }

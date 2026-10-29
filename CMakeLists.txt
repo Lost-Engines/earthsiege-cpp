@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/render/shell_door.cpp
   src/resources/lpf_animation.cpp
   src/render/crew_artwork.cpp
   src/render/hangar_artwork.cpp
@@ -1117,4 +1118,14 @@ if(BUILD_TESTING)
   add_executable(shell_lpf_test tests/shell_lpf_test.cpp)
   target_link_libraries(shell_lpf_test PRIVATE earthsiege_core)
   add_test(NAME shell_lpf COMMAND shell_lpf_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_lpf.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_test(NAME shell_credits COMMAND shell_cinematics_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_credits.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(game_shell_doors_test tests/game_shell_doors_test.cpp)
+  target_link_libraries(game_shell_doors_test PRIVATE earthsiege_core)
+  add_test(NAME game_shell_doors COMMAND game_shell_doors_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/build)
 endif()

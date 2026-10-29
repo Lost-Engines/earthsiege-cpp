@@ -12,6 +12,7 @@ struct temporary_saves{
  ~temporary_saves(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}
 };
 void click(game_shell &shell,uint16_t id){
+ while(shell.transition_active()){shell.advance(2);shell.take_audio();}
  auto item{shell.current_dialog().find(id)};require(item&&item->enabled,"enabled speech-flow control");
  int x{(item->bounds.left+item->bounds.right)/2},y{(item->bounds.top+item->bounds.bottom)/2};
  shell.mouse_down(x,y);shell.mouse_up(x,y);

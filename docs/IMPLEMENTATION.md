@@ -6,7 +6,7 @@ Current integration: single missions and careers can launch, fly and return with
 saved results. Arming, crew assignment, repair, salvage, construction and launch
 warnings are connected to the original shell controls and static artwork.
 Opening, travel and ending movies, original environment layers and workshop
-dialogue are connected. Remaining menu transitions, impact flashes and complete
+dialogue, menu doors and credits are connected. Impact flashes and complete
 frame scheduling/replay verification remain. Later entries supersede the older
 integration boundaries in this cumulative record.
 
@@ -1023,3 +1023,24 @@ G0_ON/OFF/STAT are retained monitor assets, but no caller has yet been found:
 they are absent from GO's literal TTM names, the resident TM_FILES table and the
 general's G0_FILES speech list. Do not assume the original plays these assets
 merely because they exist. G0_SYNC is the verified general portrait program.
+
+
+### Live menu doors and credits
+
+The shell now plays the original closing/opening ANMs at menu-region changes,
+including their digital sounds and saved-screen zero-pixel restoration. Input
+is consumed during the transition; speech waits until the doors open. Skipping
+the introductory movies still retains the closing doors. Warning dialogs retain
+their parent's region and cannot accidentally start a blocked transition.
+
+Options / Credits now runs CREDIT_A and CREDIT_B and returns through the doors.
+Both original scripts match 12 captured updates and 310 palette writes. Their
+unused GETTEXTSTART producer metadata is ignored as in GO. A single-mission
+pilot death returns directly to mission selection, without a career death movie
+or spoken debrief.
+
+The host presents each door frame at nominal 60 Hz. The original menu calls use
+saved-screen mode and omit the ANM header's 15 fps wait, so their wall-clock speed
+depends on CPU/VGA throughput. No original wall-clock pacing is claimed.
+
+All 213 CTest checks pass. Closing, opening and credit screens were inspected.

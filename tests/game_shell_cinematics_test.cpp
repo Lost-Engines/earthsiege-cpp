@@ -10,7 +10,7 @@ struct directory {
  ~directory(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}
 };
 void skip(game_shell &shell){
- for(unsigned i{};shell.presentation_active()&&i<64;++i)shell.key(1);
+ for(unsigned i{};shell.presentation_active()&&i<64;++i){if(shell.transition_active())shell.advance(20);else shell.key(1);}
  require(!shell.presentation_active(),"presentation skip chain terminates");
 }
 void frame(game_shell &shell,std::filesystem::path const &root,std::string const &name){
@@ -28,7 +28,7 @@ int main(int argc,char **argv)try{
  opening.startup();opening.key(1);
  require(opening.presentation_active(),"skipping publisher logo still shows story intro");
  opening.key(1);require(opening.presentation_active(),"skipping story still shows title card");
- opening.key(1);require(!opening.presentation_active(),"title skip returns to menu");
+ opening.key(1);opening.advance(20);require(!opening.presentation_active(),"title skip returns to menu");
  game_state seed{r,17};seed.new_campaign();
  career_entry entry{"Cinema Pilot",0,"car/test.car","car/test.mec"};store.save_index({0,{entry}});
  auto const graph{read_campaign_table(r.read("zones","bst/btlset_0.dat"))};
@@ -36,7 +36,7 @@ int main(int argc,char **argv)try{
   auto career{seed.career()};auto &c{career.career.states[0]};
   c.node=scenario==1||scenario==2?7:0;c.step=(scenario==1||scenario==2||scenario==4)?static_cast<int16_t>(graph.nodes[c.node].size()-1):0;
   c.screen=1700;store.save(entry,career);
-  game_shell shell{r,root.path,17};shell.action(1700);shell.action(100);skip(shell);
+  game_shell shell{r,root.path,17};shell.action(1700);skip(shell);shell.action(100);skip(shell);
   require(shell.ready_to_launch(),"prepared campaign launches");
   auto mission{shell.launch()};auto result{mission->results()};result.grade=scenario==2?7:1;result.recovery=25000;
   if(scenario==0)result.crew[0].condition.internal[9]=0;

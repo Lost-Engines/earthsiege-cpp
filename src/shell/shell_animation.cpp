@@ -53,7 +53,7 @@ void shell_animation::execute(uint16_t page,random_state &random,shell_animation
      sound->volume(static_cast<uint8_t>(random.bounded(25)+10));sound->play();current.fade_latched=true;
     }
     break;
-   case 0x1101:case 0x1111:case 0x1071:case 0xf04f:break; // GO has no font-load/select handler.
+   case 0x1101:case 0x1111:case 0x1071:case 0xf04f:case 0xf10f:break; // GO ignores font operations and retained text-section labels.
    case 0x110:current.mode=3;break;
    case 0x1051:shape_bank=static_cast<uint8_t>(a.at(0));break;
    case 0xf02f:
