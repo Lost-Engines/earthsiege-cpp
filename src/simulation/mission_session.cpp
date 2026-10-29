@@ -47,6 +47,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
       .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, equipment, position, angles, values)},
       .attachments{}, .source{actor.source}, .group{actor.group}, .side{placements.groups.at(actor.group).mode},
       .waiting{script.groups.at(actor.group).trigger >= 0}, .player_roster{actor.player_roster},
+      .pilot_slot{actor.player_roster ? std::optional<int16_t>{roster.hercs.at(actor.source-script.hercs.size()).slot} : std::nullopt},
       .requested_speed{!actor.player_roster && script.hercs.at(actor.source).field_mask[1] >= 0 ? script.hercs.at(actor.source).field_mask[1] : int16_t{0}},
     };
     for(auto const &part : member.actor->body().weapons().parts()) member.attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});

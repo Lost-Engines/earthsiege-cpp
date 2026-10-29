@@ -2,6 +2,7 @@
 #include <utility>
 
 namespace earthsiege {
+std::optional<int16_t> mission_session::pilot_identity(size_t const actor) const { return actor<crew.size()?crew[actor].pilot_slot:std::nullopt; }
 wingmate_order_state mission_session::order_state(size_t const index) const {
   wingmate_order_state s;
   auto const &decision{activity->decisions()[index]};

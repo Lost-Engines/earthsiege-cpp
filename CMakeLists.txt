@@ -8,6 +8,12 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/shell/cockpit_radio.cpp
+  src/render/wingmate_portrait.cpp
+  src/shell/pilot_transmission.cpp
+  src/render/radio_portrait.cpp
+  src/resources/portrait_sync.cpp
+  src/render/radio_banner.cpp
   src/shell/radio_controller.cpp
   src/resources/radio_catalogue.cpp
   src/simulation/radio_queue.cpp
@@ -259,6 +265,24 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(cockpit_radio_test tests/cockpit_radio_test.cpp)
+  target_link_libraries(cockpit_radio_test PRIVATE earthsiege_core)
+  add_test(NAME cockpit_radio COMMAND cockpit_radio_test "${PROJECT_SOURCE_DIR}/assets")
+  add_executable(wingmate_portrait_test tests/wingmate_portrait_test.cpp)
+  target_link_libraries(wingmate_portrait_test PRIVATE earthsiege_core)
+  add_test(NAME wingmate_portrait COMMAND wingmate_portrait_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/wingmate_portraits.bin")
+  add_executable(pilot_transmission_test tests/pilot_transmission_test.cpp)
+  target_link_libraries(pilot_transmission_test PRIVATE earthsiege_core)
+  add_test(NAME pilot_transmission COMMAND pilot_transmission_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/portrait_state.bin")
+  add_executable(radio_portrait_test tests/radio_portrait_test.cpp)
+  target_link_libraries(radio_portrait_test PRIVATE earthsiege_core)
+  add_test(NAME radio_portrait COMMAND radio_portrait_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/radio_portraits.bin")
+  add_executable(radio_banner_test tests/radio_banner_test.cpp)
+  target_link_libraries(radio_banner_test PRIVATE earthsiege_core)
+  add_test(NAME radio_banner COMMAND radio_banner_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/radio_banner.bin")
+  add_executable(portrait_sync_test tests/portrait_sync_test.cpp)
+  target_link_libraries(portrait_sync_test PRIVATE earthsiege_core)
+  add_test(NAME portrait_sync COMMAND portrait_sync_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/portrait_timing.bin")
   add_executable(radio_controller_test tests/radio_controller_test.cpp)
   target_link_libraries(radio_controller_test PRIVATE earthsiege_core)
   add_test(NAME radio_controller COMMAND radio_controller_test "${PROJECT_SOURCE_DIR}/tests/fixtures/radio_state.bin")

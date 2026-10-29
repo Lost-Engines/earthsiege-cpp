@@ -85,6 +85,7 @@ class mission_session {
     uint8_t side{0};
     bool waiting{false};
     bool player_roster{false};
+    std::optional<int16_t> pilot_slot;
     bool contact_received{false};
     bool skip_decision{false};
     bool obstructed{false};
@@ -209,6 +210,7 @@ public:
   herc_body const &player() const;
   int16_t player_chassis() const;
   size_t player_id() const;
+  std::optional<int16_t> pilot_identity(size_t actor) const;
   damage_display_state instrument_damage(std::optional<size_t> actor) const;
   scanner_display_state scanner_state(uint16_t heading, uint32_t ticks, int32_t range) const;
   bool camera_ready() const;

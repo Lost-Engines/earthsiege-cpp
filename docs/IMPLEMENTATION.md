@@ -538,3 +538,25 @@ aimed-component scratch is compared only once an original write initializes it.
 Validation at this checkpoint: full build and all 133 tests pass. Damage flicker,
 radio presentation, complete input/view transitions and the wider application
 remain integration work; the inspection mode is not a completed game.
+
+
+The live MFD also now includes original instrument failure scheduling, OFFLINE
+labels and the combined repaint/child-update behavior. Band and timing fixtures
+cover 257 health values, 14,400 failure steps and 1,200 combined parent updates.
+Radio queue/descriptor/consumer verification covers 1,152 queue operations,
+880 resolutions (776 messages) and 1,920 consumer transitions. Documented original
+short-shift and double-index queue defects are preserved; the commander's
+out-of-bounds descriptor writes are represented safely, as explained in README.
+
+Live acknowledgements now use original pilot identities, banner text, animated
+portraits and opening/closing static, including hidden-panel progression. Exact
+comparisons cover 37,280 SNC states from all 556 simulation timelines, 2,400
+portrait phases, 600 talking/death rasters, 1,620 idle/static rasters and 32
+banners. An integration check exercises all four demo rosters with the panel
+visible or hidden, resolving actual speech resources and completing each reply.
+The original unloaded death-frame offset is explicitly zero. Hardware audio is
+not yet connected; lower-panel tactical controls, complete view/input transitions
+and the wider application remain required. `capture_cockpit` also renders the
+lower wingmate panel and a live form-up reply at several stages.
+
+Validation after radio integration: all 144 tests pass (18.58 seconds).

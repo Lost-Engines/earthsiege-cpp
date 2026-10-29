@@ -12,6 +12,7 @@
 #include "simulation/keyboard_input.h"
 #include "shell/pointer_controls.h"
 #include "shell/cockpit_displays.h"
+#include "shell/cockpit_radio.h"
 #include "simulation/mission_session.h"
 
 namespace earthsiege {
@@ -49,6 +50,7 @@ class mission_view {
   player_input pointer;
   pointer_controls instruments;
   std::unique_ptr<cockpit_displays> displays;
+  std::unique_ptr<cockpit_radio> radio;
   std::deque<player_input> pointer_events;
   int16_t requested_throttle{};
   std::optional<bool> shield_to_front;

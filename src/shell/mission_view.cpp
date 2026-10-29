@@ -55,9 +55,11 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   }
   auto const groups{weapons.group_bounds()};
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
+  radio=std::make_unique<cockpit_radio>(resources,cockpit.layout,*session,ui_random);
   displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments,ui_random);
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
@@ -132,6 +134,7 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
   change_camera(camera_mode::attached);
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
 }
 
 void mission_view::step(bool const control, bool const zoom) {
@@ -189,6 +192,7 @@ void mission_view::step(bool const control, bool const zoom) {
                     player.body().elevation().angle, player.damage().consequences.disabled);
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
 }
 
 void mission_view::draw() {
@@ -247,6 +251,7 @@ void mission_view::draw() {
     }
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
+  radio->draw(frame);
 }
 
 framebuffer const &mission_view::image() const { return frame; }

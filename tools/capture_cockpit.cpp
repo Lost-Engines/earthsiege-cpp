@@ -25,7 +25,14 @@ int main(int argc,char **argv) try {
       view.mouse_button(false,true);view.mouse_button(false,false);view.step(false,false);view.draw();
       view.image().save(output/("demo"+std::to_string(demo)+"-page"+std::to_string(page)+".ppm"),view.colours());
     }
-    std::cout<<"demo "<<demo<<": forward panel and all six MFD pages\n";
+    view.change_cockpit_view(cockpit_view::lower);view.draw();
+    view.image().save(output/("demo"+std::to_string(demo)+"-wingmates.ppm"),view.colours());
+    view.command(0x218);
+    for(unsigned int step{};step<100;++step){
+      view.step(false,false);
+      if(step==0 || step==20 || step==40 || step==60 || step==80){view.draw();view.image().save(output/("demo"+std::to_string(demo)+"-radio"+std::to_string(step)+".ppm"),view.colours());}
+    }
+    std::cout<<"demo "<<demo<<": six MFD pages, wingmates and live radio reply\n";
   }
   return 0;
 } catch(std::exception const &error){std::cerr<<error.what()<<'\n';return 1;}
