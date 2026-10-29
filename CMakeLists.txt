@@ -222,6 +222,8 @@ add_library(earthsiege_core
   src/resources/weapon_mounts.h
   src/simulation/actor_placement.cpp
   src/simulation/actor_placement.h
+  src/render/ground_texture.cpp
+  src/render/ground_texture.h
   src/render/clouds.cpp
   src/render/clouds.h
   src/render/ground_marks.cpp
@@ -1030,4 +1032,10 @@ if(BUILD_TESTING)
   add_executable(clouds_test tests/clouds_test.cpp)
   target_link_libraries(clouds_test PRIVATE earthsiege_core)
   add_test(NAME clouds COMMAND clouds_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/clouds.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(ground_texture_test tests/ground_texture_test.cpp)
+  target_link_libraries(ground_texture_test PRIVATE earthsiege_core)
+  add_test(NAME ground_texture COMMAND ground_texture_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/ground_texture.bin)
 endif()

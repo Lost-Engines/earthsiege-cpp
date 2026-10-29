@@ -35,7 +35,7 @@ struct background_bands {
 };
 
 /// Original low-detail sky/ground gradients, before panorama, clouds and ground texture
-background_bands make_background_bands(world_environment const &environment, background_view const &view);
+background_bands make_background_bands(world_environment const &environment, background_view const &view, bool include_ground = true);
 void draw_background_bands(framebuffer &target, background_bands const &bands, rectangle bounds);
 
 } // namespace earthsiege

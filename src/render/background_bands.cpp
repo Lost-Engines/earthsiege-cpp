@@ -87,7 +87,7 @@ void bands(background_bands &result, background_view const &view, int32_t const 
 
 } // anonymous namespace
 
-background_bands make_background_bands(world_environment const &environment, background_view const &view) {
+background_bands make_background_bands(world_environment const &environment, background_view const &view, bool include_ground) {
   auto const &style{environment.background};
   auto const pitch{static_cast<uint16_t>(-view.pitch)};
   auto const pitch_sine{model_cosine(static_cast<uint16_t>(pitch - angle_quarter_turn))};
@@ -115,7 +115,7 @@ background_bands make_background_bands(world_environment const &environment, bac
   bands(result, view, style.sky_palette_start, style.sky_bands, style.sky_step, style.horizon_band_width, true);
   ++result.horizon[0].y;
   ++result.horizon[1].y;
-  bands(result, view, style.ground_palette_start, style.ground_bands, style.ground_step, style.horizon_band_width, false);
+  if(include_ground) bands(result, view, style.ground_palette_start, style.ground_bands, style.ground_step, style.horizon_band_width, false);
   return result;
 }
 

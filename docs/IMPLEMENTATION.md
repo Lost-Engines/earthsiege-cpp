@@ -886,3 +886,13 @@ All 224 ground-mark frames match every pixel, point, anchor, count and RNG word.
 All 144 cloud frames / 501 draws also match complete fields and pixels, including
 both cloud faces and cockpit masks. All 198 tests pass. High-detail ground and
 combined-layer comparisons continue; original frame scheduling remains separate.
+
+### High-detail ground texture
+
+The native ground sampler reproduces the original 24-bit wrapping coordinates,
+heading/pitch projection, fifteen distance palettes, temporary scanline bitmap,
+rolled bitmap placement and retained projection cache. It uses TRENCHES.64K
+and the selected TEX/TEX_LO thresholds. All 480 original complete frames and
+their scratch bitmaps match across the 24 worlds, including cockpit masks,
+banks, projection shifts and viewport changes. The established background-band
+check also passes. Flight integration and combined-layer checks follow.
