@@ -222,6 +222,8 @@ add_library(earthsiege_core
   src/resources/weapon_mounts.h
   src/simulation/actor_placement.cpp
   src/simulation/actor_placement.h
+  src/render/panorama.cpp
+  src/render/panorama.h
   src/render/background_bands.cpp
   src/render/background_bands.h
   src/render/scenery_renderer.cpp
@@ -1006,4 +1008,13 @@ if(BUILD_TESTING)
   add_executable(briefing_tour_test tests/briefing_tour_test.cpp)
   target_link_libraries(briefing_tour_test PRIVATE earthsiege_core)
   add_test(NAME briefing_tour COMMAND briefing_tour_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/briefing_tour.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(panorama_test tests/panorama_test.cpp)
+  target_link_libraries(panorama_test PRIVATE earthsiege_core)
+  add_test(NAME panorama COMMAND panorama_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/panorama.bin)
+  add_executable(cockpit_panorama_test tests/cockpit_panorama_test.cpp)
+  target_link_libraries(cockpit_panorama_test PRIVATE earthsiege_core)
+  add_test(NAME cockpit_panorama COMMAND cockpit_panorama_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_panorama.bin)
 endif()

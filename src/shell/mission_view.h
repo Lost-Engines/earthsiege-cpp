@@ -46,6 +46,8 @@ class mission_view {
   std::array<size_t, 5> weapon_groups;
   cockpit_view panel{cockpit_view::forward};
   palette display_colours;
+  std::vector<bitmap> horizon_images;
+  bool panorama_enabled{true};
   scenery_renderer renderer;
   camera_state camera;
   keyboard_input keyboard;
@@ -78,6 +80,7 @@ public:
   void change_cockpit_view(cockpit_view view);
   void step(bool control, bool zoom);
   void draw();
+  void panorama(bool enabled) { panorama_enabled=enabled; }
   std::vector<int16_t> take_audio();
   std::optional<vec2<int32_t>> take_pointer_warp();
   framebuffer const &image() const;

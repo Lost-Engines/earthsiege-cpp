@@ -856,5 +856,17 @@ boundaries remain presentation-owner work; the current host remains responsive.
 
 Full rebuild: all 194 CTest checks pass (20.27 seconds).
 
+### Horizon panorama
+
+Native missions now draw the WLD-selected horizon strip, preserving heading
+wrap, pitch/roll and original affine bitmap rotation. The shell horizon setting
+is passed into flight. Low-visibility worlds have no strip.
+
+All 576 original full background frames and bitmap placement sequences match
+across 24 worlds. Another 96 complete frames match through the 32 cockpit
+windows/masks. Clouds, ground marks and textured ground remain separate work.
+Nonpositive horizontal panorama strides are detected rather than entering the
+original unbounded loop.
+
 Full rebuild: all 196 CTest checks pass (20.84 seconds). The live cockpit
 smoke capture also renders the horizon through its original aperture.
