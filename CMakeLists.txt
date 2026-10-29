@@ -10,6 +10,13 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/render/dialog_widgets.cpp
+  src/shell/mission_alert.cpp
+  src/shell/game_shell.cpp
+  src/shell/save_store.cpp
+  src/resources/career_index.cpp
+  src/shell/game_state.cpp
+  src/resources/packed_strings.cpp
   src/simulation/mission_return.cpp
   src/simulation/mission_salvage.cpp
   src/shell/preferences.cpp
@@ -298,6 +305,18 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mission_alert_test tests/mission_alert_test.cpp)
+  target_link_libraries(mission_alert_test PRIVATE earthsiege_core)
+  add_test(NAME mission_alert COMMAND mission_alert_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/alert_rasters.bin")
+  add_executable(game_shell_test tests/game_shell_test.cpp)
+  target_link_libraries(game_shell_test PRIVATE earthsiege_core)
+  add_test(NAME game_shell COMMAND game_shell_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_BINARY_DIR}")
+  add_executable(campaign_cycles_test tests/campaign_cycles_test.cpp)
+  target_link_libraries(campaign_cycles_test PRIVATE earthsiege_core)
+  add_test(NAME campaign_cycles COMMAND campaign_cycles_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/campaign_cycles.bin")
+  add_executable(game_state_test tests/game_state_test.cpp)
+  target_link_libraries(game_state_test PRIVATE earthsiege_core)
+  add_test(NAME game_state COMMAND game_state_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/shell_preparation.bin")
   add_executable(spatial_audio_test tests/spatial_audio_test.cpp)
   target_link_libraries(spatial_audio_test PRIVATE earthsiege_core)
   add_test(NAME spatial_audio COMMAND spatial_audio_test "${PROJECT_SOURCE_DIR}/tests/fixtures/spatial_audio.bin")

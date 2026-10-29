@@ -1,6 +1,6 @@
 # Earthsiege C++
 
-A native C++26 reconstruction of **Metaltech: Earthsiege**, beginning with the original 1994 version 1.0. Development is in progress; the main menu, native scene renderer, HERC movement and firing are working. Full missions are not yet playable.
+A native C++26 reconstruction of **Metaltech: Earthsiege**, beginning with the original 1994 version 1.0. Development is in progress. Single missions and careers can now be launched from the menus, flown and returned to the shell with saved results. The service-bay screens, briefings and cinematics are still being integrated; this is not yet a finished game.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -23,7 +23,7 @@ damage pages. Damage labels use the actual pilot's name.
 
 The MFD displays live status, communications, navigation, radar, target condition and missile-camera views. FLASH COMM sends real wingmate orders; Alt+A/G/H/O/C/E/F provide the original attack, ignore, help, form-up, scan, EMCON and fire/hold shortcuts. Radio acknowledgements now display their original text, pilot portraits and static transitions. Their selection, scheduling, pixels and mouth timing match original executable captures; speech output is connected. MFD damage now uses the original flicker timing and OFFLINE label.
 
-This is an inspection mode with mission AI, combat and objectives. Cockpit instruments and the campaign interface are still being integrated. It does not replay the recorded inputs.
+This inspection mode uses mission AI, combat and objectives. It does not replay the recorded inputs. Normal missions are selected from the main menu; Q opens the original mission-status/return dialog, P pauses and Ctrl+Escape or Ctrl+Q asks to quit.
 
 The original group dispatcher can read an uninitialized priority word for commands such as form up. This reconstruction uses neutral priority for those commands, making delivery deterministic. Radio queues start with zeroed unused indices. Original commander-message loading writes outside its descriptor table; this reconstruction retains the messages as resources and preserves their observed absence from radio output, without copying the memory corruption. The death-report portrait uses a zero offset, matching the captured original allocation; its offset is not initialized by the original asset loader.
 
@@ -51,10 +51,17 @@ This reconstruction preserves that visible quirk with bounded strings. The map
 also preserves the original distinction between mouse selection range and Tab's
 remembered-contact selection, and retains unmodified fields in outgoing orders.
 
-Campaign/save foundations now preserve the original 41-state career format, ordered equipment inventories and variable hangar records. They pass complete original-executable save/read comparisons, all 396 campaign filename/branch transitions and 140 grade thresholds. These components are being connected to the interactive shell; ordinary campaign play is not yet available.
+Campaign saves preserve the original 41-state career format, ordered equipment inventories and variable hangar records. They pass complete original-executable save/read comparisons, all 396 campaign filename/branch transitions and 140 grade thresholds. Registration, selection, resume and manual backups use these original formats. Saves live in the platform user-data directory (normally `~/.local/share/lost-engines/earthsiege` on Linux); `--save-dir PATH` overrides that location. The bundled resources and comparison DOS installation are not modified.
 
-The portable shell now also implements mission-return salvage, ordered equipment awards/restocking, pilot statistics and replacements, technology unlocks, repair budgets and chassis construction. Complete original return/save comparisons cover 96 scenarios (including 144 replacement pilots); repair checks cover 6,400 quotes, 1,280 transactions and 25 construction states. Menu wiring and the full launch/return UI are still in progress.
+The portable shell now also implements mission-return salvage, ordered equipment awards/restocking, pilot statistics and replacements, technology unlocks, repair budgets and chassis construction. Complete original return/save comparisons cover 96 scenarios (including 144 replacement pilots); repair checks cover 6,400 quotes, 1,280 transactions and 25 construction states. Interactive armament, crew, repair and construction controls are the next integration work.
 
 Launch preparation now matches all 670 retained original GO launches byte for byte (SCRIPT.DAT, MISSION.VAR and PLAYER.MEC), including exact random-generator state. Four complete new-career constructors and 32 additional roster exports cover history initialization, inactive crew and differing pilot health. The shell's original default missile-type normalization and selected-pilot health export behaviour are retained.
 
 Mission result export now retains recovered weapons and crew damage for the shell. All 5,114 captured recovery/condition states and four complete starting-world handoffs match. The original writer reads beyond its nine equipment slots for a tenth unused condition; this implementation safely writes 100 for that unused word.
+
+The nineteen mission alerts match captured DOS pixels. Eighteen consecutive
+launch/reload/return/repair/next-mission transactions also match the original
+across all three battle sets. Each flight return restores the saved inventory
+and starts the shell's time-seeded RNG again, as the separate DOS executable
+did. Manual career backups remain explicit actions. These comparisons verify
+the handoff and persistence, not an entire interactively completed campaign.

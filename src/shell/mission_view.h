@@ -63,6 +63,11 @@ class mission_view {
 
 public:
   mission_view(resource_store const &resources, unsigned int demo);
+  mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission);
+  mission_results results() const { return session->results(); }
+  mission_counters const &mission_variables() const { return session->mission_variables(); }
+  mission_status status(bool requested=false) const { return session->mission_state(requested); }
+  std::optional<mission_status> take_mission_prompt() { return session->take_mission_prompt(); }
   void key(held_key key, bool pressed, bool alt);
   void command(uint16_t code);
   void mouse_position(int x, int y);
