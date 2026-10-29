@@ -13,6 +13,7 @@
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
 #include "shell/pointer_controls.h"
+#include "shell/cockpit_impact.h"
 #include "shell/cockpit_displays.h"
 #include "shell/cockpit_radio.h"
 #include "shell/cockpit_hdd.h"
@@ -47,6 +48,10 @@ class mission_view {
   std::array<size_t, 5> weapon_groups;
   cockpit_view panel{cockpit_view::forward};
   palette display_colours;
+  palette impact_colours;
+  cockpit_impact impact;
+  cockpit_impact_view impact_view() const;
+  std::array<int32_t,2> instrument_origin() const;
   environment_renderer environment;
   earthsiege::environment_detail detail;
   scenery_renderer renderer;
@@ -62,6 +67,7 @@ class mission_view {
   int16_t requested_throttle{};
   std::optional<bool> shield_to_front;
   void consume_pointer_events();
+  void set_camera(camera_mode mode,unsigned previous_view);
   std::deque<uint16_t> commands;
 
 public:

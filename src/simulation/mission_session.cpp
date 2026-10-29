@@ -318,7 +318,7 @@ herc_damage_events mission_session::damage_events(size_t const index) {
   };
   events.salvage = [&, index](int16_t const weapon, int16_t const quality){ frame_notices.push_back({combat_notice_kind::salvage, index, weapon, quality, {}}); recovered_weapons.emplace_back(weapon,quality); };
   events.shield_warning = [&, index]{ frame_notices.push_back({combat_notice_kind::shield_warning, index, 0, 0, {}}); };
-  events.cockpit_damage = [&, index](size_t const part){ frame_notices.push_back({combat_notice_kind::cockpit_damage, index, static_cast<int16_t>(part), 0, {}}); };
+  events.cockpit_damage = [&, index](size_t const part){ if(cockpit_impact_handler)cockpit_impact_handler(); frame_notices.push_back({combat_notice_kind::cockpit_damage, index, static_cast<int16_t>(part), 0, {}}); };
   return events;
 }
 

@@ -40,11 +40,14 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     clock{resources, cockpit.layout},
     lamps{resources, "simvol0", "ttm/" + read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())) + ".TTM"},
     display_colours{session->scenery().colours()},
+    impact_colours{read_palette(resources.read("simvol0","dpl/IMPACT1.DPL"))},
     environment{resources,session->scenery().environment()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
+  environment.initialize_palette(display_colours,camera.angles.x);
+  session->on_cockpit_impact([this]{impact.hit(interface_ticks,impact_view(),ui_random);});
   audio.play(19);
   clock.refresh();
   lamps.advance(0);
@@ -63,13 +66,23 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   radio=std::make_unique<cockpit_radio>(resources,cockpit.layout,*session,ui_random);
   displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments,ui_random);
   hdd=std::make_unique<cockpit_hdd>(resources,cockpit.layout,*session,instruments,ui_random);
-  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
+}
+
+cockpit_impact_view mission_view::impact_view()const{
+ return {.mode{camera.mode==camera_mode::attached?static_cast<unsigned>(panel):4},
+         .origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin}};
+}
+std::array<int32_t,2> mission_view::instrument_origin()const{
+ auto origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+ if(camera.mode==camera_mode::attached)origin[1]+=impact.snapshot().displacement;
+ return origin;
 }
 
 void mission_view::key(held_key const key, bool const pressed, bool const alt) {
@@ -84,7 +97,7 @@ void mission_view::mouse_button(bool const right, bool const pressed) {
 }
 
 void mission_view::consume_pointer_events() {
-  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  auto const origin{instrument_origin()};
   instruments.window_bounds({origin[0], origin[1], origin[0] + 319, origin[1] + 199});
   if(camera.mode == camera_mode::attached) for(auto const &event : pointer_events) {
     hdd->pointer(event.mouse.x+origin[0],event.mouse.y+origin[1]);
@@ -127,9 +140,11 @@ void mission_view::toggle_pause() {
   clear_input();
 }
 
-void mission_view::change_camera(camera_mode const mode) {
+void mission_view::change_camera(camera_mode const mode) { set_camera(mode,impact_view().mode); }
+void mission_view::set_camera(camera_mode const mode,unsigned previous) {
   if(mode == camera_mode::free) camera.mode = mode;                             // detach at the current position and orientation
   else camera = session->make_camera(mode);
+  impact.change_view(previous,impact_view());
   clear_input();
   update_camera(camera, session->view_target());
   auto const &player{session->player_actor()};
@@ -139,9 +154,10 @@ void mission_view::change_camera(camera_mode const mode) {
 
 void mission_view::change_cockpit_view(cockpit_view const view) {
   if(panel != view) clock.refresh();
+  auto const previous{impact_view().mode};
   panel = view;
-  change_camera(camera_mode::attached);
-  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  set_camera(camera_mode::attached,previous);
+  auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
@@ -205,7 +221,8 @@ void mission_view::step(bool const control, bool const zoom) {
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
-  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  impact.update(interface_ticks,impact_view(),ui_random);
+  auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
@@ -221,16 +238,20 @@ void mission_view::draw() {
   frame.clear();
   bool const inside{camera.mode == camera_mode::attached};
   auto const &window{cockpit.windows[static_cast<size_t>(panel)]};
+  auto const shift{inside?impact.snapshot().displacement:0};
+  auto mask{window.mask};
+  if(shift)mask.translate(0,-shift);
+  auto &colours{impact.snapshot().impact_palette?impact_colours:display_colours};
   model_view view;
   if(inside) {
-    cockpit.draw(frame, panel);
+    cockpit.draw(frame, panel,shift);
     auto const centre{window.projection_centre()};
     view.projection.centre = {centre[0], centre[1]};
     view.bounds = window.bounds;
   }
   {
-    scoped_framebuffer_clip clip{frame, inside ? &window.mask : nullptr};
-    environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,display_colours,detail);
+    scoped_framebuffer_clip clip{frame, inside ? &mask : nullptr};
+    environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,colours,detail,{0,0},impact.snapshot().flash);
     auto const objects{session->visible_objects(!inside)};
     auto &effects{session->visual_effects()};
     auto const ground{effects.ground_flashes()};
@@ -240,7 +261,8 @@ void mission_view::draw() {
     auto const &player{session->player_actor()};
     auto const &movement{player.body().movement()};
     auto const &profile{player.profile().movement};
-    int const x{-window.instrument_origin[0]}, y{-window.instrument_origin[1]};
+    auto const origin{instrument_origin()};
+    int const x{-origin[0]}, y{-origin[1]};
     lamps.draw(frame, x, y);
     clock.draw(frame, x, y);
     reactor.draw(frame, static_cast<int32_t>(player.power().reserve) * 1024 / herc_power_capacity, x, y);
@@ -248,7 +270,7 @@ void mission_view::draw() {
     instruments.painted(0);
     throttle.draw_at(frame, static_cast<int32_t>(movement.gait_rate) * 1024 / speed_capacity, instruments.at(0).painted_thumb, x, y);
     auto const &shield{player.power().shields};
-    update_shield_colours(display_colours, static_cast<int32_t>(shield.front) * 1024 / shield.capacity,
+    update_shield_colours(colours, static_cast<int32_t>(shield.front) * 1024 / shield.capacity,
                          static_cast<int32_t>(shield.rear) * 1024 / shield.capacity);
     shields.draw(frame, shield.balance, {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);
     for(auto const &binding : weapon_controls) {
@@ -267,7 +289,7 @@ void mission_view::draw() {
       auto camera_transform{rotation_transform(camera.angles)};
       camera_transform.translation = camera.position;
       if(auto const brackets{target_brackets(*marker, inverse_transform(camera_transform), view.projection)}) {
-        scoped_framebuffer_clip target_clip{frame, &window.mask};
+        scoped_framebuffer_clip target_clip{frame, &mask};
         draw_target_brackets(frame, *brackets, marker->locked, marker->side);
       }
     }
@@ -279,6 +301,6 @@ void mission_view::draw() {
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}
 std::vector<int16_t> mission_view::take_audio(){return audio.take_output();}
 framebuffer const &mission_view::image() const { return frame; }
-palette const &mission_view::colours() const { return display_colours; }
+palette const &mission_view::colours() const { return impact.snapshot().impact_palette?impact_colours:display_colours; }
 
 } // namespace earthsiege

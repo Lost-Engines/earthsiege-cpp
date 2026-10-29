@@ -6,8 +6,8 @@ Current integration: single missions and careers can launch, fly and return with
 saved results. Arming, crew assignment, repair, salvage, construction and launch
 warnings are connected to the original shell controls and static artwork.
 Opening, travel and ending movies, original environment layers and workshop
-dialogue, menu doors and credits are connected. Impact flashes and complete
-frame scheduling/replay verification remain. Later entries supersede the older
+dialogue, menu doors, credits and cockpit impact effects are connected. Complete
+frame scheduling/replay verification remains. Later entries supersede the older
 integration boundaries in this cumulative record.
 
 Working components:
@@ -1044,3 +1044,23 @@ saved-screen mode and omit the ANM header's 15 fps wait, so their wall-clock spe
 depends on CPU/VGA throughput. No original wall-clock pacing is claimed.
 
 All 213 CTest checks pass. Closing, opening and credit screens were inspected.
+
+
+### Cockpit impact presentation
+
+Player cockpit damage now triggers the original deadline/toggle/motion owner
+synchronously from component damage. It consumes the shared visual RNG, swaps
+the authored IMPACT1 palette and shifts cockpit artwork, masks and instruments
+while keeping the world projection fixed. Forward/lower panels retain adjacent
+artwork at the exposed edge; side panels use the original index-63 strip.
+Reflection and shield colours update the currently selected palette.
+
+All 5,005 original states agree across 50 sequences: clocks, palette ownership,
+page origins, clip regions, widget translations and complete visual RNG. These
+include repeated damage, palette/transition gates, view changes, zero sentinels
+and clock wrap. A view change restores displacement and resumes with the original
+ten-pixel range, while external view cancels it. Analysis retains complete
+original captures for all four views and documents device boundaries.
+
+All 214 CTest checks pass (38.28 seconds). Full-game timer/input scheduling and
+native replay equivalence remain separate work.

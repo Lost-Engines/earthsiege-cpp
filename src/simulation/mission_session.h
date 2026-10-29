@@ -196,6 +196,7 @@ class mission_session {
   std::optional<size_t> displayed_target;
   void advance_frame(player_input &input, frame_ratio ratio, std::function<void()> const &prepare_player);
   std::vector<combat_notice> frame_notices;
+  std::function<void()> cockpit_impact_handler;
   std::vector<std::pair<int16_t,int16_t>> recovered_weapons;
   void credit_defeat(size_t attacker,size_t victim);
   std::optional<int32_t> impact(projectile_owner const &owner, impact_request const &request);
@@ -251,6 +252,7 @@ public:
   std::vector<sound_request> take_sounds();
   music_contacts music_observations()const;
   random_state &interface_random();
+  void on_cockpit_impact(std::function<void()> handler) { cockpit_impact_handler=std::move(handler); }
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;

@@ -97,3 +97,5 @@ frames across all 24 worlds, including cockpit masks and detail settings.
 Original frame scheduling and impact flashes remain separate work.
 
 The original cinematic fade-in reads an uninitialized rectangle type. This build initializes it, giving deterministic fades instead of depending on prior stack contents.
+
+Cockpit damage now flashes the original damage palette and displaces the cockpit and instruments vertically while the outside projection stays steady. The original timing, random sequence and view-change behaviour are retained.

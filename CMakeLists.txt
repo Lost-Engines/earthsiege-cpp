@@ -17,6 +17,7 @@ add_library(earthsiege_core
   src/render/weapon_preview.cpp
   src/render/dialog_widgets.cpp
   src/shell/mission_alert.cpp
+  src/shell/cockpit_impact.cpp
   src/shell/game_shell.cpp
   src/shell/launch_checks.cpp
   src/shell/shell_animation.cpp
@@ -1128,4 +1129,10 @@ if(BUILD_TESTING)
   add_executable(game_shell_doors_test tests/game_shell_doors_test.cpp)
   target_link_libraries(game_shell_doors_test PRIVATE earthsiege_core)
   add_test(NAME game_shell_doors COMMAND game_shell_doors_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/build)
+endif()
+
+if(BUILD_TESTING)
+ add_executable(cockpit_impact_test tests/cockpit_impact_test.cpp)
+ target_link_libraries(cockpit_impact_test PRIVATE earthsiege_core)
+ add_test(NAME cockpit_impact COMMAND cockpit_impact_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_impact.bin)
 endif()

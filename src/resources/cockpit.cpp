@@ -103,13 +103,31 @@ cockpit_artwork read_cockpit(resource_store const &resources, std::string const 
   return result;
 }
 
-void cockpit_artwork::draw(framebuffer &target, cockpit_view view) const {
+void cockpit_artwork::draw(framebuffer &target, cockpit_view view,int displacement) const {
   scoped_framebuffer_clip unclipped{target, nullptr};
   auto const index{static_cast<unsigned int>(view)};
   auto const &panel{panels.at(std::min(index, 2U))};
-  if(view != cockpit_view::left) target.image(panel, 0, 0);
+  if(view != cockpit_view::left) target.image(panel, 0, -displacement);
   else for(unsigned int y{}; y < panel.height; ++y) for(unsigned int x{}; x < panel.width; ++x)
-    target.pixel(static_cast<int>(x), static_cast<int>(y), panel.pixels[y * panel.width + panel.width - 1 - x]);
+    target.pixel(static_cast<int>(x), static_cast<int>(y)-displacement, panel.pixels[y * panel.width + panel.width - 1 - x]);
+  // Front/lower artwork shares a vertically stacked VGA surface. A hit exposes
+  // a few rows of the neighbouring panel. Side views explicitly clear that strip
+  // to index 63 before moving the page (DBSIM 243d4).
+  if(displacement)for(int y{};y<200;++y){
+    int const source_y{y+displacement};
+    if(source_y>=0&&source_y<200)continue;
+    for(int x{};x<320;++x){
+      uint8_t colour{63};
+      if(view==cockpit_view::forward){
+        int const sy{source_y-windows[1].instrument_origin[1]};
+        if(sy>=0&&sy<static_cast<int>(panels[1].height))colour=panels[1].pixels[static_cast<size_t>(sy*320+x)];
+      }else if(view==cockpit_view::lower){
+        int const sy{source_y+windows[1].instrument_origin[1]};
+        if(sy>=0&&sy<static_cast<int>(panels[0].height))colour=panels[0].pixels[static_cast<size_t>(sy*320+x)];
+      }
+      target.pixel(x,y,colour);
+    }
+  }
 }
 
 void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int chassis) {
