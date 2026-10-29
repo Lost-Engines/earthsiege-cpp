@@ -10,6 +10,9 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/resources/mission_results.cpp
+  src/shell/campaign_return.cpp
+  src/shell/hangar_service.cpp
   src/resources/career.cpp
   src/resources/campaign.cpp
   src/shell/tactical_controller.cpp
@@ -827,4 +830,16 @@ if(BUILD_TESTING)
   add_executable(career_test tests/career_test.cpp)
   target_link_libraries(career_test PRIVATE earthsiege_core)
   add_test(NAME career COMMAND career_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/career.bin ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/campaign.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(hangar_test tests/hangar_test.cpp)
+  target_link_libraries(hangar_test PRIVATE earthsiege_core)
+  add_test(NAME hangar COMMAND hangar_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hangar.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(campaign_return_test tests/campaign_return_test.cpp)
+  target_link_libraries(campaign_return_test PRIVATE earthsiege_core)
+  add_test(NAME campaign_return COMMAND campaign_return_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/campaign_return.bin)
 endif()

@@ -52,3 +52,5 @@ also preserves the original distinction between mouse selection range and Tab's
 remembered-contact selection, and retains unmodified fields in outgoing orders.
 
 Campaign/save foundations now preserve the original 41-state career format, ordered equipment inventories and variable hangar records. They pass complete original-executable save/read comparisons, all 396 campaign filename/branch transitions and 140 grade thresholds. These components are being connected to the interactive shell; ordinary campaign play is not yet available.
+
+The portable shell now also implements mission-return salvage, ordered equipment awards/restocking, pilot statistics and replacements, technology unlocks, repair budgets and chassis construction. Complete original return/save comparisons cover 96 scenarios (including 144 replacement pilots); repair checks cover 6,400 quotes, 1,280 transactions and 25 construction states. Menu wiring and the full launch/return UI are still in progress.
