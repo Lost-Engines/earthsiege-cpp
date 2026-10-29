@@ -8,6 +8,10 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/shell/radio_controller.cpp
+  src/resources/radio_catalogue.cpp
+  src/simulation/radio_queue.cpp
+  src/simulation/instrument_failure.cpp
   src/shell/cockpit_displays.cpp
   src/simulation/mission_communications.cpp
   src/simulation/wingmate_orders.cpp
@@ -255,6 +259,21 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(radio_controller_test tests/radio_controller_test.cpp)
+  target_link_libraries(radio_controller_test PRIVATE earthsiege_core)
+  add_test(NAME radio_controller COMMAND radio_controller_test "${PROJECT_SOURCE_DIR}/tests/fixtures/radio_state.bin")
+  add_executable(radio_catalogue_test tests/radio_catalogue_test.cpp)
+  target_link_libraries(radio_catalogue_test PRIVATE earthsiege_core)
+  add_test(NAME radio_catalogue COMMAND radio_catalogue_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/radio_descriptors.bin")
+  add_executable(mfd_failure_test tests/mfd_failure_test.cpp)
+  target_link_libraries(mfd_failure_test PRIVATE earthsiege_core)
+  add_test(NAME mfd_failure COMMAND mfd_failure_test "${PROJECT_SOURCE_DIR}/tests/fixtures/mfd_failure.bin")
+  add_executable(radio_queue_test tests/radio_queue_test.cpp)
+  target_link_libraries(radio_queue_test PRIVATE earthsiege_core)
+  add_test(NAME radio_queue COMMAND radio_queue_test "${PROJECT_SOURCE_DIR}/tests/fixtures/radio_queue.bin")
+  add_executable(instrument_failure_test tests/instrument_failure_test.cpp)
+  target_link_libraries(instrument_failure_test PRIVATE earthsiege_core)
+  add_test(NAME instrument_failure COMMAND instrument_failure_test "${PROJECT_SOURCE_DIR}/tests/fixtures/instrument_failure.bin")
   add_executable(capture_cockpit tools/capture_cockpit.cpp)
   target_link_libraries(capture_cockpit PRIVATE earthsiege_core)
   add_executable(mission_orders_test tests/mission_orders_test.cpp)

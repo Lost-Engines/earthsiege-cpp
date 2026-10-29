@@ -41,7 +41,7 @@ mfd_action mfd_controller::button(size_t const index, size_t const player, std::
   return mfd_action::none;
 }
 std::vector<mfd_paint> mfd_controller::advance(uint32_t const ticks, bool const visible, bool const external_camera, bool const eo_selected,
-                                               size_t const player, std::optional<size_t> const target) {
+                                               size_t const player, std::optional<size_t> const target, bool const failed, uint16_t const severity) {
   std::vector<mfd_paint> paints;
   if(external_camera || !visible) return paints;
   if(!data.automatic_camera && eo_selected) {
@@ -54,7 +54,7 @@ std::vector<mfd_paint> mfd_controller::advance(uint32_t const ticks, bool const 
     select(data.previous_page, player, target);
     data.allow_camera_switch = true;
   }
-  if(data.pending_paint == 2) { paints.push_back({data.page, true}); --data.pending_paint; }
+  if(data.pending_paint == 2) { paints.push_back({data.page, true, failed ? (severity<2 ? uint16_t{1} : severity) : uint16_t{0}}); --data.pending_paint; }
   else if(data.pending_paint == 1) { --data.pending_paint; request_update(); }
   auto const index{std::to_underlying(data.page)};
   if(data.refresh[index]) {

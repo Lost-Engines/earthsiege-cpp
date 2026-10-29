@@ -55,7 +55,7 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   }
   auto const groups{weapons.group_bounds()};
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
-  displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments);
+  displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments,ui_random);
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   auto const &player{session->player_actor()};

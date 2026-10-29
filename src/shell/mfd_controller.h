@@ -17,7 +17,7 @@ struct mfd_state {
   bool automatic_camera{};
   bool allow_camera_switch{true};
 };
-struct mfd_paint { mfd_page page; bool full; auto operator<=>(mfd_paint const &) const = default; };
+struct mfd_paint { mfd_page page; bool full; uint16_t failure{}; auto operator<=>(mfd_paint const &) const = default; };
 enum class mfd_action { none, toggle_radar, cycle_target, transmit };
 
 /// Own MFD page/range/selection and the original two-stage refresh scheduling.
@@ -31,7 +31,7 @@ public:
   void repaint();
   void select_choice(size_t choice);
   mfd_action button(size_t index, size_t player, std::optional<size_t> target, std::span<communications_choice const, 6> choices);
-  std::vector<mfd_paint> advance(uint32_t ticks, bool visible, bool external_camera, bool eo_selected, size_t player, std::optional<size_t> target);
+  std::vector<mfd_paint> advance(uint32_t ticks, bool visible, bool external_camera, bool eo_selected, size_t player, std::optional<size_t> target, bool failed = false, uint16_t severity = 0);
 };
 
 } // namespace earthsiege

@@ -4,8 +4,9 @@
 
 namespace earthsiege {
 cockpit_displays::cockpit_displays(resource_store const &resources, cockpit_layout const &layout,
-  mission_session &session, pointer_controls &input)
-  : controls{resources,layout}, controller{session.player_id()}, communications{resources},
+  mission_session &session, pointer_controls &input, random_state &ui_random)
+  : random{ui_random}, failure_font{read_font(resources.read("simvol0","dfn/CPRED.DFN"))},
+    failure_label{read_interface_strings(resources.read("simvol0","str/STRINGS0.STR")).at(30).at(0).text}, controls{resources,layout}, controller{session.player_id()}, communications{resources},
     status{resources}, target{resources}, scanner{resources},
     navigation{cache,session.scenery()}, missile{resources,cache,session.scenery()} {
   auto const bounds{controls.button_bounds()};
@@ -99,8 +100,23 @@ void cockpit_displays::update(mission_session &session, pointer_controls &input,
   visible=shown; painted_bounds=bounds;
   auto const &launch{session.latest_player_rocket()};
   if(launch.sequence!=watched_sequence) {watched_sequence=launch.sequence;tracker.watch(launch.slot);}
-  for(auto const &request:controller.advance(ticks,shown,!inside,session.eo_selected(),session.player_id(),session.target_selection()))
-    paint(request.page,session,camera,ticks);
+  auto const severity{instrument_damage_band(session.player_actor().internal_damage_fraction(4))};
+  failure.repaint=controller.state().pending_paint;
+  if(inside) {
+    if(advance_instrument_failure(failure,severity,ticks,random))sounds.push_back(28);
+    if(failure.repaint==2)controller.repaint();
+  }
+  for(auto const &request:controller.advance(ticks,shown,!inside,session.eo_selected(),session.player_id(),session.target_selection(),failure.failed,severity)) {
+    if(request.failure) {
+      cache.fill(bounds,63);
+      if(request.failure>=2) {
+        int const x{bounds.left+((bounds.right-bounds.left)>>1)-((failure_font.text_width(failure_label)-1)>>1)};
+        int const y{bounds.top+((bounds.bottom-bounds.top+static_cast<int>(failure_font.height))>>1)};
+        cache.text(failure_font,failure_label,x,y);
+      }
+    } else paint(request.page,session,camera,ticks);
+  }
+  failure.repaint=controller.state().pending_paint;
   enable_controls(input);
 }
 void cockpit_displays::draw(framebuffer &frame, pointer_controls const &input, int const offset_x, int const offset_y) const {
@@ -113,5 +129,6 @@ void cockpit_displays::draw(framebuffer &frame, pointer_controls const &input, i
     for(int x{std::max(0,painted_bounds.left)};x<=std::min(static_cast<int>(screen_width)-1,painted_bounds.right);++x)
       frame.pixel(x,y,pixels[static_cast<size_t>(y)*screen_width+static_cast<size_t>(x)]);
 }
+std::vector<uint16_t> cockpit_displays::take_sounds() {return std::exchange(sounds,{});}
 mfd_state const &cockpit_displays::state() const {return controller.state();}
 } // namespace earthsiege
