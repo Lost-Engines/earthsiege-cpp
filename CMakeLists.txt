@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/shell/preferences.cpp
   src/resources/mission_writer.cpp
   src/shell/mission_launch.cpp
   src/shell/new_career.cpp
@@ -851,4 +852,10 @@ if(BUILD_TESTING)
   add_executable(launch_test tests/launch_test.cpp)
   target_link_libraries(launch_test PRIVATE earthsiege_core)
   add_test(NAME launch COMMAND launch_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/new_career.bin ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/launch.bin ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/launch_roster.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(preferences_test tests/preferences_test.cpp)
+  target_link_libraries(preferences_test PRIVATE earthsiege_core)
+  add_test(NAME preferences COMMAND preferences_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/preferences.bin)
 endif()
