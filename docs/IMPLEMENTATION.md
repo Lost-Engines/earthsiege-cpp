@@ -1002,3 +1002,24 @@ The original capture runs eight chassis/speaker/clip combinations and compares
 104 complete frames, including post-dialogue cleanup, both page CRCs and every
 RNG word. All match. Existing bay, portrait, live speech and cinematic-flow
 checks also pass. Original sound-device timing remains an explicit boundary.
+
+
+### LPF menu doors
+
+The two ANM resources are the closing (ESIEGE2) and opening (ESIEGE3) menu-door
+transitions, not a looping main-menu background. GO 0x13aa8/0x13d9e/0x13c46
+loads, locates and decodes their LPF pages. Its native counterpart now matches
+all 60 captured complete frames, over both resources, two background patterns
+and opaque/saved-screen modes. The final ring delta is excluded. Written zero
+pixels restore the saved screen in transition mode; skip spans retain the prior
+frame. ESIEGE3's page directory is not in frame order.
+
+Normal standalone playback uses the header's 15 fps. Menu calls at 0x3c2a4 and
+0x3c734 instead select background restoration and omit that clock wait; their
+speed depends on decoding and VGA writes. Exact transition scheduling is separate
+from the verified decoder. The two call sites request digital sounds 10/11.
+
+G0_ON/OFF/STAT are retained monitor assets, but no caller has yet been found:
+they are absent from GO's literal TTM names, the resident TM_FILES table and the
+general's G0_FILES speech list. Do not assume the original plays these assets
+merely because they exist. G0_SYNC is the verified general portrait program.

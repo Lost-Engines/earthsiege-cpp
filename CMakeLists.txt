@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/resources/lpf_animation.cpp
   src/render/crew_artwork.cpp
   src/render/hangar_artwork.cpp
   src/render/weapon_preview.cpp
@@ -1110,4 +1111,10 @@ if(BUILD_TESTING)
 add_executable(bay_speech_test tests/bay_speech_test.cpp)
 target_link_libraries(bay_speech_test PRIVATE earthsiege_core)
 add_test(NAME bay_speech COMMAND bay_speech_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/bay_speech.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_lpf_test tests/shell_lpf_test.cpp)
+  target_link_libraries(shell_lpf_test PRIVATE earthsiege_core)
+  add_test(NAME shell_lpf COMMAND shell_lpf_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_lpf.bin)
 endif()
