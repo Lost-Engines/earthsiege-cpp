@@ -3,6 +3,7 @@
 #include "audio/shell_audio.h"
 #include "shell/bay_scene.h"
 #include "render/weapon_preview.h"
+#include "render/briefing_map.h"
 #include "shell/game_state.h"
 #include "shell/save_store.h"
 #include "render/hangar_artwork.h"
@@ -20,6 +21,7 @@ class game_shell {
   shell_audio audio;
   game_state game;
   std::unique_ptr<dialog> menu;
+  std::unique_ptr<briefing_map> briefing;
   std::unique_ptr<dialog> warning_parent;
   framebuffer warning_frame;
   void warn(unsigned id);
@@ -77,6 +79,7 @@ public:
   void action(uint16_t id);
   void key(uint8_t scan);
   void text_input(std::string_view text){menu->text_input(text);}
+  void mouse_move(int x,int y);
   void mouse_down(int x,int y);
   void mouse_up(int x,int y);
   void cancel_press(){pressed_mount.reset();menu->cancel_press();}

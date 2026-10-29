@@ -232,6 +232,7 @@ auto main(int argc, char *argv[])->int try {
           if(event.button.button==SDL_BUTTON_LEFT || event.button.button==SDL_BUTTON_RIGHT)scene->mouse_button(event.button.button==SDL_BUTTON_RIGHT,event.type==SDL_MOUSEBUTTONDOWN);
         }
       } else if(focused) {
+        if(event.type == SDL_MOUSEMOTION) menu.mouse_move(event.motion.x,event.motion.y);
         if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) menu.mouse_down(event.button.x, event.button.y);
         if(event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
           menu.mouse_up(event.button.x,event.button.y);

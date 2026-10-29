@@ -26,4 +26,25 @@ void draw_scaled_bitmap(framebuffer &target, bitmap const &source, vec2<int32_t>
   }
 }
 
+void draw_shell_scaled_bitmap(framebuffer &target,bitmap const &source,vec2<int32_t> position,vec2<int32_t> size,rectangle bounds){
+  if(size.x<=0||size.y<=0)return;
+  int const left{std::max(bounds.left,position.x)},top{std::max(bounds.top,position.y)};
+  int const right{std::min(bounds.right,position.x+size.x-1)},bottom{std::min(bounds.bottom,position.y+size.y-1)};
+  if(left>right||top>bottom)return;
+  auto const step{[](int source_size,int destination_size){return destination_size>1?((source_size-1)<<16)/(destination_size-1):0;}};
+  auto const fraction{[](int increment,int destination_size){return destination_size<=1?0:increment<32768?32768:increment&65535;}};
+  int const dx{step(source.width,size.x)},dy{step(source.height,size.y)};
+  int xf{fraction(dx,size.x)},yf{fraction(dy,size.y)};
+  for(int y{top};y<=bottom;++y){
+    auto const row{(static_cast<int64_t>(y-position.y)*dy+yf)>>16};
+    // GO retains the fractional horizontal clipping carry between scanlines.
+    auto const first{static_cast<int64_t>(left-position.x)*dx+xf};xf=static_cast<int>(first&65535);
+    for(int x{left};x<=right;++x){
+      auto const column{(first+static_cast<int64_t>(x-left)*dx)>>16};
+      auto const colour{source.pixels.at(static_cast<size_t>(row*source.width+column))};
+      if(colour)target.pixel(x,y,colour);
+    }
+  }
+}
+
 } // namespace earthsiege

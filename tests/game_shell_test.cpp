@@ -20,7 +20,12 @@ int main(int argc,char **argv)try{
  screen(shell,1000);require(!shell.current_dialog().find(1700)->enabled,"no career to resume");
  click(shell,1100);screen(shell,1100);shell.key(80);require(shell.current_dialog().selection(1101)==1,"mission keyboard selection");
  click(shell,1110);screen(shell,1110);auto original{shell.settings().current()};click(shell,1111);require(shell.settings().current()[12]!=original[12],"single option changes");shell.key(1);screen(shell,1100);require(shell.settings().current()==original,"single cancel rolls back");
- click(shell,1501);screen(shell,1501);require(shell.state().ready()&&!shell.state().campaign(),"single mission prepared");click(shell,1800);screen(shell,1800);
+ click(shell,1501);screen(shell,1501);require(shell.state().ready()&&!shell.state().campaign(),"single mission prepared");framebuffer map_initial;shell.draw(map_initial);shell.advance(2600);
+ framebuffer map_complete;shell.draw(map_complete);require(map_initial.pixels()!=map_complete.pixels(),"briefing tour changes the live menu");
+ click(shell,108);framebuffer map_zoom;shell.draw(map_zoom);require(map_complete.pixels()!=map_zoom.pixels(),"briefing zoom button reaches map owner");
+ shell.key(77);framebuffer map_pan;shell.draw(map_pan);require(map_zoom.pixels()!=map_pan.pixels(),"briefing arrow shortcut pans map");
+ if(argc==4){auto path{std::filesystem::path{argv[3]}};path.replace_filename("briefing-menu.ppm");map_pan.save(path,shell.colours());}
+ click(shell,1800);screen(shell,1800);
  auto idle_random{shell.state().random_snapshot()};framebuffer preview_before;shell.draw(preview_before);
  for(unsigned i{};i<240;++i)shell.advance(3);
  require(idle_random.words!=shell.state().random_snapshot().words||idle_random.first!=shell.state().random_snapshot().first,"resident bay scripts advance in live shell");

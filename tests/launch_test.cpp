@@ -1,4 +1,5 @@
 #include "shell/mission_launch.h"
+#include "render/briefing_map.h"
 #include "resources/binary_writer.h"
 #include <algorithm>
 #include <iostream>
@@ -33,6 +34,12 @@ int main(int argc,char **argv)try {
     if(mode)player=launch_player_roster(career->career.states[0],career->hangars[0],true,0,random);
     else{auto crew{generate_single_crew(resources,prepared.compiled.script,random)};player=launch_player_roster(crew.state,crew.roster,false,0,random);}
     compare(write_player_roster(player),expected_player,name+" player");random_matches(random,after,name+" after launch");
+    // Exercise map construction for every coherent captured mission launch,
+    // including campaign chapters and different mission-option branches.
+    try{
+      briefing_map map{resources,prepared.compiled.script,static_cast<int>(player.hercs.size())};
+      framebuffer map_frame;map.draw(map_frame);
+    }catch(std::exception const &e){throw std::runtime_error{name+" briefing: "+e.what()};}
   }
   file.require_end();
   auto const roster_data{read_file(argv[4])};binary_reader rf{roster_data};magic(rf,"ESLRS001");auto const roster_cases{rf.integer<uint32_t>()};

@@ -5,7 +5,7 @@ The native game is being built from the supplied Earthsiege 1.0 data and origina
 Current integration: single missions and careers can launch, fly and return with
 saved results. Arming, crew assignment, repair, salvage, construction and launch
 warnings are connected to the original shell controls and static artwork.
-Cinematics, briefing maps, full environment presentation and
+Cinematics, full environment presentation and
 end-to-end replay verification remain. Later entries supersede the older
 integration boundaries in this cumulative record.
 
@@ -832,3 +832,26 @@ as audible output. The normal control loads these eighteen programs; retained
 G00/G01 resources are not substituted for the original selection behavior.
 
 Full rebuild: all 189 CTest checks pass (20.38 seconds).
+
+
+### Briefing maps and guided tour
+
+The live briefing screens now use GO's terrain models, palette, icons and font,
+with the original player formation, fitted views, opening reveal, objective/
+waypoint tour, zoom, pan and latched object callouts. Returning from arming
+restores the fitted camera while retaining pan. The separate shell cosine table,
+bearing approximation and bitmap scaler preserve GO/DBSIM version differences.
+
+Independent captures match 90 complete map frames across seven single-mission
+categories and all eight campaign chapters; 3,069 tour updates and 62 sampled
+frames; 39 opening frames/deadlines; 79 callout frames; and 500 scaler cases.
+All 674 coherent launch fixtures also construct and draw their briefing maps.
+
+Negative base point indices and B0_C6_7A's player formation -1 expose original
+unchecked memory. GO's latter path reads uninitialized stack offsets, independently
+demonstrated with three prior stack patterns. Undefined markers are omitted,
+not replaced by guessed coordinates; these cases are outside pixel equivalence.
+The opening reveal uses nominal 120 Hz ticks. Blocking original input/fade
+boundaries remain presentation-owner work; the current host remains responsive.
+
+Full rebuild: all 194 CTest checks pass (20.27 seconds).

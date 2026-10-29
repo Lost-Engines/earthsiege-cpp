@@ -21,6 +21,14 @@ void game_shell::show(unsigned id){
   if(menu)last_screen=menu->id();
   menu=std::make_unique<dialog>(resources,id,region(id));text_scroll=0;
   audio.enabled(preferences_.current()[0]!=0,preferences_.current()[1]!=0);audio.region(region(id));
+  if((id==1500||id==1501)&&game.ready()&&!briefing){
+    std::vector<std::string> text;
+    if(auto section{game.text().find(mission_text_kind::objectives)})
+      if(auto objectives{std::get_if<std::vector<objective_text>>(&section->content)})
+        for(auto const &objective:*objectives)text.push_back(objective.text);
+    briefing=std::make_unique<briefing_map>(resources,game.prepared().compiled.script,static_cast<int>(game.player().hercs.size()),std::move(text));
+    briefing->start_tour(true);
+  }else if((id==1500||id==1501)&&briefing)briefing->restore_view();
   if(id==1000){menu->enable(1700,!careers.entries.empty());std::vector<std::string> names;for(auto const &entry:careers.entries)names.push_back(entry.name);menu->items(1002,std::move(names),std::max(0,int(careers.selected)));}
   if(id==1100){std::vector<std::string> labels;for(size_t i{35};i<=41;++i)labels.push_back(strings.at(i));menu->items(1101,std::move(labels),single_kind);}
   if(id==1110||id==1310){preferences_.commit(false);refresh_values();}
@@ -60,6 +68,7 @@ void game_shell::advance(unsigned timer_ticks){
   if((++animation_ticks%2)==0&&!warning_parent){
    if(bay_motion)bay_motion->advance(1,game.presentation_random(),audio.effects());
    if(weapon_motion)weapon_motion->advance(1,game.presentation_random());
+   if(briefing&&(screen()==1500||screen()==1501))briefing->update(static_cast<uint32_t>(animation_ticks));
   }
   audio.advance();
  }
@@ -179,7 +188,7 @@ void game_shell::register_career(){
     do{car="car\\car_"+std::to_string(suffix)+".car";mec="car\\car_"+std::to_string(suffix)+".mec";++suffix;}while(saves.read(car)||saves.read(mec));
     careers.entries.push_back({name,0,car,mec});careers.selected=static_cast<int16_t>(careers.entries.size()-1);
   }else careers.selected=static_cast<int16_t>(it-careers.entries.begin());
-  game.new_campaign(static_cast<int16_t>(battle_set));save_career();show(1700);
+  game.new_campaign(static_cast<int16_t>(battle_set));briefing.reset();save_career();show(1700);
 }
 void game_shell::warn(unsigned id){
   draw(warning_frame);warning_parent=std::move(menu);
@@ -187,7 +196,7 @@ void game_shell::warn(unsigned id){
 }
 void game_shell::dismiss_warning(){menu=std::move(warning_parent);}
 void game_shell::next_mission(){
-  game.prepare_campaign(true,options(preferences_));save_career();show(game.ready()?1700:1000);
+  game.prepare_campaign(true,options(preferences_));briefing.reset();save_career();show(game.ready()?1700:1000);
 }
 void game_shell::begin(){launch_requested=true;save_career();}
 std::unique_ptr<mission_session> game_shell::launch(){
@@ -196,7 +205,7 @@ std::unique_ptr<mission_session> game_shell::launch(){
 }
 void game_shell::mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed){
   game.resume_shell(return_seed,game.campaign()?std::optional{saves.load(careers.entries.at(static_cast<size_t>(careers.selected)))}:std::nullopt);
-  game.complete(result,counters);save_career();show(game.campaign()?1520:1510);audio.resume();
+  game.complete(result,counters);briefing.reset();save_career();show(game.campaign()?1520:1510);audio.resume();
 }
 void game_shell::action(uint16_t id){action_impl(id);refresh_bay();refresh_preview();}
 void game_shell::action_impl(uint16_t id){
@@ -216,14 +225,14 @@ void game_shell::action_impl(uint16_t id){
     case 999:if(id==100)quitting=true;else if(id==99)show(1000);return;
     case 1000:
       if(id==1003){show(999);return;}
-      if(id==1499){game.prepare_single(-1,options(preferences_));show(1501);return;}
-      if(id==1700){select_career();if(game.has_career()){if(game.crew().screen==1710)show(1710);else{game.prepare_campaign(false,options(preferences_));show(1700);}}return;}
+      if(id==1499){game.prepare_single(-1,options(preferences_));briefing.reset();show(1501);return;}
+      if(id==1700){select_career();if(game.has_career()){if(game.crew().screen==1710)show(1710);else{game.prepare_campaign(false,options(preferences_));briefing.reset();show(1700);}}return;}
       if(id==1002){careers.selected=static_cast<int16_t>(menu->selection(1002));return;}
       break;
     case 1100:
       if(id==1101){single_kind=menu->selection(1101);return;}
       if(id==101||id==102){menu->select(1101,single_kind+(id==101?-1:1));single_kind=menu->selection(1101);return;}
-      if(id==1501){game.prepare_single(static_cast<int16_t>(single_kind),options(preferences_));show(1501);return;}
+      if(id==1501){game.prepare_single(static_cast<int16_t>(single_kind),options(preferences_));briefing.reset();show(1501);return;}
       break;
     case 1110:
       if(id>=1111&&id<=1115){constexpr std::array<uint8_t,5> limits{2,2,4,2,3};size_t const i{id-1111U};preferences_.set(12+i,static_cast<uint8_t>((preferences_.current()[12+i]+1)%limits[i]),false);refresh_values();return;}
@@ -260,6 +269,10 @@ void game_shell::action_impl(uint16_t id){
       if(id==1223)return;
       break;
     case 1700:case 1500:case 1501:
+      if(briefing&&(current==1500||current==1501)){
+        if(id==108||id==109||(id>=1503&&id<=1506)){briefing->navigate(id);return;}
+        if(id==1700)briefing->skip_tour();
+      }
       if(id==100){if(auto warning{launch_warning(game.roster(),game.crew())})warn(warning);else begin();return;}
       if(id==99){show(game.campaign()?1700:1100);return;}
       if(id==101||id==102){text_scroll=std::max(0,text_scroll+(id==101?-1:1));return;}
@@ -351,7 +364,9 @@ void game_shell::action_impl(uint16_t id){
   if(id==2000||id==1900||id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
 }
 void game_shell::key(uint8_t scan){if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
+void game_shell::mouse_move(int x,int y){if(briefing&&(screen()==1500||screen()==1501))briefing->hover(x,y);}
 void game_shell::mouse_down(int x,int y){
+  mouse_move(x,y);
   pressed_mount.reset();
   if(screen()==1800)if(auto h{game.roster().find(game.roster().selected)})pressed_mount=armament.hit(h->chassis,x,y);
   if(!pressed_mount)menu->mouse_down(x,y);
@@ -390,12 +405,10 @@ void game_shell::draw(framebuffer &target)const{
   if((current==1500||current==1501||current==1510||current==1520)&&game.ready()){
     auto const kind{current==1500||current==1501?mission_text_kind::briefing:mission_text_kind::debriefing};
     if(auto section{game.text().find(kind)})if(auto program{std::get_if<text_program>(&section->content)}){
-      rectangle const bounds{kind==mission_text_kind::briefing?rectangle{18,15,278,139}:rectangle{17,29,142,85}};
+      rectangle const bounds{kind==mission_text_kind::briefing?rectangle{78,151,264,182}:rectangle{17,29,142,85}};
       draw_text(target,render_text(*program,game.prepared().counters),bounds,text_scroll);
     }
-    if(kind==mission_text_kind::briefing)if(auto section{game.text().find(mission_text_kind::objectives)})if(auto objectives{std::get_if<std::vector<objective_text>>(&section->content)}){
-      std::string text;for(auto const &o:*objectives){if(!text.empty())text+=" ";text+=o.text;}draw_text(target,text,{78,151,264,182});
-    }
+    if(kind==mission_text_kind::briefing&&briefing)briefing->draw(target);
   }
 }
 }

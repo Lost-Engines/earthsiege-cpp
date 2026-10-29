@@ -44,6 +44,7 @@ add_library(earthsiege_core
   src/shell/tactical_controller.cpp
   src/render/full_damage_display.cpp
   src/render/tactical_map.cpp
+  src/render/briefing_map.cpp
   src/audio/music_audio.cpp
   src/audio/combat_music.cpp
   src/audio/music_player.cpp
@@ -983,4 +984,26 @@ if(BUILD_TESTING)
   add_executable(shell_audio_test tests/shell_audio_test.cpp)
   target_link_libraries(shell_audio_test PRIVATE earthsiege_core)
   add_test(NAME shell_audio COMMAND shell_audio_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_music.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(briefing_labels_test tests/briefing_labels_test.cpp)
+  target_link_libraries(briefing_labels_test PRIVATE earthsiege_core)
+  add_test(NAME briefing_labels COMMAND briefing_labels_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/briefing_labels.bin)
+
+  add_test(NAME shell_bitmaps COMMAND bitmap_raster_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_bitmaps.bin)
+
+  add_executable(briefing_opening_test tests/briefing_opening_test.cpp)
+  target_link_libraries(briefing_opening_test PRIVATE earthsiege_core)
+  add_test(NAME briefing_opening COMMAND briefing_opening_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/briefing_opening.bin)
+
+  add_executable(briefing_map_test tests/briefing_map_test.cpp)
+  target_link_libraries(briefing_map_test PRIVATE earthsiege_core)
+  add_test(NAME briefing_map COMMAND briefing_map_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/briefing_map.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(briefing_tour_test tests/briefing_tour_test.cpp)
+  target_link_libraries(briefing_tour_test PRIVATE earthsiege_core)
+  add_test(NAME briefing_tour COMMAND briefing_tour_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/briefing_tour.bin)
 endif()
