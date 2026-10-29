@@ -142,6 +142,7 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
 void mission_view::step(bool const control, bool const zoom) {
   audio.advance();
   audio.engine(camera.mode != camera_mode::attached);
+  audio.update_music(session->music_observations(),ui_random);
   if(paused) { pointer_events.clear(); return; }
   // The original 120 Hz timer invokes both UI clocks every second callback.
   // Accumulate the nominal 60 Hz ticks separately from the 40 Hz physics loop.
@@ -263,7 +264,7 @@ void mission_view::draw() {
   radio->draw(frame);
 }
 
-std::vector<uint8_t> mission_view::take_audio(){return audio.take_samples();}
+std::vector<int16_t> mission_view::take_audio(){return audio.take_output();}
 framebuffer const &mission_view::image() const { return frame; }
 palette const &mission_view::colours() const { return display_colours; }
 

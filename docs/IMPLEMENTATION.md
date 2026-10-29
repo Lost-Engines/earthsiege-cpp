@@ -586,7 +586,7 @@ Fixtures can be refreshed with `tools/import_audio_fixtures.py ../earthsiege-rev
 
 ### Live PCM audio and world triggers
 
-`mission_audio` loads the counted SOUNDS.STR catalogue, retains sample storage in the resource cache and drives the original unsigned 8-bit stereo ring mixer at 11,025 Hz from a 120 Hz clock. SDL opens a matching logical audio stream and handles device conversion. All 37 effects and four live wingmate acknowledgements produce non-silent output in the resource integration check. Radio's initial mouth-frame gate still determines whether a transmission requests speech.
+`mission_audio` loads the counted SOUNDS.STR catalogue, retains sample storage in the resource cache and drives the original unsigned 8-bit stereo ring mixer at 11,025 Hz from a 120 Hz clock. The underlying PCM stream remains available for comparison; live output now combines it with FM synthesis at 44.1 kHz. All 37 effects and four live wingmate acknowledgements produce non-silent output in the resource integration check. Radio's initial mouth-frame gate still determines whether a transmission requests speech.
 
 World sound requests preserve launch/impact order. Beam impacts precede their sound even if the visual pool is full; ordinary projectile allocation failure remains the documented safe omission. Flyer actors share sound 16 as in the original, including a dead flyer's stop request. Collapse transitions request 30/41 and player contacts request 41. Footsteps use authored attachment local Y thresholds with retained latches; collapse uses world Z and its one-shot latch. The pure controller matches 1,800 original states, and complete articulated updates for all eight player chassis match 2,560 states with 279 sound requests. The original skips latch-pointer increments for absent attachment objects; the native controller retains that behavior. Live attachment allocation limits still belong to the pending smoke-controller integration.
 
@@ -596,17 +596,43 @@ The native mission also consumes original yaw/pitch servo requests at each aim u
 
 ### Native HMP scheduler
 
-The resource reader and timer scheduler match all 103,958 original event deltas, all 80 device-routing fixtures (1,020 track routes), and all 169,947 timed MIDI packets across 20 songs. The comparisons include source offsets and generated branch-restoration packets. Per-track elapsed clocks reset after each event; global loops rebase active tracks in the original order, restoring their programs/controllers. All supplied songs use explicit status bytes and only end-of-track meta events. Unused system/meta forms and zero-time infinite loops fail explicitly; game-installed branch callbacks and the HMI library's separate fade API are outside this scheduler's current scope. The game does not install those branch callbacks and uses its own music fade control.
+The resource reader and timer scheduler match all 103,958 original event deltas, all 80 device-routing fixtures (1,020 track routes), and all 169,947 timed MIDI packets across 20 songs. The comparisons include source offsets and generated branch-restoration packets. Per-track elapsed clocks reset after each event; global loops rebase active tracks in the original order, restoring their programs/controllers. All supplied songs use explicit status bytes and only end-of-track meta events. Unused system/meta forms and zero-time infinite loops fail explicitly; the HMI library's separate fade API is unused by the game. SoundObject's loop filter is installed by normal MIDI playback and is now implemented; it is distinct from the uninstalled optional callback driver and the controller-119 application callback.
 
 The HMI OPL2/OPL3 MIDI drivers are now native register-level implementations,
 verified against 16,276 original commands and 223,115 register writes. This
 includes the nine paired OPL3 voices, original bank conversion, sustain queue,
 allocation, controller and pitch-bend differences. The original release-cache
-overlap with frequency registers is preserved. Chip synthesis and the music
-owner still need integration; this does not yet make live mission music available.
+overlap with frequency registers is preserved. Chip synthesis and the mission music owner are now connected.
 
 The sampled-percussion MIDI driver and HMI gain stage also pass original-code
 comparisons (10,000 percussion operations and 4,000 gain updates). Physical ring
 slot removal, per-device rather than per-channel percussion gain, untracked notes
 when the eight-entry bookkeeping budget is full, and direct-volume rounding are
-retained. These drivers are ready for connection to the shared digital mixer.
+retained. These drivers now share the effects mixer’s 32 digital voices.
+
+
+### Live music integration
+
+The complete scheduler/gain/FM/PCM pipeline matches 40 original song/device
+cases: 257,910 register writes and 3,092 digital events. Combat selection matches
+1,200 original states including RNG, fades, distance/recognition and the unusual
+distant-flyer rule. The original SoundObject repeat filter matches 3,072 cases;
+six complete-song tests cover zero, finite and infinite repeats over 23,000 ticks.
+The game’s 255-repeat count applies to high-bit loop markers; unmarked branches
+remain unaffected. Natural completion and explicit stop retain original cleanup.
+
+`mission_audio` joins those pieces to the live encounter state and the existing
+120 Hz audio clock. PCM music uses the same voice allocator and completion
+notifications as effects. Unmodified Nuked OPL3 supplies 44.1 kHz chip synthesis;
+the original 11.025 kHz unsigned DAC stream is held for four output samples, with
+one source frame of transport delay, then combined at equal headroom with FM.
+The analogue mixer balance and bus timing are not claimed to match physical ISA
+hardware. The live default is OPL3; the independently verified OPL2 path remains
+available to the music owner. The future settings interface must expose hardware
+selection and volume preferences. The resource integration test exercises a
+15-second calm/combat/calm transition with audible FM and shared percussion.
+
+Validation after music integration: all 159 CTest checks pass (19.08 seconds),
+and a 120-frame mission run passes with SDL dummy video/audio. The native music
+checks include 44,444 timed packets through the real original repeat filter.
+No hardware listening comparison is claimed.

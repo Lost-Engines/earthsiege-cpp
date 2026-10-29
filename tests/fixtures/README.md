@@ -482,3 +482,9 @@ stereo pan and sustain overflow are covered. No chip/analogue equivalence is imp
 events, including the original bank and a copy with the note-off sentinel changed
 to exercise its dormant interruptible-sample branch. `music_gain.bin`: 4,000
 original gain updates and 62,286 physical MIDI packets with remapping disabled.
+
+`music_pipeline.bin` captures all 20 HMPs through original gain/FM/PCM drivers
+under both FM modes, including explicit completions and stop cleanup.
+`combat_music.bin` includes complete inputs/RNG and original results for 1,200
+selection/fade cases. `music_loops.bin` captures 3,072 SoundObject loop decisions;
+`hmp_object_loops.bin` captures six complete-song zero/finite/infinite-repeat cases.

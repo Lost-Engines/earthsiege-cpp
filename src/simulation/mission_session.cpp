@@ -199,6 +199,16 @@ bool mission_session::player_command(uint16_t const code) {
   else return false;
   return true;
 }
+music_contacts mission_session::music_observations()const{
+  music_contacts result;auto const observations{observe()};auto const &knowledge{activity->actor(player_index).awareness};auto const &body{player()};
+  cockpit_observer const observer{vec3<int32_t>{body.movement().position},body.movement().angles.z,body.torso().angle,crew[player_index].side,settings.detection_range()};
+  for(size_t i{};i<observations.size();++i){auto const &a{observations[i]};auto const &group{activity->group(actor_group(i))};
+    vec3<int32_t> delta;for(unsigned int axis{};axis<3;++axis)delta[axis]=wrap_long(static_cast<int64_t>(a.position[axis])-observer.position[axis]);
+    cockpit_target const target{vec3<int32_t>{a.position},group.side,activity->actor(i).awareness.seen,knowledge.known[i]!=0,a.dead,a.disabled};
+    music_contact contact{fast_distance(delta),group.side,a.disabled,a.dead,activity->waiting(i),can_target_from_cockpit(observer,target)};
+    result.actors.push_back(contact);if(i>=flyer_id(0)&&i<base_id(0))result.flyers.push_back(contact);
+  }return result;
+}
 void mission_session::cycle_target() {
   auto const observations{observe()};
   std::vector<cockpit_target> candidates;

@@ -1,5 +1,6 @@
 #pragma once
 #include <optional>
+#include <functional>
 #include "resources/hmp.h"
 namespace earthsiege {
 struct midi_packet {
@@ -7,7 +8,7 @@ struct midi_packet {
   std::vector<uint8_t> wire;
   std::optional<uint32_t> source_offset;
 };
-/// Original HMI routing and timer scheduler, without game-installed branch callbacks.
+/// Original HMI routing and timer scheduler, including the optional loop filter.
 class hmp_player {
   struct track_state {
     uint32_t cursor{}, elapsed{}, delta{};
@@ -24,6 +25,7 @@ class hmp_player {
   void read_delta(size_t track);
   void jump(size_t track,size_t branch,bool global,std::vector<midi_packet> &packets);
 public:
+  std::function<bool(uint8_t)> loop_filter;
   hmp_player(hmp_song const &song,std::span<uint32_t const> installed);
   void restart();
   void stop();

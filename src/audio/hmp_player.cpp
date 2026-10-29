@@ -72,7 +72,7 @@ std::vector<midi_packet> hmp_player::tick() {
           else if(controller==111 || controller==112 || controller==114 || controller==117 || controller==118 || controller==121) {
             auto const id{static_cast<uint8_t>(controller==114 ? value|128 : value)};auto const selected{branch(i,id)};
             auto &count{state.loops.at(selected)};bool take{true};
-            if(controller!=114 && controller!=121){if(count && count!=255)--count;take=count!=0;}
+            if(controller!=114 && controller!=121){if(count && count!=255)--count;take=count!=0;if(loop_filter&&!loop_filter(id))take=false;}
             if(take) {
               bool const global{controller==111 || controller==112 || controller==114};
               if(global) {for(size_t t{1};t<tracks.size();++t)if(tracks[t].active)jump(t,branch(t,id),true,packets);consume_delta=false;}

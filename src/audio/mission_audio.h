@@ -1,5 +1,7 @@
 #pragma once
 #include "audio/pcm_mixer.h"
+#include "audio/music_audio.h"
+#include "audio/combat_music.h"
 #include "audio/audio_controls.h"
 #include "audio/spatial_audio.h"
 #include "resources/resource_store.h"
@@ -11,6 +13,10 @@ class mission_audio {
   resource_store const &resources;
   pcm_sound_bank bank;
   pcm_mixer mixer{bank};
+  std::unique_ptr<music_audio> music;
+  combat_music_state music_state;
+  music_playback playback;
+  std::array<std::string,6> songs;
   sound_sources sources;
   std::array<servo_sound_state,2> servos;
   target_sound_state target_tone;
@@ -18,6 +24,9 @@ class mission_audio {
   std::array<bool,60> positioned{};
   uint64_t ticks{},sample_frames{};
   std::vector<uint8_t> output;
+  std::vector<int16_t> mixed_output;
+  uint64_t output_frames{};
+  std::array<uint8_t,2> held_pcm{128,128};
   model_transform listener()const;
   void position(size_t id,vec3<int32_t> const &where);
   void update_gain(size_t id);
@@ -25,6 +34,7 @@ public:
   explicit mission_audio(resource_store const &resources);
   void dispatch(sound_request const &request, vec3<int32_t> const &listener);
   void engine(bool external_view);
+  void update_music(music_contacts const &contacts,random_state &random);
   bool play(size_t id);
   bool play_at(size_t id,vec3<int32_t> const &where);
   bool speech(std::string_view path);
@@ -34,6 +44,8 @@ public:
   void flush_positions(vec3<int32_t> const &listener);
   void advance(unsigned int timer_ticks=3);
   std::vector<uint8_t> take_samples();
+  std::vector<int16_t> take_output();
   pcm_sound_bank const &state()const;
+  combat_music_state const &music_status()const{return music_state;}
 };
 } // namespace earthsiege

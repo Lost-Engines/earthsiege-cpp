@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include "audio/combat_music.h"
 #include <memory>
 #include <vector>
 #include "render/scenery_renderer.h"
@@ -236,6 +237,7 @@ public:
   bool transmit_order(uint16_t command);
   std::vector<wingmate_radio_response> take_radio_responses();
   std::vector<sound_request> take_sounds();
+  music_contacts music_observations()const;
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;

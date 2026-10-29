@@ -9,6 +9,7 @@ mission_audio::mission_audio(resource_store const &source):resources{source}{
   for(auto const &group:groups)for(auto const &item:group){
     if(item.text.empty())return;
     if(item.attributes.size()!=4 || id>=47)throw std::runtime_error{"invalid original simulation sound catalogue"};
+    if(id<songs.size())songs[id]=item.text;
     if(normalise_path(item.text).ends_with(".sfx") || normalise_path(item.text).ends_with(".raw")){
       bank.bind(id,source.read("simsound",item.text));bank.set_loops(id,-1,-1,item.attributes[0]);bank.set_volume(id,static_cast<int8_t>(item.attributes[1]));
     }
@@ -43,6 +44,19 @@ void mission_audio::engine(bool const external_view){
   }
 }
 
+void mission_audio::update_music(music_contacts const &contacts,random_state &random){
+  if(!music)music=std::make_unique<music_audio>(resources,bank);
+  if(music_state.track>=0)playback.playing[static_cast<size_t>(music_state.track)]=music->playing();
+  for(auto const &event:advance_combat_music(music_state,playback,contacts.actors,contacts.flyers,static_cast<uint32_t>(ticks/2),true,true,random)){
+    switch(event.action){
+      case music_action::load:music->load(resources.read("simsound",songs.at(event.track)));break;
+      case music_action::play:music->play();break;
+      case music_action::stop:music->stop();break;
+      case music_action::volume:music->set_volume(event.value);break;
+    }
+  }
+}
+
 bool mission_audio::play(size_t const id){return bank.play(id);}
 bool mission_audio::play_at(size_t const id,vec3<int32_t> const &where){position(id,where);return play(id);}
 bool mission_audio::speech(std::string_view const path){
@@ -66,9 +80,21 @@ void mission_audio::flush_positions(vec3<int32_t> const &origin){
 }
 void mission_audio::advance(unsigned int const timer_ticks){
   for(unsigned int i{};i<timer_ticks;++i){
-    auto const next{++ticks*11025/120};auto data{mixer.advance(static_cast<uint16_t>((next-sample_frames)*2))};sample_frames=next;output.insert(output.end(),data.begin(),data.end());
+    if(music)music->tick();
+    auto const next{++ticks*11025/120};auto data{mixer.advance(static_cast<uint16_t>((next-sample_frames)*2))};output.insert(output.end(),data.begin(),data.end());
+    auto const next_output{ticks*44100/120};auto const frames{static_cast<size_t>(next_output-output_frames)};
+    auto fm{music?music->render(frames):std::vector<int16_t>(frames*2)};
+    // Hold the 11025 Hz DAC value for four output samples. One source-frame
+    // transport delay avoids reading ahead across timer boundaries.
+    for(size_t f{};f<frames;++f){auto const absolute{output_frames+f};
+      if(absolute%4==0 && absolute>=4){auto const index{absolute/4-1};if(index>=sample_frames&&index<next){held_pcm={data[static_cast<size_t>(index-sample_frames)*2],data[static_cast<size_t>(index-sample_frames)*2+1]};}}
+      for(size_t c{};c<2;++c)mixed_output.push_back(static_cast<int16_t>((static_cast<int32_t>(fm[f*2+c])+(static_cast<int32_t>(held_pcm[c])-128)*256)/2));
+    }
+    if(!data.empty())held_pcm={data[data.size()-2],data.back()};
+    sample_frames=next;output_frames=next_output;
   }
 }
-std::vector<uint8_t> mission_audio::take_samples(){return std::exchange(output,{});}
+std::vector<uint8_t> mission_audio::take_samples(){mixed_output.clear();return std::exchange(output,{});}
+std::vector<int16_t> mission_audio::take_output(){output.clear();return std::exchange(mixed_output,{});}
 pcm_sound_bank const &mission_audio::state()const{return bank;}
 } // namespace earthsiege

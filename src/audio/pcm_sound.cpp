@@ -40,6 +40,13 @@ int32_t pcm_sound_bank::allocate(pcm_start const &request){
   }
   return -1;
 }
+int32_t pcm_sound_bank::start_voice(pcm_voice_state const &request){
+  for(size_t i{};i<channels.size();++i)if(!(channels[i].flags&0x8000)){
+    auto &v{channels[i]};v=request;v.flags|=0xa000;v.cursor=0;v.remaining=static_cast<uint32_t>(v.samples.size());v.consumed=0;v.output_cursor=0;v.drain_remaining=0;return static_cast<int32_t>(i);
+  }return -1;
+}
+void pcm_sound_bank::stop_voice(size_t handle){auto &v{channels.at(handle)};if((v.flags&0x8000)&&!(v.flags&0x1000)){v.flags&=0x7fff;v.key=0;}}
+void pcm_sound_bank::voice_pan(size_t handle,uint16_t pan){if(channels.at(handle).flags&0x8000)channels[handle].pan=pan;}
 bool pcm_sound_bank::play(size_t const slot){
   auto &s{sounds.at(slot)};if(!s.registered)return false;
   if(std::count_if(channels.begin(),channels.end(),[](auto const &v){return v.flags&0x8000;})>30){
@@ -65,6 +72,7 @@ void pcm_sound_bank::stop(size_t const slot){suspend(slot);auto &s{sounds.at(slo
 void pcm_sound_bank::complete(size_t const handle){
   channels.at(handle).flags=0;
   for(auto &s:sounds)if(s.registered && s.handle==static_cast<int32_t>(handle)){s.handle=-1;s.marker=65535;break;}
+  if(completed)completed(handle);
 }
 void pcm_sound_bank::voice_volume(size_t const handle,uint16_t const volume){if(channels.at(handle).flags&0x8000)channels[handle].volume=volume;}
 pcm_sound_state const &pcm_sound_bank::sound(size_t const slot)const{return sounds.at(slot);}

@@ -2,6 +2,7 @@
 #include "resources/binary_reader.h"
 #include <array>
 #include <optional>
+#include <functional>
 #include <vector>
 
 namespace earthsiege {
@@ -48,6 +49,10 @@ public:
     virtual void stop(size_t){};
   };
   observer *record{};
+  std::function<void(size_t)> completed;
+  int32_t start_voice(pcm_voice_state const &request);
+  void stop_voice(size_t handle);
+  void voice_pan(size_t handle,uint16_t pan);
   void bind(size_t slot,bytes samples);
   void set_master(uint8_t volume);
   void set_volume(size_t slot,int8_t volume);

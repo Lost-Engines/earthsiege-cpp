@@ -32,5 +32,15 @@ int main(int argc,char **argv)try{
     for(size_t slot{47};slot<57;++slot)if(audio.playing(slot))throw std::runtime_error{"speech voice did not complete"};
   }
   if(!speech_samples)throw std::runtime_error{"silent radio"};
+  // Live encounter decisions drive real song loading, FM and shared PCM voices.
+  mission_audio soundtrack{resources};random_state rng;music_contacts encounters;
+  bool heard{},percussion{},combat{},returned{};size_t output_samples{};
+  for(unsigned int step{};step<600;++step){
+    soundtrack.advance();encounters.actors.clear();if(step>=200&&step<300)encounters.actors.push_back({1000,1,false,false,false,true});
+    soundtrack.update_music(encounters,rng);auto const track{soundtrack.music_status().track};if(track>=3)combat=true;else if(combat)returned=true;
+    auto const output{soundtrack.take_output()};output_samples+=output.size();heard=heard||std::ranges::any_of(output,[](int16_t v){return v!=0;});
+    for(auto const &v:soundtrack.state().voices())if((v.flags&0x8000)&&v.key<128)percussion=true;
+  }
+  if(!heard||!percussion||!combat||!returned||output_samples!=15*44100*2)throw std::runtime_error{"live combat music integration"};
   std::cout<<"37 effects and four live wingmate acknowledgements: "<<effect_samples<<" effect / "<<speech_samples<<" speech non-silent samples\n";return 0;
 }catch(std::exception const &e){std::cerr<<e.what()<<'\n';return 1;}

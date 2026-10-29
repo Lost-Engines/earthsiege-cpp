@@ -71,7 +71,7 @@ public:
   void change_cockpit_view(cockpit_view view);
   void step(bool control, bool zoom);
   void draw();
-  std::vector<uint8_t> take_audio();
+  std::vector<int16_t> take_audio();
   framebuffer const &image() const;
   palette const &colours() const;
 };

@@ -24,3 +24,20 @@ for row in checks['cases']:
 
 for source,target in [("pcm-midi.bin","pcm_midi.bin"),("music-gain.bin","music_gain.bin")]:
  (root/"tests/fixtures"/target).write_bytes((music/source).read_bytes())
+
+(root/"tests/fixtures/music_pipeline.bin").write_bytes((music/"music-pipeline.bin").read_bytes())
+selection=json.loads((music/"selection.json").read_text())["checks"];out=bytearray(b"ESMSEL01")+struct.pack("<I",len(selection))
+def state(s):return struct.pack("<hBIB",*s)
+def rng(r):return struct.pack("<56H2B",*(v&65535 for v in r["words"]),r["first"],r["second"])
+for row in selection:
+ out+=state(row["before"])+bytes(row["volumes"])+bytes(row["playing"])+rng(row["rng"])+struct.pack("<IBB",row["clock"],row["enabled"],row["driver"])
+ for group in ["encounters","flyers"]:
+  out+=bytes([len(row[group])])
+  for a in row[group]:out+=struct.pack("<i5B",a["distance"],a["side"],a["disabled"],a["dead"],a["waiting"],a["visible"])
+ out+=state(row["after"])+bytes(row["after_volumes"])+bytes(row["after_playing"])+rng(row["after_rng"])+bytes([len(row["events"])])
+ for action,track in row["events"]:out+=bytes([{"load":0,"play":1,"stop":2}[action],track])
+(root/"tests/fixtures/combat_music.bin").write_bytes(out)
+
+(root/"tests/fixtures/music_loops.bin").write_bytes((music/"music-loops.bin").read_bytes())
+
+(root/"tests/fixtures/hmp_object_loops.bin").write_bytes((music/"hmp-object-loops.bin").read_bytes())

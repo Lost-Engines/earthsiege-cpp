@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(earthsiege VERSION 0.1.0 LANGUAGES CXX)
+project(earthsiege VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -7,7 +7,12 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
+add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
+
 add_library(earthsiege_core
+  src/audio/music_audio.cpp
+  src/audio/combat_music.cpp
+  src/audio/music_player.cpp
   src/audio/midi_gain.cpp
   src/audio/hmi_pcm.cpp
   src/audio/hmi_fm.cpp
@@ -262,6 +267,7 @@ add_library(earthsiege_core
   src/resources/resource_store.cpp
   src/resources/resource_store.h
 )
+target_link_libraries(earthsiege_core PRIVATE nuked_opl3)
 target_include_directories(earthsiege_core PUBLIC src "${PROJECT_SOURCE_DIR}")
 target_compile_definitions(earthsiege_core PUBLIC VECTORSTORM_NO_BOOST)
 target_compile_options(earthsiege_core PUBLIC
@@ -758,4 +764,28 @@ if(BUILD_TESTING)
   add_executable(midi_gain_test tests/midi_gain_test.cpp)
   target_link_libraries(midi_gain_test PRIVATE earthsiege_core)
   add_test(NAME midi_gain COMMAND midi_gain_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/music_gain.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(music_pipeline_test tests/music_pipeline_test.cpp)
+  target_link_libraries(music_pipeline_test PRIVATE earthsiege_core)
+  add_test(NAME music_pipeline COMMAND music_pipeline_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/music_pipeline.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(combat_music_test tests/combat_music_test.cpp)
+  target_link_libraries(combat_music_test PRIVATE earthsiege_core)
+  add_test(NAME combat_music COMMAND combat_music_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/combat_music.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(music_loops_test tests/music_loops_test.cpp)
+  target_link_libraries(music_loops_test PRIVATE earthsiege_core)
+  add_test(NAME music_loops COMMAND music_loops_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/music_loops.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(hmp_object_loops_test tests/hmp_object_loops_test.cpp)
+  target_link_libraries(hmp_object_loops_test PRIVATE earthsiege_core)
+  add_test(NAME hmp_object_loops COMMAND hmp_object_loops_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hmp_object_loops.bin)
 endif()
