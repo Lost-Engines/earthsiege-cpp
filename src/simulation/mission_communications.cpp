@@ -18,7 +18,17 @@ wingmate_order_state mission_session::order_state(size_t const index) const {
   }
   return s;
 }
+void mission_session::request_wingmate_status(size_t const actor) { radio_responses.push_back({actor,34}); }
+std::vector<size_t> mission_session::wingmate_ids() const {
+  std::vector<size_t> result;
+  for(auto const actor:activity->group(crew[player_index].group).members)
+    if(actor!=player_index && result.size()<3)result.push_back(actor);
+  return result;
+}
 bool mission_session::transmit_order(uint16_t const command) {
+  return transmit_order({command,player_index,{},{}},{});
+}
+bool mission_session::transmit_order(wingmate_order const &order,std::optional<size_t> const recipient) {
   auto const &group{activity->group(crew[player_index].group)};
   std::vector<wingmate_order_state> states(activity->size());
   auto const refresh{[&] { for(size_t i{};i<states.size();++i) states[i]=order_state(i); }};
@@ -29,8 +39,8 @@ bool mission_session::transmit_order(uint16_t const command) {
     member.command_position.x=s.command_position.x; member.command_position.y=s.command_position.y;
     member.reactions.incoming_damage=s.incoming_damage; decision.controller.reconsider_remaining=s.reconsider_remaining;
   }};
-  refresh(); wingmate_order const order{command,player_index,{},{}};
-  return dispatch_wingmate_order(states,group.members,order,[&](size_t index,uint16_t previous) {
+  refresh();
+  auto const deliver{[&](size_t index,uint16_t previous) {
     bool const accepted{receive_wingmate_order(states,index,order,previous,player_index,group.members.front(),group.order,displayed_target,{
       .select{[&](bool prefer) {
         apply(index);
@@ -50,7 +60,13 @@ bool mission_session::transmit_order(uint16_t const command) {
       .acknowledge{[&](uint16_t response){if(!states[index].dead) radio_responses.push_back({index,response});}},
     })};
     apply(index);return accepted;
-  });
+  }};
+  if(recipient) {
+    bool const accepted{*recipient<crew.size() && *recipient!=player_index && !states[*recipient].dead && deliver(*recipient,0)};
+    request_wingmate_status(*recipient);
+    return accepted;
+  }
+  return dispatch_wingmate_order(states,group.members,order,deliver);
 }
 std::vector<wingmate_radio_response> mission_session::take_radio_responses() {
   return std::exchange(radio_responses,{});

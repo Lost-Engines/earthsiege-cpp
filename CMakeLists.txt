@@ -10,6 +10,8 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/shell/tactical_controller.cpp
+  src/render/full_damage_display.cpp
   src/render/tactical_map.cpp
   src/audio/music_audio.cpp
   src/audio/combat_music.cpp
@@ -798,4 +800,16 @@ if(BUILD_TESTING)
   add_executable(tactical_map_test tests/tactical_map_test.cpp)
   target_link_libraries(tactical_map_test PRIVATE earthsiege_core)
   add_test(NAME tactical_map COMMAND tactical_map_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/tactical_map.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(tactical_controls_test tests/tactical_controls_test.cpp)
+  target_link_libraries(tactical_controls_test PRIVATE earthsiege_core)
+  add_test(NAME tactical_controls COMMAND tactical_controls_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/tactical_controls.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(full_damage_test tests/full_damage_test.cpp)
+  target_link_libraries(full_damage_test PRIVATE earthsiege_core)
+  add_test(NAME full_damage COMMAND full_damage_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/full_damage.bin)
 endif()

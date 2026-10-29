@@ -1,5 +1,6 @@
 #include "mission_session.h"
 #include "simulation/fixed_math.h"
+#include <algorithm>
 
 namespace earthsiege {
 size_t mission_session::player_id() const { return player_index; }
@@ -50,6 +51,43 @@ scanner_display_state mission_session::scanner_state(uint16_t const heading, uin
     result.contacts.push_back({combat_kind(identity.kind), activity->group(identity.group).side,
       {actor.position.x, actor.position.y}, {0, 0}, !activity->waiting(i) && !actor.dead && !actor.disabled,
       identity.awareness.seen, true, displayed_target == i});
+  }
+  return result;
+}
+
+tactical_map_state mission_session::tactical_state(uint32_t const ticks) const {
+  tactical_map_state result;result.ticks=ticks;
+  // The original globals begin at zero, so the mission rectangle also encloses
+  // the world origin when every authored point lies on the same side of it.
+  for(auto const &p:points) {
+    result.mission_bounds.left=std::min(result.mission_bounds.left,p.x);
+    result.mission_bounds.right=std::max(result.mission_bounds.right,p.x);
+    result.mission_bounds.top=std::min(result.mission_bounds.top,p.y);
+    result.mission_bounds.bottom=std::max(result.mission_bounds.bottom,p.y);
+  }
+  result.mission_bounds.left-=60000;result.mission_bounds.top-=60000;
+  result.mission_bounds.right+=60000;result.mission_bounds.bottom+=60000;
+  auto const &group{activity->group(crew[player_index].group)};
+  if(group.route>=0) {
+    auto const &route{routes.at(static_cast<size_t>(group.route)).points};
+    for(size_t i{1};i<route.size() && i<=9;++i) {
+      tactical_contact c;c.frame=static_cast<int16_t>(i-1);c.size=9;c.position=points.at(static_cast<size_t>(route[i]));result.contacts.push_back(c);
+    }
+  }
+  auto const wingmates{wingmate_ids()};auto const actors{observe()};
+  for(size_t i{};i<actors.size();++i) {
+    auto const &a{actors[i]};auto const &identity{activity->actor(i)};tactical_contact c;
+    c.actor=i;c.side=activity->group(identity.group).side;c.dead=a.dead;c.hidden=activity->waiting(i);
+    c.detected=identity.awareness.seen;c.position=a.position;c.heading=a.heading;
+    if(i<crew.size()) {
+      c.kind=0;c.size=7;c.frame=i==player_index?18:c.side?9:54;
+      auto const it{std::ranges::find(wingmates,i)};if(it!=wingmates.end())c.frame=static_cast<int16_t>(27+9*(it-wingmates.begin()));
+    } else if(i<base_id(0)){c.kind=2;c.size=5;c.frame=63;}
+    else {
+      auto const type{bases.at(i-base_id(0)).actor->profile().type};bool const small{type==5 || type==6 || type==8};
+      c.kind=1;c.size=small?7:13;c.frame=small?(c.side?73:75):(c.side?72:74);
+    }
+    result.contacts.push_back(c);
   }
   return result;
 }

@@ -8,6 +8,7 @@
 #include "render/waypoint_instruments.h"
 #include "render/damage_display.h"
 #include "render/scanner_display.h"
+#include "render/tactical_map.h"
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
 #include "simulation/camera.h"
@@ -216,6 +217,9 @@ public:
   std::optional<int16_t> pilot_identity(size_t actor) const;
   damage_display_state instrument_damage(std::optional<size_t> actor) const;
   scanner_display_state scanner_state(uint16_t heading, uint32_t ticks, int32_t range) const;
+  tactical_map_state tactical_state(uint32_t ticks) const;
+  std::vector<size_t> wingmate_ids() const;
+  void request_wingmate_status(size_t actor);
   bool camera_ready() const;
   bool eo_selected() const;
   player_rocket_launch const &latest_player_rocket() const;
@@ -236,6 +240,7 @@ public:
   bool player_command(uint16_t code);
   wingmate_order_state order_state(size_t actor) const;
   bool transmit_order(uint16_t command);
+  bool transmit_order(wingmate_order const &order, std::optional<size_t> recipient);
   std::vector<wingmate_radio_response> take_radio_responses();
   std::vector<sound_request> take_sounds();
   music_contacts music_observations()const;

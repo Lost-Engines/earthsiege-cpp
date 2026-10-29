@@ -662,3 +662,18 @@ terrain cells, grid rounding, directional icons, building scaling and contact
 visibility. Native ICONS.DBA's padded width is distinct from the height used for
 its scaling threshold. Lower-panel control/lifecycle integration follows this
 renderer; the forward navigation MFD remains a distinct implementation.
+
+### Lower-panel controls and full damage pages
+
+The tactical controller matches 908 original sequential states: command and
+wingmate changes, strict five-pixel actor picking, pending/committed destinations,
+zoom, pan and retained outgoing packet fields. Individual wingmate orders share
+the verified group receiver. Original actor-order map contacts and route points
+are exposed by the mission adapter.
+
+The full structural/internal/weapon damage renderer matches 592 complete original
+VGA frames across all eight playable chassis. PDG/GL/WEAPONS resources determine
+weapon placement, padded mirrored bitmaps, component lists and colour remapping.
+The fixture covers health thresholds, mixed damage, pagination and both missing-
+target messages. Incremental transport and live lower-panel ownership remain the
+next integration step. All 163 CTest checks pass after these components.
