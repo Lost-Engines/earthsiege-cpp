@@ -914,3 +914,28 @@ Full rebuild: all 201 CTest checks pass (30.02 seconds). The live eight-frame
 headless cockpit screenshot was inspected. The external bulk resets removed
 some tracked integrations during this work; reflog inspection and revalidation
 confirmed their recovery, now retained in commits.
+
+
+### Shell dialogue and synchronized portraits
+
+Commander briefings, the general's chapter introductions, launch remarks and
+single-mission debriefs now run as modal presentations with original voices,
+caption wrapping and synchronized mouth frames. Text-only, voice-only and both
+preferences remain independent of music and ambient effects. Skipping consumes
+the input; departure releases launch only after speech finishes or is skipped.
+
+Independent original-code comparisons cover all 209 speech-list entries and
+45,319 mouth states; 164 captions and 621 complete frames; 629 speech selections
+with full RNG state; and 159 complete portrait/caption compositions including
+resident commander animation and both retained pages. The live shell test covers
+natural completion, multi-clip introductions, skipping, voice output with music
+and effects disabled, and mission launch/return. Three native screens were saved
+for inspection. The shell SNC format differs from the simulator's radio format.
+
+Reference capture supplies clock ticks, page restoration and sound-device sinks;
+it executes original selection, mouth, caption and TTM code. These are bounded
+comparisons, not a claim of complete blocking-owner or sound-card equivalence.
+Chapter travel movies, campaign mechanic response chains and remaining cinematic
+owners continue next. Bay resident programs are currently paused during speech.
+
+Full rebuild: all 206 CTest checks pass (51.90 seconds). Commander and general screenshots were inspected.

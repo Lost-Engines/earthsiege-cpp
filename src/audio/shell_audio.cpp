@@ -44,8 +44,14 @@ bool shell_audio::load(std::string_view name){
 void shell_audio::volume(uint8_t value){bank.set_volume(0,static_cast<int8_t>(value));}
 void shell_audio::play(){if(effects_enabled&&!suspended)bank.play(0);}
 void shell_audio::clear_sample(){bank.stop(0);}
+void shell_audio::speak(std::string_view name,bool enabled){
+ stop_speech();if(!enabled||suspended)return;
+ auto path{normalise_path(name)};if(path.find('/')==std::string::npos)path="snc/"+path;
+ bank.bind(1,resources.read("speech",path));bank.set_volume(1,100);bank.play(1);
+}
+void shell_audio::stop_speech(){bank.stop(1);}
 void shell_audio::suspend(){
- suspended=true;if(music)music->stop();clear_sample();output.clear();
+ suspended=true;if(music)music->stop();clear_sample();stop_speech();output.clear();
 }
 void shell_audio::resume(){if(!suspended)return;suspended=false;if(wanted>=0)start_song();}
 void shell_audio::advance(unsigned timer_ticks){

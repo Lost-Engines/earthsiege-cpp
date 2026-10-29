@@ -11,7 +11,8 @@ struct temporary_saves {
  explicit temporary_saves(std::filesystem::path const &root):path{root/("shell-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))}{}
  ~temporary_saves(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}
 };
-void click(game_shell &shell,uint16_t action){auto c{shell.current_dialog().find(action)};require(c&&c->enabled,"click target enabled");int x{(c->bounds.left+c->bounds.right)/2},y{(c->bounds.top+c->bounds.bottom)/2};shell.mouse_down(x,y);shell.mouse_up(x,y);}
+void skip_speech(game_shell &shell){for(unsigned i{};shell.presentation_active()&&i<64;++i)shell.key(1);require(!shell.presentation_active(),"speech skip terminates");}
+void click(game_shell &shell,uint16_t action){auto c{shell.current_dialog().find(action)};require(c&&c->enabled,"click target enabled");int x{(c->bounds.left+c->bounds.right)/2},y{(c->bounds.top+c->bounds.bottom)/2};shell.mouse_down(x,y);shell.mouse_up(x,y);skip_speech(shell);}
 void screen(game_shell const &shell,unsigned expected){if(shell.screen()!=expected){std::cerr<<"screen "<<shell.screen()<<" expected "<<expected<<'\n';throw std::runtime_error{"screen transition"};}framebuffer f;shell.draw(f);require(std::ranges::any_of(f.pixels(),[](uint8_t v){return v!=0;}),"screen draws");}
 }
 int main(int argc,char **argv)try{
@@ -47,7 +48,7 @@ int main(int argc,char **argv)try{
  click(shell,2004);require(shell.state().roster().selected!=initial_slot,"single mission HERC changes");
  require(shell.state().crew().crew[0].hangar_slot==shell.state().roster().selected,"single mission selected HERC assigned");
  click(shell,100);screen(shell,1501);
- click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");shell.mission_return(single->results(),single->mission_variables());screen(shell,1510);
+ click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");shell.mission_return(single->results(),single->mission_variables());skip_speech(shell);screen(shell,1510);
  click(shell,1000);click(shell,1200);screen(shell,1200);click(shell,1210);screen(shell,1210);shell.text_input("Test Pilot");click(shell,100);screen(shell,1700);require(shell.state().campaign(),"registered campaign");auto name{shell.state().mission_name()};
  framebuffer bay_before;shell.draw(bay_before);bool moving{};
  for(unsigned i{};i<600&&!moving;++i){shell.advance(3);framebuffer f;shell.draw(f);moving=f.pixels()!=bay_before.pixels();}

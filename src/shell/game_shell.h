@@ -4,6 +4,7 @@
 #include "shell/bay_scene.h"
 #include "render/weapon_preview.h"
 #include "render/briefing_map.h"
+#include "render/shell_speech_scene.h"
 #include "shell/game_state.h"
 #include "shell/save_store.h"
 #include "render/hangar_artwork.h"
@@ -21,6 +22,13 @@ class game_shell {
   shell_audio audio;
   game_state game;
   std::unique_ptr<dialog> menu;
+  std::unique_ptr<shell_speech_scene> speech;
+  palette speech_palette;
+  int speech_mode{-1},speech_ordinal{};
+  unsigned speech_screen{},speech_destination{};
+  bool consume_release{};
+  void start_speech(int mode,int ordinal=0);
+  void finish_speech(bool skipped);
   std::unique_ptr<briefing_map> briefing;
   std::unique_ptr<dialog> warning_parent;
   framebuffer warning_frame;
@@ -70,7 +78,8 @@ class game_shell {
   void draw_text(framebuffer &frame,std::string const &text,rectangle const &bounds,int scroll=0)const;
 public:
   game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17);
-  unsigned int screen()const{return menu->id();}
+  unsigned int screen()const{return speech?speech_screen:menu->id();}
+  bool presentation_active()const{return speech!=nullptr;}
   bool quit_requested()const{return quitting;}
   bool ready_to_launch()const{return launch_requested;}
   preferences const &settings()const{return preferences_;}
@@ -78,7 +87,7 @@ public:
   game_state const &state()const{return game;}
   void action(uint16_t id);
   void key(uint8_t scan);
-  void text_input(std::string_view text){menu->text_input(text);}
+  void text_input(std::string_view text){if(!speech)menu->text_input(text);}
   void mouse_move(int x,int y);
   void mouse_down(int x,int y);
   void mouse_up(int x,int y);
@@ -88,6 +97,6 @@ public:
   void advance(unsigned timer_ticks=3);
   std::vector<int16_t> take_audio(){return audio.take_output();}
   void draw(framebuffer &target)const;
-  palette const &colours()const{return menu->current_palette();}
+  palette const &colours()const{return speech?speech_palette:menu->current_palette();}
 };
 }

@@ -64,6 +64,10 @@ add_library(earthsiege_core
   src/render/wingmate_portrait.cpp
   src/shell/pilot_transmission.cpp
   src/render/radio_portrait.cpp
+  src/shell/speech_selection.cpp
+  src/resources/shell_speech.cpp
+  src/render/shell_caption.cpp
+  src/render/shell_speech_scene.cpp
   src/resources/portrait_sync.cpp
   src/render/radio_banner.cpp
   src/shell/radio_controller.cpp
@@ -1051,4 +1055,34 @@ if(BUILD_TESTING)
   add_executable(environment_composition_test tests/environment_composition_test.cpp)
   target_link_libraries(environment_composition_test PRIVATE earthsiege_core)
   add_test(NAME environment_composition COMMAND environment_composition_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/environment_composition.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_speech_test tests/shell_speech_test.cpp)
+  target_link_libraries(shell_speech_test PRIVATE earthsiege_core)
+  add_test(NAME shell_speech COMMAND shell_speech_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_speech.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_captions_test tests/shell_captions_test.cpp)
+  target_link_libraries(shell_captions_test PRIVATE earthsiege_core)
+  add_test(NAME shell_captions COMMAND shell_captions_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_captions.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_speech_selection_test tests/shell_speech_selection_test.cpp)
+  target_link_libraries(shell_speech_selection_test PRIVATE earthsiege_core)
+  add_test(NAME shell_speech_selection COMMAND shell_speech_selection_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_speech_selection.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_speech_scenes_test tests/shell_speech_scenes_test.cpp)
+  target_link_libraries(shell_speech_scenes_test PRIVATE earthsiege_core)
+  add_test(NAME shell_speech_scenes COMMAND shell_speech_scenes_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_speech_scenes.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(game_shell_speech_test tests/game_shell_speech_test.cpp)
+  target_link_libraries(game_shell_speech_test PRIVATE earthsiege_core)
+  add_test(NAME game_shell_speech COMMAND game_shell_speech_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/build)
 endif()
