@@ -1,0 +1,59 @@
+#pragma once
+#include "shell/tactical_controller.h"
+#include "shell/pointer_controls.h"
+#include "simulation/mission_session.h"
+#include "simulation/instrument_failure.h"
+#include "resources/cockpit.h"
+
+namespace earthsiege {
+/// Lower cockpit MAP/DAMAGE pages and original single-wingmate commands.
+class cockpit_hdd {
+  random_state &random;
+  instrument_failure_state failure;
+  framebuffer cache;
+  tactical_map map;
+  full_damage_display damage;
+  tactical_controller controller;
+  tactical_map_state map_state;
+  std::vector<size_t> wingmates;
+  std::vector<bitmap> button_art;
+  std::array<font,4> fonts; // green, yellow, red, blue
+  interface_strings strings;
+  std::array<std::string,3> pilot_names;
+  std::array<std::string,9> weapon_label_pool;
+  std::array<std::optional<size_t>,9> weapon_label_refs;
+  rectangle bounds,map_bounds,command_bounds,list_bounds,painted;
+  std::array<rectangle,15> buttons;
+  std::array<rectangle,8> rows;
+  std::array<size_t,15> button_ids;
+  std::array<size_t,8> row_ids;
+  size_t map_id;
+  int direction_art{},page{},mode{},scroll{},subject{};
+  int mouse_x{},mouse_y{},origin_x{},origin_y{};
+  bool visible{},dirty{true};
+  uint32_t deadline{30};
+  bool blink_phase{};
+  unsigned int prompt_refreshes{};
+  std::optional<size_t> selected_actor;
+  std::optional<size_t> prompt;
+  std::vector<uint16_t> sounds;
+  std::optional<vec2<int32_t>> warp;
+  void enable(pointer_controls &input);
+  void select_wingmate(int slot,mission_session &session);
+  void choose(int command,bool keyboard);
+  void transmit(mission_session &session);
+  void select_subject(int direction,mission_session const &session);
+  void pick(mission_session &session,int32_t range);
+  void paint(mission_session &session);
+public:
+  cockpit_hdd(resource_store const &resources,cockpit_layout const &layout,mission_session &session,pointer_controls &input,random_state &ui_random);
+  bool command(uint16_t code,mission_session &session,pointer_controls &input,int32_t range);
+  bool activate(control_activation const &action,mission_session &session,pointer_controls &input,int32_t range);
+  void pointer(int x,int y);
+  void update(mission_session &session,pointer_controls &input,camera_state const &camera,uint32_t ticks,int x,int y);
+  void draw(framebuffer &frame,pointer_controls const &input,int x,int y)const;
+  std::vector<uint16_t> take_sounds();
+  std::optional<vec2<int32_t>> take_warp();
+  tactical_control_state const &state()const;
+};
+} // namespace earthsiege

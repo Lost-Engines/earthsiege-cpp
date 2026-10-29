@@ -14,6 +14,7 @@
 #include "shell/pointer_controls.h"
 #include "shell/cockpit_displays.h"
 #include "shell/cockpit_radio.h"
+#include "shell/cockpit_hdd.h"
 #include "simulation/mission_session.h"
 
 namespace earthsiege {
@@ -53,6 +54,7 @@ class mission_view {
   pointer_controls instruments;
   std::unique_ptr<cockpit_displays> displays;
   std::unique_ptr<cockpit_radio> radio;
+  std::unique_ptr<cockpit_hdd> hdd;
   std::deque<player_input> pointer_events;
   int16_t requested_throttle{};
   std::optional<bool> shield_to_front;
@@ -72,6 +74,7 @@ public:
   void step(bool control, bool zoom);
   void draw();
   std::vector<int16_t> take_audio();
+  std::optional<vec2<int32_t>> take_pointer_warp();
   framebuffer const &image() const;
   palette const &colours() const;
 };

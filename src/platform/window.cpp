@@ -44,6 +44,11 @@ void window::present(framebuffer const &frame, palette const &colours) {
 
 auto window::poll(SDL_Event &event)->bool { return SDL_PollEvent(&event) != 0; }
 
+void window::warp_mouse(int const x,int const y) {
+  int window_x{},window_y{};SDL_RenderLogicalToWindow(renderer.get(),static_cast<float>(x),static_cast<float>(y),&window_x,&window_y);
+  SDL_WarpMouseInWindow(handle.get(),window_x,window_y);
+}
+
 void window::mouse_position(int window_x, int window_y, int &x, int &y) const {
   float logical_x{};
   float logical_y{};

@@ -10,6 +10,8 @@ struct full_damage_state {
   std::array<int16_t,19> armour{};
   std::array<int16_t,12> internal{};
   std::vector<monitored_weapon> weapons; // original GL slot order, including empty slots
+  std::string subject_name;
+  std::vector<std::string> weapon_labels; // retained original shared label table, when supplied
   int mode{},scroll{},subject{};
   bool no_information{},failed{};
 };

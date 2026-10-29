@@ -9,6 +9,7 @@
 #include "render/damage_display.h"
 #include "render/scanner_display.h"
 #include "render/tactical_map.h"
+#include "render/full_damage_display.h"
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
 #include "simulation/camera.h"
@@ -218,6 +219,7 @@ public:
   damage_display_state instrument_damage(std::optional<size_t> actor) const;
   scanner_display_state scanner_state(uint16_t heading, uint32_t ticks, int32_t range) const;
   tactical_map_state tactical_state(uint32_t ticks) const;
+  full_damage_state full_damage(std::optional<size_t> actor) const;
   std::vector<size_t> wingmate_ids() const;
   void request_wingmate_status(size_t actor);
   bool camera_ready() const;

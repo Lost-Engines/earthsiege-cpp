@@ -48,6 +48,21 @@ auto held_key(SDL_Keycode const code)->std::optional<earthsiege::held_key> {
 auto command(SDL_Keycode const code, bool const alt, bool const control)->std::optional<uint16_t> {
   uint16_t scan;
   switch(code) {
+    case SDLK_d: scan=32; break;
+    case SDLK_t: scan=20; break;
+    case SDLK_x: scan=45; break;
+    case SDLK_s: scan=31; break;
+    case SDLK_i: scan=23; break;
+    case SDLK_COMMA: scan=51; break;
+    case SDLK_PERIOD: scan=52; break;
+    case SDLK_RETURN: scan=28; break;
+    case SDLK_KP_5: scan=76; break;
+    case SDLK_KP_8: case SDLK_UP: scan=72; break;
+    case SDLK_KP_2: case SDLK_DOWN: scan=80; break;
+    case SDLK_KP_4: case SDLK_LEFT: scan=75; break;
+    case SDLK_KP_6: case SDLK_RIGHT: scan=77; break;
+    case SDLK_PAGEUP: scan=73; break;
+    case SDLK_PAGEDOWN: scan=81; break;
     case SDLK_a: scan=30; break;
     case SDLK_g: scan=34; break;
     case SDLK_h: scan=35; break;
@@ -66,7 +81,7 @@ auto command(SDL_Keycode const code, bool const alt, bool const control)->std::o
     case SDLK_KP_MINUS: scan=74; break;
     case SDLK_KP_PLUS: scan=78; break;
     default:
-      if(code>=SDLK_F1 && code<=SDLK_F6) scan=static_cast<uint16_t>(59+code-SDLK_F1);
+      if(code>=SDLK_F1 && code<=SDLK_F8) scan=static_cast<uint16_t>(59+code-SDLK_F1);
       else if(code>=SDLK_1 && code<=SDLK_9) scan=static_cast<uint16_t>(2+code-SDLK_1);
       else return std::nullopt;
   }
@@ -121,8 +136,8 @@ auto main(int argc, char *argv[])->int try {
     scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo);
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
-      "F1 cockpit, F2 orbit, F3 free camera; P pauses, Escape returns to menu.\n"
-      "F7 lower instruments, F8 forward, F9 left, F10 right cockpit view.\n"
+      "Ctrl+F1 cockpit, Ctrl+F2 orbit, Ctrl+F3 free camera; P pauses, Escape returns to menu.\n"
+      "F7 tactical map, F8 damage, F9 left, F10 right cockpit view.\n"
       "Space fires; 1–9 or W/Alt+W selects weapons; Enter/Tab selects targets; R toggles radar.\n"
       "Hold right mouse to aim; both buttons centre aim. Backspace recentres.\n"
       "B changes weapon groups; Alt+1–9 edits a group; +/- adjusts charge; Z restores charge settings.\n"
@@ -160,8 +175,6 @@ auto main(int argc, char *argv[])->int try {
           if(event.key.keysym.sym == SDLK_F1 && (event.key.keysym.mod & KMOD_CTRL)) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
           if(event.key.keysym.sym == SDLK_F2 && (event.key.keysym.mod & KMOD_CTRL)) scene->change_camera(earthsiege::camera_mode::orbit);
           if(event.key.keysym.sym == SDLK_F3 && (event.key.keysym.mod & KMOD_CTRL)) scene->change_camera(earthsiege::camera_mode::free);
-          if(event.key.keysym.sym == SDLK_F7) scene->change_cockpit_view(earthsiege::cockpit_view::lower);
-          if(event.key.keysym.sym == SDLK_F8) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
           if(event.key.keysym.sym == SDLK_F9) scene->change_cockpit_view(earthsiege::cockpit_view::left);
           if(event.key.keysym.sym == SDLK_F10) scene->change_cockpit_view(earthsiege::cockpit_view::right);
         }
@@ -194,6 +207,7 @@ auto main(int argc, char *argv[])->int try {
       if(frames) while(pending >= 25) {
         auto const modifiers{display ? SDL_GetModState() : KMOD_NONE};
         scene->step((modifiers & KMOD_CTRL) != 0, (modifiers & KMOD_SHIFT) != 0);
+        if(auto const warp{scene->take_pointer_warp()};warp && display)display->warp_mouse(warp->x,warp->y);
         auto const samples{scene->take_audio()};if(sound)sound->queue(samples);
         pending -= 25;
       }

@@ -1,6 +1,7 @@
 #include "mission_session.h"
 #include "simulation/fixed_math.h"
 #include <algorithm>
+#include "simulation/weapon_display.h"
 
 namespace earthsiege {
 size_t mission_session::player_id() const { return player_index; }
@@ -55,6 +56,21 @@ scanner_display_state mission_session::scanner_state(uint16_t const heading, uin
   return result;
 }
 
+full_damage_state mission_session::full_damage(std::optional<size_t> const selected) const {
+  full_damage_state result;if(!selected)return result;
+  if(*selected>=crew.size()){result.no_information=true;return result;}
+  auto const basic{instrument_damage(selected)};result.model=basic.model;result.armour=basic.armour;result.internal=basic.internal;
+  auto const &actor{*crew[*selected].actor};auto const &damage{actor.damage()};auto const &capacity{actor.definition().damage};
+  auto const slots{actor.weapons().slots()};
+  for(size_t i{};i<slots.size();++i){
+    monitored_weapon w;auto const &slot{slots[i]};if(slot){w.definition=slot->definition;w.name=weapon_display_name(*slot,weapon_definitions);}
+    int const a{capacity.components.at(19+i).armour},b{capacity.hit_points.at(12+i)};
+    int const da{damage.armour.at(19+i)},db{damage.internal.at(12+i)};
+    w.damage=a+b?wrap_word(((da<0?a:da)+(db<0?b:db))*256/(a+b)):0;
+    result.weapons.push_back(w);
+  }return result;
+}
+
 tactical_map_state mission_session::tactical_state(uint32_t const ticks) const {
   tactical_map_state result;result.ticks=ticks;
   // The original globals begin at zero, so the mission rectangle also encloses
@@ -77,7 +93,8 @@ tactical_map_state mission_session::tactical_state(uint32_t const ticks) const {
   auto const wingmates{wingmate_ids()};auto const actors{observe()};
   for(size_t i{};i<actors.size();++i) {
     auto const &a{actors[i]};auto const &identity{activity->actor(i)};tactical_contact c;
-    c.actor=i;c.side=activity->group(identity.group).side;c.dead=a.dead;c.hidden=activity->waiting(i);
+    c.actor=i;c.side=activity->group(identity.group).side;c.dead=a.dead;c.hidden=a.disabled;
+    c.group_active=!activity->waiting(i);c.known=activity->actor(player_index).awareness.known[i]!=0;
     c.detected=identity.awareness.seen;c.position=a.position;c.heading=a.heading;
     if(i<crew.size()) {
       c.kind=0;c.size=7;c.frame=i==player_index?18:c.side?9:54;

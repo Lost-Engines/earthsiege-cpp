@@ -17,6 +17,8 @@ struct tactical_control_state {
   std::array<tactical_destination,3> orders;
   wingmate_order packet;
 };
+std::optional<size_t> cycle_tactical_target(std::span<tactical_contact const> contacts,vec3<int32_t> const &camera,rectangle const &bounds,vec3<int32_t> const &player,uint8_t side,std::optional<size_t> previous);
+
 /// Original lower-map selection and order packet lifetime, independent of drawing.
 class tactical_controller {
   tactical_control_state current;
@@ -30,6 +32,7 @@ public:
   void zoom(bool out);
   std::pair<vec3<int32_t>,std::optional<size_t>> pick(int x,int y,rectangle const &bounds,std::span<tactical_contact const> contacts)const;
   bool destination(vec3<int32_t> const &point,std::optional<size_t> actor,std::span<tactical_contact const> contacts,vec3<int32_t> const &player,int32_t range);
+  void designate(size_t actor);
   void commit();
   wingmate_order const &packet(size_t issuer);
   void cancel();

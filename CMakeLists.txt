@@ -37,6 +37,7 @@ add_library(earthsiege_core
   src/resources/radio_catalogue.cpp
   src/simulation/radio_queue.cpp
   src/simulation/instrument_failure.cpp
+  src/shell/cockpit_hdd.cpp
   src/shell/cockpit_displays.cpp
   src/simulation/mission_communications.cpp
   src/simulation/wingmate_orders.cpp
@@ -797,6 +798,12 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TESTING)
+  add_executable(cockpit_hdd_test tests/cockpit_hdd_test.cpp)
+  target_link_libraries(cockpit_hdd_test PRIVATE earthsiege_core)
+  add_test(NAME cockpit_hdd COMMAND cockpit_hdd_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_hdd.bin)
+  add_executable(tactical_targets_test tests/tactical_targets_test.cpp)
+  target_link_libraries(tactical_targets_test PRIVATE earthsiege_core)
+  add_test(NAME tactical_targets COMMAND tactical_targets_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/tactical_targets.bin)
   add_executable(tactical_map_test tests/tactical_map_test.cpp)
   target_link_libraries(tactical_map_test PRIVATE earthsiege_core)
   add_test(NAME tactical_map COMMAND tactical_map_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/tactical_map.bin)

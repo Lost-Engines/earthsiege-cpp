@@ -2,6 +2,19 @@
 #include <stdexcept>
 
 namespace earthsiege {
+std::optional<size_t> cycle_tactical_target(std::span<tactical_contact const> contacts,vec3<int32_t> const &camera,rectangle const &bounds,vec3<int32_t> const &player,uint8_t const side,std::optional<size_t> previous){
+  size_t start{};
+  if(previous)for(size_t i{};i<contacts.size();++i)if(contacts[i].actor==previous && contacts[i].side==side){start=i+1;break;}
+  for(size_t j{};j<contacts.size();++j){
+    auto const &c{contacts[(start+j)%contacts.size()]};
+    if(!c.actor || c.side!=side || c.dead || !c.selectable)continue;
+    auto const p{tactical_project(c.position,camera,bounds)};if(!bounds.contains(p.x,p.y))continue;
+    if(side && !c.known && !(c.detected && fast_distance({c.position.x-player.x,c.position.y-player.y,c.position.z-player.z})<1000000))continue;
+    return c.actor;
+  }
+  return {};
+}
+
 tactical_control_state const &tactical_controller::state()const{return current;}
 void tactical_controller::camera(vec3<int32_t> const &position){current.camera=position;}
 void tactical_controller::wingmate(int32_t const slot){
@@ -50,6 +63,11 @@ bool tactical_controller::destination(vec3<int32_t> const &point,std::optional<s
     if(current.command==11 || current.ready)return false;
   }else if(current.command!=13 && current.command!=14)return false;
   order.pending=point;order.pending_kind=0;order.pending_active=true;current.ready=true;return true;
+}
+void tactical_controller::designate(size_t const actor){
+  if(current.wingmate<0)return;
+  auto &order{current.orders[static_cast<size_t>(current.wingmate)]};
+  order.pending_actor=actor;order.pending_kind=1;order.pending_active=true;current.ready=true;
 }
 void tactical_controller::commit(){
   if(current.wingmate<0)return;

@@ -9,6 +9,7 @@ struct tactical_contact {
   int16_t frame{}, size{};
   uint8_t side{};
   bool dead{}, hidden{}, detected{}, last_position_unavailable{true};
+  bool group_active{true}, selectable{true}, known{};
   uint16_t heading{};
   vec3<int32_t> position{};
   vec2<int32_t> last_position{};
@@ -22,7 +23,7 @@ struct tactical_map_state {
   vec3<int32_t> camera{};
   rectangle mission_bounds;
   uint32_t ticks{};
-  bool failed{};
+  bool failed{}, blink_phase{};
   std::vector<tactical_contact> contacts;
 };
 struct tactical_hit { rectangle bounds; size_t contact; };

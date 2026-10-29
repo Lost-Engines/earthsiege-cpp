@@ -59,8 +59,10 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
   radio=std::make_unique<cockpit_radio>(resources,cockpit.layout,*session,ui_random);
   displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments,ui_random);
+  hdd=std::make_unique<cockpit_hdd>(resources,cockpit.layout,*session,instruments,ui_random);
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
@@ -82,7 +84,9 @@ void mission_view::consume_pointer_events() {
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   instruments.window_bounds({origin[0], origin[1], origin[0] + 319, origin[1] + 199});
   if(camera.mode == camera_mode::attached) for(auto const &event : pointer_events) {
-    if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right)}) {
+    hdd->pointer(event.mouse.x+origin[0],event.mouse.y+origin[1]);
+    if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right,interface_ticks*2)}) {
+      if(hdd->activate(*action,*session,instruments,mfd_ranges[displays->state().range_index]))continue;
       if(displays->activate(*action,*session,instruments)) continue;
       if(action->index == 0) requested_throttle = static_cast<int16_t>(throttle.slider_layout().vertical ? -action->value : action->value);
       else if(action->index < 3) { if(action->value & 1) shield_to_front = action->index == 1; }
@@ -136,6 +140,7 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
   change_camera(camera_mode::attached);
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
 }
 
@@ -163,7 +168,9 @@ void mission_view::step(bool const control, bool const zoom) {
     input.command=commands.front(); commands.pop_front();
     if(input.command>=59 && input.command<=64 && camera.mode==camera_mode::attached && panel!=cockpit_view::forward)
       change_cockpit_view(cockpit_view::forward);
-    if(displays->command(input.command,*session,instruments)) input.command=0;
+    if(input.command==65 || input.command==66)change_cockpit_view(cockpit_view::lower);
+    if(hdd->command(input.command,*session,instruments,mfd_ranges[displays->state().range_index]))input.command=0;
+    else if(displays->command(input.command,*session,instruments))input.command=0;
   }
   auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control, cockpit.layout.bounds(0x450))};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
@@ -197,10 +204,12 @@ void mission_view::step(bool const control, bool const zoom) {
                     player.body().elevation().angle, player.damage().consequences.disabled);
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
   for(auto const &request:session->take_sounds())audio.dispatch(request,player.body().movement().position);
   for(auto const id:displays->take_sounds())audio.play(id);
   for(auto const id:radio->take_sounds())audio.play(id);
+  for(auto const id:hdd->take_sounds())audio.play(id);
   for(auto const &path:radio->take_speech())audio.speech(path);
   audio.flush_positions(player.body().movement().position);
 }
@@ -251,6 +260,7 @@ void mission_view::draw() {
     weapons.draw_groups(frame, session->player_weapon_controls().current_group(), faces, x, y);
     navigation.draw(frame, x, y, session->player_weapon_controls().auto_tracking());
     displays->draw(frame,instruments,x,y);
+    hdd->draw(frame,instruments,x,y);
     if(auto const marker{session->target_marker()}) {
       auto camera_transform{rotation_transform(camera.angles)};
       camera_transform.translation = camera.position;
@@ -264,6 +274,7 @@ void mission_view::draw() {
   radio->draw(frame);
 }
 
+std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}
 std::vector<int16_t> mission_view::take_audio(){return audio.take_output();}
 framebuffer const &mission_view::image() const { return frame; }
 palette const &mission_view::colours() const { return display_colours; }

@@ -6,7 +6,7 @@
 namespace earthsiege {
 
 enum class control_face : uint8_t { normal, pressed, disabled };
-struct control_activation { size_t index; int value; };
+struct control_activation { size_t index; int value; bool double_click{}; };
 
 /// Original cockpit mouse queue semantics, independent of the host window system.
 /// Actions are returned to the owning instrument. Button values retain the mouse
@@ -27,6 +27,8 @@ private:
   bool dragging{false};
   bool left_held{false}, right_held{false};
   int last_x{}, last_y{};
+  std::array<uint32_t,2> release_ticks{};
+  bool double_click{};
   std::optional<size_t> hit(int x, int y) const;
 public:
   size_t add_button(rectangle bounds);
@@ -34,12 +36,13 @@ public:
   control const &at(size_t index) const;
   std::optional<size_t> active() const;
   bool is_dragging() const;
+  bool is_double_click() const;
   void window_bounds(rectangle bounds);
   void enable(size_t index, bool enabled);
   void set_value(size_t index, int value);
   void painted(size_t index);
   void reset_input();
-  std::optional<control_activation> event(int x, int y, bool left, bool right);
+  std::optional<control_activation> event(int x, int y, bool left, bool right, uint32_t ticks = 0);
 };
 
 } // namespace earthsiege

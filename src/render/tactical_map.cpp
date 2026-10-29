@@ -65,7 +65,7 @@ std::vector<tactical_hit> tactical_map::draw(rectangle const &bounds,tactical_ma
     auto const &contact{state.contacts[i]};auto position{contact.position};
     if(contact.kind>=0) {
       if(contact.side && (contact.hidden || contact.dead))continue;
-      if(contact.side && !contact.detected) {
+      if(!contact.detected && (contact.side || !contact.group_active)) {
         if((state.ticks&32) || contact.last_position_unavailable)continue;
         position={contact.last_position.x,contact.last_position.y,0};
       }
@@ -86,7 +86,7 @@ std::vector<tactical_hit> tactical_map::draw(rectangle const &bounds,tactical_ma
       if(!contact.dead)frame+=octant+1;
     }
     int drawn_half{half};
-    if(!(contact.blink && (state.ticks&32))) {
+    if(!(contact.blink && state.blink_phase)) {
       auto const &icon{icons.at(frame)};
       if(contact.kind==1) {
         auto const distance{fast_distance({position.x-state.camera.x,position.y-state.camera.y,position.z-state.camera.z})};

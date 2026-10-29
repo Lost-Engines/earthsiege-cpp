@@ -60,7 +60,7 @@ std::vector<weapon_diagram> full_damage_display::diagrams(full_damage_state cons
 }
 void full_damage_display::draw(framebuffer &target,rectangle const &bounds,rectangle const &listing,full_damage_state const &s)const{
   scoped_framebuffer_clip clip{target,nullptr};target.fill(bounds,31);if(s.failed)return;
-  auto const subject{s.subject==0?strings.at(14).at(0).text:s.subject==4?strings.at(15).at(0).text:"RED "+std::to_string(s.subject)};
+  auto const subject{!s.subject_name.empty()?s.subject_name:s.subject==0?strings.at(14).at(0).text:s.subject==4?strings.at(15).at(0).text:"RED "+std::to_string(s.subject)};
   label(target,s.subject==0?yellow:red,subject,{bounds.left+20,bounds.bottom-2-static_cast<int>(yellow.height),bounds.left+60,bounds.bottom-2},std::array<uint8_t,5>{50,56,59,49,59}.at(static_cast<size_t>(s.subject)),true);
   if(s.model<0){auto const x{bounds.left+((bounds.right-bounds.left)>>1)},y{bounds.top+((bounds.bottom-bounds.top)>>1)};label(target,red,strings.at(16).at(s.no_information?1:0).text,{x-40,y,x+40,y+10},59,true);return;}
   auto const &art{chassis.at(static_cast<size_t>(s.model))};auto const view_index{s.mode==1?1U:0U};auto const &view{art.diagram.views.at(view_index)};auto const &image{art.frames.at(view_index)};
@@ -79,7 +79,8 @@ void full_damage_display::draw(framebuffer &target,rectangle const &bounds,recta
     paper_doll_region region;int damage{},paint_damage{};std::string name;bool paint{true};
     if(s.mode==2){auto const &d{mounts[i]};region={static_cast<int32_t>(d.slot),d.bounds,54,damage_colour_mode::shaded_range};
       damage=i<s.weapons.size()?s.weapons[i].damage:0;paint_damage=damage;
-      if(d.slot<s.weapons.size())name=s.weapons[d.slot].name;
+      if(d.slot<s.weapon_labels.size())name=s.weapon_labels[d.slot];
+      else if(d.slot<s.weapons.size())name=s.weapons[d.slot].name;
     }else{region=view.regions[i];auto const section{static_cast<size_t>(region.section)};
       damage=s.mode==0?s.armour.at(section):s.internal.at(section);paint_damage=damage;
       name=strings.at(s.mode==0?12:13).at(section).text;

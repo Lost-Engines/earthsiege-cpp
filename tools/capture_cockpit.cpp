@@ -27,6 +27,12 @@ int main(int argc,char **argv) try {
     }
     view.change_cockpit_view(cockpit_view::lower);view.draw();
     view.image().save(output/("demo"+std::to_string(demo)+"-wingmates.ppm"),view.colours());
+    view.command(66);view.step(false,false);view.draw();view.image().save(output/("demo"+std::to_string(demo)+"-damage.ppm"),view.colours());
+    view.command(23);view.step(false,false);view.draw();view.image().save(output/("demo"+std::to_string(demo)+"-internal.ppm"),view.colours());
+    view.command(17);view.step(false,false);view.draw();view.image().save(output/("demo"+std::to_string(demo)+"-weapons.ppm"),view.colours());
+    view.command(65);view.step(false,false);view.draw();view.image().save(output/("demo"+std::to_string(demo)+"-map.ppm"),view.colours());
+    view.command(2);view.step(false,false);view.command(20);view.step(false,false);view.draw();view.image().save(output/("demo"+std::to_string(demo)+"-patrol.ppm"),view.colours());
+    view.command(14);view.step(false,false);
     view.command(0x218);
     for(unsigned int step{};step<100;++step){
       view.step(false,false);
