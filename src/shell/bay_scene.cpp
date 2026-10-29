@@ -38,6 +38,14 @@ void bay_scene::redraw(hangar const &h,hangar_artwork const &art,armament_catalo
  gate(h.selected,random,sound);
 }
 void bay_scene::construction(hangar const &h,service_prices const &prices,random_state &random){plan.change(h.construction_slot,1,h,prices,random);}
+void bay_scene::speech_mode(bool active){
+ for(auto index:{3U,6U})programs[index].player.mode(active?2:0);
+}
+void bay_scene::compose(framebuffer &front,framebuffer &back,int16_t elapsed,random_state &random,shell_animation_sound *sound){
+ std::swap(visible,front);std::swap(background,back);
+ advance(elapsed,random,sound);
+ std::swap(visible,front);std::swap(background,back);
+}
 void bay_scene::advance(int16_t elapsed,random_state &random,shell_animation_sound *sound){
  visible=background;
  for(size_t i{};i<programs.size();++i)run(i,elapsed,random,sound);

@@ -21,6 +21,10 @@ public:
  void redraw(hangar const &,hangar_artwork const &,armament_catalog const &,int selected_mount,framebuffer const &base,random_state &,shell_animation_sound *sound=nullptr);
  void construction(hangar const &,service_prices const &,random_state &);
  void advance(int16_t elapsed,random_state &,shell_animation_sound *sound=nullptr);
+ /// Mechanic dialogue shares the original retained page; only slots 3 and 6 stop.
+ void speech_mode(bool active);
+ void compose(framebuffer &front,framebuffer &back,int16_t elapsed,random_state &,shell_animation_sound *sound=nullptr);
+ void retain(framebuffer const &front,framebuffer const &back){visible=front;background=back;}
  framebuffer const &image()const{return visible;}
  framebuffer const &retained()const{return background;}
  bay_animation_plan const &assignments()const{return plan;}

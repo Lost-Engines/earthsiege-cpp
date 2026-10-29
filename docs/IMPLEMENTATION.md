@@ -5,8 +5,9 @@ The native game is being built from the supplied Earthsiege 1.0 data and origina
 Current integration: single missions and careers can launch, fly and return with
 saved results. Arming, crew assignment, repair, salvage, construction and launch
 warnings are connected to the original shell controls and static artwork.
-Cinematics, full environment presentation and
-end-to-end replay verification remain. Later entries supersede the older
+Opening, travel and ending movies, original environment layers and workshop
+dialogue are connected. Remaining menu transitions, impact flashes and complete
+frame scheduling/replay verification remain. Later entries supersede the older
 integration boundaries in this cumulative record.
 
 Working components:
@@ -988,3 +989,16 @@ main-menu ANM playback and full owner scheduling remain separate work.
 
 Full rebuild: all 209 CTest checks pass (20.06 seconds). Opening, chapter-travel
 and damaged-HERC mechanic-return screenshots were inspected.
+
+
+### Workshop animation during mechanic dialogue
+
+Mechanic portraits now share the bay's actual visible and retained pages. Only
+resident programs 3 and 6 pause, as in GO; other workers, elevators and welding
+continue with the same RNG stream. Portrait cleanup returns both drawing pages
+to the bay before its two programs resume. No guessed overlay masks are used.
+
+The original capture runs eight chassis/speaker/clip combinations and compares
+104 complete frames, including post-dialogue cleanup, both page CRCs and every
+RNG word. All match. Existing bay, portrait, live speech and cinematic-flow
+checks also pass. Original sound-device timing remains an explicit boundary.

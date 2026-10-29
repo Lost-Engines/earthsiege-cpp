@@ -45,9 +45,12 @@ void game_shell::start_speech(int mode,int ordinal){
  speech_destination=selected.destination;
  speech_screen=mode==2?1490:mode<=1?1499:mode==6?1700:selected.destination;
  framebuffer base;
+ shell_speech_scene::resident_update update;
+ framebuffer const *retained{};
  if(selected.region==4000){
   if(!bay_motion)show(1700);
-  base=bay_motion->image();
+  base=bay_motion->image();retained=&bay_motion->retained();bay_motion->speech_mode(true);
+  update=[this](framebuffer &front,framebuffer &back,int16_t elapsed,random_state &random){bay_motion->compose(front,back,elapsed,random,audio.effects());};
  }else{
   if(bay_motion)audio.clear_sample();
   bay_motion.reset();weapon_motion.reset();preview_index=-2;displayed_hangar.clear();
@@ -55,13 +58,15 @@ void game_shell::start_speech(int mode,int ordinal){
  }
  speech_palette=read_palette(resources.read("shell0","res32/regn"+std::to_string(selected.region)+".dpl"));
  if(selected.song>=0)audio.song(selected.song);else audio.region(selected.region);
- speech=std::make_unique<shell_speech_scene>(resources,selected,base,game.presentation_random());
+ speech=std::make_unique<shell_speech_scene>(resources,selected,base,game.presentation_random(),retained,std::move(update));
  audio.speak(speech->sample(),preferences_.current()[2]!=0);
 }
 void game_shell::finish_speech(bool skipped){
  if(!speech)return;
  auto const mode{speech_mode};auto const destination{speech_destination};auto const ordinal{speech_ordinal};
- speech->stop(game.presentation_random());speech.reset();speech_mode=-1;audio.stop_speech();
+ speech->stop(game.presentation_random());
+ if(bay_motion){bay_motion->retain(speech->image(),speech->retained());bay_motion->speech_mode(false);}
+ speech.reset();speech_mode=-1;audio.stop_speech();
  if(mode==2&&!skipped&&static_cast<size_t>(ordinal+1)<chapter_introduction(game.crew().node).size()){
   start_speech(2,ordinal+1);return;
  }
