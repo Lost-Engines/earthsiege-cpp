@@ -16,7 +16,7 @@ prepared_mission prepare_mission(bytes source,int16_t mode,int16_t node,int16_t 
   return out;
 }
 single_mission_crew generate_single_crew(resource_store const &resources,mission_script const &script,random_state &random) {
-  single_mission_crew out;out.roster=read_hangar(resources.read("shell0","car/sm_init.dat"));for(auto &h:out.roster.hercs)normalize_hangar_equipment(h);auto &s{out.state};s.screen=1700;s.crew_count=4;
+  single_mission_crew out;binary_reader stock{resources.read("shell0","car/s_armory.dat"),"single mission armory"};out.inventory=read_armory(stock);stock.require_end();out.roster=read_hangar(resources.read("shell0","car/sm_init.dat"));for(auto &h:out.roster.hercs)normalize_hangar_equipment(h);auto &s{out.state};s.screen=1700;s.crew_count=4;
   s.technology=read_technology(resources.read("zones","bst/tech_sng.dat"));for(auto &c:s.crew)c=make_crew_member();
   if(script.groups.empty())throw std::runtime_error{"single mission has no player group"};
   auto const &members{script.groups.front().members};

@@ -488,3 +488,16 @@ under both FM modes, including explicit completions and stop cleanup.
 `combat_music.bin` includes complete inputs/RNG and original results for 1,200
 selection/fade cases. `music_loops.bin` captures 3,072 SoundObject loop decisions;
 `hmp_object_loops.bin` captures six complete-song zero/finite/infinite-repeat cases.
+
+
+armament.bin (ESARM003) comes directly from the sibling analysis tool
+capture_armament_fixtures.py: 1,650 original 0x29abc exchanges, 360 original
+0x371ad compatible menus, 270 original 0x24a1e missile selections and 128
+original next/previous HERC selections. It includes all 45 mount records,
+HOTSPOT rectangles, original base origins (0x25090) and painter order (0x803d8).
+Screen copy/restore and condition-overlay binding are explicit presentation
+sinks; equipment changes, inventory stacks and constructors remain original.
+HERC.DAT's GL image indices 48..50 exceed HERCWEP1.DBA's 48 frames, so these
+transaction tests do not attempt that invalid native presentation access.
+The UI test separately exercises mouse mount selection, keyboard equipment
+exchange, roster reassignment and save/launch/return with isolated user files.

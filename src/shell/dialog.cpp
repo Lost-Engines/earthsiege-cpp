@@ -111,7 +111,26 @@ void dialog::draw(framebuffer &frame, bool background) const {
     if(entry.type != 3) continue;
     bool const disabled{!entry.enabled};
     unsigned int const state{disabled ? 2u : pressed == index ? 1u : 0u};
-    draw_dialog_button(frame, entry.bounds, styles[state], corners);
+    // GO 0x1d47d gives these paired controls one shared 56-pixel sprite
+    // and text anchor. Draw it once, with either half's pressed state.
+    bool const paired{entry.style==1 && !entry.key_scan &&
+      (entry.action==1806 || entry.action==1807 || entry.action==2003 || entry.action==2004)};
+    if(paired) {
+      bool const right{entry.action==1807 || entry.action==2004};
+      auto const other{find(static_cast<uint16_t>(entry.action+(right?-1:1)))};
+      if(right && other)continue;
+      auto const active{pressed?&controls[*pressed]:nullptr};
+      bool const pushed{active==&entry || (other && active==other)};
+      unsigned const pair_state{disabled?2u:pushed?1u:0u};
+      bool const right_down{active && (active->action==1807 || active->action==2004)};
+      auto const &sprite{corners.at(disabled?51u:pushed?(right_down?49u:50u):48u)};
+      auto const &face{button_faces[pair_state]};
+      int const x{entry.bounds.left-(right?27:1)};
+      int const y{entry.bounds.bottom-((entry.bounds.bottom-entry.bounds.top)-static_cast<int>(face.height))/2-2};
+      frame.image(sprite,x,entry.bounds.top-1,true);
+      frame.text(face,entry.label,x+(static_cast<int>(sprite.width)-face.text_width(entry.label))/2,y);
+      continue;
+    }
     auto const &face{button_faces[state]};
     if(entry.style==1 && entry.label.empty()) {
       // Directional controls use the original icon sheet, not a host font.
@@ -120,15 +139,18 @@ void dialog::draw(framebuffer &frame, bool background) const {
         case 80:case 81:icon=21;down=23;break;
         case 75:icon=25;down=27;break;
         case 77:icon=24;down=26;break;
-        case 78:icon=32;down=33;break;
-        case 74:icon=34;down=35;break;
+        case 78:icon=28;down=30;if(entry.action==108){icon=32;down=33;}break;
+        case 74:icon=29;down=31;if(entry.action==109){icon=34;down=35;}break;
         default:break;
       }
+      if(entry.action==2003){icon=44;down=46;}
+      if(entry.action==2004){icon=45;down=47;}
       if(entry.action>=1503&&entry.action<=1506){icon=36+(entry.action-1503)*2;down=icon+1;}
       auto const &sprite{corners.at(state==1?down:icon)};
       frame.image(sprite,entry.bounds.left,entry.bounds.top,true);
       continue;
     }
+    draw_dialog_button(frame, entry.bounds, styles[state], corners);
     frame.text(face, entry.label, (entry.bounds.left + entry.bounds.right - face.text_width(entry.label)) / 2, entry.bounds.bottom - ((entry.bounds.bottom - entry.bounds.top) - static_cast<int>(face.height)) / 2 - 2 + (state == 1 ? 1 : 0));
   }
 }

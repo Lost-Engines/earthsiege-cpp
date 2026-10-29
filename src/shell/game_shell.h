@@ -2,6 +2,7 @@
 #include "shell/dialog.h"
 #include "shell/game_state.h"
 #include "shell/save_store.h"
+#include "render/hangar_artwork.h"
 namespace earthsiege {
 /// Application-level shell flow. Window input is translated before it reaches
 /// this owner, so scripted tests exercise the same transitions as the UI.
@@ -14,6 +15,14 @@ class game_shell {
   std::unique_ptr<dialog> menu;
   std::vector<std::string> strings;
   font text_face;
+  armament_catalog armament;
+  hangar_artwork bay;
+  int selected_mount{-1};
+  std::optional<int> pressed_mount;
+  bool missile_menu{};
+  std::vector<int16_t> weapon_choices;
+  void refresh_armament(std::optional<int16_t> wanted={});
+  void choose_armament();
   int single_kind{},battle_set{};
   unsigned int options_owner{1000},last_screen{1000};
   int text_scroll{};
@@ -37,9 +46,9 @@ public:
   void action(uint16_t id);
   void key(uint8_t scan);
   void text_input(std::string_view text){menu->text_input(text);}
-  void mouse_down(int x,int y){menu->mouse_down(x,y);}
+  void mouse_down(int x,int y);
   void mouse_up(int x,int y);
-  void cancel_press(){menu->cancel_press();}
+  void cancel_press(){pressed_mount.reset();menu->cancel_press();}
   std::unique_ptr<mission_session> launch();
   void mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed=17);
   void draw(framebuffer &target)const;

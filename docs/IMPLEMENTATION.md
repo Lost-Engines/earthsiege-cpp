@@ -2,6 +2,12 @@
 
 The native game is being built from the supplied Earthsiege 1.0 data and original-code comparisons in `../earthsiege-reverse`. Original x86 execution is confined to the research tools; the game and C++ tests use native implementations and recorded fixtures.
 
+Current integration: single missions and careers can launch, fly and return with
+saved results. Arming controls and the static bay layers are connected; crew,
+repairs/construction controls, cinematics, full environment presentation and
+end-to-end replay verification remain. Later entries supersede the older
+integration boundaries in this cumulative record.
+
 Working components:
 
 - Original player weapon-list owner matches 34 loadouts / 11,594 sequential updates, including 609 discharges and paired weapons, ELF spin-up, grenade trigger release, editable groups, charge controls and automatic selection. The device-independent player input router matches 4,096 original calls, retaining mouse origins, nonlinear response, target tracking, centering, camera/flyer routing and Enter edges. Connecting these owners to the live session/cockpit follows these independent comparisons.
@@ -71,7 +77,7 @@ Working components:
 - Original point/line and transparent bitmap drawing: 6,000 clipped line rasters and 500 scaled bitmap rasters agree, including the original sampling and cropping quirks.
 - Four bundled original demo starting states and their 9,300 input frames. Replay simulation is not implemented yet.
 
-Remaining integration: player target selection and weapon-panel controls, outcome presentation, attached smoke and ejected-weapon motion, cockpit widgets, shell/campaign flow, audio and presentations. Live autonomous HERC/flyer controllers and impact reactions are connected and independently checked below. Complete TAP replay remains a later end-to-end check. The current native application is a scene inspector, not yet a playable game.
+Remaining integration: player target selection and weapon-panel controls, outcome presentation, attached smoke and ejected-weapon motion, cockpit widgets, shell/campaign flow, audio and presentations. Live autonomous HERC/flyer controllers and impact reactions are connected and independently checked below. Complete TAP replay remains a later end-to-end check. At that early checkpoint the native application was a scene inspector; the later shell integration supersedes that boundary.
 
 Some retained handoff fields have provisional names (`argument`, `initial_value`, `extra`, numbered trigger links) until their original consumers establish their roles. Tests compare their exact values regardless of naming. The original handoff writer does not truncate reused files, so the parser deliberately accepts stale trailing bytes after its declared tables.
 
@@ -677,3 +683,16 @@ weapon placement, padded mirrored bitmaps, component lists and colour remapping.
 The fixture covers health thresholds, mixed damage, pagination and both missing-
 target messages. Incremental transport and live lower-panel ownership remain the
 next integration step. All 163 CTest checks pass after these components.
+
+Arming now uses CFG compatibility/artwork tables and HOTSPOT.DAT directly.
+Native comparisons cover all 45 mounts, availability from technology/inventory,
+the retained current weapon, ordered equipment exchange and missile selection.
+Clicking a mount selects it; arrow/list controls change equipment immediately.
+Single missions load S_ARMORY.DAT and update the current pilot when changing
+HERCs; careers keep unassigned HERCs selectable without assigning them implicitly.
+The original base positions, mount paint order and static weapon sprites are
+connected. Resident TTM bay animation and full condition-overlay painting are
+still separate integration work. Missing Samson GL images are bounded safely.
+
+The arming increment passes all 177 CTest checks. The paired POINTS/HERCS
+buttons use the original shared sprite and label anchor.

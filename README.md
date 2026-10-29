@@ -53,7 +53,7 @@ remembered-contact selection, and retains unmodified fields in outgoing orders.
 
 Campaign saves preserve the original 41-state career format, ordered equipment inventories and variable hangar records. They pass complete original-executable save/read comparisons, all 396 campaign filename/branch transitions and 140 grade thresholds. Registration, selection, resume and manual backups use these original formats. Saves live in the platform user-data directory (normally `~/.local/share/lost-engines/earthsiege` on Linux); `--save-dir PATH` overrides that location. The bundled resources and comparison DOS installation are not modified.
 
-The portable shell now also implements mission-return salvage, ordered equipment awards/restocking, pilot statistics and replacements, technology unlocks, repair budgets and chassis construction. Complete original return/save comparisons cover 96 scenarios (including 144 replacement pilots); repair checks cover 6,400 quotes, 1,280 transactions and 25 construction states. Interactive armament, crew, repair and construction controls are the next integration work.
+The portable shell now also implements mission-return salvage, ordered equipment awards/restocking, pilot statistics and replacements, technology unlocks, repair budgets and chassis construction. Complete original return/save comparisons cover 96 scenarios (including 144 replacement pilots); repair checks cover 6,400 quotes, 1,280 transactions and 25 construction states. The arming screen supports original clickable mounts, compatible weapon lists, condition-preserving equipment exchange, missile types and HERC selection. Crew, component repair and construction screens, bay animations and the remaining presentations are still being integrated.
 
 Launch preparation now matches all 670 retained original GO launches byte for byte (SCRIPT.DAT, MISSION.VAR and PLAYER.MEC), including exact random-generator state. Four complete new-career constructors and 32 additional roster exports cover history initialization, inactive crew and differing pilot health. The shell's original default missile-type normalization and selected-pilot health export behaviour are retained.
 
@@ -65,3 +65,8 @@ across all three battle sets. Each flight return restores the saved inventory
 and starts the shell's time-seeded RNG again, as the separate DOS executable
 did. Manual career backups remain explicit actions. These comparisons verify
 the handoff and persistence, not an entire interactively completed campaign.
+
+Arming comparisons cover 1,650 equipment exchanges, 360 mount menus, 270 missile
+selections and 128 HERC-selection cases. The original bay artwork and mount
+positions are used. Samson grenade-launcher entries refer to missing bay images
+in the supplied data; those layers are omitted safely while keeping the equipment.

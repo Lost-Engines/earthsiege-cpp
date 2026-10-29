@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/render/hangar_artwork.cpp
   src/render/dialog_widgets.cpp
   src/shell/mission_alert.cpp
   src/shell/game_shell.cpp
@@ -25,6 +26,7 @@ add_library(earthsiege_core
   src/shell/new_career.cpp
   src/resources/mission_results.cpp
   src/shell/campaign_return.cpp
+  src/shell/armament.cpp
   src/shell/hangar_service.cpp
   src/resources/career.cpp
   src/resources/campaign.cpp
@@ -891,4 +893,10 @@ if(BUILD_TESTING)
   add_executable(return_worlds_test tests/return_worlds_test.cpp)
   target_link_libraries(return_worlds_test PRIVATE earthsiege_core)
   add_test(NAME return_worlds COMMAND return_worlds_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/return_worlds.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(armament_test tests/armament_test.cpp)
+  target_link_libraries(armament_test PRIVATE earthsiege_core)
+  add_test(NAME armament COMMAND armament_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/armament.bin)
 endif()

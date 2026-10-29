@@ -15,11 +15,24 @@ void click(game_shell &shell,uint16_t action){auto c{shell.current_dialog().find
 void screen(game_shell const &shell,unsigned expected){if(shell.screen()!=expected){std::cerr<<"screen "<<shell.screen()<<" expected "<<expected<<'\n';throw std::runtime_error{"screen transition"};}framebuffer f;shell.draw(f);require(std::ranges::any_of(f.pixels(),[](uint8_t v){return v!=0;}),"screen draws");}
 }
 int main(int argc,char **argv)try{
- if(argc!=3)return 1;resource_store resources{argv[1]};temporary_saves root{argv[2]};game_shell shell{resources,root.path,17};
+ if(argc!=3&&argc!=4)return 1;
+ resource_store resources{argv[1]};temporary_saves root{argv[2]};game_shell shell{resources,root.path,17};
  screen(shell,1000);require(!shell.current_dialog().find(1700)->enabled,"no career to resume");
  click(shell,1100);screen(shell,1100);shell.key(80);require(shell.current_dialog().selection(1101)==1,"mission keyboard selection");
  click(shell,1110);screen(shell,1110);auto original{shell.settings().current()};click(shell,1111);require(shell.settings().current()[12]!=original[12],"single option changes");shell.key(1);screen(shell,1100);require(shell.settings().current()==original,"single cancel rolls back");
- click(shell,1501);screen(shell,1501);require(shell.state().ready()&&!shell.state().campaign(),"single mission prepared");click(shell,1800);screen(shell,1800);click(shell,100);screen(shell,1501);
+ click(shell,1501);screen(shell,1501);require(shell.state().ready()&&!shell.state().campaign(),"single mission prepared");click(shell,1800);screen(shell,1800);
+ auto initial_slot{shell.state().roster().selected};auto const initial_herc{*shell.state().roster().find(initial_slot)};
+ auto const old_weapon{initial_herc.weapons[0]};auto const old_count{shell.state().inventory()[static_cast<size_t>(old_weapon)].size()};
+ armament_catalog catalog{resources};auto const &region{catalog.hotspots(initial_herc.chassis)[0]};
+ int const mx{(region.left+region.right)/2},my{(region.top+region.bottom)/2};shell.mouse_down(mx,my);shell.mouse_up(mx,my);
+ for(int i{};i<18;++i)shell.key(72);
+ require(shell.state().roster().find(initial_slot)->weapons[0]==17,"remove weapon through actual input");
+ require(shell.state().inventory()[static_cast<size_t>(old_weapon)].size()==old_count+1,"removed weapon returned to inventory");
+ shell.key(80);require(shell.state().roster().find(initial_slot)->weapons[0]!=17,"equip weapon through actual input");
+ if(argc==4){framebuffer frame;shell.draw(frame);frame.save(argv[3],shell.colours());}
+ click(shell,2004);require(shell.state().roster().selected!=initial_slot,"single mission HERC changes");
+ require(shell.state().crew().crew[0].hangar_slot==shell.state().roster().selected,"single mission selected HERC assigned");
+ click(shell,100);screen(shell,1501);
  click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");shell.mission_return(single->results(),single->mission_variables());screen(shell,1510);
  click(shell,1000);click(shell,1200);screen(shell,1200);click(shell,1210);screen(shell,1210);shell.text_input("Test Pilot");click(shell,100);screen(shell,1700);require(shell.state().campaign(),"registered campaign");auto name{shell.state().mission_name()};
  click(shell,100);auto mission{shell.launch()};auto result{mission->results()};auto counters{mission->mission_variables()};result.grade=1;shell.mission_return(result,counters,13);screen(shell,1520);require(shell.state().crew().missions==1,"return advances career");

@@ -31,6 +31,8 @@ public:
   campaign_start const &career()const{return career_.value();}
   career_state &crew();
   career_state const &crew()const;
+  armory &inventory();
+  armory const &inventory()const;
   hangar &roster();
   hangar const &roster()const;
   void new_campaign(int16_t battle_set=0,int16_t repair_policy=1,int16_t identity=0);

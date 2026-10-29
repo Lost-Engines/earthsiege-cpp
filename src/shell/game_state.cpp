@@ -5,6 +5,8 @@ namespace earthsiege {
 game_state::game_state(resource_store const &data,int seed):resources{data},random{static_cast<int16_t>(seed)}{}
 career_state &game_state::crew(){return campaign_?career_->career.states[0]:single_.state;}
 career_state const &game_state::crew()const{return campaign_?career_->career.states[0]:single_.state;}
+armory &game_state::inventory(){return campaign_?career_->career.inventories[0]:single_.inventory;}
+armory const &game_state::inventory()const{return campaign_?career_->career.inventories[0]:single_.inventory;}
 hangar &game_state::roster(){return campaign_?career_->hangars[0]:single_.roster;}
 hangar const &game_state::roster()const{return campaign_?career_->hangars[0]:single_.roster;}
 void game_state::new_campaign(int16_t battle,int16_t policy,int16_t identity){

@@ -15,7 +15,7 @@ unsigned region(unsigned screen){
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
  :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},game{r,seed},
- strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))}{show(1000);}
+ strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},armament{r},bay{r}{show(1000);}
 void game_shell::show(unsigned id){
   if(menu)last_screen=menu->id();
   menu=std::make_unique<dialog>(resources,id,region(id));text_scroll=0;
@@ -25,9 +25,48 @@ void game_shell::show(unsigned id){
   if(id==1200){std::vector<std::string> names;for(auto const &e:careers.entries)names.push_back(e.name);menu->items(1202,std::move(names),std::max(0,int(careers.selected)));
     for(int action: {1201,1220,1230,1700})menu->enable(static_cast<uint16_t>(action),!careers.entries.empty());}
   if(id==1330){menu->items(1331,{strings.at(19),strings.at(20),strings.at(21)},battle_set);}
+  if(id==1800){selected_mount=-1;missile_menu=false;refresh_armament();}
   if(id==1220){history_slots.clear();std::vector<std::string> labels;auto const &states{game.career().career.states};
     for(size_t i{1};i<states.size();++i)if(states[i].valid){history_slots.push_back(i);labels.push_back("MISSION "+std::to_string(states[i].missions));}
     menu->items(1223,std::move(labels));menu->enable(1222,!history_slots.empty());menu->enable(1230,!history_slots.empty());}
+}
+void game_shell::refresh_armament(std::optional<int16_t> wanted){
+  auto const h{game.roster().find(game.roster().selected)};
+  if(!h){menu->items(1808,{});menu->enable(1111,false);return;}
+  menu->items(1903,{strings.at(static_cast<size_t>(27+h->chassis))});
+  std::string pilot;for(size_t i{};i<game.crew().crew.size();++i)if(game.crew().crew[i].hangar_slot==h->slot){
+    auto const &c{game.crew().crew[i]};pilot=strings.at(i?static_cast<size_t>(86+c.name*3+c.variant):85);break;
+  }
+  menu->items(1904,{pilot});
+  if(missile_menu){
+    menu->items(1808,{strings.at(64),strings.at(65),strings.at(66),strings.at(68)},h->weapon_values.at(static_cast<size_t>(selected_mount)));return;
+  }
+  weapon_choices=armament.choices(*h,selected_mount,game.crew().technology,game.inventory());
+  std::vector<std::string> labels;
+  for(auto weapon:weapon_choices){
+    size_t const key{weapon==17?45:weapon>=14?static_cast<size_t>(46+weapon):static_cast<size_t>((game.campaign()?46:71)+weapon)};
+    auto label{strings.at(key)};
+    if(game.campaign()&&weapon!=17&&label.starts_with("[??]")){
+      auto count{std::to_string(game.inventory().at(static_cast<size_t>(weapon)).size())};if(count.size()<2)count.insert(0," ");
+      label.replace(1,2,count.substr(0,2));
+    }
+    labels.push_back(std::move(label));
+  }
+  auto desired{wanted.value_or(selected_mount<0?int16_t{0}:h->weapons.at(static_cast<size_t>(selected_mount)))};
+  auto found{std::ranges::find(weapon_choices,desired)};
+  int const index{found==weapon_choices.end()?0:static_cast<int>(found-weapon_choices.begin())};
+  menu->items(1808,std::move(labels),index);
+  auto mounted{selected_mount<0?int16_t{17}:h->weapons.at(static_cast<size_t>(selected_mount))};
+  menu->enable(1111,mounted>=9&&mounted<=11);
+}
+void game_shell::choose_armament(){
+  auto h{game.roster().find(game.roster().selected)};if(!h)return;
+  auto choice{menu->selection(1808)};
+  if(missile_menu){select_missile_type(*h,selected_mount,static_cast<int16_t>(choice));return;}
+  if(choice<0||static_cast<size_t>(choice)>=weapon_choices.size())return;
+  auto const weapon{weapon_choices[static_cast<size_t>(choice)]};
+  if(selected_mount>=0)armament.exchange(*h,selected_mount,weapon,game.inventory());
+  refresh_armament(weapon);
 }
 void game_shell::refresh_values(){
   auto const list{[&](uint16_t action,std::initializer_list<size_t> indices,int selected){std::vector<std::string> labels;for(auto i:indices)labels.push_back(strings.at(i));menu->items(action,std::move(labels),selected);}};
@@ -121,7 +160,22 @@ void game_shell::action(uint16_t id){
     case 1710:
       if(id==1499){game.prepare_campaign(true,options(preferences_));save_career();show(game.ready()?1700:1000);return;}
       break;
-    case 1800:if(id==100){save_career();show(game.campaign()?1700:1501);}return;
+    case 1800:
+      if(id==100){save_career();show(game.campaign()?1700:1501);return;}
+      if(id==1808){choose_armament();return;}
+      if(id==1801||id==1802){menu->select(1808,menu->selection(1808)+(id==1801?-1:1));choose_armament();return;}
+      if(id==1806||id==1807){
+        auto h{game.roster().find(game.roster().selected)};if(!h||h->weapons.empty())return;
+        auto count{static_cast<int>(h->weapons.size())};selected_mount+=id==1807?1:-1;
+        if(selected_mount<0)selected_mount=count-1;
+        selected_mount%=count;missile_menu=false;refresh_armament();return;
+      }
+      if(id==1111&&menu->find(1111)->enabled){missile_menu=!missile_menu;refresh_armament();return;}
+      if(id==2003||id==2004){
+        cycle_arming_herc(game.roster(),game.crew(),id==2004?1:-1,!game.campaign());
+        selected_mount=-1;missile_menu=false;refresh_armament();return;
+      }
+      return;
     case 1510:case 1520:
       if(id==101||id==102){text_scroll=std::max(0,text_scroll+(id==101?-1:1));return;}
       break;
@@ -131,7 +185,21 @@ void game_shell::action(uint16_t id){
   if(id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
 }
 void game_shell::key(uint8_t scan){if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
-void game_shell::mouse_up(int x,int y){if(auto id{menu->mouse_up(x,y)})action(*id);}
+void game_shell::mouse_down(int x,int y){
+  pressed_mount.reset();
+  if(screen()==1800)if(auto h{game.roster().find(game.roster().selected)})pressed_mount=armament.hit(h->chassis,x,y);
+  if(!pressed_mount)menu->mouse_down(x,y);
+}
+void game_shell::mouse_up(int x,int y){
+  auto previous{pressed_mount};pressed_mount.reset();
+  if(previous&&screen()==1800){
+    if(auto h{game.roster().find(game.roster().selected)})if(armament.hit(h->chassis,x,y)==previous){
+      selected_mount=*previous;missile_menu=false;refresh_armament();
+    }
+    return;
+  }
+  if(auto id{menu->mouse_up(x,y)})action(*id);
+}
 void game_shell::draw_text(framebuffer &target,std::string const &value,rectangle const &bounds,int scroll)const{
   screen_mask mask;for(int y{std::max(0,bounds.top)};y<=std::min(199,bounds.bottom);++y)mask.rows[static_cast<size_t>(y)].push_back({bounds.left,bounds.right});scoped_framebuffer_clip clip{target,&mask};
   std::istringstream words{value};std::string word,line;int row{};int const step{static_cast<int>(text_face.height)};
@@ -140,6 +208,16 @@ void game_shell::draw_text(framebuffer &target,std::string const &value,rectangl
 }
 void game_shell::draw(framebuffer &target)const{
   menu->draw(target);auto const current{screen()};
+  if(current==1800||((current==1700||current==1710||current==1900)&&game.has_career())){
+    if(auto h{game.roster().find(game.roster().selected)})bay.draw(target,*h,armament,current==1800?selected_mount:-1);
+    menu->draw(target,false);
+    if(current==1800){
+      int icon{-1};auto const selected{menu->selection(1808)};
+      if(missile_menu)icon=14+selected;
+      else if(selected>=0&&static_cast<size_t>(selected)<weapon_choices.size())icon=weapon_choices[static_cast<size_t>(selected)]==17?-1:weapon_choices[static_cast<size_t>(selected)];
+      if(auto view{menu->find(1803)})bay.weapon(target,icon,view->bounds);
+    }
+  }
   if((current==1500||current==1501||current==1510||current==1520)&&game.ready()){
     auto const kind{current==1500||current==1501?mission_text_kind::briefing:mission_text_kind::debriefing};
     if(auto section{game.text().find(kind)})if(auto program{std::get_if<text_program>(&section->content)}){
