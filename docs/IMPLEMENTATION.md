@@ -767,3 +767,19 @@ bookkeeping; original decoding, brush drawing and rectangle copies run unchanged
 This increment covers the brush/label/wait subset, not cinematic palette/screen
 operations or the live shell owners. R4000A08 references absent ROSEY5 artwork
 and is explicitly excluded rather than replaced with invented imagery.
+
+### Ambient animation sound and body damage artwork
+
+The GO sound-script handler now retains sound-enable/load-success gates, its
+shared latch and randomized 10..34 volume. Authored VOLUME_SX is ignored in GO.
+All 2,048 original updates agree, including 573 load attempts, 328 play requests
+and complete shared RNG state. Playback is an explicit sink until connected to
+the shell audio owner; the HMI mixer itself is already implemented.
+
+Service, arming and repair views now draw original chassis damage layers below
+mounted equipment. The six armour groups average their constituent percentages;
+only severity bands 1..3 draw overlays, so exactly zero draws none. All 384
+original visible/background frame pairs agree across the eight chassis and
+condition boundaries. Overlay coordinates are signed 32-bit values after a
+signed 16-bit sprite index, a correction also made in the analysis catalogue.
+The five affected shell/animation regression checks pass.

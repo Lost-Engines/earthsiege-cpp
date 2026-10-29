@@ -21,29 +21,38 @@ void shell_animation::next_page(){
  current.wait_latched=current.fade_latched=current.executed=false;
  if(current.page>=program.pages.size()){if(repeat)restart();else current.mode=2;}
 }
-void shell_animation::advance(int16_t elapsed,random_state &random){
+void shell_animation::advance(int16_t elapsed,random_state &random,shell_animation_sound *sound){
  output.clear();current.remaining=wrap_word(current.remaining-elapsed);
  if(current.remaining>0||!current.executed){
-  if(current.mode!=2){execute(current.page,random);current.executed=true;
+  if(current.mode!=2){execute(current.page,random,sound);current.executed=true;
    if(current.remaining<1){current.remaining=current.period;next_page();}
   }
   return;
  }
  current.remaining=current.period;
  switch(current.mode){
-  case 0:execute(current.page,random);next_page();break;
-  case 1:execute(current.page,random);break;
+  case 0:execute(current.page,random,sound);next_page();break;
+  case 1:execute(current.page,random,sound);break;
   case 3:if(repeat)restart();else current.mode=2;break;
   default:break;
  }
 }
-void shell_animation::execute(uint16_t page,random_state &random,unsigned recursion){
+void shell_animation::execute(uint16_t page,random_state &random,shell_animation_sound *sound,unsigned recursion){
  if(page>=program.pages.size()||recursion>32)throw std::runtime_error{"invalid shell TTM label recursion"};
  bool have_weights{};std::array<int16_t,5> cumulative{};
  for(auto const &instruction:program.pages[page]){
   auto const &a{instruction.arguments};
   switch(instruction.opcode){
    case 0xff0:return;
+   case 0xc102:break; // GO 0x4a0e0 ignores the authored volume operation.
+   case 0xc21f:
+    if(sound&&!current.fade_latched)sound_loaded=sound->load(instruction.text);
+    break;
+   case 0xc220:
+    if(sound&&sound_loaded&&!current.fade_latched){
+     sound->volume(static_cast<uint8_t>(random.bounded(25)+10));sound->play();current.fade_latched=true;
+    }
+    break;
    case 0x1101:case 0x1111:break;
    case 0x110:current.mode=3;break;
    case 0x1051:shape_bank=static_cast<uint8_t>(a.at(0));break;
@@ -60,7 +69,7 @@ void shell_animation::execute(uint16_t page,random_state &random,unsigned recurs
    case 0x1201:current.jump=program.label_page(a.at(0));break;
    case 0x3003:
     ++current.depth;current.x=a.at(0);current.y=a.at(1);
-    execute(program.label_page(a.at(2)),random,recursion+1);--current.depth;break;
+    execute(program.label_page(a.at(2)),random,sound,recursion+1);--current.depth;break;
    case 0x5005:
     if(have_weights&&current.branch==-1){
      auto const choice{random.bounded(cumulative.back())};size_t index{};

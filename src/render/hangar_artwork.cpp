@@ -1,17 +1,26 @@
 #include "hangar_artwork.h"
+#include "shell/component_repair.h"
 namespace earthsiege {
 hangar_artwork::hangar_artwork(resource_store const &resources)
   :weapon_icons_{read_bitmaps(resources.read("shell0","res32/allweap.dba"))}{
   constexpr std::array names{"road","guns","rapt","toma","patr","pnth","herc","coll"};
+  constexpr std::array damage_names{"road","gunn","rapt","toma","patr","pnth","herc","colo"};
   for(size_t i{};i<names.size();++i){
     auto read=[&](char const *suffix){return read_bitmaps(resources.read("shell0","res32/"+std::string{names[i]}+suffix+".dba"));};
-    weapons_[i]=read("wep1");damaged_[i]=read("wepd");outlines_[i]=read("outl");
+    weapons_[i]=read("wep1");damaged_[i]=read("wepd");outlines_[i]=read("outl");damage_images_[i]=read_bitmaps(resources.read("shell0","res32/"+std::string{damage_names[i]}+"dmg1.dba"));
+    auto data{resources.read("shell0","cfg/"+std::string{damage_names[i]}+"dmg1.dat")};binary_reader f{data};
+    for(auto &part:damage_layers_[i])for(auto &band:part){
+      auto count{f.integer<uint16_t>()};
+      for(unsigned j{};j<count;++j)band.push_back({f.integer<int16_t>(),f.integer<int32_t>(),f.integer<int32_t>()});
+    }
+    f.require_end();
   }
 }
 void hangar_artwork::draw(framebuffer &frame,player_herc const &h,armament_catalog const &catalog,int selected_mount)const {
   // GO's point constructor at 0x25090 and painter order at 0x803d8.
   auto const ch{static_cast<size_t>(h.chassis)};auto const &bank{weapons_.at(ch)};
   frame.image(bank.at(0),origin[ch][0],origin[ch][1],true);
+  damage(frame,h);
   for(size_t j{};j<h.weapons.size();++j){
     auto const mount{order[ch].at(j)};auto const weapon{h.weapons.at(static_cast<size_t>(mount))};
     auto const record{catalog.find(h.chassis,mount,weapon)};
@@ -25,6 +34,16 @@ void hangar_artwork::draw(framebuffer &frame,player_herc const &h,armament_catal
       frame.image(outlines_[ch][static_cast<size_t>(record->image)],record->draw_x,record->draw_y,true);
     }
     if(ch==7&&mount==3&&(h.weapons.at(2)!=17||h.weapons.at(3)!=17))frame.image(bank.at(43),86,25,true);
+  }
+}
+void hangar_artwork::damage(framebuffer &frame,player_herc const &h)const{
+  auto const ch{static_cast<size_t>(h.chassis)};
+  for(int16_t part{};part<6;++part){
+    auto const band{condition_tier(component_condition(h.condition,repair_group::armour,part))};
+    if(band==0||band>=4)continue;
+    for(auto const &layer:damage_layers_.at(ch).at(static_cast<size_t>(part)).at(static_cast<size_t>(band-1))){
+      auto const &b{damage_images_.at(ch).at(static_cast<size_t>(layer.image))};frame.image(b,layer.x,layer.y,!(b.flags&0x10));
+    }
   }
 }
 void hangar_artwork::weapon(framebuffer &frame,int index,rectangle const &bounds)const {

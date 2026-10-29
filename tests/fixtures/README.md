@@ -547,3 +547,11 @@ capture_construction_menu.py in the sibling analysis tree.
   allocation and frame restoration, and sinks dirty-rectangle bookkeeping.
   Both fixtures exclude R4000A08's missing ROSEY5 artwork and unsupported opcode
   families explicitly; they do not claim complete cinematic coverage.
+
+- shell_animation_sound.bin (ESHSND01): 2,048 original SOUNDS.TTM updates with
+  sound enable/availability changes. Captures load/release/volume/play events,
+  scheduling and shared RNG. SoundManager/device calls are recording boundaries.
+- hangar_damage_art.bin (ESBAYDM1): 384 original GO 0x24366 overlay frames across
+  all eight chassis, grouped-armour boundaries and mixed condition values.
+  Both visible and retained background page CRCs are captured. Resource loading,
+  condition grouping and brush drawing execute unchanged.
