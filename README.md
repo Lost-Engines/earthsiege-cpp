@@ -22,3 +22,8 @@ The original group dispatcher can read an uninitialized priority word for comman
 For automated comparisons, `--headless --screenshot frame.ppm` saves a native 320×200 frame; `--frames N` bounds an interactive run.
 
 Code is licensed under GPLv3 or later. Original game assets remain the property of their respective owners and are separate from the code licence. Reverse-engineering notes and comparison tools live in the sibling `earthsiege-reverse` project.
+
+PCM playback retains the original 8-bit mixer’s gain steps, saturation and
+buffered completion. The original positional-volume query divides by zero if
+queried while the master gain is zero; this reconstruction returns zero in that
+case. Unused, manually supplied sample-loop ranges are bounded to their data.

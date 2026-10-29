@@ -43,7 +43,7 @@ void cockpit_radio::advance_portraits(mission_session &session,uint32_t const ti
     }};
     if(p.transmission){
       auto const update{p.transmission->advance(ticks,visible,order.dead,random)};
-      if(update.ready){controller.ready();speech_requests.push_back(p.speech);}
+      if(update.ready){controller.ready();if(p.transmission->mouth()!=0)speech_requests.push_back(p.speech);}
       if(update.cancel)controller.cancel();
       for(auto const &call:update.calls)paint(call[0],call[1]);
       if(p.transmission->state().phase==0)paint(0,0);

@@ -560,3 +560,26 @@ and the wider application remain required. `capture_cockpit` also renders the
 lower wingmate panel and a live form-up reply at several stages.
 
 Validation after radio integration: all 144 tests pass (18.58 seconds).
+
+## PCM control and original mixer
+
+The native PCM owner now matches the original object, HMI allocator, stop,
+volume, finite/infinite loop and completion rules in 2,560 stateful control
+captures (594 sample submissions and 273 voice replacements). Positional gain
+and pan match 6,144 cases; source coalescing matches 6,000 submissions.
+
+The archived `tr8m.com` and `tr8st.com` modules execute their own generated mix
+loops in the analysis fixture. Native signed-byte gain quantization, overflow,
+saturating accumulation and stereo balance match 1,024 kernels / 262,144 source
+samples. Another 9,600 comparisons match full DMA ring CRCs, loop counters,
+source positions and delayed completion. The native mixer retains the original
+128-byte stereo / 256-byte mono initial lead, guarded ring refill and fewer-than-
+four-byte restart threshold. Descriptor pitch values are retained but ignored
+without the pitch flag, exactly as in ordinary SoundManager playback.
+
+Only ordinary unsigned 8-bit mono source data is needed by shipped PCM objects.
+Manually supplied subrange loop descriptors have an uninitialized tail-length
+word in the original: native subranges are bounded instead. A positional gain
+query with master volume zero is defined as zero rather than dividing by zero.
+Driver-specific ISA timing and analogue circuitry remain outside these checks.
+Fixtures can be refreshed with `tools/import_audio_fixtures.py ../earthsiege-reverse/analysis`.

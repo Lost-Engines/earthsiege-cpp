@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/audio/pcm_mixer.cpp
+  src/audio/pcm_sound.cpp
+  src/audio/spatial_audio.cpp
   src/shell/cockpit_radio.cpp
   src/render/wingmate_portrait.cpp
   src/shell/pilot_transmission.cpp
@@ -265,6 +268,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(spatial_audio_test tests/spatial_audio_test.cpp)
+  target_link_libraries(spatial_audio_test PRIVATE earthsiege_core)
+  add_test(NAME spatial_audio COMMAND spatial_audio_test "${PROJECT_SOURCE_DIR}/tests/fixtures/spatial_audio.bin")
   add_executable(cockpit_radio_test tests/cockpit_radio_test.cpp)
   target_link_libraries(cockpit_radio_test PRIVATE earthsiege_core)
   add_test(NAME cockpit_radio COMMAND cockpit_radio_test "${PROJECT_SOURCE_DIR}/assets")
@@ -683,4 +689,16 @@ if(BUILD_TESTING)
   add_executable(resource_test tests/resource_test.cpp)
   target_link_libraries(resource_test PRIVATE earthsiege_core)
   add_test(NAME resources COMMAND resource_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/resource_checks.tsv")
+endif()
+
+if(BUILD_TESTING)
+  add_executable(pcm_sound_test tests/pcm_sound_test.cpp)
+  target_link_libraries(pcm_sound_test PRIVATE earthsiege_core)
+  add_test(NAME pcm_sound COMMAND pcm_sound_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pcm_sound.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(pcm_mixer_test tests/pcm_mixer_test.cpp)
+  target_link_libraries(pcm_mixer_test PRIVATE earthsiege_core)
+  add_test(NAME pcm_mixer COMMAND pcm_mixer_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pcm_mixer.bin ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pcm_dma.bin)
 endif()
