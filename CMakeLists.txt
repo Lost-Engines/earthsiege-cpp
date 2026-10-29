@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/render/tactical_map.cpp
   src/audio/music_audio.cpp
   src/audio/combat_music.cpp
   src/audio/music_player.cpp
@@ -791,4 +792,10 @@ if(BUILD_TESTING)
   add_executable(hmp_object_loops_test tests/hmp_object_loops_test.cpp)
   target_link_libraries(hmp_object_loops_test PRIVATE earthsiege_core)
   add_test(NAME hmp_object_loops COMMAND hmp_object_loops_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hmp_object_loops.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(tactical_map_test tests/tactical_map_test.cpp)
+  target_link_libraries(tactical_map_test PRIVATE earthsiege_core)
+  add_test(NAME tactical_map COMMAND tactical_map_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/tactical_map.bin)
 endif()

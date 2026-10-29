@@ -653,3 +653,12 @@ cases / 808 subsequent updates agree with original captures. These bodies share
 the existing 150-slot debris pool. The supplied smoke families are 0 and 1;
 unbacked family 2 is rejected. Exhausted visual pools discard new objects safely
 instead of following the original null-dereference paths.
+
+### Lower-panel tactical map raster
+
+The separate HDD map renderer matches 160 complete original VGA frames. It
+retains north-up projection, point-table mission bounds, resource-order schematic
+terrain cells, grid rounding, directional icons, building scaling and contact
+visibility. Native ICONS.DBA's padded width is distinct from the height used for
+its scaling threshold. Lower-panel control/lifecycle integration follows this
+renderer; the forward navigation MFD remains a distinct implementation.
