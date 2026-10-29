@@ -18,6 +18,7 @@ struct player_input {
   bool released{false};
   uint16_t command{0};                                                    // original scan code and modifier bits
   player_axis_pair camera_source{player_axis_pair::separate};               // original pointers can alias movement or aiming
+  control_release_action release_action{control_release_action::none};
   vec2<int16_t> const &camera_input() const;
   void camera_input(vec2<int16_t> const &value);
 };

@@ -15,7 +15,7 @@ unsigned region(unsigned screen){
 }
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
- :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},audio{r},game{r,seed},
+ :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},calibrations{load_host_calibrations(saves)},audio{r},game{r,seed},
  strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r},statistics_view{r}{show(1000);}
 
 unsigned game_shell::visible_region()const{
@@ -352,6 +352,7 @@ void game_shell::action_impl(uint16_t id){
       if(id==99||id==100){if(id==100){preferences_.commit(false);saves.save_preferences(preferences_);}else preferences_.cancel(false);show(1100);return;}
       return;
     case 1300:
+      if(id==1320){controls=std::make_unique<controls_dialog>(resources,preferences_,saves,calibrations);return;}
       if(id==1302){start_movies({{"intro/credit_a.ttm",-1},{"intro/credit_b.ttm",-1}},1300);return;}
       if(id==100){show(options_owner);return;}
       break;
@@ -478,9 +479,13 @@ void game_shell::action_impl(uint16_t id){
   if(id==1300)options_owner=current;
   if(id==2000||id==1900||id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
 }
-void game_shell::key(uint8_t scan){if(door_motion)return;if(cinematic){if(scan)finish_movie(true);return;}if(speech){if(scan)finish_speech(true);return;}if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
+void game_shell::finish_controls(){if(controls&&controls->done()){controls.reset();show(1300);}}
+void game_shell::devices(std::array<joystick_hardware,2> const &d){if(controls){controls->devices(d);finish_controls();}}
+std::optional<vec2<int32_t>> game_shell::take_pointer_warp(){return controls?controls->take_warp():std::nullopt;}
+void game_shell::key(uint16_t scan){if(controls){controls->key(scan);finish_controls();return;}if(door_motion)return;if(cinematic){if(scan)finish_movie(true);return;}if(speech){if(scan)finish_speech(true);return;}if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(static_cast<uint8_t>(scan))})action(*id);}
 void game_shell::mouse_move(int x,int y){if(presentation_active())return;if(briefing&&(screen()==1500||screen()==1501))briefing->hover(x,y);}
-void game_shell::mouse_down(int x,int y){
+void game_shell::mouse_down(int x,int y,bool right){
+  if(controls){controls->mouse_down(x,y,right);return;}if(right)return;
   if(door_motion){consume_release=true;return;}
   if(cinematic){finish_movie(true);consume_release=true;return;}
   if(speech){finish_speech(true);consume_release=true;return;}
@@ -489,7 +494,8 @@ void game_shell::mouse_down(int x,int y){
   if(screen()==1800)if(auto h{game.roster().find(game.roster().selected)})pressed_mount=armament.hit(h->chassis,x,y);
   if(!pressed_mount)menu->mouse_down(x,y);
 }
-void game_shell::mouse_up(int x,int y){
+void game_shell::mouse_up(int x,int y,bool right){
+  if(controls){controls->mouse_up(x,y,right);finish_controls();return;}if(right)return;
   if(consume_release){consume_release=false;return;}if(presentation_active())return;
   auto previous{pressed_mount};pressed_mount.reset();
   if(previous&&screen()==1800){
@@ -510,6 +516,7 @@ void game_shell::draw(framebuffer &target)const{
   if(door_motion){door_motion->draw(target);return;}
   if(cinematic){target=cinematic->image();return;}
   if(speech){speech->draw(target,preferences_.current()[2]);return;}
+  if(controls){controls->draw(target);return;}
   if(warning_parent){target=warning_frame;menu->draw(target,false);return;}
   if(bay_motion){target=bay_motion->image();menu->draw(target,false);}else menu->draw(target);
   auto const current{screen()};

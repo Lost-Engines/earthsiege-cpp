@@ -12,11 +12,11 @@ void control_settings_state::apply(){
  }
  for(size_t i{7};i<=11;++i)persisted_[i]=prefs.current()[i];
 }
-control_setting_action control_settings_state::activate(unsigned button,bool reverse,bool keyboard){
+control_setting_action control_settings_state::activate(unsigned button,bool reverse,bool joystick_button){
  auto cycle{[&](size_t index,unsigned count){auto v{prefs.current()[index]};v=static_cast<uint8_t>(reverse?(v? v-1:count-1):(v+1==count?0:v+1));prefs.set(index,v);return v;}};
  switch(button){
  case 0:
-  state_[0]=cycle(7,6);if(state_[0]==0&&keyboard){auto v{static_cast<uint8_t>((prefs.current()[7]+1)%6)};prefs.set(7,v);state_[0]=v;}
+  state_[0]=cycle(7,6);if(state_[0]==0&&joystick_button){auto v{static_cast<uint8_t>((prefs.current()[7]+1)%6)};prefs.set(7,v);state_[0]=v;}
   if(!state_[0]){
    if(state_[1]){state_[6]=state_[1];state_[1]=0;prefs.set(8,0);}
   }else{

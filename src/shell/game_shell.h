@@ -14,6 +14,7 @@
 #include "render/crew_artwork.h"
 #include "render/shell_statistics.h"
 #include "shell/component_repair.h"
+#include "shell/controls_dialog.h"
 #include "render/construction_artwork.h"
 namespace earthsiege {
 /// Application-level shell flow. Window input is translated before it reaches
@@ -23,6 +24,9 @@ class game_shell {
   save_store saves;
   career_index careers;
   preferences preferences_;
+  std::array<joystick_calibration,2> calibrations;
+  std::unique_ptr<controls_dialog> controls;
+  void finish_controls();
   shell_audio audio;
   game_state game;
   std::unique_ptr<dialog> menu;
@@ -95,7 +99,7 @@ class game_shell {
   void draw_text(framebuffer &frame,std::string const &text,rectangle const &bounds,int scroll=0)const;
 public:
   game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17);
-  unsigned int screen()const{return cinematic?0:speech?speech_screen:menu->id();}
+  unsigned int screen()const{return cinematic?0:speech?speech_screen:controls?1320:menu->id();}
   bool presentation_active()const{return speech!=nullptr||cinematic!=nullptr||door_motion!=nullptr;}
   bool transition_active()const{return door_motion!=nullptr;}
   bool quit_requested()const{return quitting;}
@@ -105,12 +109,15 @@ public:
   game_state const &state()const{return game;}
   void startup(bool enabled=true);
   void action(uint16_t id);
-  void key(uint8_t scan);
-  void text_input(std::string_view text){if(!presentation_active())menu->text_input(text);}
+  void key(uint16_t scan);
+  void text_input(std::string_view text){if(!presentation_active()&&!controls)menu->text_input(text);}
   void mouse_move(int x,int y);
-  void mouse_down(int x,int y);
-  void mouse_up(int x,int y);
-  void cancel_press(){pressed_mount.reset();menu->cancel_press();}
+  void mouse_down(int x,int y,bool right=false);
+  void mouse_up(int x,int y,bool right=false);
+  void cancel_press(){pressed_mount.reset();menu->cancel_press();if(controls)controls->cancel_press();}
+  void devices(std::array<joystick_hardware,2> const &);
+  std::array<joystick_calibration,2> const &device_calibrations()const{return calibrations;}
+  std::optional<vec2<int32_t>> take_pointer_warp();
   std::unique_ptr<mission_session> launch();
   void mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed=17);
   void advance(unsigned timer_ticks=3);

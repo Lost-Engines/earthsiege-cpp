@@ -12,6 +12,9 @@
 #include "render/presentation_player.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
+#include "simulation/joystick_routing.h"
+#include "resources/input_options.h"
+#include "shell/preferences.h"
 #include "shell/pointer_controls.h"
 #include "shell/cockpit_impact.h"
 #include "shell/cockpit_displays.h"
@@ -21,7 +24,7 @@
 
 namespace earthsiege {
 
-/// Inspect original demo starting states while full mission consumers are integrated
+/// Live mission presentation and platform-independent input consumers
 class mission_view {
   std::unique_ptr<mission_session> session;
   random_state &ui_random;
@@ -57,6 +60,12 @@ class mission_view {
   scenery_renderer renderer;
   camera_state camera;
   keyboard_input keyboard;
+  device_routing_options routing;
+  std::array<joystick_calibration,2> calibrations;
+  std::array<joystick_hardware,2> hardware;
+  int16_t device_throttle{};
+  bool mouse_enabled{true},joystick_mode_enabled{};
+  void hat_view(std::array<uint8_t,4> const &);
   bool paused{false};
   player_input pointer;
   pointer_controls instruments;
@@ -77,6 +86,8 @@ public:
   mission_counters const &mission_variables() const { return session->mission_variables(); }
   mission_status status(bool requested=false) const { return session->mission_state(requested); }
   std::optional<mission_status> take_mission_prompt() { return session->take_mission_prompt(); }
+  void configure_input(preferences const &,std::array<joystick_calibration,2> const &);
+  void devices(std::array<joystick_hardware,2> const &value,int16_t lever){hardware=value;device_throttle=lever;}
   void key(held_key key, bool pressed, bool alt);
   void command(uint16_t code);
   void mouse_position(int x, int y);

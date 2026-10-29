@@ -229,6 +229,7 @@ player_input_actions mission_session::step_player(player_input input, frame_rati
     if(input.command) player_command(input.command);
     auto &actor{*crew[player_index].actor};
     player_input_context context{.external_control{external_control}, .disabled{actor.damage().consequences.disabled}, .auto_tracking{player_weapons->auto_tracking()}, .position{vec3<int32_t>{actor.body().movement().position}}, .target{}};
+    context.release_action=input.release_action;
     context.viewport_min = {aiming_viewport.left, aiming_viewport.top};
     context.viewport_max = {aiming_viewport.right, aiming_viewport.bottom};
     if(auto const selected{activity->targets()[player_index].selected}) {

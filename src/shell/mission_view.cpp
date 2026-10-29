@@ -44,6 +44,13 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     environment{resources,session->scenery().environment()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
+  // The shipped file is an external input policy, separate from PREFS.CFG.
+  for(auto const &path:{resources.root()/"DATA"/"KEYJOY.CFG",resources.root()/"data"/"keyjoy.cfg"}){
+    if(!std::filesystem::exists(path))continue;
+    auto raw{read_file(path)};auto options{read_keyjoy(std::string_view{reinterpret_cast<char const *>(raw.data()),raw.size()})};
+    if(options.invalid_token)throw std::runtime_error{"Unrecognized KEYJOY.CFG token in "+path.string()};
+    routing.tilt_reverse=options.tilt_reverse;routing.backturn_reverse=options.backturn_reverse;routing.missile_reverse=options.missile_reverse;break;
+  }
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
   environment.initialize_palette(display_colours,camera.angles.x);
@@ -85,13 +92,28 @@ std::array<int32_t,2> mission_view::instrument_origin()const{
  return origin;
 }
 
+void mission_view::configure_input(preferences const &prefs,std::array<joystick_calibration,2> const &values){
+  auto const &p{prefs.current()};routing.model=p[7];routing.mode=p[8];routing.pedals=p[9]!=0;routing.wcs=p[10]!=0;mouse_enabled=p[11]!=0;joystick_mode_enabled=p[8]!=0;calibrations=values;
+  clear_input();
+}
+void mission_view::hat_view(std::array<uint8_t,4> const &hat){
+  if(camera.mode!=camera_mode::attached)return;
+  switch(cockpit_hat_request(static_cast<unsigned>(panel),hat)){
+    case 0:change_cockpit_view(cockpit_view::lower);break;
+    case 1:case 6:change_cockpit_view(cockpit_view::forward);break;
+    case 4:change_cockpit_view(cockpit_view::right);break;
+    case 5:change_cockpit_view(cockpit_view::left);break;
+    default:break;
+  }
+}
 void mission_view::key(held_key const key, bool const pressed, bool const alt) {
   keyboard.event(key, pressed, alt);
 }
 
 void mission_view::command(uint16_t const code) { commands.push_back(code); }
-void mission_view::mouse_position(int const x, int const y) { pointer.mouse = {x,y}; pointer_events.push_back(pointer); }
+void mission_view::mouse_position(int const x, int const y) { if(!mouse_enabled)return; pointer.mouse = {x,y}; pointer_events.push_back(pointer); }
 void mission_view::mouse_button(bool const right, bool const pressed) {
+  if(!mouse_enabled)return;
   (right ? pointer.right : pointer.left) = pressed;
   pointer_events.push_back(pointer);
 }
@@ -125,6 +147,7 @@ void mission_view::consume_pointer_events() {
 
 void mission_view::clear_input() {
   keyboard.clear();
+  hardware={};device_throttle=0;routing.switch_held=false;
   pointer.left = pointer.right = false;
   pointer_events.clear();
   instruments.reset_input();
@@ -176,21 +199,34 @@ void mission_view::step(bool const control, bool const zoom) {
   if(now != interface_ticks) lamps.advance(static_cast<int16_t>(now - interface_ticks));
   interface_ticks = now;
   consume_pointer_events();
-  auto const keys{keyboard.sample(session->player_weapon_controls().manual_guidance())};
+  routing.external=control;routing.missile=session->player_weapon_controls().manual_guidance();
+  auto const keys{keyboard.sample((routing.mode==1&&!routing.external)||routing.missile)};
+  joystick_sample keyboard_packet{{keys.movement.x,keys.movement.y,keys.aiming.x,keys.aiming.y},{uint8_t(keys.fire),uint8_t(keys.enter),0,0},{}};
+  joystick_sample device;
+  auto const profiles{joystick_profiles(routing.model,routing.pedals)};
+  for(size_t i{};i<2;++i)if(hardware[i].present)
+    combine_joystick(device,sample_joystick(profiles[i],calibrations[i],hardware[i].axes,hardware[i].buttons));
+  auto const packet{route_devices(routing,keyboard_packet,device,device_throttle)};
   player_input input{pointer};
-  input.movement = {static_cast<int16_t>(keys.movement.x),static_cast<int16_t>(keys.movement.y)};
-  input.aiming = {static_cast<int16_t>(keys.aiming.x),static_cast<int16_t>(keys.aiming.y)};
-  input.camera_source = player_axis_pair::movement;
-  input.fire = keys.fire || (control && zoom);
-  input.enter = keys.enter;
+  input.movement={packet.axes[0],packet.axes[1]};input.aiming={packet.axes[2],packet.axes[3]};
+  input.camera_source=packet.aiming_camera?player_axis_pair::aiming:player_axis_pair::movement;
+  input.fire=packet.buttons[0]||(control&&zoom);input.enter=packet.buttons[2];input.released=packet.buttons[3];
+  input.release_action=static_cast<control_release_action>(routing.mode);
+  auto const previous_panel{panel};
   if(!commands.empty()) {
     input.command=commands.front(); commands.pop_front();
     if(input.command>=59 && input.command<=64 && camera.mode==camera_mode::attached && panel!=cockpit_view::forward)
       change_cockpit_view(cockpit_view::forward);
     if(input.command==65 || input.command==66)change_cockpit_view(cockpit_view::lower);
+    if(input.command==82){if(joystick_mode_enabled)routing.mode=static_cast<uint8_t>(3-routing.mode);input.command=0;}
+    if(input.command==67){hat_view({0,0,0,1});input.command=0;}
+    if(input.command==68){hat_view({0,0,1,0});input.command=0;}
+    if(input.command==1&&camera.mode==camera_mode::attached&&panel!=cockpit_view::forward){change_cockpit_view(cockpit_view::forward);input.command=0;}
     if(hdd->command(input.command,*session,instruments,mfd_ranges[displays->state().range_index]))input.command=0;
     else if(displays->command(input.command,*session,instruments))input.command=0;
   }
+  if(panel==previous_panel)hat_view(packet.hat);
+  input.release_action=static_cast<control_release_action>(routing.mode);
   auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control, cockpit.layout.bounds(0x450))};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};

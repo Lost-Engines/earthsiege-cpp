@@ -11,7 +11,7 @@ ctest --test-dir build --output-on-failure
 
 Requires a C++26 compiler, CMake 3.30 or newer and SDL2 development files. Original freeware game resources are bundled in `assets`; `--data-dir PATH` selects another installation. The floating window uses square pixels and the largest integer scale that fits the desktop. No DOS executable or emulator is needed by the native program.
 
-`--inspect-demo 1` (or 2–4) opens a recorded mission’s starting terrain and HERC roster. Use arrows/keypad to walk and turn, I/J/K/M or right mouse to aim, and Space to fire. W/Alt+W cycles weapons; Enter/Tab cycles targets. F1–F6 select the six MFD pages. Ctrl+F1 shows the cockpit, Ctrl+F2 orbits and Ctrl+F3 detaches. F7/F8 select the lower tactical map/damage panel and F9/F10 the left/right panels. Ctrl + arrows controls the external camera; P pauses and Escape returns to the menu. The cockpit throttle and weapon charge sliders, shield allocation buttons, weapon groups, LINK and TRACK controls respond to the mouse. Click a numbered weapon to select it, right-click to change its group membership, or use 1–9. The HUD shows heading, torso and pitch indicators, target lock brackets and the next waypoint. The cockpit clock and animated lamps use the original presentation scripts.
+`--inspect-demo 1` (or 2–4) opens a recorded mission’s starting terrain and HERC roster. Use arrows/keypad to walk and turn, I/J/K/M or right mouse to aim, and Space to fire. W/Alt+W cycles weapons; Tab cycles targets; Enter confirms tactical-panel commands. F1–F6 select the six MFD pages. Ctrl+F1 shows the cockpit, Ctrl+F2 orbits and Ctrl+F3 detaches. F7/F8 select the lower tactical map/damage panel and F9/F10 the left/right panels. Ctrl + arrows controls the external camera; P pauses and Escape returns to the menu. The cockpit throttle and weapon charge sliders, shield allocation buttons, weapon groups, LINK and TRACK controls respond to the mouse. Click a numbered weapon to select it, right-click to change its group membership, or use 1–9. The HUD shows heading, torso and pitch indicators, target lock brackets and the next waypoint. The cockpit clock and animated lamps use the original presentation scripts.
 
 The lower panel shows the original tactical map, wingmate orders and structural,
 internal and weapon damage diagrams. On the map, 1–3 select a wingmate; the marked
@@ -94,8 +94,12 @@ The flight environment now includes the original sky bands, horizon panorama,
 projected ground texture, moving clouds, procedural ground marks and
 pitch-dependent reflective palette. Combined output matches 288 original
 frames across all 24 worlds, including cockpit masks and detail settings.
-Original frame scheduling and impact flashes remain separate work.
+Original frame scheduling remains separate work; impact flashes and cockpit displacement are integrated.
 
 The original cinematic fade-in reads an uninitialized rectangle type. This build initializes it, giving deterministic fades instead of depending on prior stack contents.
 
 Cockpit damage now flashes the original damage palette and displaces the cockpit and instruments vertically while the outside projection stays steady. The original timing, random sequence and view-change behaviour are retained.
+
+Options / Controls now supports the original joystick profiles, pedals, mouse setting and calibration screens. Tab and Alt+Tab move focus; right-click cycles an option backwards. The first two connected SDL controllers supply the original joystick axes, with a single four-axis stick supported as an alternative. Calibrations are saved automatically beside the user saves. Insert or joystick button 2 swaps movement/turret control, button 3 selects a target and button 4 stops movement or centres the turret. Hats follow the original cockpit-view rules.
+
+The bundled DATA/KEYJOY.CFG retains the original pitch/turn choices. Malformed tokens are reported safely instead of reproducing the original out-of-bounds table read. SDL calibration uses separate host-joy files so it cannot be confused with DOS gameport counts. See docs/IMPLEMENTATION.md for the host axis and throttle mappings.

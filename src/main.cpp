@@ -12,6 +12,7 @@
 #include <SDL.h>
 #include "platform/window.h"
 #include "platform/audio_output.h"
+#include "platform/joystick_devices.h"
 #include "resources/resource_store.h"
 #include "shell/game_shell.h"
 #include "shell/mission_alert.h"
@@ -51,6 +52,9 @@ auto command(SDL_Keycode const code, bool const alt, bool const control)->std::o
   uint16_t scan;
   switch(code) {
     case SDLK_ESCAPE: scan=1; break;
+    case SDLK_INSERT: scan=82; break;
+    case SDLK_F9: scan=67; break;
+    case SDLK_F10: scan=68; break;
     case SDLK_SPACE: scan=57; break;
     case SDLK_p: scan=25; break;
     case SDLK_q: scan=16; break;
@@ -154,11 +158,12 @@ auto main(int argc, char *argv[])->int try {
   std::unique_ptr<earthsiege::mission_view> scene;
   if(inspect_demo) {
     scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo);
+    scene->configure_input(menu.settings(),menu.device_calibrations());
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
       "Ctrl+F1 cockpit, Ctrl+F2 orbit, Ctrl+F3 free camera; P pauses, Escape returns to menu.\n"
       "F7 tactical map, F8 damage, F9 left, F10 right cockpit view.\n"
-      "Space fires; 1–9 or W/Alt+W selects weapons; Enter/Tab selects targets; R toggles radar.\n"
+      "Space fires; 1–9 or W/Alt+W selects weapons; Tab selects targets; Enter confirms tactical orders; R toggles radar.\n"
       "Hold right mouse to aim; both buttons centre aim. Backspace recentres.\n"
       "B changes weapon groups; Alt+1–9 edits a group; +/- adjusts charge; Z restores charge settings.\n"
       "This inspection view includes mission AI and combat; the cockpit is still being integrated.\n";
@@ -168,6 +173,8 @@ auto main(int argc, char *argv[])->int try {
   else if(!frame_limit) frame_limit = 1;
   std::unique_ptr<earthsiege::audio_output> sound;
   if(display)try{sound=std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr<<"Audio unavailable: "<<e.what()<<'\n';}
+  std::unique_ptr<earthsiege::joystick_devices> sticks;
+  if(display)try{sticks=std::make_unique<earthsiege::joystick_devices>();}catch(std::exception const &e){std::cerr<<"Joystick input unavailable: "<<e.what()<<'\n';}
   bool running{true};
   bool focused{true};
   unsigned int frames{};
@@ -211,7 +218,7 @@ auto main(int argc, char *argv[])->int try {
       if(event.type==SDL_TEXTINPUT && !scene){menu.text_input(event.text.text);continue;}
       if(event.type == SDL_KEYDOWN && !event.key.repeat) {
         auto const key{event.key.keysym.sym};
-        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{command(key,false,false)})menu.key(static_cast<uint8_t>(*scan));}
+        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{command(key,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})menu.key(*scan);}
         else if(focused) {
           if(key==SDLK_ESCAPE && inspect_demo){scene.reset();if(sound)sound->clear();continue;}
           if((key==SDLK_ESCAPE || key==SDLK_q) && (event.key.keysym.mod&KMOD_CTRL)){open_alert(1);continue;}
@@ -220,8 +227,6 @@ auto main(int argc, char *argv[])->int try {
           if(key==SDLK_F1 && (event.key.keysym.mod&KMOD_CTRL))scene->change_cockpit_view(earthsiege::cockpit_view::forward);
           if(key==SDLK_F2 && (event.key.keysym.mod&KMOD_CTRL))scene->change_camera(earthsiege::camera_mode::orbit);
           if(key==SDLK_F3 && (event.key.keysym.mod&KMOD_CTRL))scene->change_camera(earthsiege::camera_mode::free);
-          if(key==SDLK_F9)scene->change_cockpit_view(earthsiege::cockpit_view::left);
-          if(key==SDLK_F10)scene->change_cockpit_view(earthsiege::cockpit_view::right);
         }
       }
       if(scene) {
@@ -237,15 +242,18 @@ auto main(int argc, char *argv[])->int try {
         }
       } else if(focused) {
         if(event.type == SDL_MOUSEMOTION) menu.mouse_move(event.motion.x,event.motion.y);
-        if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) menu.mouse_down(event.button.x, event.button.y);
-        if(event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
-          menu.mouse_up(event.button.x,event.button.y);
-        }
+        if(event.type == SDL_MOUSEBUTTONDOWN && (event.button.button == SDL_BUTTON_LEFT||event.button.button == SDL_BUTTON_RIGHT)) menu.mouse_down(event.button.x,event.button.y,event.button.button==SDL_BUTTON_RIGHT);
+        if(event.type == SDL_MOUSEBUTTONUP && (event.button.button == SDL_BUTTON_LEFT||event.button.button == SDL_BUTTON_RIGHT)) menu.mouse_up(event.button.x,event.button.y,event.button.button==SDL_BUTTON_RIGHT);
       }
     }
+    if(focused&&!alert&&sticks){
+      auto const &p{menu.settings().current()};auto raw{sticks->poll(p[7],p[9]!=0)};
+      if(scene)scene->devices(raw,sticks->throttle());else menu.devices(raw);
+    }
+    if(auto const warp{menu.take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
     if(menu.quit_requested())running=false;
     if(menu.ready_to_launch()) {
-      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->environment_detail(menu.settings().current()[3]!=0,menu.settings().current()[4],menu.settings().current()[5]);pending=0;
+      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene->environment_detail(menu.settings().current()[3]!=0,menu.settings().current()[4],menu.settings().current()[5]);pending=0;
       if(sound)sound->clear();
     }
     auto const now{display ? SDL_GetTicks64() : previous + 25};

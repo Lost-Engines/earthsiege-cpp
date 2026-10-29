@@ -11,7 +11,10 @@ add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
   src/shell/control_settings.cpp
+  src/shell/controls_dialog.cpp
+  src/shell/joystick_calibration.cpp
   src/render/control_settings_artwork.cpp
+  src/render/calibration_artwork.cpp
   src/render/shell_statistics.cpp
   src/render/shell_door.cpp
   src/resources/lpf_animation.cpp
@@ -214,6 +217,9 @@ add_library(earthsiege_core
   src/simulation/camera.h
   src/simulation/arcsine_table.h
   src/simulation/keyboard_input.cpp
+  src/resources/input_options.cpp
+  src/simulation/joystick_input.cpp
+  src/simulation/joystick_routing.cpp
   src/simulation/keyboard_input.h
   src/simulation/frame_time.cpp
   src/simulation/frame_time.h
@@ -336,6 +342,7 @@ target_compile_options(earthsiege_core PUBLIC
 
 add_executable(earthsiege
   src/main.cpp
+  src/platform/joystick_devices.cpp
   src/platform/audio_output.cpp
   src/platform/window.cpp
   src/platform/window.h
@@ -1159,4 +1166,46 @@ if(BUILD_TESTING)
   add_executable(control_settings_raster_test tests/control_settings_raster_test.cpp)
   target_link_libraries(control_settings_raster_test PRIVATE earthsiege_core)
   add_test(NAME control_settings_raster COMMAND control_settings_raster_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/control_settings_raster.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(joystick_input_test tests/joystick_input_test.cpp)
+  target_link_libraries(joystick_input_test PRIVATE earthsiege_core)
+  add_test(NAME joystick_input COMMAND joystick_input_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/joystick_input.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(joystick_calibration_test tests/joystick_calibration_test.cpp)
+  target_link_libraries(joystick_calibration_test PRIVATE earthsiege_core)
+  add_test(NAME joystick_calibration COMMAND joystick_calibration_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/joystick_calibration.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(calibration_raster_test tests/calibration_raster_test.cpp)
+  target_link_libraries(calibration_raster_test PRIVATE earthsiege_core)
+  add_test(NAME calibration_raster COMMAND calibration_raster_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/joystick_calibration_raster.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(joystick_routing_test tests/joystick_routing_test.cpp)
+  target_link_libraries(joystick_routing_test PRIVATE earthsiege_core)
+  add_test(NAME joystick_routing COMMAND joystick_routing_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/joystick_routing.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(joystick_devices_test tests/joystick_devices_test.cpp src/platform/joystick_devices.cpp)
+  target_link_libraries(joystick_devices_test PRIVATE earthsiege_core SDL2::SDL2)
+  add_test(NAME joystick_devices COMMAND joystick_devices_test)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(input_options_test tests/input_options_test.cpp)
+  target_link_libraries(input_options_test PRIVATE earthsiege_core)
+  add_test(NAME input_options COMMAND input_options_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/input_options.bin)
+endif()
+
+if(BUILD_TESTING)
+ add_executable(game_shell_controls_test tests/game_shell_controls_test.cpp)
+ target_link_libraries(game_shell_controls_test PRIVATE earthsiege_core)
+ add_test(NAME game_shell_controls COMMAND game_shell_controls_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/build)
 endif()

@@ -1095,3 +1095,53 @@ two-stick/pedal exclusion, calibration-time persistence and Done committing
 preferences. The original CTL_ALRT resources render identically in 72 complete
 dialog raster comparisons. These checks isolate the dialog from physical
 devices and the host pointer. Live device integration follows separately.
+
+### Live controls and joystick calibration
+
+Options / Controls now opens the original CTL_ALRT and CAL_ALRT interfaces.
+Right-click cycles backwards; Tab and Alt+Tab move focus by warping the pointer.
+Done and Escape accept the control settings. Calibration uses the original
+device selector, stages, masks, prompts, rollback behavior and file layout.
+The hardware values come from SDL; calibrated response, device specializations,
+keyboard/joystick priority and control-mode switches run in the verified core.
+
+The new original comparisons cover 3,840 calibrated outputs, 12 device profiles,
+22 calibration sequences, 64 complete calibration rasters, 4,096 mixed input
+routes, 30 KEYJOY inputs and 80 hat request combinations. The live menu test
+checks right-click, keyboard focus, actual calibration samples, disk persistence
+and reload. An SDL virtual-device test covers physical-device selection,
+two-stick fallback, hats, sliders, buttons and unplug, excluding the real
+controller attached to the development machine.
+
+Host joystick axes are mapped to unsigned 16-bit counts, followed by the
+original seven-bit calibration and nonlinear response. The first two SDL
+devices supply the two gameport pairs; one four-axis device can supply both.
+Pedals use the second device's first axis, or the first device's third axis.
+FCS and CH Pro hats are encoded into their original gameport representations.
+CH slider input uses axis four, or axis three when only three exist. WCS uses
+that lever as a modern host substitute for the original keyboard throttle.
+These are documented platform mappings, not claims of electrical emulation.
+
+Host calibration lives in data/host-joy1.cal and host-joy2.cal in the separate
+save directory, using the original 64-byte format. DOS gameport calibration
+counts must not be reused for SDL's different range. The original unreachable
+CH slider calibration entry and cancellation's unsaved partial calibration
+state are retained.
+
+The supplied DATA/KEYJOY.CFG is now loaded. The original parser requires spaces
+around equals and only sets reversal flags: a subsequent DEFAULT does not
+clear a preceding REVERSE. It mistakenly uses a 28-byte token-table size as a
+28-entry count; unsupported tokens can read invalid pointers. The native parser
+reports those tokens safely. Original fixture captures record the failing
+native instruction as well as successful parsing. The historical routing
+fixture label missile_default was corrected to missile_reverse; the arithmetic
+and binary fixture values have not changed.
+
+The live cockpit uses the original device routing, Insert/button-2 mode switch,
+third-button target selection, fourth-button stop/centre and mouse preference.
+Keyboard Enter stays in command dispatch instead of being copied to the
+third-button target signal. F9/F10 and hat requests honor their original view
+gates. Hardware-panned animation and complete replay/frame scheduling remain
+separate integration work.
+
+All 225 CTest checks pass after the complete rebuild (31.89 seconds). The live controls screen was inspected at native pixel scale.
