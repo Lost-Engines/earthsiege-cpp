@@ -12,6 +12,7 @@
 #include "render/full_damage_display.h"
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
+#include "resources/mission_results.h"
 #include "simulation/camera.h"
 #include "simulation/mission_activity.h"
 #include "simulation/wingmate_orders.h"
@@ -112,6 +113,7 @@ class mission_session {
     herc_fire_state fire{};
     herc_sensor_state sensors{};
     herc_reaction_state reactions{};
+    std::array<int16_t,3> statistics{};
   };
   struct flyer_member {
     std::unique_ptr<flyer_actor> actor;
@@ -194,6 +196,8 @@ class mission_session {
   std::optional<size_t> displayed_target;
   void advance_frame(player_input &input, frame_ratio ratio, std::function<void()> const &prepare_player);
   std::vector<combat_notice> frame_notices;
+  std::vector<std::pair<int16_t,int16_t>> recovered_weapons;
+  void credit_defeat(size_t attacker,size_t victim);
   std::optional<int32_t> impact(projectile_owner const &owner, impact_request const &request);
   void fire_selected(bool pressed);
   void launch(size_t owner, weapon_shot const &shot);
@@ -256,6 +260,7 @@ public:
   herc_sensor_state const &player_sensors() const;
   mission_status mission_state(bool requested = false) const;
   int16_t result_grade() const;
+  mission_results results() const;
   std::optional<mission_status> take_mission_prompt();
   mission_outcome_clock const &mission_clock() const;
   player_objective_progress const &objective_progress() const;

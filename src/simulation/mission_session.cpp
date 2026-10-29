@@ -11,6 +11,7 @@
 #include "simulation/model_math.h"
 #include "simulation/fixed_math.h"
 #include "simulation/player_targeting.h"
+#include "simulation/mission_salvage.h"
 
 namespace earthsiege {
 
@@ -315,7 +316,7 @@ herc_damage_events mission_session::damage_events(size_t const index) {
     auto const centre{smoke_attachment_position(body.placement(), {}, &body.model().transforms()[static_cast<size_t>(find_model_part(member.definition->models.roots.front(), member.definition->profile.camera_part)->header.transform)])};
     effects.add_detached_weapon(create_detached_weapon(definition, mount, hardpoint, centre));
   };
-  events.salvage = [&, index](int16_t const weapon, int16_t const quality){ frame_notices.push_back({combat_notice_kind::salvage, index, weapon, quality, {}}); };
+  events.salvage = [&, index](int16_t const weapon, int16_t const quality){ frame_notices.push_back({combat_notice_kind::salvage, index, weapon, quality, {}}); recovered_weapons.emplace_back(weapon,quality); };
   events.shield_warning = [&, index]{ frame_notices.push_back({combat_notice_kind::shield_warning, index, 0, 0, {}}); };
   events.cockpit_damage = [&, index](size_t const part){ frame_notices.push_back({combat_notice_kind::cockpit_damage, index, static_cast<int16_t>(part), 0, {}}); };
   return events;
@@ -375,8 +376,10 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         auto const events{damage_events(index)};
         impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{actors[index].side}, .invulnerable{settings.player_is_invulnerable()}};
+        bool const eligible{!actors[index].dead&&!actors[index].disabled};
         auto const result{crew[index].actor->receive_impact(incoming, conditions, random, events)};
         auto const &state{crew[index].actor->damage().consequences};
+        if(eligible&&(state.dead||state.disabled))credit_defeat(owner.actor,index);
         actors[index].dead = state.dead; actors[index].disabled = state.disabled;
         return result ? std::optional<int32_t>{result->distance} : std::nullopt;
       }},
@@ -391,6 +394,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{flyers[index].side}};
         auto const result{flyers[index].actor->receive_impact(incoming,conditions,random,flyer_events(index),owner.actor == player_index && owner.target == flyer_id(index))};
+        if(!actors[flyer_id(index)].dead&&flyers[index].actor->dead())credit_defeat(owner.actor,flyer_id(index));
         actors[flyer_id(index)].dead = flyers[index].actor->dead();
         return result;
       }},
@@ -405,6 +409,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{bases[index].side}};
         auto const result{bases[index].actor->receive_impact(incoming, conditions, random, base_damage_events(index))};
+        if(!actors[base_id(index)].dead&&bases[index].actor->dead())credit_defeat(owner.actor,base_id(index));
         actors[base_id(index)].dead = bases[index].actor->dead();
         return result;
       }},
