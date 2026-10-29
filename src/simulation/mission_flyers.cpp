@@ -110,6 +110,7 @@ void mission_session::launch(size_t const owner, weapon_shot const &shot) {
   projectile_owner source{owner, activity->targets()[owner].selected};
   if(shot.kind == shot_kind::rocket && source.target && *source.target < crew.size())
     source.target_component = crew[*source.target].actor->target_component(shot.muzzle.position, shot.muzzle.angles);
-  projectiles.launch(source, shot, random, [&](projectile_owner const &owner_info, impact_request const &request){ return impact(owner_info, request); });
+  auto const slot{projectiles.launch(source, shot, random, [&](projectile_owner const &owner_info, impact_request const &request){ return impact(owner_info, request); })};
+  if(owner == player_index && shot.kind == shot_kind::rocket) { ++camera_rocket.sequence; camera_rocket.slot = slot; }
 }
 } // namespace earthsiege

@@ -510,3 +510,10 @@ STATUS/NAV/TARGET refresh, immediate scanner/camera updates, EO automatic page
 selection and manual overrides, hidden/external views, range cycling and
 communications scrolling past disabled choices. Damage-induced flicker and the
 live mission bindings remain separate work.
+
+Live mission bindings for the damage and scanner pages now match all 128 actors
+in four original demo starts. This verifies actor identity, chassis/structure
+labels, armour and internal fractions, side, position, activity, detection and
+radar state. The dormant original last-position flag is preserved. Player rocket
+launches expose their actual pool slot for the camera tracker; page rendering and
+wingmate delivery still need to be connected to the live cockpit.

@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/mission_displays.cpp
   src/shell/mfd_controller.cpp
   src/render/missile_display.cpp
   src/render/navigation_display.cpp
@@ -251,6 +252,9 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(mission_displays_test tests/mission_displays_test.cpp)
+  target_link_libraries(mission_displays_test PRIVATE earthsiege_core)
+  add_test(NAME mission_displays COMMAND mission_displays_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_displays.bin")
   add_executable(mfd_controller_test tests/mfd_controller_test.cpp)
   target_link_libraries(mfd_controller_test PRIVATE earthsiege_core)
   add_test(NAME mfd_controller COMMAND mfd_controller_test "${PROJECT_SOURCE_DIR}/tests/fixtures/mfd_state.bin")

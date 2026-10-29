@@ -5,6 +5,8 @@
 #include "render/scenery_renderer.h"
 #include "render/target_instruments.h"
 #include "render/waypoint_instruments.h"
+#include "render/damage_display.h"
+#include "render/scanner_display.h"
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
 #include "simulation/camera.h"
@@ -36,6 +38,11 @@ struct combat_notice {
   int16_t part{0};
   int16_t value{0};
   vec3<int32_t> position;
+};
+
+struct player_rocket_launch {
+  uint64_t sequence{};
+  std::optional<size_t> slot;
 };
 
 struct mission_herc_view {
@@ -170,6 +177,7 @@ class mission_session {
   random_state random;
   world_effects effects;
   world_projectiles projectiles;
+  player_rocket_launch camera_rocket;
   std::unique_ptr<player_armament> player_weapons;
   int32_t player_weapon_range{};
   player_input_router input_router;
@@ -196,6 +204,12 @@ public:
   mission_activity const &activity_state() const;
   herc_body const &player() const;
   int16_t player_chassis() const;
+  size_t player_id() const;
+  damage_display_state instrument_damage(std::optional<size_t> actor) const;
+  scanner_display_state scanner_state(uint16_t heading, uint32_t ticks, int32_t range) const;
+  bool camera_ready() const;
+  bool eo_selected() const;
+  player_rocket_launch const &latest_player_rocket() const;
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);
   void cycle_weapon();

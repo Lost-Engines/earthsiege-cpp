@@ -448,3 +448,10 @@ page setters, button callbacks and the parent update; child painters are recorde
 boundaries, independently verified by the individual raster fixtures. It does
 not cover instrument damage flicker. Rebuild with
 `tools/export_mfd_state_fixtures.py ../earthsiege-reverse/analysis`.
+
+`mission_displays.bin` (`ESMDSP01`) contains the damage/scanner inputs of all 128
+actors across the four original demo starts. Capture uses real world creation,
+original damage helpers and virtual total-damage calls; only the unused tenth
+weapon metric is padded as documented for the damage-diagram fixture. Generate
+with `../earthsiege-reverse/tools/capture_mission_displays.py`; the binary is its
+direct portable export.
