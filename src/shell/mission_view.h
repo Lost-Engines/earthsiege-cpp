@@ -3,8 +3,7 @@
 #include "audio/mission_audio.h"
 #include <memory>
 #include "render/scenery_renderer.h"
-#include "render/clouds.h"
-#include "render/ground_marks.h"
+#include "render/environment_renderer.h"
 #include "render/instrument_bars.h"
 #include "render/shield_instruments.h"
 #include "render/weapon_instruments.h"
@@ -48,11 +47,8 @@ class mission_view {
   std::array<size_t, 5> weapon_groups;
   cockpit_view panel{cockpit_view::forward};
   palette display_colours;
-  std::vector<bitmap> horizon_images;
-  bool panorama_enabled{true};
-  uint8_t cloud_detail{255},ground_detail{255};
-  cloud_field clouds;
-  ground_marks marks;
+  environment_renderer environment;
+  earthsiege::environment_detail detail;
   scenery_renderer renderer;
   camera_state camera;
   keyboard_input keyboard;
@@ -85,7 +81,7 @@ public:
   void change_cockpit_view(cockpit_view view);
   void step(bool control, bool zoom);
   void draw();
-  void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { panorama_enabled=horizon;cloud_detail=cloud;ground_detail=ground; }
+  void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { detail={horizon,cloud,ground,true}; }
   std::vector<int16_t> take_audio();
   std::optional<vec2<int32_t>> take_pointer_warp();
   framebuffer const &image() const;

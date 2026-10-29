@@ -222,6 +222,10 @@ add_library(earthsiege_core
   src/resources/weapon_mounts.h
   src/simulation/actor_placement.cpp
   src/simulation/actor_placement.h
+  src/render/environment_palette.cpp
+  src/render/environment_palette.h
+  src/render/environment_renderer.cpp
+  src/render/environment_renderer.h
   src/render/ground_texture.cpp
   src/render/ground_texture.h
   src/render/clouds.cpp
@@ -1038,4 +1042,13 @@ if(BUILD_TESTING)
   add_executable(ground_texture_test tests/ground_texture_test.cpp)
   target_link_libraries(ground_texture_test PRIVATE earthsiege_core)
   add_test(NAME ground_texture COMMAND ground_texture_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/ground_texture.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(environment_palette_test tests/environment_palette_test.cpp)
+  target_link_libraries(environment_palette_test PRIVATE earthsiege_core)
+  add_test(NAME environment_palette COMMAND environment_palette_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/environment_palette.bin)
+  add_executable(environment_composition_test tests/environment_composition_test.cpp)
+  target_link_libraries(environment_composition_test PRIVATE earthsiege_core)
+  add_test(NAME environment_composition COMMAND environment_composition_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/environment_composition.bin)
 endif()

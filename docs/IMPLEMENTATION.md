@@ -896,3 +896,21 @@ and the selected TEX/TEX_LO thresholds. All 480 original complete frames and
 their scratch bitmaps match across the 24 worlds, including cockpit masks,
 banks, projection shifts and viewport changes. The established background-band
 check also passes. Flight integration and combined-layer checks follow.
+
+### Complete environment composition
+
+Flight now uses the original environment layer order and persistent fields:
+sky bands, high-detail projected ground, panorama, clouds, ground marks and
+pitch-dependent reflection colours. Shell detail settings reach that owner.
+The reflection cache initializes after the cockpit palette is installed.
+
+All 288 complete original frames across 24 worlds match indexed pixels,
+complete visual RNG state and the 64..79 reflection palette. A separate
+144-case palette capture covers pitch wrap, one-shot overrides and impact
+colours; flight impact flicker and camera disturbance are not connected yet.
+Original frame scheduling also remains separate.
+
+Full rebuild: all 201 CTest checks pass (30.02 seconds). The live eight-frame
+headless cockpit screenshot was inspected. The external bulk resets removed
+some tracked integrations during this work; reflog inspection and revalidation
+confirmed their recovery, now retained in commits.

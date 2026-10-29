@@ -4,8 +4,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include "render/background_bands.h"
-#include "render/panorama.h"
 #include "resources/input_tape.h"
 #include "resources/name_table.h"
 #include "resources/resource_store.h"
@@ -42,12 +40,9 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     clock{resources, cockpit.layout},
     lamps{resources, "simvol0", "ttm/" + read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())) + ".TTM"},
     display_colours{session->scenery().colours()},
-    clouds{session->scenery().environment(),read_bitmaps(resources.read("simvol0","dba/"+session->scenery().environment().resource_names[1]+".DBA"))},
-    marks{session->scenery().environment()},
+    environment{resources,session->scenery().environment()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
-  auto const &horizon{session->scenery().environment().resource_names[0]};
-  if(!horizon.empty()) horizon_images=read_bitmaps(resources.read("simvol0","dba/"+horizon+".DBA"));
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
   audio.play(19);
@@ -235,12 +230,7 @@ void mission_view::draw() {
   }
   {
     scoped_framebuffer_clip clip{frame, inside ? &window.mask : nullptr};
-    background_view const background{.pitch{camera.angles.x}, .roll{camera.angles.y}, .projection_shift{view.projection.perspective_shift}, .centre{vec2<int32_t>{view.projection.centre}}, .offset{0, 0}, .bounds{view.bounds}};
-    auto const bands{make_background_bands(session->scenery().environment(), background)};
-    draw_background_bands(frame, bands, background.bounds);
-    if(panorama_enabled) draw_panorama(frame,horizon_images,place_panorama(horizon_images,bands,background,camera.angles.z,session->scenery().environment().background.horizon_offset),background.bounds);
-    clouds.draw(frame,camera.position,camera.angles,view.projection,view.bounds,cloud_detail,ui_random);
-    marks.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ground_detail,ui_random);
+    environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,display_colours,detail);
     auto const objects{session->visible_objects(!inside)};
     auto &effects{session->visual_effects()};
     auto const ground{effects.ground_flashes()};
