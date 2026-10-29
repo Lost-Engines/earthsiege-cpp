@@ -15,7 +15,7 @@ unsigned region(unsigned screen){
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
  :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},game{r,seed},
- strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},armament{r},bay{r},crew_view{r}{show(1000);}
+ strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r}{show(1000);}
 void game_shell::show(unsigned id){
   if(menu)last_screen=menu->id();
   menu=std::make_unique<dialog>(resources,id,region(id));text_scroll=0;
@@ -28,6 +28,7 @@ void game_shell::show(unsigned id){
   if(id==1610){crew_edit.emplace(game.roster(),game.crew());menu->enable(1623,false);}
   if(id==1800){selected_mount=-1;missile_menu=false;refresh_armament();}
   if(id==1900||id==1920)refresh_repair();
+  if(id==2000){build_menu.emplace(game.roster(),game.crew(),prices,build_chassis);refresh_construction();}
   if(id==1910)for(uint16_t i{};i<3;++i)menu->items(static_cast<uint16_t>(1914+i),{"",""},game.crew().repair_policy==i);
   if(id==4444)if(auto h{game.roster().find(game.roster().selected)})menu->replace_text("###",std::to_string(chassis_recovery(*h,prices)/1000));
   if(id==1220){history_slots.clear();std::vector<std::string> labels;auto const &states{game.career().career.states};
@@ -73,6 +74,11 @@ void game_shell::choose_armament(){
   refresh_armament(weapon);
 }
 
+void game_shell::refresh_construction(){
+ if(!build_menu)return;
+ menu->enable(2001,build_menu->enabled());menu->enable(2003,build_menu->cycling());menu->enable(2004,build_menu->cycling());
+ menu->find(2001)->label=strings.at(build_menu->building(game.roster())?205:206);
+}
 void game_shell::refresh_repair(){
  auto h{game.roster().find(game.roster().selected)};
  if(screen()==1900){
@@ -226,6 +232,11 @@ void game_shell::action(uint16_t id){
       }
       return;
 
+    case 2000:
+      if(id==1710){save_career();build_chassis=build_menu->chassis();build_menu.reset();show(1710);return;}
+      if(id==2001)build_menu->activate(game.roster(),game.crew(),game.inventory(),armament);
+      else if(id==2003||id==2004)build_menu->cycle(game.crew(),id==2004?1:-1);
+      refresh_construction();return;
     case 1900:
       if(id==1710){save_career();show(1710);return;}
       if(id==2003||id==2004){cycle_arming_herc(game.roster(),game.crew(),id==2004?1:-1,false);refresh_repair();return;}
@@ -268,7 +279,7 @@ void game_shell::action(uint16_t id){
     default:break;
   }
   if(id==1300)options_owner=current;
-  if(id==1900||id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
+  if(id==2000||id==1900||id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
 }
 void game_shell::key(uint8_t scan){if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
 void game_shell::mouse_down(int x,int y){
@@ -304,6 +315,7 @@ void game_shell::draw(framebuffer &target)const{
       if(auto view{menu->find(1803)})bay.weapon(target,icon,view->bounds);
     }
   }
+  if(current==2000&&build_menu)build_view.draw(target,*build_menu,game.roster(),game.crew(),prices);
   if(current==1610&&crew_edit){
     auto const name{careers.selected>=0?careers.entries.at(static_cast<size_t>(careers.selected)).name:strings.at(85)};
     crew_view.draw(target,*menu,game.roster(),game.crew(),*crew_edit,name);

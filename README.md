@@ -53,7 +53,7 @@ remembered-contact selection, and retains unmodified fields in outgoing orders.
 
 Campaign saves preserve the original 41-state career format, ordered equipment inventories and variable hangar records. They pass complete original-executable save/read comparisons, all 396 campaign filename/branch transitions and 140 grade thresholds. Registration, selection, resume and manual backups use these original formats. Saves live in the platform user-data directory (normally `~/.local/share/lost-engines/earthsiege` on Linux); `--save-dir PATH` overrides that location. The bundled resources and comparison DOS installation are not modified.
 
-The portable shell now also implements mission-return salvage, ordered equipment awards/restocking, pilot statistics and replacements, technology unlocks, repair budgets and chassis construction. Complete original return/save comparisons cover 96 scenarios (including 144 replacement pilots); repair checks cover 6,400 quotes, 1,280 transactions and 25 construction states. The arming screen supports original clickable mounts, compatible weapon lists, condition-preserving equipment exchange, missile types and HERC selection. Crew and repair screens are connected; construction controls, bay animations and the remaining presentations are still being integrated.
+The portable shell now also implements mission-return salvage, ordered equipment awards/restocking, pilot statistics and replacements, technology unlocks, repair budgets and chassis construction. Complete original return/save comparisons cover 96 scenarios (including 144 replacement pilots); repair checks cover 6,400 quotes, 1,280 transactions and 25 construction states. The arming screen supports original clickable mounts, compatible weapon lists, condition-preserving equipment exchange, missile types and HERC selection. Crew and repair screens are connected; construction controls are now connected too. Bay animations and the remaining presentations are still being integrated.
 
 Launch preparation now matches all 670 retained original GO launches byte for byte (SCRIPT.DAT, MISSION.VAR and PLAYER.MEC), including exact random-generator state. Four complete new-career constructors and 32 additional roster exports cover history initialization, inactive crew and differing pilot health. The shell's original default missile-type normalization and selected-pilot health export behaviour are retained.
 
@@ -74,7 +74,7 @@ in the supplied data; those layers are omitted safely while keeping the equipmen
 Crew Assignment now uses the original portraits, wireframe HERC diagrams and
 screen palette. Reassignment preserves the original temporary swap behaviour;
 Cancel restores all four assignments. Pilot registration starts with an empty
-name field. Repair allocation and policy controls are connected. Construction screen ownership remains in progress.
+name field. Repair allocation and policy controls are connected. Construction uses the original blueprint artwork and unlocked chassis selection.
 
 Detailed repairs retain the original condition bands, refunds, cancellation and
 Proceed behaviour, including its extra uncharged condition step. Scrap returns
@@ -83,3 +83,9 @@ The original repair code corrupts crew-header fields when repairing an unassigne
 HERC; this implementation performs the repair without that invalid pilot-share
 write. The native comparison covers 5,323 component edits, eight constructions
 and 128 scrap/cancel transactions.
+
+Construction menu comparisons cover another 1,424 original events. Unfinished
+builds persist across restarts and finish after the original number of mission
+returns. The original post-cancellation affordability omission is retained: after
+scrapping a partial build, immediately rebuilding can overdraw the material
+balance. Empty reserved bays are valid and do not advance construction.

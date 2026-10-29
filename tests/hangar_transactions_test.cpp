@@ -37,6 +37,7 @@ int main(int argc,char **argv)try{
   require(c.budget==budget&&c.crew_cursor==cursor,"scrap budget and cursor");
   for(size_t j{};j<crew.size();++j)require(c.crew[j].hangar_slot==crew[j],"scrap assignment");
   require(stocks==expected,"salvaged equipment order");
+  if(construction>=0){auto before{write_hangar(h)};advance_construction(h,prices);require(write_hangar(h)==before,"empty construction reservation is inert");}
  }
  f.require_end();std::cout<<builds<<" native constructions and "<<scraps<<" scrap transactions agree\n";return 0;
 }catch(std::exception const &e){std::cerr<<e.what()<<'\n';return 1;}

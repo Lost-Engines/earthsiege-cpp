@@ -29,6 +29,8 @@ add_library(earthsiege_core
   src/shell/campaign_return.cpp
   src/shell/crew_assignment.cpp
   src/shell/armament.cpp
+  src/shell/construction_menu.cpp
+  src/render/construction_artwork.cpp
   src/shell/component_repair.cpp
   src/shell/hangar_service.cpp
   src/resources/career.cpp
@@ -920,4 +922,10 @@ if(BUILD_TESTING)
   add_executable(hangar_transactions_test tests/hangar_transactions_test.cpp)
   target_link_libraries(hangar_transactions_test PRIVATE earthsiege_core)
   add_test(NAME hangar_transactions COMMAND hangar_transactions_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hangar_transactions.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(construction_menu_test tests/construction_menu_test.cpp)
+  target_link_libraries(construction_menu_test PRIVATE earthsiege_core)
+  add_test(NAME construction_menu COMMAND construction_menu_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/construction_menu.bin)
 endif()

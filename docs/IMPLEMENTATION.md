@@ -721,3 +721,15 @@ component another band without charge. Both quirks are retained. Negative pilot
 indices are bounded instead of overwriting the original crew header.
 Construction ownership, presentation animations and pixel-level shell widget
 coverage still require integration; state parity is not full-screen parity.
+
+### Construction screen
+
+MENU2000 now uses original BLUEHERX artwork, specification text, required and
+allocated material, completion percentage and button transitions. All 96
+original event sequences / 1,424 transitions agree, including technology gating,
+partial-build cancellation and the original failure to disable unaffordable
+rebuilding immediately after cancellation. Eight constructor and 128 salvage
+comparisons continue to pass, as do the 6,400 quote / 1,280 whole-repair / 25
+construction-progress checks. The full shell test exercises build/cancel and
+save/reload. Resident bay animation and the complete original launch-screen
+sequence remain to be integrated.

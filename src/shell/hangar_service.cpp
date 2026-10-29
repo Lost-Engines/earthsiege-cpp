@@ -66,7 +66,7 @@ void apply_repair_policy(career_state &state,hangar &roster,service_prices const
 }
 void advance_construction(hangar &roster,service_prices const &prices) {
   if(roster.construction_slot<0)return;
-  auto h{roster.find(roster.construction_slot)};if(!h)throw std::runtime_error{"construction slot has no chassis"};
+  auto h{roster.find(roster.construction_slot)};if(!h)return; // Original 0x2a277 excludes an empty reserved bay.
   auto const &p{prices.chassis.at(static_cast<size_t>(h->chassis))};
   if(roster.construction_remaining>0)--roster.construction_remaining;
   if(roster.construction_remaining<1){service_condition(*h,100);roster.construction_slot=-1;roster.construction_value=0;return;}
@@ -99,11 +99,11 @@ int16_t reserve_construction(hangar &h){
 }
 bool construct_herc(hangar &h,career_state &c,int16_t chassis,size_t mounts,service_prices const &prices){
  auto const &p{prices.chassis.at(static_cast<size_t>(chassis))};
- if(h.selected<0||h.find(h.selected)||c.budget<p.purchase||mounts>10)return false;
+ if(h.selected<0||h.find(h.selected)||mounts>10)return false;
  player_herc model;model.chassis=chassis;model.slot=h.selected;model.extra=2;
  model.weapons.assign(mounts,17);model.weapon_values.assign(mounts,0);
  model.condition.armour.fill(100);model.condition.internal.fill(100);model.condition.internal[9]=0;model.condition.equipment.fill(100);
- h.hercs.push_back(std::move(model));h.construction_remaining=p.construction_missions;h.construction_value=p.purchase/1000;c.budget-=p.purchase;return true;
+ h.hercs.push_back(std::move(model));h.construction_remaining=p.construction_missions;h.construction_value=p.purchase/1000;c.budget=wrap_long(int64_t{c.budget}-p.purchase);return true;
 }
 bool scrap_selected(hangar &h,career_state &c,armory &inventory,service_prices const &prices){
  auto model{h.find(h.selected)};if(!model)return false;
