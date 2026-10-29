@@ -4,6 +4,7 @@
 #include "shell/save_store.h"
 #include "render/hangar_artwork.h"
 #include "render/crew_artwork.h"
+#include "shell/component_repair.h"
 namespace earthsiege {
 /// Application-level shell flow. Window input is translated before it reaches
 /// this owner, so scripted tests exercise the same transitions as the UI.
@@ -16,6 +17,9 @@ class game_shell {
   std::unique_ptr<dialog> menu;
   std::vector<std::string> strings;
   font text_face;
+  service_prices prices;
+  std::optional<component_repair> repair_edit;
+  void refresh_repair();
   armament_catalog armament;
   hangar_artwork bay;
   crew_artwork crew_view;

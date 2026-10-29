@@ -33,6 +33,7 @@ class dialog {
   std::vector<control> controls;
   std::array<button_style, 4> styles;
   font title_face;
+  font caption_face;
   std::array<font, 3> button_faces;
   std::array<font, 2> list_faces;
   std::optional<unsigned int> pressed;
@@ -48,6 +49,7 @@ public:
   control *find(uint16_t action);
   control const *find(uint16_t action) const;
   void enable(uint16_t action, bool enabled);
+  void replace_text(std::string_view from,std::string_view to);
   void items(uint16_t action, std::vector<std::string> values, int selected = 0);
   void select(uint16_t action, int selected);
   int selection(uint16_t action) const;

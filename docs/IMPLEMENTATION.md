@@ -707,3 +707,17 @@ presentation controls and save/animation calls are explicit capture boundaries.
 The UI test additionally exercises mouse/keyboard actions and persistence.
 The original REGN1610 palette, PILOTS/INSIGNIA/MECHS artwork and native text
 placement are connected. Arming's backward cycling from -1 shares the correction.
+
+### Repair and salvage integration
+
+MENU1900/1910/1920 and scrap confirmation 4444 now use the original records,
+material accounting, condition-band rules and ordered equipment recovery.
+Component edits match all 5,323 original events in 128 sequences; construction
+records match all eight chassis and 128 original scrap/cancel outcomes.
+The UI test covers damaged mission return, allocation/cancel/accept, policy,
+scrap cancellation, Repair All and persistence. All 180 tests pass.
+Native equipment quotes use mount indices, and Proceed can grant the selected
+component another band without charge. Both quirks are retained. Negative pilot
+indices are bounded instead of overwriting the original crew header.
+Construction ownership, presentation animations and pixel-level shell widget
+coverage still require integration; state parity is not full-screen parity.

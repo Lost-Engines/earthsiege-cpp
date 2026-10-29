@@ -86,4 +86,40 @@ int32_t chassis_recovery(player_herc const &herc,service_prices const &prices) {
   for(size_t i{};i<9;++i)value+=p.internal[i]*herc.condition.internal[i]/100;
   return value;
 }
+
+int16_t herc_average_condition(player_herc const &h){
+ int sum{std::accumulate(h.condition.armour.begin(),h.condition.armour.end(),0)};
+ sum=std::accumulate(h.condition.internal.begin(),h.condition.internal.begin()+9,sum);
+ sum=std::accumulate(h.condition.equipment.begin(),h.condition.equipment.begin()+static_cast<ptrdiff_t>(h.weapons.size()),sum);
+ return static_cast<int16_t>(sum/static_cast<int>(22+h.weapons.size()));
+}
+int16_t reserve_construction(hangar &h){
+ if(h.construction_slot<0)for(int16_t i{};i<h.capacity;++i)if(!h.find(i)){h.construction_slot=i;break;}
+ h.selected=h.construction_slot;return h.selected;
+}
+bool construct_herc(hangar &h,career_state &c,int16_t chassis,size_t mounts,service_prices const &prices){
+ auto const &p{prices.chassis.at(static_cast<size_t>(chassis))};
+ if(h.selected<0||h.find(h.selected)||c.budget<p.purchase||mounts>10)return false;
+ player_herc model;model.chassis=chassis;model.slot=h.selected;model.extra=2;
+ model.weapons.assign(mounts,17);model.weapon_values.assign(mounts,0);
+ model.condition.armour.fill(100);model.condition.internal.fill(100);model.condition.internal[9]=0;model.condition.equipment.fill(100);
+ h.hercs.push_back(std::move(model));h.construction_remaining=p.construction_missions;h.construction_value=p.purchase/1000;c.budget-=p.purchase;return true;
+}
+bool scrap_selected(hangar &h,career_state &c,armory &inventory,service_prices const &prices){
+ auto model{h.find(h.selected)};if(!model)return false;
+ auto const slot{h.selected};bool const building{slot==h.construction_slot};
+ for(size_t i{};i<model->weapons.size();++i){auto const weapon{model->weapons[i]},condition{model->condition.equipment.at(i)};if(weapon==17)continue;
+  if(condition<80)c.budget=wrap_long(int64_t{c.budget}+prices.weapons.at(static_cast<size_t>(weapon))*condition/100);
+  else{auto &stock{inventory.at(static_cast<size_t>(weapon))};stock.insert(stock.begin(),condition);}
+ }
+ auto const value{building&&h.construction_value?h.construction_value*1000:chassis_recovery(*model,prices)};
+ c.budget=wrap_long(int64_t{c.budget}+value);
+ if(building){h.construction_remaining=0;h.construction_value=0;}
+ else for(auto &member:c.crew)if(member.hangar_slot==slot){member.hangar_slot=-1;break;}
+ std::erase_if(h.hercs,[&](auto const &entry){return entry.slot==slot;});
+ if(!building)for(int i{};i<h.capacity;++i){h.selected=static_cast<int16_t>((h.selected+1)%h.capacity);if(h.find(h.selected)&&h.selected!=h.construction_slot)break;if(h.selected==slot)break;}
+ c.crew_cursor=-1;for(size_t i{};i<c.crew.size();++i)if(c.crew[i].hangar_slot==h.selected){c.crew_cursor=static_cast<int16_t>(i);break;}
+ return true;
+}
+
 } // namespace earthsiege

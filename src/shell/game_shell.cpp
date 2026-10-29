@@ -9,13 +9,13 @@ mission_options options(preferences const &p){auto const &v{p.current()};return 
 unsigned region(unsigned screen){
   if(screen==1500||screen==1501)return 6000;
   if(screen==1510||screen==1520)return 5000;
-  if(screen==1700||screen==1710||screen==1800||screen==1900||screen==2000||screen==1610)return 4000;
+  if(screen==1700||screen==1710||screen==1800||screen==1900||screen==2000||screen==1910||screen==1920||screen==4444||screen==1610)return 4000;
   return 1000;
 }
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
  :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},game{r,seed},
- strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},armament{r},bay{r},crew_view{r}{show(1000);}
+ strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},armament{r},bay{r},crew_view{r}{show(1000);}
 void game_shell::show(unsigned id){
   if(menu)last_screen=menu->id();
   menu=std::make_unique<dialog>(resources,id,region(id));text_scroll=0;
@@ -27,6 +27,9 @@ void game_shell::show(unsigned id){
   if(id==1330){menu->items(1331,{strings.at(19),strings.at(20),strings.at(21)},battle_set);}
   if(id==1610){crew_edit.emplace(game.roster(),game.crew());menu->enable(1623,false);}
   if(id==1800){selected_mount=-1;missile_menu=false;refresh_armament();}
+  if(id==1900||id==1920)refresh_repair();
+  if(id==1910)for(uint16_t i{};i<3;++i)menu->items(static_cast<uint16_t>(1914+i),{"",""},game.crew().repair_policy==i);
+  if(id==4444)if(auto h{game.roster().find(game.roster().selected)})menu->replace_text("###",std::to_string(chassis_recovery(*h,prices)/1000));
   if(id==1220){history_slots.clear();std::vector<std::string> labels;auto const &states{game.career().career.states};
     for(size_t i{1};i<states.size();++i)if(states[i].valid){history_slots.push_back(i);labels.push_back("MISSION "+std::to_string(states[i].missions));}
     menu->items(1223,std::move(labels));menu->enable(1222,!history_slots.empty());menu->enable(1230,!history_slots.empty());}
@@ -69,6 +72,40 @@ void game_shell::choose_armament(){
   if(selected_mount>=0)armament.exchange(*h,selected_mount,weapon,game.inventory());
   refresh_armament(weapon);
 }
+
+void game_shell::refresh_repair(){
+ auto h{game.roster().find(game.roster().selected)};
+ if(screen()==1900){
+  for(auto id:{1920,1901,1902})menu->enable(static_cast<uint16_t>(id),h!=nullptr);
+  if(!h){for(auto id:{1903,1904,1905,1906})menu->items(static_cast<uint16_t>(id),{});menu->items(1907,{std::to_string(game.crew().budget)});return;}
+  auto &crew{game.crew()};crew.crew_cursor=-1;
+  std::string pilot{strings.at(122)};
+  for(size_t i{};i<crew.crew.size();++i)if(crew.crew[i].hangar_slot==h->slot){
+   crew.crew_cursor=static_cast<int16_t>(i);
+   auto const &c{crew.crew[i]};
+   pilot=i?strings.at(static_cast<size_t>(86+c.name*3+c.variant)):careers.selected>=0?careers.entries.at(static_cast<size_t>(careers.selected)).name:strings.at(85);
+   break;
+  }
+  menu->items(1903,{strings.at(static_cast<size_t>(27+h->chassis))});
+  menu->items(1904,{pilot});menu->items(1905,{strings.at(static_cast<size_t>(123+condition_tier(herc_average_condition(*h))))});
+  menu->items(1906,{std::to_string(herc_average_condition(*h)<100?repair_quote(*h,100,prices):0)});
+  menu->items(1907,{std::to_string(crew.budget)});return;
+ }
+ if(screen()==1920&&h&&repair_edit){
+  auto const group{repair_edit->group()};std::vector<std::string> labels;
+  for(size_t i{};i<component_count(*h,group);++i){
+   size_t const key{group==repair_group::internal?128+i:group==repair_group::armour?137+i:static_cast<size_t>(143+h->weapons.at(i))};
+   auto label{strings.at(key)};
+   if(!label.starts_with("-")){auto value{std::to_string(component_condition(h->condition,group,static_cast<int16_t>(i)))};if(value.size()<3)value.insert(0,3-value.size(),' ');label.replace(0,3,value);}
+   labels.push_back(std::move(label));
+  }
+  menu->items(1921,std::move(labels),repair_edit->index());
+  menu->items(1922,{strings.at(static_cast<size_t>(123+repair_edit->tier()))});
+  menu->items(1907,{std::to_string(game.crew().budget)});menu->items(1927,{std::to_string(repair_edit->required())});
+  menu->items(1923,{std::to_string(repair_edit->allocated())});menu->enable(106,repair_edit->can_increase(game.crew()));
+ }
+}
+
 void game_shell::refresh_values(){
   auto const list{[&](uint16_t action,std::initializer_list<size_t> indices,int selected){std::vector<std::string> labels;for(auto i:indices)labels.push_back(strings.at(i));menu->items(action,std::move(labels),selected);}};
   auto const &v{preferences_.current()};
@@ -188,13 +225,50 @@ void game_shell::action(uint16_t id){
         selected_mount=-1;missile_menu=false;refresh_armament();return;
       }
       return;
+
+    case 1900:
+      if(id==1710){save_career();show(1710);return;}
+      if(id==2003||id==2004){cycle_arming_herc(game.roster(),game.crew(),id==2004?1:-1,false);refresh_repair();return;}
+      if(id==1910){show(1910);return;}
+      if(auto h{game.roster().find(game.roster().selected)}){
+        if(id==1920){repair_edit.emplace(*h,game.crew(),prices);show(1920);return;}
+        if(id==1901){show(4444);return;}
+        if(id==1902){auto result{repair_herc(*h,game.crew().budget,prices)};if(result.applied){
+          game.crew().budget-=result.cost;auto const cursor{game.crew().crew_cursor};
+          if(cursor>=0&&cursor<4)game.crew().crew[static_cast<size_t>(cursor)].budget_share=game.crew().budget;
+        }normalize_hangar_equipment(*h);refresh_repair();return;}
+      }
+      return;
+    case 1910:
+      if(id>=1911&&id<=1913){game.crew().repair_policy=static_cast<int16_t>(id-1911);show(1900);}
+      return;
+    case 1920:
+      if(auto h{game.roster().find(game.roster().selected)};h&&repair_edit){
+        if(id==99||id==1900){
+          if(id==99)repair_edit->cancel(*h,game.crew());else{repair_edit->accept(*h,game.crew());normalize_hangar_equipment(*h);}
+          repair_edit.reset();show(1900);return;
+        }
+        if(id>=1924&&id<=1926)repair_edit->select(*h,static_cast<repair_group>(id),0);
+        else if(id==1921)repair_edit->select(*h,repair_edit->group(),static_cast<int16_t>(menu->selection(1921)));
+        else if(id==101||id==102){
+          menu->select(1921,menu->selection(1921)+(id==101?-1:1));
+          repair_edit->select(*h,repair_edit->group(),static_cast<int16_t>(menu->selection(1921)));
+        }else if(id==106)repair_edit->increase(*h,game.crew());else if(id==107)repair_edit->decrease(*h,game.crew());
+        refresh_repair();
+      }
+      return;
+    case 4444:
+      if(id==100)scrap_selected(game.roster(),game.crew(),game.inventory(),prices);
+      if(id==100||id==1900)show(1900);
+      return;
+
     case 1510:case 1520:
       if(id==101||id==102){text_scroll=std::max(0,text_scroll+(id==101?-1:1));return;}
       break;
     default:break;
   }
   if(id==1300)options_owner=current;
-  if(id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
+  if(id==1900||id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
 }
 void game_shell::key(uint8_t scan){if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
 void game_shell::mouse_down(int x,int y){
@@ -220,7 +294,7 @@ void game_shell::draw_text(framebuffer &target,std::string const &value,rectangl
 }
 void game_shell::draw(framebuffer &target)const{
   menu->draw(target);auto const current{screen()};
-  if(current==1800||((current==1700||current==1710||current==1900)&&game.has_career())){
+  if(current==1800||((current==1700||current==1710||current==1900||current==1920||current==4444)&&game.has_career())){
     if(auto h{game.roster().find(game.roster().selected)})bay.draw(target,*h,armament,current==1800?selected_mount:-1);
     menu->draw(target,false);
     if(current==1800){

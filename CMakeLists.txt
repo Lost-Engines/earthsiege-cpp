@@ -29,6 +29,7 @@ add_library(earthsiege_core
   src/shell/campaign_return.cpp
   src/shell/crew_assignment.cpp
   src/shell/armament.cpp
+  src/shell/component_repair.cpp
   src/shell/hangar_service.cpp
   src/resources/career.cpp
   src/resources/campaign.cpp
@@ -907,4 +908,16 @@ if(BUILD_TESTING)
   add_executable(crew_assignment_test tests/crew_assignment_test.cpp)
   target_link_libraries(crew_assignment_test PRIVATE earthsiege_core)
   add_test(NAME crew_assignment COMMAND crew_assignment_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/crew_assignment.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(component_repair_test tests/component_repair_test.cpp)
+  target_link_libraries(component_repair_test PRIVATE earthsiege_core)
+  add_test(NAME component_repair COMMAND component_repair_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/component_repair.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(hangar_transactions_test tests/hangar_transactions_test.cpp)
+  target_link_libraries(hangar_transactions_test PRIVATE earthsiege_core)
+  add_test(NAME hangar_transactions COMMAND hangar_transactions_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hangar_transactions.bin)
 endif()

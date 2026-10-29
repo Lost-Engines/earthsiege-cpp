@@ -14,6 +14,7 @@ dialog::dialog(resource_store const &resources, unsigned int requested, unsigned
   backdrop{read_bitmaps(resources.read("shell0", "res32/regn" + std::to_string(region) + ".dbm")).front()},
   corners{read_bitmaps(resources.read("shell0", "res32/corners.dba"))},
   title_face{read_font(resources.read("shell0", "dfn/title.dfn"))},
+  caption_face{read_font(resources.read("shell0","dfn/gray.dfn"))},
   button_faces{
     read_font(resources.read("shell0", "dfn/active.dfn")),
     read_font(resources.read("shell0", "dfn/pushed.dfn")),
@@ -100,15 +101,17 @@ void dialog::draw(framebuffer &frame, bool background) const {
           auto const &face{list_faces[selected ? 1 : 0]};
           int const y{entry.bounds.top+row*height};
           if(selected){frame.fill({entry.bounds.left+1,y+1,entry.bounds.right-1,y+height},4);frame.line(entry.bounds.left+1,y+1,entry.bounds.right-1,y+1,5);}
-          frame.text(face,text,entry.bounds.left+3,y+height-1);
+          auto const x{entry.style?(entry.bounds.left+entry.bounds.right-face.text_width(text))/2:entry.bounds.left+3};
+          frame.text(face,text,x,y+height-1);
         }
       } else {
-        auto const &face{list_faces[0]};
+        auto const &face{(number==1900||number==1920)&&(entry.type==1||entry.type==5)?caption_face:list_faces[0]};
         int const x{entry.type==5 ? (bounds.left+bounds.right-face.text_width(entry.label))/2 : bounds.left};
         frame.text(face,entry.label,x,bounds.top+face.baseline);
         if(entry.type==2 && text_focus==index)frame.line(x+face.text_width(entry.label),bounds.top,x+face.text_width(entry.label),bounds.bottom,0x22);
       }
     }
+    if(number==1910&&entry.type==16){auto b{entry.bounds};frame.fill(b,entry.selection?0x24:0x1d);frame.line(b.left,b.top,b.right,b.top,0x1b);frame.line(b.left,b.top,b.left,b.bottom,0x1b);}
     if(entry.type != 3) continue;
     bool const disabled{!entry.enabled};
     unsigned int const state{disabled ? 2u : pressed == index ? 1u : 0u};
@@ -190,6 +193,9 @@ void dialog::reveal(control &entry) {
   int const visible{std::max(1,(entry.bounds.bottom-entry.bounds.top)/row_height(entry))};
   if(entry.selection<entry.first_row)entry.first_row=entry.selection;
   if(entry.selection>=entry.first_row+visible)entry.first_row=entry.selection-visible+1;
+}
+void dialog::replace_text(std::string_view from,std::string_view to){
+  for(auto &c:controls)if(auto pos{c.label.find(from)};pos!=std::string::npos)c.label.replace(pos,from.size(),to);
 }
 void dialog::enable(uint16_t action,bool enabled) {if(auto c{find(action)})c->enabled=enabled;}
 void dialog::items(uint16_t action,std::vector<std::string> values,int selected) {

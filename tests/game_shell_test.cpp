@@ -51,8 +51,24 @@ int main(int argc,char **argv)try{
  click(shell,1610);click(shell,2004);click(shell,100);screen(shell,1700);
  require(shell.state().crew().crew[0].hangar_slot==crew_before.crew[1].hangar_slot,"crew accept retains swap");
 
- click(shell,100);auto mission{shell.launch()};auto result{mission->results()};auto counters{mission->mission_variables()};result.grade=1;shell.mission_return(result,counters,13);screen(shell,1520);require(shell.state().crew().missions==1,"return advances career");
+ click(shell,100);auto mission{shell.launch()};auto result{mission->results()};auto counters{mission->mission_variables()};result.grade=1;for(auto &c:result.crew){c.condition.armour.fill(60);c.condition.internal.fill(70);c.condition.internal[9]=100;c.condition.equipment.fill(55);}shell.mission_return(result,counters,13);screen(shell,1520);require(shell.state().crew().missions==1,"return advances career");
+
+ click(shell,1710);screen(shell,1710);click(shell,1900);screen(shell,1900);
+ auto repair_slot{shell.state().roster().selected};auto repair_before{*shell.state().roster().find(repair_slot)};auto repair_budget{shell.state().crew().budget};
+ click(shell,1920);screen(shell,1920);click(shell,106);
+ require(shell.state().crew().budget<repair_budget,"component repair spends material");
+ if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("component-repair-test.ppm");frame.save(path,shell.colours());}
+ click(shell,99);screen(shell,1900);
+ require(shell.state().crew().budget==repair_budget&&shell.state().roster().find(repair_slot)->condition.internal==repair_before.condition.internal,"component cancel restores material and conditions");
+ click(shell,1920);click(shell,106);click(shell,1900);screen(shell,1900);
+ require(shell.state().roster().find(repair_slot)->condition.internal[0]==91,"accept retains native extra repair band");
+ if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("repair-test.ppm");frame.save(path,shell.colours());}
+ click(shell,1910);screen(shell,1910);click(shell,1911);screen(shell,1900);require(shell.state().crew().repair_policy==0,"manual repair policy");
+ auto repair_count{shell.state().roster().hercs.size()};
+ click(shell,1901);screen(shell,4444);click(shell,1900);screen(shell,1900);require(shell.state().roster().hercs.size()==repair_count,"scrap cancellation leaves roster intact");
+ click(shell,1902);require(shell.state().roster().find(repair_slot)->condition.internal[0]==100,"whole HERC repair");
  click(shell,1710);screen(shell,1710);click(shell,1000);screen(shell,1000);
+
  game_shell reopened{resources,root.path,23};require(reopened.current_dialog().find(1700)->enabled,"resume survives restart");click(reopened,1700);screen(reopened,1710);require(reopened.state().crew().missions==1,"original save loaded");click(reopened,1499);screen(reopened,1700);require(reopened.state().crew().step==1,"next mission advances step");require(reopened.state().mission_name()!=name,"next mission differs");
  click(reopened,1000);click(reopened,1200);click(reopened,1220);screen(reopened,1220);click(reopened,1221);require(reopened.state().career().career.states[2].valid,"manual backup stored");
  click(reopened,1222);require(reopened.state().crew().step==1,"manual backup restored");
