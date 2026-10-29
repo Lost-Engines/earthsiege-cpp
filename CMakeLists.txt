@@ -16,6 +16,8 @@ add_library(earthsiege_core
   src/shell/mission_alert.cpp
   src/shell/game_shell.cpp
   src/shell/launch_checks.cpp
+  src/shell/shell_animation.cpp
+  src/render/shell_animation_artwork.cpp
   src/shell/save_store.cpp
   src/resources/career_index.cpp
   src/shell/game_state.cpp
@@ -935,4 +937,16 @@ if(BUILD_TESTING)
   add_executable(launch_checks_test tests/launch_checks_test.cpp)
   target_link_libraries(launch_checks_test PRIVATE earthsiege_core)
   add_test(NAME launch_checks COMMAND launch_checks_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/launch_checks.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_animation_test tests/shell_animation_test.cpp)
+  target_link_libraries(shell_animation_test PRIVATE earthsiege_core)
+  add_test(NAME shell_animations COMMAND shell_animation_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_animations.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_animation_raster_test tests/shell_animation_raster_test.cpp)
+  target_link_libraries(shell_animation_raster_test PRIVATE earthsiege_core)
+  add_test(NAME shell_animation_rasters COMMAND shell_animation_raster_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_animation_rasters.bin)
 endif()

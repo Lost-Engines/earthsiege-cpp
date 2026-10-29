@@ -3,8 +3,9 @@
 The native game is being built from the supplied Earthsiege 1.0 data and original-code comparisons in `../earthsiege-reverse`. Original x86 execution is confined to the research tools; the game and C++ tests use native implementations and recorded fixtures.
 
 Current integration: single missions and careers can launch, fly and return with
-saved results. Arming controls and the static bay layers are connected; crew,
-repairs/construction controls, cinematics, full environment presentation and
+saved results. Arming, crew assignment, repair, salvage, construction and launch
+warnings are connected to the original shell controls and static artwork.
+Cinematics, resident shell animations, full environment presentation and
 end-to-end replay verification remain. Later entries supersede the older
 integration boundaries in this cumulative record.
 
@@ -749,3 +750,20 @@ Proceed, and checks that blocked actions do not launch, advance or reserve a bay
 A career with no assigned player HERC can load into the bay for reassignment.
 
 Validation: all 182 CTest checks pass after launch guards and shared panel/font corrections.
+
+### Original shell animation interpreter
+
+GO has a distinct TTM player from DBSIM's cockpit interpreter. The native shell
+scheduler retains first-execution latches, inclusive random waits, the shared
+additive RNG, primary/weighted branch priority, nested label offsets and repeat
+cleanup. All 84 currently covered programs agree across 12,064 updates and
+19,820 ordered drawing requests, with every RNG word compared.
+
+The compositor loads original brush banks, preserves transparent/opaque and
+mirroring flags, and commits FIX_RECT updates to a retained background. Another
+4,662 original VGA captures match both complete pages (visible and background).
+Those probes supply the frame restore boundary and omit only dirty-region
+bookkeeping; original decoding, brush drawing and rectangle copies run unchanged.
+This increment covers the brush/label/wait subset, not cinematic palette/screen
+operations or the live shell owners. R4000A08 references absent ROSEY5 artwork
+and is explicitly excluded rather than replaced with invented imagery.
