@@ -63,6 +63,8 @@ struct herc_profile {
   std::string name;
   herc_texture_group textures{herc_texture_group::light};
   std::vector<uint8_t> detail_part_ids;
+  std::array<int8_t,5> attachment_types{}, attachment_parts{};
+  std::array<int16_t,10> footstep_trigger{}, footstep_rearm{};
   std::array<uint8_t, 192> source{};                                             // retain fields whose consumers are still being integrated
 };
 

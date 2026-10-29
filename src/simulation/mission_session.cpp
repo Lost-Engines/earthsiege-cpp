@@ -19,7 +19,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     weapon_definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))},
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
-    random{std::move(initial_random)}, effects{resources}, projectiles{resources, weapon_definitions} {
+    random{std::move(initial_random)}, effects{resources,[this](auto const &event){sound_requests.push_back(event);}}, projectiles{resources, weapon_definitions,[this](auto const &event){sound_requests.push_back(event);}} {
   auto const placements{layout.place(script, roster)};
   activity=std::make_unique<mission_activity>(script,placements,initial_counters);
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
@@ -195,7 +195,7 @@ bool mission_session::player_command(uint16_t const code) {
   if(code >= 2 && code <= 10) return player_weapons->click_control(code - 2, false); // 1..9
   if(code == 14) input_router.request_centre();                             // Backspace
   else if(code == 15) cycle_target();                                       // Tab; view-specific gating belongs to the cockpit
-  else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; }
+  else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; sound_requests.emplace_back(sound_action::play,actor.impacts().detectable ? 26 : 27); }
   else return false;
   return true;
 }
@@ -468,5 +468,7 @@ camera_state mission_session::make_camera(camera_mode const mode) const {
   update_camera(result, view_target());
   return result;
 }
+
+std::vector<sound_request> mission_session::take_sounds() { return std::exchange(sound_requests,{}); }
 
 } // namespace earthsiege

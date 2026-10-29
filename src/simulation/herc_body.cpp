@@ -163,4 +163,18 @@ contact_actor herc_body::contact_geometry() const {
   };
 }
 
+std::vector<uint16_t> herc_body::footstep_sounds() {
+  std::vector<footstep_attachment> attachments;
+  auto const &profile{source.profile}; auto const world{placement()};
+  for(size_t i{};i<profile.attachment_types.size() && profile.attachment_types[i]>=0;++i) {
+    auto const *part{find_model_part(source.models.roots.front(),profile.attachment_parts[i])};
+    bool const active{part && part->header.transform>=0};
+    if(!active) { attachments.push_back({profile.attachment_types[i],false,0,0}); continue; }
+    auto const &transform{rig.instance().transforms()[static_cast<size_t>(part->header.transform)]};
+    attachments.push_back({profile.attachment_types[i],true,transform.translation.y,compose_transforms(transform,world).translation.z});
+  }
+  return advance_footsteps(footsteps,profile.movement,profile.footstep_trigger,profile.footstep_rearm,
+                          rig.channel(body_channel).state(),movement_state.playback_rate,true,attachments);
+}
+
 } // namespace earthsiege

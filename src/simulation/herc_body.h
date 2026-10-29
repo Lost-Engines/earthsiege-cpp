@@ -6,6 +6,7 @@
 #include "simulation/aim_control.h"
 #include "simulation/animation_rig.h"
 #include "simulation/locomotion.h"
+#include "simulation/footsteps.h"
 #include "simulation/weapon_assembly.h"
 
 namespace earthsiege {
@@ -31,6 +32,7 @@ class herc_body {
   std::vector<movement_event> frame_movement_events;
   aiming_state torso_state;
   aiming_state elevation_state;
+  footstep_state footsteps;
   size_t body_channel{0};
   std::optional<size_t> torso_channel;
   std::optional<size_t> elevation_channel;
@@ -55,6 +57,7 @@ public:
   void prepare_requested(int16_t speed, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});
   void prepare_aim(vec2<int16_t> const &input, frame_ratio ratio);
   bool advance(frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, std::function<void()> const &blocked = {});
+  std::vector<uint16_t> footstep_sounds();
   model_transform aiming_pivot() const;
   /// Advance player controls; return whether either contact probe blocked motion
   bool step(herc_controls const &controls, int16_t time_ratio, std::function<bool(herc_body const &)> const &contact = {}, movement_event_sink const &events = {});

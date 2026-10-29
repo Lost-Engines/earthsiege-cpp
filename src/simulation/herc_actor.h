@@ -39,6 +39,7 @@ public:
   herc_actor &operator=(herc_actor const &) = delete;
   herc_actor &operator=(herc_actor &&) = delete;
   herc_body const &body() const;
+  std::vector<uint16_t> footstep_sounds();
   herc_profile const &profile() const;
   int16_t combat_rating() const;
   int16_t total_damage_fraction() const;

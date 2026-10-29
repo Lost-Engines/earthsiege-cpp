@@ -10,6 +10,7 @@
 #include <string_view>
 #include <SDL.h>
 #include "platform/window.h"
+#include "platform/audio_output.h"
 #include "resources/resource_store.h"
 #include "shell/dialog.h"
 #include "shell/mission_view.h"
@@ -130,6 +131,8 @@ auto main(int argc, char *argv[])->int try {
   std::unique_ptr<earthsiege::window> display;
   if(!headless) display = std::make_unique<earthsiege::window>(scale);
   else if(!frame_limit) frame_limit = 1;
+  std::unique_ptr<earthsiege::audio_output> sound;
+  if(display)try{sound=std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr<<"Audio unavailable: "<<e.what()<<'\n';}
   bool running{true};
   bool focused{true};
   unsigned int frames{};
@@ -142,14 +145,15 @@ auto main(int argc, char *argv[])->int try {
       if(event.type == SDL_WINDOWEVENT) {
         if(event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
           focused = false;
+          if(sound)sound->pause(true);
           menu.cancel_press();
           if(scene) scene->clear_input();
         }
-        if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) focused = true;
+        if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED){focused = true;if(sound)sound->pause(false);}
       }
       if(event.type == SDL_KEYDOWN && !event.key.repeat) {
         if(event.key.keysym.sym == SDLK_ESCAPE) {
-          if(scene) scene.reset();
+          if(scene){scene.reset();if(sound)sound->clear();}
           else running = false;
         } else if(scene && focused) {
           if(event.key.keysym.sym == SDLK_p) scene->toggle_pause();
@@ -190,6 +194,7 @@ auto main(int argc, char *argv[])->int try {
       if(frames) while(pending >= 25) {
         auto const modifiers{display ? SDL_GetModState() : KMOD_NONE};
         scene->step((modifiers & KMOD_CTRL) != 0, (modifiers & KMOD_SHIFT) != 0);
+        auto const samples{scene->take_audio()};if(sound)sound->queue(samples);
         pending -= 25;
       }
       else pending = 0;

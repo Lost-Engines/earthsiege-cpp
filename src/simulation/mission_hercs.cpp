@@ -47,6 +47,7 @@ void mission_session::resume_herc_orders(size_t const index) {
 }
 void mission_session::movement_event_received(size_t const index, movement_event const event) {
   if(event == movement_event::collapsed) crew[index].actor->random_damage(120, 150, random, damage_events(index));
+  sound_requests.emplace_back(sound_action::positioned,event == movement_event::collapsed ? 41 : 30,crew[index].actor->body().movement().position);
 }
 void mission_session::move_herc(size_t const index, movement_request const &request, frame_ratio const ratio) {
   auto &member{crew.at(index)}; auto &actor{*member.actor};
@@ -99,6 +100,7 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
   auto &member{crew.at(index)}; auto &actor{*member.actor};
   if(ramming) {
     actor.advance(ratio);
+    if(index == player_index) for(auto const id:actor.footstep_sounds()) sound_requests.emplace_back(sound_action::positioned,id,actor.body().movement().position);
     if(contact_herc(index) || member.contact_received) {
       auto const centre{actor.body().movement().position};
       for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && distance(centre, crew[i].actor->body().movement().position) < 3000)
@@ -112,8 +114,9 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
     if(index != player_index) {
       member.collision_bias = static_cast<int16_t>((random.next() & 1) ? -5000 : 5000);
       actor.recover_from_collision(20000, actor.body().movement().gait_rate > 0);
-    }
+    } else sound_requests.emplace_back(sound_action::play,41);
   });
+  if(index == player_index) for(auto const id:actor.footstep_sounds()) sound_requests.emplace_back(sound_action::positioned,id,actor.body().movement().position);
 }
 
 void mission_session::damage_consequences_changed(size_t const index, damage_consequences const &previous, damage_consequences const &current) {

@@ -25,6 +25,8 @@ herc_profile read_herc_profile(bytes const source) {
     .turn_sequence{word(122)},
     .disabled_sequence{word(68)},
   };
+  for(size_t i{};i<5;++i) { result.attachment_types[i]=std::bit_cast<int8_t>(source[112+i]); result.attachment_parts[i]=std::bit_cast<int8_t>(source[117+i]); }
+  for(size_t i{};i<10;++i) { result.footstep_trigger[i]=word(150+i*2); result.footstep_rearm[i]=word(170+i*2); }
   result.position_height = word(20);
   result.collision_radius = word(110);
   result.mass_factor = word(76);

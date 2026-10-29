@@ -1,4 +1,5 @@
 #pragma once
+#include "simulation/sound_request.h"
 #include "render/scenery_renderer.h"
 #include "resources/model.h"
 #include "simulation/effect_state.h"
@@ -32,6 +33,7 @@ struct live_debris {
 /// Own live effect geometry and state; phase-five collection remains explicit.
 /// Attached smoke controllers and sound playback remain separate consumers.
 class world_effects {
+  sound_sink sounds;
   std::vector<explosion_definition> explosion_definitions;
   std::vector<debris_definition> debris_definitions;
   model_resource explosion_models;
@@ -44,7 +46,7 @@ class world_effects {
   object_pool<live_debris> debris{debris_capacity};
 
 public:
-  explicit world_effects(resource_store const &resources);
+  explicit world_effects(resource_store const &resources, sound_sink sounds = {});
   std::optional<size_t> add_explosion(int16_t definition, vec3<int32_t> const &position, random_state &random);
   void add_debris(int16_t group, vec3<int32_t> const &position, random_state &random);
   void advance(frame_ratio ratio);

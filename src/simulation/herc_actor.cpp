@@ -360,4 +360,6 @@ bool herc_actor::advance(frame_ratio const ratio, std::function<bool(herc_body c
 
 void herc_actor::recover_from_collision(int32_t const duration, bool const reverse) { body_state.recover_from_collision(duration, reverse); }
 
+std::vector<uint16_t> herc_actor::footstep_sounds() { return body_state.footstep_sounds(); }
+
 } // namespace earthsiege

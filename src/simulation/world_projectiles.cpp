@@ -10,8 +10,8 @@ live_projectile::live_projectile(projectile_owner source, beam_effect beam)
 live_projectile::live_projectile(projectile_owner source, weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullets, model_resource const &rockets, int16_t const initial_rocket_clock)
   : owner{source}, state{std::in_place_type<projectile_instance>, shot, definitions, motions, bullets, rockets, source.target.has_value(), initial_rocket_clock} {}
 
-world_projectiles::world_projectiles(resource_store const &resources, weapon_catalogue const &catalogue)
-  : definitions{catalogue},
+world_projectiles::world_projectiles(resource_store const &resources, weapon_catalogue const &catalogue, sound_sink sink)
+  : sounds{std::move(sink)}, definitions{catalogue},
     motions{read_bullet_motions(resources.read("simvol0", "dat/BULLETS.DAT")), read_rocket_motions(resources.read("simvol0", "dat/ROCKETS.DAT"))},
     bullet_models{read_model(resources.read("simvol0", "dts/BULLETS.DTS"))},
     rocket_models{read_model(resources.read("simvol0", "dts/ROCKETS.DTS"))},
@@ -21,16 +21,21 @@ std::optional<size_t> world_projectiles::launch(projectile_owner const owner, we
   if(shot.kind == shot_kind::beam) {
     // A beam applies its impact before trying to allocate its visible ribbon.
     auto const path{dispatch_beam(shot, definitions, [&](impact_request const &request){ return hit ? hit(owner, request) : std::nullopt; })};
-    if(projectiles.available() == 0) return std::nullopt;
+    if(projectiles.available() == 0) { if(sounds) sounds({sound_action::positioned,11,shot.muzzle.position}); return std::nullopt; }
     auto const slot{projectiles.emplace(owner, make_beam_effect(definitions.projectiles.at(shot.projectile).subtype, path, random))};
     retained_rocket_clocks[*slot] = 0;
+    if(sounds) sounds({sound_action::positioned,11,shot.muzzle.position});
     return slot;
   }
   // The original bullet/rocket wrappers dereference a failed allocation. Keep
   // the shared limit, safely omitting the projectile when the pool is full.
   auto const slot{projectiles.next_free_slot()};
   if(!slot) return std::nullopt;
-  return projectiles.emplace(owner, shot, definitions, motions, bullet_models, rocket_models, retained_rocket_clocks[*slot]);
+  auto const created{projectiles.emplace(owner, shot, definitions, motions, bullet_models, rocket_models, retained_rocket_clocks[*slot])};
+  auto const subtype{static_cast<size_t>(definitions.projectiles.at(shot.projectile).subtype)};
+  auto const noise{shot.kind == shot_kind::rocket ? motions.rockets.at(subtype).shot_noise : motions.bullets.at(subtype).shot_noise};
+  if(sounds) sounds({sound_action::positioned,static_cast<uint16_t>(noise+10),shot.muzzle.position});
+  return created;
 }
 
 void world_projectiles::advance(frame_ratio const ratio, projectile_guidance_query const &guidance, world_impact_query const &hit, projectile_guidance_feedback const &feedback) {

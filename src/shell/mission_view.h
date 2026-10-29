@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include "audio/mission_audio.h"
 #include <memory>
 #include "render/scenery_renderer.h"
 #include "render/instrument_bars.h"
@@ -21,6 +22,7 @@ namespace earthsiege {
 class mission_view {
   std::unique_ptr<mission_session> session;
   random_state ui_random;
+  mission_audio audio;
   framebuffer frame;
   cockpit_artwork cockpit;
   reactor_gauge reactor;
@@ -69,6 +71,7 @@ public:
   void change_cockpit_view(cockpit_view view);
   void step(bool control, bool zoom);
   void draw();
+  std::vector<uint8_t> take_audio();
   framebuffer const &image() const;
   palette const &colours() const;
 };

@@ -20,8 +20,8 @@ void live_explosion::synchronize_cells() {
 
 live_debris::live_debris(debris_particle value, shape_part const &shape) : state{std::move(value)}, model{shape} {}
 
-world_effects::world_effects(resource_store const &resources)
-  : explosion_definitions{read_explosions(resources.read("simvol0", "dat/EXPLOS.DAT"))},
+world_effects::world_effects(resource_store const &resources, sound_sink sink)
+  : sounds{std::move(sink)}, explosion_definitions{read_explosions(resources.read("simvol0", "dat/EXPLOS.DAT"))},
     debris_definitions{read_debris(resources.read("simvol0", "dat/DEBRIS.DAT"))},
     explosion_models{read_model(resources.read("simvol0", "dts/EXPLOS.DTS"))},
     debris_models{read_model(resources.read("simvol0", "dts/DEBRIS.DTS"))},
@@ -45,6 +45,7 @@ std::optional<size_t> world_effects::add_explosion(int16_t const selected, vec3<
       lighting.intensity(source, *effect.state.light_intensity);
     }
   }
+  if(sounds) sounds({sound_action::positioned,static_cast<uint16_t>(effect.state.sound),position});
   return slot;
 }
 

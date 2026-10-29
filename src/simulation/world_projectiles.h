@@ -1,4 +1,5 @@
 #pragma once
+#include "simulation/sound_request.h"
 #include "render/scenery_renderer.h"
 #include "simulation/beam_effect.h"
 #include "simulation/object_pool.h"
@@ -27,6 +28,7 @@ using projectile_guidance_feedback = std::function<void(projectile_owner const &
 
 /// Own every projectile kind in one bounded, ordered pool with deferred reclamation.
 class world_projectiles {
+  sound_sink sounds;
   weapon_catalogue const &definitions;
   projectile_motions motions;
   model_resource bullet_models;
@@ -38,7 +40,7 @@ class world_projectiles {
   std::array<int16_t, projectile_capacity> retained_rocket_clocks{};
 
 public:
-  world_projectiles(resource_store const &resources, weapon_catalogue const &definitions);
+  world_projectiles(resource_store const &resources, weapon_catalogue const &definitions, sound_sink sounds = {});
   std::optional<size_t> launch(projectile_owner owner, weapon_shot const &shot, random_state &random, world_impact_query const &hit);
   void advance(frame_ratio ratio, projectile_guidance_query const &guidance, world_impact_query const &hit, projectile_guidance_feedback const &feedback = {});
   void collect();

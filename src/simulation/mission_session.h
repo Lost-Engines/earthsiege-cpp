@@ -179,6 +179,7 @@ class mission_session {
   void advance_player_objectives(size_t index, frame_ratio ratio);
   std::vector<actor_contact> frame_contacts;
   random_state random;
+  std::vector<sound_request> sound_requests;
   world_effects effects;
   world_projectiles projectiles;
   player_rocket_launch camera_rocket;
@@ -234,6 +235,7 @@ public:
   wingmate_order_state order_state(size_t actor) const;
   bool transmit_order(uint16_t command);
   std::vector<wingmate_radio_response> take_radio_responses();
+  std::vector<sound_request> take_sounds();
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;

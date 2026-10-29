@@ -27,6 +27,7 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources, uns
 
 mission_view::mission_view(resource_store const &resources, unsigned int const demo)
   : session{demo_start(resources, demo)},
+    audio{resources},
     cockpit{read_cockpit(resources, read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())))},
     reactor{resources, cockpit.layout},
     throttle{resources, cockpit.layout},
@@ -138,6 +139,7 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
 }
 
 void mission_view::step(bool const control, bool const zoom) {
+  audio.advance();
   if(paused) { pointer_events.clear(); return; }
   // The original 120 Hz timer invokes both UI clocks every second callback.
   // Accumulate the nominal 60 Hz ticks separately from the 40 Hz physics loop.
@@ -193,6 +195,11 @@ void mission_view::step(bool const control, bool const zoom) {
   auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
+  for(auto const &request:session->take_sounds())audio.dispatch(request,player.body().movement().position);
+  for(auto const id:displays->take_sounds())audio.play(id);
+  for(auto const id:radio->take_sounds())audio.play(id);
+  for(auto const &path:radio->take_speech())audio.speech(path);
+  audio.flush_positions(player.body().movement().position);
 }
 
 void mission_view::draw() {
@@ -254,6 +261,7 @@ void mission_view::draw() {
   radio->draw(frame);
 }
 
+std::vector<uint8_t> mission_view::take_audio(){return audio.take_samples();}
 framebuffer const &mission_view::image() const { return frame; }
 palette const &mission_view::colours() const { return display_colours; }
 

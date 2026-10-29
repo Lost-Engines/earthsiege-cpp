@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/simulation/footsteps.cpp
+  src/audio/mission_audio.cpp
   src/audio/pcm_mixer.cpp
   src/audio/pcm_sound.cpp
   src/audio/spatial_audio.cpp
@@ -262,6 +264,7 @@ target_compile_options(earthsiege_core PUBLIC
 
 add_executable(earthsiege
   src/main.cpp
+  src/platform/audio_output.cpp
   src/platform/window.cpp
   src/platform/window.h
 )
@@ -701,4 +704,22 @@ if(BUILD_TESTING)
   add_executable(pcm_mixer_test tests/pcm_mixer_test.cpp)
   target_link_libraries(pcm_mixer_test PRIVATE earthsiege_core)
   add_test(NAME pcm_mixer COMMAND pcm_mixer_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pcm_mixer.bin ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pcm_dma.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(mission_audio_test tests/mission_audio_test.cpp)
+  target_link_libraries(mission_audio_test PRIVATE earthsiege_core)
+  add_test(NAME mission_audio COMMAND mission_audio_test ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(footsteps_test tests/footsteps_test.cpp)
+  target_link_libraries(footsteps_test PRIVATE earthsiege_core)
+  add_test(NAME footsteps COMMAND footsteps_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/footsteps.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(herc_steps_test tests/herc_steps_test.cpp)
+  target_link_libraries(herc_steps_test PRIVATE earthsiege_core)
+  add_test(NAME herc_steps COMMAND herc_steps_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/herc_steps.bin)
 endif()

@@ -583,3 +583,11 @@ word in the original: native subranges are bounded instead. A positional gain
 query with master volume zero is defined as zero rather than dividing by zero.
 Driver-specific ISA timing and analogue circuitry remain outside these checks.
 Fixtures can be refreshed with `tools/import_audio_fixtures.py ../earthsiege-reverse/analysis`.
+
+### Live PCM audio and world triggers
+
+`mission_audio` loads the counted SOUNDS.STR catalogue, retains sample storage in the resource cache and drives the original unsigned 8-bit stereo ring mixer at 11,025 Hz from a 120 Hz clock. SDL opens a matching logical audio stream and handles device conversion. All 37 effects and four live wingmate acknowledgements produce non-silent output in the resource integration check. Radio's initial mouth-frame gate still determines whether a transmission requests speech.
+
+World sound requests preserve launch/impact order. Beam impacts precede their sound even if the visual pool is full; ordinary projectile allocation failure remains the documented safe omission. Flyer actors share sound 16 as in the original, including a dead flyer's stop request. Collapse transitions request 30/41 and player contacts request 41. Footsteps use authored attachment local Y thresholds with retained latches; collapse uses world Z and its one-shot latch. The pure controller matches 1,800 original states, and complete articulated updates for all eight player chassis match 2,560 states with 279 sound requests. The original skips latch-pointer increments for absent attachment objects; the native controller retains that behavior. Live attachment allocation limits still belong to the pending smoke-controller integration.
+
+Full regression after this integration: 150 tests passed. A 120-frame SDL mission smoke test passed with dummy video/audio devices. No listening comparison or full-game audio equivalence is implied by those checks.
