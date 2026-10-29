@@ -10,6 +10,8 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/resources/career.cpp
+  src/resources/campaign.cpp
   src/shell/tactical_controller.cpp
   src/render/full_damage_display.cpp
   src/render/tactical_map.cpp
@@ -819,4 +821,10 @@ if(BUILD_TESTING)
   add_executable(full_damage_test tests/full_damage_test.cpp)
   target_link_libraries(full_damage_test PRIVATE earthsiege_core)
   add_test(NAME full_damage COMMAND full_damage_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/full_damage.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(career_test tests/career_test.cpp)
+  target_link_libraries(career_test PRIVATE earthsiege_core)
+  add_test(NAME career COMMAND career_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/career.bin ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/campaign.bin)
 endif()

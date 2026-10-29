@@ -50,3 +50,5 @@ mounts. After inspecting another HERC, those empty rows can display stale names.
 This reconstruction preserves that visible quirk with bounded strings. The map
 also preserves the original distinction between mouse selection range and Tab's
 remembered-contact selection, and retains unmodified fields in outgoing orders.
+
+Campaign/save foundations now preserve the original 41-state career format, ordered equipment inventories and variable hangar records. They pass complete original-executable save/read comparisons, all 396 campaign filename/branch transitions and 140 grade thresholds. These components are being connected to the interactive shell; ordinary campaign play is not yet available.
