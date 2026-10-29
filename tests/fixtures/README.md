@@ -470,3 +470,5 @@ direct portable export.
 These are direct portable exports from the corresponding `capture_wingmate_orders`,
 `capture_wingmate_dispatch` and `capture_mission_orders` Python tools in the
 sibling analysis repository.
+
+`hmp.bin` imports original HMI timer packet captures (0x7ef95), including generated branch/program/controller restoration packets, source offsets, routing tables and the twenty source resources. `native_music.py` supplies device IDs and a MIDI sink; the scheduler itself executes original instructions. Delta values were independently compared with 0x6ed60 by `check_music.py`. Import with `tools/import_music_fixtures.py ../earthsiege-reverse/analysis`.

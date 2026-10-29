@@ -9,6 +9,8 @@ find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
   src/simulation/footsteps.cpp
+  src/resources/hmp.cpp
+  src/audio/hmp_player.cpp
   src/audio/audio_controls.cpp
   src/audio/mission_audio.cpp
   src/audio/pcm_mixer.cpp
@@ -729,4 +731,10 @@ if(BUILD_TESTING)
   add_executable(audio_controls_test tests/audio_controls_test.cpp)
   target_link_libraries(audio_controls_test PRIVATE earthsiege_core)
   add_test(NAME audio_controls COMMAND audio_controls_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/audio_controls.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(hmp_test tests/hmp_test.cpp)
+  target_link_libraries(hmp_test PRIVATE earthsiege_core)
+  add_test(NAME hmp COMMAND hmp_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hmp.bin)
 endif()
