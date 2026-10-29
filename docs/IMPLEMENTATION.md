@@ -733,3 +733,19 @@ comparisons continue to pass, as do the 6,400 quote / 1,280 whole-repair / 25
 construction-progress checks. The full shell test exercises build/cancel and
 save/reload. Resident bay animation and the complete original launch-screen
 sequence remain to be integrated.
+
+### Launch eligibility and full bays
+
+The bay and briefing map now show the original missing-HERC and unarmed-squad
+warnings. Next Mission blocks a disabled player and permits confirmation for
+disabled wingmates; construction checks all eight bays before reserving one.
+All 2,048 captured original handler dispatches agree, including the cursor and
+selected-HERC side effects. The exact disabled rule is either leg or the engine
+below 50%; installed weapon condition does not affect the unarmed test.
+
+Warning dialogs retain their owning screen, artwork and selections. The UI test
+loads original-format saves into all five warning paths, exercises Cancel and
+Proceed, and checks that blocked actions do not launch, advance or reserve a bay.
+A career with no assigned player HERC can load into the bay for reassignment.
+
+Validation: all 182 CTest checks pass after launch guards and shared panel/font corrections.

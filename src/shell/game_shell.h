@@ -16,6 +16,11 @@ class game_shell {
   preferences preferences_;
   game_state game;
   std::unique_ptr<dialog> menu;
+  std::unique_ptr<dialog> warning_parent;
+  framebuffer warning_frame;
+  void warn(unsigned id);
+  void dismiss_warning();
+  void next_mission();
   std::vector<std::string> strings;
   font text_face;
   service_prices prices;

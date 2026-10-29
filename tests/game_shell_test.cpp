@@ -81,5 +81,34 @@ int main(int argc,char **argv)try{
  game_shell reopened{resources,root.path,23};require(reopened.current_dialog().find(1700)->enabled,"resume survives restart");click(reopened,1700);screen(reopened,1710);require(reopened.state().crew().missions==1,"original save loaded");require(reopened.state().roster().construction_remaining==1,"construction survives reload");click(reopened,1499);screen(reopened,1700);require(reopened.state().crew().step==1,"next mission advances step");require(reopened.state().mission_name()!=name,"next mission differs");
  click(reopened,1000);click(reopened,1200);click(reopened,1220);screen(reopened,1220);click(reopened,1221);require(reopened.state().career().career.states[2].valid,"manual backup stored");
  click(reopened,1222);require(reopened.state().crew().step==1,"manual backup restored");
+ // Resume genuine save-format careers into each original validation path.
+ auto seed{shell.state().career()};
+ auto const entry{save_store{root.path}.index().entries.front()};
+ for(int scenario{};scenario<5;++scenario){
+  auto saved{seed};auto &c{saved.career.states[0]};auto &h{saved.hangars[0]};
+  h=read_hangar(resources.read("shell0","car/sm_init.dat"));h.selected=0;c.selected_crew=0;c.crew_cursor=0;c.screen=scenario<2?1700:1710;
+  for(size_t i{};i<4;++i){c.crew[i].active=1;c.crew[i].hangar_slot=static_cast<int16_t>(i);}
+  if(scenario==0)c.crew[0].hangar_slot=-1;
+  if(scenario==1)std::ranges::fill(h.find(0)->weapons,int16_t{17});
+  if(scenario==2)h.find(0)->condition.internal[0]=49;
+  if(scenario==3)h.find(1)->condition.internal[5]=49;
+  save_store{root.path}.save(entry,saved);
+  game_shell guarded{resources,root.path,17};click(guarded,1700);screen(guarded,c.screen);
+  if(scenario==0){
+   click(guarded,100);screen(guarded,3333);require(!guarded.ready_to_launch(),"missing player blocks launch");click(guarded,99);screen(guarded,1700);
+  }else if(scenario==1){
+   click(guarded,100);screen(guarded,3000);guarded.key(1);screen(guarded,1700);require(!guarded.ready_to_launch(),"unarmed warning cancel");
+   click(guarded,1500);screen(guarded,1500);click(guarded,100);screen(guarded,3000);
+   if(argc==4){framebuffer frame;guarded.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("launch-warning-test.ppm");frame.save(path,guarded.colours());}
+   click(guarded,100);require(guarded.ready_to_launch(),"unarmed warning permits proceed");
+  }else if(scenario==2){
+   click(guarded,1499);screen(guarded,7770);click(guarded,99);screen(guarded,1710);require(guarded.state().crew().step==c.step,"disabled player leaves mission unchanged");
+  }else if(scenario==3){
+   click(guarded,1499);screen(guarded,7771);guarded.key(1);screen(guarded,1710);require(guarded.state().crew().step==c.step,"disabled wingmate cancel");
+   click(guarded,1499);click(guarded,1499);screen(guarded,1700);require(guarded.state().crew().step!=c.step,"disabled wingmate proceed");
+  }else{
+   click(guarded,2000);screen(guarded,7772);click(guarded,99);screen(guarded,1710);require(guarded.state().roster().construction_slot==-1,"full hangar cannot reserve construction");
+  }
+ }
  std::cout<<"Single mission and career launch/return, isolated persistence, preferences and backups pass\n";return 0;
 }catch(std::exception const &e){std::cerr<<e.what()<<'\n';return 1;}

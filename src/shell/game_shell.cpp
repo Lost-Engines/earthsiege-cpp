@@ -1,4 +1,5 @@
 #include "game_shell.h"
+#include "shell/launch_checks.h"
 #include "resources/packed_strings.h"
 #include <algorithm>
 #include <sstream>
@@ -137,6 +138,14 @@ void game_shell::register_career(){
   }else careers.selected=static_cast<int16_t>(it-careers.entries.begin());
   game.new_campaign(static_cast<int16_t>(battle_set));save_career();show(1700);
 }
+void game_shell::warn(unsigned id){
+  draw(warning_frame);warning_parent=std::move(menu);
+  menu=std::make_unique<dialog>(resources,id,region(warning_parent->id()));
+}
+void game_shell::dismiss_warning(){menu=std::move(warning_parent);}
+void game_shell::next_mission(){
+  game.prepare_campaign(true,options(preferences_));save_career();show(game.ready()?1700:1000);
+}
 void game_shell::begin(){launch_requested=true;save_career();}
 std::unique_ptr<mission_session> game_shell::launch(){
   if(!launch_requested)throw std::runtime_error{"no requested launch"};
@@ -149,6 +158,17 @@ void game_shell::mission_return(mission_results const &result,mission_counters c
 void game_shell::action(uint16_t id){
   auto const current{screen()};
   switch(current){
+    case 3333:case 7770:case 7772:
+      if(id==99)dismiss_warning();
+      return;
+    case 3000:
+      if(id==99)dismiss_warning();
+      else if(id==100){dismiss_warning();begin();}
+      return;
+    case 7771:
+      if(id==99)dismiss_warning();
+      else if(id==1499){dismiss_warning();next_mission();}
+      return;
     case 999:if(id==100)quitting=true;else if(id==99)show(1000);return;
     case 1000:
       if(id==1003){show(999);return;}
@@ -196,13 +216,14 @@ void game_shell::action(uint16_t id){
       if(id==1223)return;
       break;
     case 1700:case 1500:case 1501:
-      if(id==100){begin();return;}
+      if(id==100){if(auto warning{launch_warning(game.roster(),game.crew())})warn(warning);else begin();return;}
       if(id==99){show(game.campaign()?1700:1100);return;}
       if(id==101||id==102){text_scroll=std::max(0,text_scroll+(id==101?-1:1));return;}
       if(id==1800){show(1800);return;}
       break;
     case 1710:
-      if(id==1499){game.prepare_campaign(true,options(preferences_));save_career();show(game.ready()?1700:1000);return;}
+      if(id==1499){if(auto warning{next_mission_warning(game.roster(),game.crew())})warn(warning);else next_mission();return;}
+      if(id==2000&&!construction_available(game.roster())){warn(7772);return;}
       break;
     case 1610:
       if(id==100){save_career();crew_edit->accept(game.roster(),game.crew());crew_edit.reset();show(1700);return;}
@@ -304,6 +325,7 @@ void game_shell::draw_text(framebuffer &target,std::string const &value,rectangl
   while(words>>word){auto next{line.empty()?word:line+" "+word};if(text_face.text_width(next)>bounds.right-bounds.left&&!line.empty()){emit();line=word;}else line=std::move(next);}if(!line.empty())emit();
 }
 void game_shell::draw(framebuffer &target)const{
+  if(warning_parent){target=warning_frame;menu->draw(target,false);return;}
   menu->draw(target);auto const current{screen()};
   if(current==1800||((current==1700||current==1710||current==1900||current==1920||current==4444)&&game.has_career())){
     if(auto h{game.roster().find(game.roster().selected)})bay.draw(target,*h,armament,current==1800?selected_mount:-1);

@@ -49,7 +49,11 @@ void game_state::prepare(std::string name,mission_options const &options){
   prepared_=prepare_mission(resources.read("zones","msn/"+mission_name_+".msn"),campaign_?1:0,s.node,s.step,options,history,random);
   text_=read_mission_text(resources.read("zones","msn/"+mission_name_+".eng"));
   if(!campaign_)single_=generate_single_crew(resources,prepared_->compiled.script,random);
-  update_roster();
+  // A saved career may temporarily have no player HERC. The service bay must
+  // remain usable so its original warning and crew screen can resolve this.
+  auto const pilot{crew().selected_crew};
+  if(pilot>=0&&pilot<4&&crew().crew[static_cast<size_t>(pilot)].active&&roster().find(crew().crew[static_cast<size_t>(pilot)].hangar_slot))update_roster();
+  else player_={};
   if(campaign_)checkpoint();
 }
 void game_state::checkpoint(size_t history) {

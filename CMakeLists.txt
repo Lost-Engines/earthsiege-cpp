@@ -15,6 +15,7 @@ add_library(earthsiege_core
   src/render/dialog_widgets.cpp
   src/shell/mission_alert.cpp
   src/shell/game_shell.cpp
+  src/shell/launch_checks.cpp
   src/shell/save_store.cpp
   src/resources/career_index.cpp
   src/shell/game_state.cpp
@@ -928,4 +929,10 @@ if(BUILD_TESTING)
   add_executable(construction_menu_test tests/construction_menu_test.cpp)
   target_link_libraries(construction_menu_test PRIVATE earthsiege_core)
   add_test(NAME construction_menu COMMAND construction_menu_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/construction_menu.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(launch_checks_test tests/launch_checks_test.cpp)
+  target_link_libraries(launch_checks_test PRIVATE earthsiege_core)
+  add_test(NAME launch_checks COMMAND launch_checks_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/launch_checks.bin)
 endif()

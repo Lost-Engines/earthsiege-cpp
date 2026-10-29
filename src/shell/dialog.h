@@ -34,6 +34,7 @@ class dialog {
   std::array<button_style, 4> styles;
   font title_face;
   font caption_face;
+  unsigned region_number{};
   std::array<font, 3> button_faces;
   std::array<font, 2> list_faces;
   std::optional<unsigned int> pressed;

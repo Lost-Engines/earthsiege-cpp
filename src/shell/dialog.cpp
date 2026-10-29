@@ -15,6 +15,7 @@ dialog::dialog(resource_store const &resources, unsigned int requested, unsigned
   corners{read_bitmaps(resources.read("shell0", "res32/corners.dba"))},
   title_face{read_font(resources.read("shell0", "dfn/title.dfn"))},
   caption_face{read_font(resources.read("shell0","dfn/gray.dfn"))},
+  region_number{region},
   button_faces{
     read_font(resources.read("shell0", "dfn/active.dfn")),
     read_font(resources.read("shell0", "dfn/pushed.dfn")),
@@ -24,8 +25,6 @@ dialog::dialog(resource_store const &resources, unsigned int requested, unsigned
   colours{read_palette(resources.read("shell0", "res32/regn" + std::to_string(region) + ".dpl"))},
   number{requested} {
   if(number==1610)colours=read_palette(resources.read("shell0","res32/regn1610.dpl"));
-  auto const artwork{"res32/menu" + std::to_string(number) + ".dba"};
-  if(resources.archives().at("shell0").find(artwork))panel=read_bitmaps(resources.read("shell0",artwork)).front();
   auto const labels{read_packed_strings(resources.read("shell0", "eng/menu" + std::to_string(number) + ".bin"))};
   binary_reader file{resources.read("shell0", "dlg/menu" + std::to_string(number) + ".dlg"), "dialog controls"};
   auto const count{file.integer<uint16_t>()};
@@ -56,6 +55,14 @@ dialog::dialog(resource_store const &resources, unsigned int requested, unsigned
     controls.push_back(std::move(entry));
   }
   file.require_end();
+  // GO 0x36874 uses the root control's ID for shared panel art and body
+  // font selection. Warning layouts all reuse MENU999's panel.
+  auto const root_id{controls.front().action};
+  auto const artwork{"res32/menu"+std::to_string(root_id)+".dba"};
+  if(resources.archives().at("shell0").find(artwork))panel=read_bitmaps(resources.read("shell0",artwork)).front();
+  std::string const face{root_id==999||root_id==1240||root_id==4444?"nm_green":
+    root_id==1610||root_id==1800?"cstats_2":root_id==1920?"active":"gray"};
+  caption_face=read_font(resources.read("shell0","dfn/"+face+".dfn"));
   styles=read_button_styles(resources.read("shell0","cfg/styles.dat"));
 }
 
@@ -65,13 +72,15 @@ void dialog::draw(framebuffer &frame, bool background) const {
   frame.image(panel, root.bounds.left, root.bounds.top, true);
   if(root.style==0) {
   // GO 0x36b4c centres the caption inside a 40-pixel padded, 17-pixel plaque
-  int const caption_width{title_face.text_width(root.label) + 40};
+  int const padding{region_number==4000?20:40};
+  int const caption_top{root.bounds.top+(region_number==4000||region_number==2000?4:5)};
+  int const caption_width{title_face.text_width(root.label) + padding};
   int const caption_left{root.bounds.left + (root.bounds.right - root.bounds.left - caption_width) / 2};
   rectangle const caption{
     .left{caption_left},
-    .top{root.bounds.top + 5},
+    .top{caption_top},
     .right{caption_left + caption_width},
-    .bottom{root.bounds.top + 22},
+    .bottom{caption_top + 17},
   };
   frame.line(caption.left, caption.top, caption.right, caption.top, 16);
   frame.line(caption.left, caption.top, caption.left, caption.bottom, 16);
@@ -85,6 +94,10 @@ void dialog::draw(framebuffer &frame, bool background) const {
   }
   for(unsigned int index{1}; index < controls.size(); ++index) {
     auto const &entry{controls[index]};
+    if(entry.type==1){
+      frame.text(caption_face,entry.label,entry.bounds.left,entry.bounds.top+static_cast<int>(caption_face.height)-3);
+      continue;
+    }
     if(entry.type == 15 || entry.type == 2) draw_dialog_button(frame, entry.bounds, styles[3], corners);
     if(entry.type==15 || entry.type==2 || entry.type==1 || entry.type==4 || entry.type==5) {
       auto bounds{entry.bounds};bounds.left+=1;bounds.right-=1;bounds.top+=1;bounds.bottom-=1;
