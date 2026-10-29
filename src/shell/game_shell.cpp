@@ -16,7 +16,7 @@ unsigned region(unsigned screen){
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
  :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},audio{r},game{r,seed},
- strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r}{show(1000);}
+ strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r},statistics_view{r}{show(1000);}
 
 unsigned game_shell::visible_region()const{
  if(cinematic)return 0;
@@ -101,6 +101,7 @@ void game_shell::finish_speech(bool skipped){
  show(destination);
 }
 void game_shell::show(unsigned id){
+  if(id==1230)statistics_history=menu&&menu->id()==1220&&!history_slots.empty()?history_slots.at(static_cast<size_t>(menu->selection(1223))):0;
   if(menu)last_screen=menu->id();
   menu=std::make_unique<dialog>(resources,id,region(id));text_scroll=0;
   audio.enabled(preferences_.current()[0]!=0,preferences_.current()[1]!=0);audio.region(region(id));
@@ -523,6 +524,10 @@ void game_shell::draw(framebuffer &target)const{
     auto const name{careers.selected>=0?careers.entries.at(static_cast<size_t>(careers.selected)).name:strings.at(85)};
     crew_view.draw(target,*menu,game.roster(),game.crew(),*crew_edit,name);
   }
+  if(current==1230&&game.has_career())if(auto panel{menu->find(1231)})
+    statistics_view.career(target,panel->bounds,game.career().career.states.at(statistics_history),careers.entries.at(static_cast<size_t>(careers.selected)).name);
+  if((current==1510||current==1520)&&game.ready())if(auto panel{menu->find(1522)})
+    statistics_view.debrief(target,panel->bounds,game.crew(),game.returned());
   if((current==1500||current==1501||current==1510||current==1520)&&game.ready()){
     auto const kind{current==1500||current==1501?mission_text_kind::briefing:mission_text_kind::debriefing};
     if(auto section{game.text().find(kind)})if(auto program{std::get_if<text_program>(&section->content)}){

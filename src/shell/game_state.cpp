@@ -87,12 +87,18 @@ void game_state::complete(mission_results const &result,mission_counters const &
   if(!prepared_)throw std::runtime_error{"no mission to return from"};
   last_grade_=result.grade;last_kind_=prepared_->compiled.script.header.objective_kind;
   prepared_->counters=counters;prepared_->counters[0]=result.grade;
-  if(!campaign_){single_.state.counters=prepared_->counters;if(before_repair)before_repair();return;}
+  returned_={};returned_.recovery=result.recovery;returned_.recovered_weapons=static_cast<int16_t>(result.salvage.size());
+  if(!campaign_){
+    auto const debrief{return_from_single_mission(single_.state,single_.roster,result)};
+    returned_.deaths=debrief.deaths;returned_.statistics=debrief.statistics;returned_.alive=single_.state.crew[0].health>0;
+    if(before_repair)before_repair();
+    return;
+  }
   auto &c{career_->career};auto &s{c.states[0]};auto &h{career_->hangars[0]};
   auto const prices{read_service_prices(resources.read("shell0","cfg/damage.dat"))};
   auto const old_technology{s.technology.entries};
   auto const debrief{return_from_mission(c,h,result,counters,prices,random)};
-  returned_={};returned_.recovery=result.recovery;returned_.deaths=debrief.deaths;
+  returned_.deaths=debrief.deaths;returned_.statistics=debrief.statistics;
   returned_.alive=s.crew.at(static_cast<size_t>(s.selected_crew)).health>0;
   if(auto player{h.find(s.crew[0].hangar_slot)})returned_.condition=herc_average_condition(*player);
   for(size_t i{};i<old_technology.size();++i)returned_.technology|=!old_technology[i].available&&s.technology.entries[i].available;

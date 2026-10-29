@@ -1064,3 +1064,25 @@ original captures for all four views and documents device boundaries.
 
 All 214 CTest checks pass (38.28 seconds). Full-game timer/input scheduling and
 native replay equivalence remain separate work.
+
+
+### Career and debrief statistics
+
+The career/history and mission return panels now use the original two CSTATS
+fonts, WATEXT labels and pixel positions. History inspection reads its selected
+backup without restoring it. The original MISC career field remains zero.
+Return panels retain personal and squad totals, casualties, recovered salvage
+and weapon count, and the final newly unlocked technology (or NONE).
+
+Single missions now consume their original result records too: player chassis
+conditions, all participating crew health/current/lifetime kills/ranks, and
+squad totals. Temporary wingmate chassis disappear when the shell returns;
+there is no campaign restocking, crew replacement or technology progression.
+The unchanged launch MEC is distinct from the live post-return roster.
+
+All 96 original complete panel rasters match. Twenty-four whole original
+single-mission returns match the complete crew block, live serialized roster,
+mission counters, casualties and squad totals. The full suite passed 215 checks;
+the initial fixture-file mistake was corrected, and all three affected checks
+(including the 216th check and live menu/history assertions) subsequently pass.
+Original capture scripts and browseable panels are in earthsiege-reverse.

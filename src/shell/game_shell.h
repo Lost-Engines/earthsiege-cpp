@@ -12,6 +12,7 @@
 #include "shell/save_store.h"
 #include "render/hangar_artwork.h"
 #include "render/crew_artwork.h"
+#include "render/shell_statistics.h"
 #include "shell/component_repair.h"
 #include "render/construction_artwork.h"
 namespace earthsiege {
@@ -68,6 +69,8 @@ class game_shell {
   void refresh_bay();
   void action_impl(uint16_t id);
   crew_artwork crew_view;
+  shell_statistics statistics_view;
+  size_t statistics_history{};
   std::optional<crew_assignment> crew_edit;
   int selected_mount{-1};
   std::optional<int> pressed_mount;

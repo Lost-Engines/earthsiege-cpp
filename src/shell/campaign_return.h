@@ -7,6 +7,8 @@ struct campaign_debrief {
   int16_t deaths{};
   std::array<int16_t,3> statistics{};
 };
+/// GO 0x38eb5 single-mission branch: no salvage or technology progression.
+campaign_debrief return_from_single_mission(career_state &,hangar &,mission_results const &);
 int16_t pilot_rank(int16_t total);
 void advance_technology(technology_state &technology,int16_t missions,int16_t kind,int16_t grade);
 /// GO 0x38eb5 after loading the career/hangar; leaves the post-return state ready

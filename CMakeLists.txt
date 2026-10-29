@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/render/shell_statistics.cpp
   src/render/shell_door.cpp
   src/resources/lpf_animation.cpp
   src/render/crew_artwork.cpp
@@ -1135,4 +1136,16 @@ if(BUILD_TESTING)
  add_executable(cockpit_impact_test tests/cockpit_impact_test.cpp)
  target_link_libraries(cockpit_impact_test PRIVATE earthsiege_core)
  add_test(NAME cockpit_impact COMMAND cockpit_impact_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_impact.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_statistics_test tests/shell_statistics_test.cpp)
+  target_link_libraries(shell_statistics_test PRIVATE earthsiege_core)
+  add_test(NAME shell_statistics COMMAND shell_statistics_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_statistics.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_single_return_test tests/shell_single_return_test.cpp)
+  target_link_libraries(shell_single_return_test PRIVATE earthsiege_core)
+  add_test(NAME shell_single_return COMMAND shell_single_return_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_single_return.bin)
 endif()

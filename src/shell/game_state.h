@@ -9,6 +9,8 @@ namespace earthsiege {
 struct return_presentation {
  int16_t condition{},deaths{},continuation{};
  int32_t recovery{};
+ std::array<int16_t,3> statistics{};
+ int16_t recovered_weapons{};
  bool technology{},alive{};
 };
 class game_state {

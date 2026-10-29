@@ -29,6 +29,29 @@ crew_member replacement(crew_member const &old,size_t member,std::array<int16_t,
   c.active=1;c.health=100;c.rank=pilot_rank(c.total[0]);c.prior_skill=c.skill;return c;
 }
 }
+campaign_debrief return_from_single_mission(career_state &state,hangar &roster,mission_results const &result){
+ campaign_debrief debrief;size_t returned{};
+ for(size_t member{};member<state.crew.size();++member){auto &c{state.crew[member]};
+  if(!c.active||c.hangar_slot==-1)continue;
+  if(returned>=result.crew.size())throw std::runtime_error{"single-mission return lacks an active crew member"};
+  auto const &r{result.crew[returned++]};
+  // GO 0x1568d discards wingmate chassis conditions in a single mission.
+  // Their slot numbers name temporary launch records, not the persistent bay.
+  if(member==0){
+   auto h{roster.find(c.hangar_slot)};if(!h)throw std::runtime_error{"single-mission player has no HERC"};
+   h->condition=r.condition;normalize_hangar_equipment(*h);
+  }else{
+   // The original shell reloads its launch MEC, which excludes temporary
+   // single-mission wingmates created solely for PLAYER.MEC.
+   std::erase_if(roster.hercs,[&](auto const &h){return h.slot==c.hangar_slot;});
+  }
+  c.health=r.condition.internal[9];c.current=r.statistics;
+  for(size_t i{};i<3;++i){c.total[i]=wrap_word(c.total[i]+r.statistics[i]);debrief.statistics[i]=wrap_word(debrief.statistics[i]+r.statistics[i]);}
+  c.rank=pilot_rank(c.total[0]);if(!c.health)++debrief.deaths;
+ }
+ if(returned!=result.crew.size())throw std::runtime_error{"single-mission return has unexpected crew"};
+ return debrief;
+}
 campaign_debrief return_from_mission(career_record &career,hangar &roster,mission_results const &result,
   std::array<int16_t,100> const &counters,service_prices const &prices,random_state &random) {
   auto &state{career.states[0]};auto &inventory{career.inventories[0]};campaign_debrief debrief;

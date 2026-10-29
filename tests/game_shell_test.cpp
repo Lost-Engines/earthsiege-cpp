@@ -48,7 +48,12 @@ int main(int argc,char **argv)try{
  click(shell,2004);require(shell.state().roster().selected!=initial_slot,"single mission HERC changes");
  require(shell.state().crew().crew[0].hangar_slot==shell.state().roster().selected,"single mission selected HERC assigned");
  click(shell,100);screen(shell,1501);
- click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");shell.mission_return(single->results(),single->mission_variables());skip_speech(shell);screen(shell,1510);
+ click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");auto single_result{single->results()};single_result.crew[0].statistics={3,2,1};single_result.recovery=1234;single_result.salvage={{2,80}};
+ shell.mission_return(single_result,single->mission_variables());skip_speech(shell);screen(shell,1510);
+ require(shell.state().crew().crew[0].current==single_result.crew[0].statistics,"single-mission personal kills reach debrief");
+ require(shell.state().returned().statistics[0]==3&&shell.state().returned().recovered_weapons==1&&shell.state().returned().recovery==1234,"single-mission squad/salvage display");
+ require(shell.state().roster().hercs.size()==8,"temporary single-mission wingmates excluded on shell return");
+ if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("single-debrief-test.ppm");frame.save(path,shell.colours());}
  click(shell,1000);click(shell,1200);screen(shell,1200);click(shell,1210);screen(shell,1210);shell.text_input("Test Pilot");click(shell,100);screen(shell,1700);require(shell.state().campaign(),"registered campaign");auto name{shell.state().mission_name()};
  framebuffer bay_before;shell.draw(bay_before);bool moving{};
  for(unsigned i{};i<600&&!moving;++i){shell.advance(3);framebuffer f;shell.draw(f);moving=f.pixels()!=bay_before.pixels();}
@@ -98,6 +103,12 @@ int main(int argc,char **argv)try{
 
  game_shell reopened{resources,root.path,23};require(reopened.current_dialog().find(1700)->enabled,"resume survives restart");click(reopened,1700);screen(reopened,1710);require(reopened.state().crew().missions==1,"original save loaded");require(reopened.state().roster().construction_remaining==1,"construction survives reload");click(reopened,1499);screen(reopened,1500);require(reopened.state().crew().step==1,"next mission advances step");require(reopened.state().mission_name()!=name,"next mission differs");click(reopened,1700);
  click(reopened,1000);click(reopened,1200);click(reopened,1220);screen(reopened,1220);click(reopened,1221);require(reopened.state().career().career.states[2].valid,"manual backup stored");
+ click(reopened,1230);screen(reopened,1230);
+ {framebuffer actual,expected;reopened.draw(actual);reopened.current_dialog().draw(expected);
+  shell_statistics panels{resources};panels.career(expected,reopened.current_dialog().find(1231)->bounds,reopened.state().career().career.states[2],"Test Pilot");
+  require(actual.pixels()==expected.pixels(),"statistics use selected backup without restoring it");
+  if(argc==4){auto path{std::filesystem::path{argv[3]}};path.replace_filename("career-statistics-test.ppm");actual.save(path,reopened.colours());}}
+ reopened.key(1);screen(reopened,1220);
  click(reopened,1222);require(reopened.state().crew().step==1,"manual backup restored");
  // Resume genuine save-format careers into each original validation path.
  auto seed{shell.state().career()};
