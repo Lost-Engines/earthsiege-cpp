@@ -696,3 +696,14 @@ still separate integration work. Missing Samson GL images are bounded safely.
 
 The arming increment passes all 177 CTest checks. The paired POINTS/HERCS
 buttons use the original shared sprite and label anchor.
+
+### Crew assignment integration
+
+The original 1610 event handler supplies 96 independent sequences / 3,360
+transitions. C++ agrees on all four assignments, selected HERC, crew cursor,
+pending swap source and displaced pilot, including repeated selection, NONE,
+cycling through missing/construction slots, Accept and Cancel. The handler's
+presentation controls and save/animation calls are explicit capture boundaries.
+The UI test additionally exercises mouse/keyboard actions and persistence.
+The original REGN1610 palette, PILOTS/INSIGNIA/MECHS artwork and native text
+placement are connected. Arming's backward cycling from -1 shares the correction.

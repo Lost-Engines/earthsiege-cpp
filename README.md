@@ -70,3 +70,8 @@ Arming comparisons cover 1,650 equipment exchanges, 360 mount menus, 270 missile
 selections and 128 HERC-selection cases. The original bay artwork and mount
 positions are used. Samson grenade-launcher entries refer to missing bay images
 in the supplied data; those layers are omitted safely while keeping the equipment.
+
+Crew Assignment now uses the original portraits, wireframe HERC diagrams and
+screen palette. Reassignment preserves the original temporary swap behaviour;
+Cancel restores all four assignments. Pilot registration starts with an empty
+name field. Repair allocation and construction controls remain in progress.

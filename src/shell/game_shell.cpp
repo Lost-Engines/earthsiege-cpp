@@ -15,7 +15,7 @@ unsigned region(unsigned screen){
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
  :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},game{r,seed},
- strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},armament{r},bay{r}{show(1000);}
+ strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},armament{r},bay{r},crew_view{r}{show(1000);}
 void game_shell::show(unsigned id){
   if(menu)last_screen=menu->id();
   menu=std::make_unique<dialog>(resources,id,region(id));text_scroll=0;
@@ -25,6 +25,7 @@ void game_shell::show(unsigned id){
   if(id==1200){std::vector<std::string> names;for(auto const &e:careers.entries)names.push_back(e.name);menu->items(1202,std::move(names),std::max(0,int(careers.selected)));
     for(int action: {1201,1220,1230,1700})menu->enable(static_cast<uint16_t>(action),!careers.entries.empty());}
   if(id==1330){menu->items(1331,{strings.at(19),strings.at(20),strings.at(21)},battle_set);}
+  if(id==1610){crew_edit.emplace(game.roster(),game.crew());menu->enable(1623,false);}
   if(id==1800){selected_mount=-1;missile_menu=false;refresh_armament();}
   if(id==1220){history_slots.clear();std::vector<std::string> labels;auto const &states{game.career().career.states};
     for(size_t i{1};i<states.size();++i)if(states[i].valid){history_slots.push_back(i);labels.push_back("MISSION "+std::to_string(states[i].missions));}
@@ -160,6 +161,17 @@ void game_shell::action(uint16_t id){
     case 1710:
       if(id==1499){game.prepare_campaign(true,options(preferences_));save_career();show(game.ready()?1700:1000);return;}
       break;
+    case 1610:
+      if(id==100){save_career();crew_edit->accept(game.roster(),game.crew());crew_edit.reset();show(1700);return;}
+      if(id==1700){crew_edit->cancel(game.roster(),game.crew());crew_edit.reset();show(1700);return;}
+      if(id==2003||id==2004)crew_edit->cycle(game.roster(),game.crew(),id==2004?1:-1);
+      else if(id==1623&&menu->find(1623)->enabled)crew_edit->none(game.roster(),game.crew());
+      else if(id==1624)crew_edit->select(game.roster(),game.crew(),static_cast<int16_t>((crew_edit->selected_pilot()+1)%4));
+      else if(id>=1615&&id<=1618){auto member{static_cast<int16_t>(id-1615)};
+        if(member==crew_edit->selected_pilot())crew_edit->cycle(game.roster(),game.crew(),1);
+        else crew_edit->select(game.roster(),game.crew(),member);
+      }
+      menu->enable(1623,crew_edit->selected_pilot()!=0);return;
     case 1800:
       if(id==100){save_career();show(game.campaign()?1700:1501);return;}
       if(id==1808){choose_armament();return;}
@@ -182,7 +194,7 @@ void game_shell::action(uint16_t id){
     default:break;
   }
   if(id==1300)options_owner=current;
-  if(id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
+  if(id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
 }
 void game_shell::key(uint8_t scan){if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
 void game_shell::mouse_down(int x,int y){
@@ -217,6 +229,10 @@ void game_shell::draw(framebuffer &target)const{
       else if(selected>=0&&static_cast<size_t>(selected)<weapon_choices.size())icon=weapon_choices[static_cast<size_t>(selected)]==17?-1:weapon_choices[static_cast<size_t>(selected)];
       if(auto view{menu->find(1803)})bay.weapon(target,icon,view->bounds);
     }
+  }
+  if(current==1610&&crew_edit){
+    auto const name{careers.selected>=0?careers.entries.at(static_cast<size_t>(careers.selected)).name:strings.at(85)};
+    crew_view.draw(target,*menu,game.roster(),game.crew(),*crew_edit,name);
   }
   if((current==1500||current==1501||current==1510||current==1520)&&game.ready()){
     auto const kind{current==1500||current==1501?mission_text_kind::briefing:mission_text_kind::debriefing};

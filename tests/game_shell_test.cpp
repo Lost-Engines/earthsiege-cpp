@@ -35,6 +35,22 @@ int main(int argc,char **argv)try{
  click(shell,100);screen(shell,1501);
  click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");shell.mission_return(single->results(),single->mission_variables());screen(shell,1510);
  click(shell,1000);click(shell,1200);screen(shell,1200);click(shell,1210);screen(shell,1210);shell.text_input("Test Pilot");click(shell,100);screen(shell,1700);require(shell.state().campaign(),"registered campaign");auto name{shell.state().mission_name()};
+ auto crew_before{shell.state().crew()};
+ click(shell,1610);screen(shell,1610);
+ if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("crew-test.ppm");frame.save(path,shell.colours());}
+ click(shell,2004);
+ require(shell.state().crew().crew[0].hangar_slot==crew_before.crew[1].hangar_slot,"crew swaps selected HERC");
+ require(shell.state().crew().crew[1].hangar_slot==crew_before.crew[0].hangar_slot,"displaced pilot gets previous HERC");
+ click(shell,2004);
+ require(shell.state().crew().crew[1].hangar_slot==crew_before.crew[1].hangar_slot,"cycling restores previous displaced pilot");
+ click(shell,1700);screen(shell,1700);
+ for(size_t i{};i<4;++i)require(shell.state().crew().crew[i].hangar_slot==crew_before.crew[i].hangar_slot,"crew cancel restores assignments");
+ click(shell,1610);click(shell,1616);click(shell,1623);
+ require(shell.state().crew().crew[1].hangar_slot==-1,"wingmate can be unassigned");
+ click(shell,1700);screen(shell,1700);
+ click(shell,1610);click(shell,2004);click(shell,100);screen(shell,1700);
+ require(shell.state().crew().crew[0].hangar_slot==crew_before.crew[1].hangar_slot,"crew accept retains swap");
+
  click(shell,100);auto mission{shell.launch()};auto result{mission->results()};auto counters{mission->mission_variables()};result.grade=1;shell.mission_return(result,counters,13);screen(shell,1520);require(shell.state().crew().missions==1,"return advances career");
  click(shell,1710);screen(shell,1710);click(shell,1000);screen(shell,1000);
  game_shell reopened{resources,root.path,23};require(reopened.current_dialog().find(1700)->enabled,"resume survives restart");click(reopened,1700);screen(reopened,1710);require(reopened.state().crew().missions==1,"original save loaded");click(reopened,1499);screen(reopened,1700);require(reopened.state().crew().step==1,"next mission advances step");require(reopened.state().mission_name()!=name,"next mission differs");

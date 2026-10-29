@@ -19,9 +19,10 @@ dialog::dialog(resource_store const &resources, unsigned int requested, unsigned
     read_font(resources.read("shell0", "dfn/pushed.dfn")),
     read_font(resources.read("shell0", "dfn/inactive.dfn")),
   },
-  list_faces{read_font(resources.read("shell0","dfn/nm_green.dfn")),read_font(resources.read("shell0","dfn/nm_red1.dfn"))},
+  list_faces{read_font(resources.read("shell0",requested==1610?"dfn/nm_white.dfn":"dfn/nm_green.dfn")),read_font(resources.read("shell0","dfn/nm_red1.dfn"))},
   colours{read_palette(resources.read("shell0", "res32/regn" + std::to_string(region) + ".dpl"))},
   number{requested} {
+  if(number==1610)colours=read_palette(resources.read("shell0","res32/regn1610.dpl"));
   auto const artwork{"res32/menu" + std::to_string(number) + ".dba"};
   if(resources.archives().at("shell0").find(artwork))panel=read_bitmaps(resources.read("shell0",artwork)).front();
   auto const labels{read_packed_strings(resources.read("shell0", "eng/menu" + std::to_string(number) + ".bin"))};
@@ -50,7 +51,7 @@ dialog::dialog(resource_store const &resources, unsigned int requested, unsigned
       entry.bounds.top += controls.front().bounds.top;
       entry.bounds.bottom += controls.front().bounds.top;
     }
-    if(entry.type==2)text_focus=index;
+    if(entry.type==2){entry.label.clear();text_focus=index;}
     controls.push_back(std::move(entry));
   }
   file.require_end();
@@ -160,7 +161,7 @@ void dialog::mouse_down(int x, int y) {
   for(unsigned int index{1}; index < controls.size(); ++index) {
     auto const &entry{controls[index]};
     if(entry.enabled && entry.bounds.contains(x,y)) {
-      if(entry.type==3 || (entry.type==15 && entry.style==0))pressed=index;
+      if(entry.type==3 || entry.type==16 || (entry.type==15 && entry.style==0))pressed=index;
       if(entry.type==2)text_focus=index;
     }
   }

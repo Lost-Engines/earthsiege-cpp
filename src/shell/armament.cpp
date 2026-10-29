@@ -70,7 +70,8 @@ void cycle_arming_herc(hangar &roster,career_state &crew,int direction,bool sing
   if(roster.capacity<=0)return;
   auto next{roster.selected};
   for(int i{};i<roster.capacity;++i){
-    next=static_cast<int16_t>((next+(direction>0?1:roster.capacity-1))%roster.capacity);
+    if(direction>0)next=static_cast<int16_t>((next+1)%roster.capacity);
+    else{if(next<1)next=roster.capacity;--next;}
     if(!roster.find(next)||next==roster.construction_slot)continue;
     if(single&&std::ranges::any_of(crew.crew,[&](auto const &c){return c.hangar_slot==next;}))continue;
     roster.selected=next;break;

@@ -501,3 +501,11 @@ HERC.DAT's GL image indices 48..50 exceed HERCWEP1.DBA's 48 frames, so these
 transaction tests do not attempt that invalid native presentation access.
 The UI test separately exercises mouse mount selection, keyboard equipment
 exchange, roster reassignment and save/launch/return with isolated user files.
+
+crew_assignment.bin (ESCREW01): 96 sequential original crew-assignment runs,
+3,360 events from GO 0x2d19e, 0x2cf16, 0x2ca5a and 0x2cc21, with the original
+HERC iterators and crew queries. capture_crew_fixtures.py constructs the owner
+snapshot and substitutes inert presentation controls; save and bay-animation
+refresh are explicit sinks. Every event retains assignments, cursor, selected
+HERC and pending/displaced swap fields. Accept/Cancel are included.
+armament.bin also includes initial HERC selection -1 in its cycling cases.

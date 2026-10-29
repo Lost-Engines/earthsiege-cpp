@@ -3,6 +3,7 @@
 #include "shell/game_state.h"
 #include "shell/save_store.h"
 #include "render/hangar_artwork.h"
+#include "render/crew_artwork.h"
 namespace earthsiege {
 /// Application-level shell flow. Window input is translated before it reaches
 /// this owner, so scripted tests exercise the same transitions as the UI.
@@ -17,6 +18,8 @@ class game_shell {
   font text_face;
   armament_catalog armament;
   hangar_artwork bay;
+  crew_artwork crew_view;
+  std::optional<crew_assignment> crew_edit;
   int selected_mount{-1};
   std::optional<int> pressed_mount;
   bool missile_menu{};
