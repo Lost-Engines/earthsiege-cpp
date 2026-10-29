@@ -83,14 +83,24 @@ void game_state::resume_shell(int16_t seed,std::optional<campaign_start> saved){
     roster().selected=crew().crew.at(static_cast<size_t>(crew().selected_crew)).hangar_slot;
   }
 }
-void game_state::complete(mission_results const &result,mission_counters const &counters){
+void game_state::complete(mission_results const &result,mission_counters const &counters,std::function<void()> const &before_repair){
   if(!prepared_)throw std::runtime_error{"no mission to return from"};
   last_grade_=result.grade;last_kind_=prepared_->compiled.script.header.objective_kind;
   prepared_->counters=counters;prepared_->counters[0]=result.grade;
-  if(!campaign_){single_.state.counters=prepared_->counters;return;}
+  if(!campaign_){single_.state.counters=prepared_->counters;if(before_repair)before_repair();return;}
   auto &c{career_->career};auto &s{c.states[0]};auto &h{career_->hangars[0]};
   auto const prices{read_service_prices(resources.read("shell0","cfg/damage.dat"))};
-  return_from_mission(c,h,result,counters,prices,random);
+  auto const old_technology{s.technology.entries};
+  auto const debrief{return_from_mission(c,h,result,counters,prices,random)};
+  returned_={};returned_.recovery=result.recovery;returned_.deaths=debrief.deaths;
+  returned_.alive=s.crew.at(static_cast<size_t>(s.selected_crew)).health>0;
+  if(auto player{h.find(s.crew[0].hangar_slot)})returned_.condition=herc_average_condition(*player);
+  for(size_t i{};i<old_technology.size();++i)returned_.technology|=!old_technology[i].available&&s.technology.entries[i].available;
+  auto const table{read_campaign_table(resources.read("zones","bst/btlset_"+std::to_string(c.mode)+".dat"))};
+  auto next_node{s.node},next_step{s.step};
+  if(table.advance(next_node,next_step,campaign_failure_branch(last_kind_,last_grade_)))returned_.continuation=next_node;
+
+  if(before_repair)before_repair();
   apply_repair_policy(s,h,prices);
   // GO's return dispatcher saves only the working state. Backups are explicit
   // actions in the Career Backups screen (0x167cd), not automatic snapshots.

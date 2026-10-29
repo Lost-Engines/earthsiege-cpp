@@ -39,4 +39,19 @@ speech_selection select_shell_speech(int mode,int chapter,int entry,int grade,in
  out.entry=static_cast<uint16_t>(entry);out.list_file="snc/"+stem+"_FILES.DAT";
  out.text_file="eng/"+(out.region==4000?std::string{"T1"}:stem)+"_text.bin";return out;
 }
+
+std::array<int16_t,3> select_mechanic_return(int condition,bool technology,int32_t recovery,int deaths,random_state &random){
+ std::array<int16_t,3> result{-1,-1,-1};
+ if(technology)result[1]=static_cast<int16_t>(32+random.bounded(1));
+ if(condition>=96){
+  result[0]=static_cast<int16_t>(10+random.bounded(4));
+  if(result[1]==-1&&recovery>20000)result[1]=34;
+ }else if(condition>=71)result[0]=static_cast<int16_t>(15+random.bounded(4));
+ else if(condition>=51)result[0]=static_cast<int16_t>(20+random.bounded(3));
+ else if(condition>0){
+  result[0]=static_cast<int16_t>(24+random.bounded(4));
+  if(result[1]==-1&&deaths>1)result[1]=30;
+ }
+ return result;
+}
 }

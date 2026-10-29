@@ -17,11 +17,30 @@ unsigned region(unsigned screen){
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
  :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},audio{r},game{r,seed},
  strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r}{show(1000);}
+
+void game_shell::start_movies(std::vector<std::pair<std::string,int>> sequence,unsigned destination,bool startup){
+ speech.reset();audio.stop_speech();audio.clear_sample();
+ movies={sequence.begin(),sequence.end()};movie_destination=destination;startup_movies=startup;
+ cinematic.reset();finish_movie(false);
+}
+void game_shell::finish_movie(bool skipped){
+ cinematic.reset();
+ if(skipped&&startup_movies&&!movies.empty()&&movies.front().first=="intro/lead_in.ttm")movies.pop_front();
+ if(movies.empty()){show(movie_destination);return;}
+ auto next{std::move(movies.front())};movies.pop_front();
+ if(next.second>=0)audio.song(next.second);
+ cinematic=std::make_unique<shell_cinematic>(resources,next.first,game.presentation_random());
+}
+void game_shell::startup(bool enabled){
+ cinematics_enabled=enabled;
+ if(enabled)start_movies({{"intro/dynamix.ttm",12},{"intro/lead_in.ttm",-1},{"intro/iintro.ttm",13},{"intro/earth_w.ttm",-1}},1000,true);
+}
+
 void game_shell::start_speech(int mode,int ordinal){
  speech.reset();
  speech_mode=mode;speech_ordinal=ordinal;
  auto const &header{game.prepared().compiled.script.header};
- auto selected{select_shell_speech(mode,game.crew().node,mode==2?ordinal:header.objective_variant,
+ auto selected{select_shell_speech(mode,game.crew().node,mode==2?ordinal:mode==7?mechanic_lines.at(static_cast<size_t>(ordinal)):header.objective_variant,
    game.prepared().counters[0],header.objective_kind,game.crew().missions!=0,game.presentation_random())};
  speech_destination=selected.destination;
  speech_screen=mode==2?1490:mode<=1?1499:mode==6?1700:selected.destination;
@@ -35,7 +54,7 @@ void game_shell::start_speech(int mode,int ordinal){
   base.image(read_bitmaps(resources.read("shell0","res32/regn"+std::to_string(selected.region)+".dbm")).front(),0,0);
  }
  speech_palette=read_palette(resources.read("shell0","res32/regn"+std::to_string(selected.region)+".dpl"));
- audio.region(selected.region);if(selected.song>=0)audio.song(selected.song);
+ if(selected.song>=0)audio.song(selected.song);else audio.region(selected.region);
  speech=std::make_unique<shell_speech_scene>(resources,selected,base,game.presentation_random());
  audio.speak(speech->sample(),preferences_.current()[2]!=0);
 }
@@ -46,6 +65,11 @@ void game_shell::finish_speech(bool skipped){
  if(mode==2&&!skipped&&static_cast<size_t>(ordinal+1)<chapter_introduction(game.crew().node).size()){
   start_speech(2,ordinal+1);return;
  }
+ if(mode==2){
+  constexpr std::array<char const *,8> travel{"a","d","d","b","b","g","g","g"};
+  start_movies({{"res32/"+std::string{travel.at(static_cast<size_t>(game.crew().node))}+"_camni.ttm",-1}},1700);return;
+ }
+ if(mode==7&&static_cast<size_t>(ordinal+1)<mechanic_lines.size()&&mechanic_lines[static_cast<size_t>(ordinal+1)]>=0){start_speech(7,ordinal+1);return;}
  if(mode==6){launch_requested=true;save_career();return;}
  if(destination==1490){start_speech(2);return;}
  show(destination);
@@ -81,7 +105,7 @@ void game_shell::show(unsigned id){
   refresh_bay();refresh_preview();
 }
 void game_shell::refresh_bay(){
- if(warning_parent||speech)return;
+ if(warning_parent||presentation_active())return;
  if(region(screen())!=4000){if(bay_motion)audio.clear_sample();bay_motion.reset();displayed_hangar.clear();return;}
  if(!bay_motion){
   bay_backdrop.clear();bay_backdrop.image(read_bitmaps(resources.read("shell0","res32/regn4000.dbm")).front(),0,0);
@@ -99,7 +123,8 @@ void game_shell::advance(unsigned timer_ticks){
  audio.enabled(preferences_.current()[0]!=0,preferences_.current()[1]!=0);
  for(unsigned i{};i<timer_ticks;++i){
   if((++animation_ticks%2)==0&&!warning_parent){
-   if(speech){speech->advance(game.presentation_random());if(speech->finished())finish_speech(false);}
+   if(cinematic){cinematic->advance(game.presentation_random());if(cinematic->finished())finish_movie(false);}
+   else if(speech){speech->advance(game.presentation_random());if(speech->finished())finish_speech(false);}
    else {
    if(bay_motion)bay_motion->advance(1,game.presentation_random(),audio.effects());
    if(weapon_motion)weapon_motion->advance(1,game.presentation_random());
@@ -111,7 +136,7 @@ void game_shell::advance(unsigned timer_ticks){
 }
 
 void game_shell::refresh_preview(){
- if(warning_parent||speech)return;
+ if(warning_parent||presentation_active())return;
  int index{-1};
  if(screen()==1800){
   auto const selected{menu->selection(1808)};
@@ -232,7 +257,9 @@ void game_shell::warn(unsigned id){
 }
 void game_shell::dismiss_warning(){menu=std::move(warning_parent);}
 void game_shell::next_mission(){
-  game.prepare_campaign(true,options(preferences_));briefing.reset();save_career();show(game.ready()?1700:1000);
+  game.prepare_campaign(true,options(preferences_));briefing.reset();save_career();
+  if(!game.ready()){show(1200);return;}
+  start_speech(game.crew().step==0?5:1);
 }
 void game_shell::begin(){start_speech(6);save_career();}
 std::unique_ptr<mission_session> game_shell::launch(){
@@ -241,9 +268,22 @@ std::unique_ptr<mission_session> game_shell::launch(){
 }
 void game_shell::mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed){
   game.resume_shell(return_seed,game.campaign()?std::optional{saves.load(careers.entries.at(static_cast<size_t>(careers.selected)))}:std::nullopt);
-  game.complete(result,counters);briefing.reset();save_career();audio.resume();if(game.campaign())show(1520);else start_speech(3);
+  briefing.reset();audio.resume();audio.clear_sample();bay_motion.reset();weapon_motion.reset();displayed_hangar.clear();preview_index=-2;
+  game.complete(result,counters,[&]{
+
+  if(!game.campaign()){start_speech(3);return;}
+  auto const &returned{game.returned()};
+  if(!returned.alive){
+   if(cinematics_enabled)start_movies({{"res32/endfa.ttm",7}},1200);else show(1200);
+  }else if(returned.continuation==99)start_movies({{"res32/end_win1.ttm",13},{"res32/end_win2.ttm",-1},{"res32/end_win3.ttm",-1},{"intro/earth.ttm",-1}},1200);
+  else if(returned.continuation==-1)start_movies({{"res32/failed.ttm",19},{"intro/earth.ttm",-1}},1200);
+  else{
+   mechanic_lines=select_mechanic_return(returned.condition,returned.technology,returned.recovery,returned.deaths,game.presentation_random());
+   if(mechanic_lines[0]>=0)start_speech(7);else show(1520);
+  }
+  });save_career();
 }
-void game_shell::action(uint16_t id){if(speech){finish_speech(true);return;}action_impl(id);refresh_bay();refresh_preview();}
+void game_shell::action(uint16_t id){if(cinematic){finish_movie(true);return;}if(speech){finish_speech(true);return;}action_impl(id);refresh_bay();refresh_preview();}
 void game_shell::action_impl(uint16_t id){
   auto const current{screen()};
   switch(current){
@@ -400,9 +440,10 @@ void game_shell::action_impl(uint16_t id){
   if(id==1300)options_owner=current;
   if(id==2000||id==1900||id==1610||id==1000||id==1100||id==1110||id==1200||id==1210||id==1220||id==1230||id==1300||id==1310||id==1330||id==1500||id==1700||id==1710)show(id);
 }
-void game_shell::key(uint8_t scan){if(speech){if(scan)finish_speech(true);return;}if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
-void game_shell::mouse_move(int x,int y){if(speech)return;if(briefing&&(screen()==1500||screen()==1501))briefing->hover(x,y);}
+void game_shell::key(uint8_t scan){if(cinematic){if(scan)finish_movie(true);return;}if(speech){if(scan)finish_speech(true);return;}if(scan==14){menu->backspace();return;}if(auto id{menu->shortcut(scan)})action(*id);}
+void game_shell::mouse_move(int x,int y){if(presentation_active())return;if(briefing&&(screen()==1500||screen()==1501))briefing->hover(x,y);}
 void game_shell::mouse_down(int x,int y){
+  if(cinematic){finish_movie(true);consume_release=true;return;}
   if(speech){finish_speech(true);consume_release=true;return;}
   mouse_move(x,y);
   pressed_mount.reset();
@@ -410,7 +451,7 @@ void game_shell::mouse_down(int x,int y){
   if(!pressed_mount)menu->mouse_down(x,y);
 }
 void game_shell::mouse_up(int x,int y){
-  if(consume_release){consume_release=false;return;}if(speech)return;
+  if(consume_release){consume_release=false;return;}if(presentation_active())return;
   auto previous{pressed_mount};pressed_mount.reset();
   if(previous&&screen()==1800){
     if(auto h{game.roster().find(game.roster().selected)})if(armament.hit(h->chassis,x,y)==previous){
@@ -427,6 +468,7 @@ void game_shell::draw_text(framebuffer &target,std::string const &value,rectangl
   while(words>>word){auto next{line.empty()?word:line+" "+word};if(text_face.text_width(next)>bounds.right-bounds.left&&!line.empty()){emit();line=word;}else line=std::move(next);}if(!line.empty())emit();
 }
 void game_shell::draw(framebuffer &target)const{
+  if(cinematic){target=cinematic->image();return;}
   if(speech){speech->draw(target,preferences_.current()[2]);return;}
   if(warning_parent){target=warning_frame;menu->draw(target,false);return;}
   if(bay_motion){target=bay_motion->image();menu->draw(target,false);}else menu->draw(target);

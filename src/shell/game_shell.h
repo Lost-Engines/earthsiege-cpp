@@ -1,5 +1,7 @@
 #pragma once
 #include "shell/dialog.h"
+#include "render/shell_cinematic.h"
+#include <deque>
 #include "audio/shell_audio.h"
 #include "shell/bay_scene.h"
 #include "render/weapon_preview.h"
@@ -22,6 +24,13 @@ class game_shell {
   shell_audio audio;
   game_state game;
   std::unique_ptr<dialog> menu;
+  std::unique_ptr<shell_cinematic> cinematic;
+  std::deque<std::pair<std::string,int>> movies;
+  unsigned movie_destination{};
+  bool startup_movies{},cinematics_enabled{true};
+  std::array<int16_t,3> mechanic_lines{-1,-1,-1};
+  void start_movies(std::vector<std::pair<std::string,int>>,unsigned destination,bool startup=false);
+  void finish_movie(bool skipped);
   std::unique_ptr<shell_speech_scene> speech;
   palette speech_palette;
   int speech_mode{-1},speech_ordinal{};
@@ -78,16 +87,17 @@ class game_shell {
   void draw_text(framebuffer &frame,std::string const &text,rectangle const &bounds,int scroll=0)const;
 public:
   game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17);
-  unsigned int screen()const{return speech?speech_screen:menu->id();}
-  bool presentation_active()const{return speech!=nullptr;}
+  unsigned int screen()const{return cinematic?0:speech?speech_screen:menu->id();}
+  bool presentation_active()const{return speech!=nullptr||cinematic!=nullptr;}
   bool quit_requested()const{return quitting;}
   bool ready_to_launch()const{return launch_requested;}
   preferences const &settings()const{return preferences_;}
   dialog const &current_dialog()const{return *menu;}
   game_state const &state()const{return game;}
+  void startup(bool enabled=true);
   void action(uint16_t id);
   void key(uint8_t scan);
-  void text_input(std::string_view text){if(!speech)menu->text_input(text);}
+  void text_input(std::string_view text){if(!presentation_active())menu->text_input(text);}
   void mouse_move(int x,int y);
   void mouse_down(int x,int y);
   void mouse_up(int x,int y);
@@ -97,6 +107,6 @@ public:
   void advance(unsigned timer_ticks=3);
   std::vector<int16_t> take_audio(){return audio.take_output();}
   void draw(framebuffer &target)const;
-  palette const &colours()const{return speech?speech_palette:menu->current_palette();}
+  palette const &colours()const{return cinematic?cinematic->colours():speech?speech_palette:menu->current_palette();}
 };
 }

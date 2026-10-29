@@ -68,6 +68,7 @@ add_library(earthsiege_core
   src/resources/shell_speech.cpp
   src/render/shell_caption.cpp
   src/render/shell_speech_scene.cpp
+  src/render/shell_cinematic.cpp
   src/resources/portrait_sync.cpp
   src/render/radio_banner.cpp
   src/shell/radio_controller.cpp
@@ -1091,4 +1092,16 @@ if(BUILD_TESTING)
   add_executable(shell_cinematics_test tests/shell_cinematics_test.cpp)
   target_link_libraries(shell_cinematics_test PRIVATE earthsiege_core)
   add_test(NAME shell_cinematics COMMAND shell_cinematics_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_cinematics.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_mechanic_test tests/shell_mechanic_test.cpp)
+  target_link_libraries(shell_mechanic_test PRIVATE earthsiege_core)
+  add_test(NAME shell_mechanic COMMAND shell_mechanic_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_mechanic.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(game_shell_cinematics_test tests/game_shell_cinematics_test.cpp)
+  target_link_libraries(game_shell_cinematics_test PRIVATE earthsiege_core)
+  add_test(NAME game_shell_cinematics COMMAND game_shell_cinematics_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/build)
 endif()

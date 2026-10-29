@@ -12,7 +12,7 @@ struct temporary_saves {
  ~temporary_saves(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}
 };
 void skip_speech(game_shell &shell){for(unsigned i{};shell.presentation_active()&&i<64;++i)shell.key(1);require(!shell.presentation_active(),"speech skip terminates");}
-void click(game_shell &shell,uint16_t action){auto c{shell.current_dialog().find(action)};require(c&&c->enabled,"click target enabled");int x{(c->bounds.left+c->bounds.right)/2},y{(c->bounds.top+c->bounds.bottom)/2};shell.mouse_down(x,y);shell.mouse_up(x,y);skip_speech(shell);}
+void click(game_shell &shell,uint16_t action){auto c{shell.current_dialog().find(action)};if(!c||!c->enabled){std::cerr<<"click "<<action<<" on screen "<<shell.screen()<<"\n";throw std::runtime_error{"click target enabled"};}int x{(c->bounds.left+c->bounds.right)/2},y{(c->bounds.top+c->bounds.bottom)/2};shell.mouse_down(x,y);shell.mouse_up(x,y);skip_speech(shell);}
 void screen(game_shell const &shell,unsigned expected){if(shell.screen()!=expected){std::cerr<<"screen "<<shell.screen()<<" expected "<<expected<<'\n';throw std::runtime_error{"screen transition"};}framebuffer f;shell.draw(f);require(std::ranges::any_of(f.pixels(),[](uint8_t v){return v!=0;}),"screen draws");}
 }
 int main(int argc,char **argv)try{
@@ -69,7 +69,7 @@ int main(int argc,char **argv)try{
  click(shell,1610);click(shell,2004);click(shell,100);screen(shell,1700);
  require(shell.state().crew().crew[0].hangar_slot==crew_before.crew[1].hangar_slot,"crew accept retains swap");
 
- click(shell,100);auto mission{shell.launch()};auto result{mission->results()};auto counters{mission->mission_variables()};result.grade=1;result.recovery+=60000;for(auto &c:result.crew){c.condition.armour.fill(60);c.condition.internal.fill(70);c.condition.internal[9]=100;c.condition.equipment.fill(55);}shell.mission_return(result,counters,13);screen(shell,1520);require(shell.state().crew().missions==1,"return advances career");
+ click(shell,100);auto mission{shell.launch()};auto result{mission->results()};auto counters{mission->mission_variables()};result.grade=1;result.recovery+=60000;for(auto &c:result.crew){c.condition.armour.fill(60);c.condition.internal.fill(70);c.condition.internal[9]=100;c.condition.equipment.fill(55);}shell.mission_return(result,counters,13);skip_speech(shell);screen(shell,1520);require(shell.state().crew().missions==1,"return advances career");
 
  click(shell,1710);screen(shell,1710);click(shell,1900);screen(shell,1900);
  auto repair_slot{shell.state().roster().selected};auto repair_before{*shell.state().roster().find(repair_slot)};auto repair_budget{shell.state().crew().budget};
@@ -96,7 +96,7 @@ int main(int argc,char **argv)try{
  require(shell.state().roster().hercs.size()==build_count&&shell.state().crew().budget==build_budget,"immediate cancellation returns construction allocation");
  click(shell,2001);click(shell,1710);screen(shell,1710);click(shell,1000);screen(shell,1000);
 
- game_shell reopened{resources,root.path,23};require(reopened.current_dialog().find(1700)->enabled,"resume survives restart");click(reopened,1700);screen(reopened,1710);require(reopened.state().crew().missions==1,"original save loaded");require(reopened.state().roster().construction_remaining==1,"construction survives reload");click(reopened,1499);screen(reopened,1700);require(reopened.state().crew().step==1,"next mission advances step");require(reopened.state().mission_name()!=name,"next mission differs");
+ game_shell reopened{resources,root.path,23};require(reopened.current_dialog().find(1700)->enabled,"resume survives restart");click(reopened,1700);screen(reopened,1710);require(reopened.state().crew().missions==1,"original save loaded");require(reopened.state().roster().construction_remaining==1,"construction survives reload");click(reopened,1499);screen(reopened,1500);require(reopened.state().crew().step==1,"next mission advances step");require(reopened.state().mission_name()!=name,"next mission differs");click(reopened,1700);
  click(reopened,1000);click(reopened,1200);click(reopened,1220);screen(reopened,1220);click(reopened,1221);require(reopened.state().career().career.states[2].valid,"manual backup stored");
  click(reopened,1222);require(reopened.state().crew().step==1,"manual backup restored");
  // Resume genuine save-format careers into each original validation path.
@@ -123,7 +123,7 @@ int main(int argc,char **argv)try{
    click(guarded,1499);screen(guarded,7770);click(guarded,99);screen(guarded,1710);require(guarded.state().crew().step==c.step,"disabled player leaves mission unchanged");
   }else if(scenario==3){
    click(guarded,1499);screen(guarded,7771);guarded.key(1);screen(guarded,1710);require(guarded.state().crew().step==c.step,"disabled wingmate cancel");
-   click(guarded,1499);click(guarded,1499);screen(guarded,1700);require(guarded.state().crew().step!=c.step,"disabled wingmate proceed");
+   click(guarded,1499);click(guarded,1499);screen(guarded,1500);require(guarded.state().crew().step!=c.step,"disabled wingmate proceed");
   }else{
    click(guarded,2000);screen(guarded,7772);click(guarded,99);screen(guarded,1710);require(guarded.state().roster().construction_slot==-1,"full hangar cannot reserve construction");
   }

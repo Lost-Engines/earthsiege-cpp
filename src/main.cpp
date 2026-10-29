@@ -102,6 +102,7 @@ auto main(int argc, char *argv[])->int try {
   std::filesystem::path screenshot,save_directory;
   bool list{};
   bool headless{};
+  bool skip_intro{};
   unsigned int scale{};
   std::optional<unsigned int> inspect_demo;
   unsigned int frame_limit{};
@@ -115,6 +116,7 @@ auto main(int argc, char *argv[])->int try {
         "  --scale N             Integer window scale (default: largest fit)\n"
         "  --screenshot PATH     Save an unscaled PPM frame\n"
         "  --frames N            Exit after N frames\n"
+        "  --skip-intro          Skip opening and pilot-death cinematics (original -a)\n"
         "  --headless            Render a frame without creating a window\n"
         "  --list-resources      Print all original resource sizes and CRCs\n";
       return EXIT_SUCCESS;
@@ -125,6 +127,7 @@ auto main(int argc, char *argv[])->int try {
     else if(argument == "--inspect-demo" && index + 1 < argc) inspect_demo = integer_option(argv[++index]);
     else if(argument == "--scale" && index + 1 < argc) scale = integer_option(argv[++index]);
     else if(argument == "--frames" && index + 1 < argc) frame_limit = integer_option(argv[++index]);
+    else if(argument == "--skip-intro") skip_intro=true;
     else if(argument == "--headless") headless = true;
     else if(argument == "--list-resources") list = true;
     else throw std::runtime_error{"unknown or incomplete option: " + std::string{argument}};
@@ -144,6 +147,7 @@ auto main(int argc, char *argv[])->int try {
     save_directory=path;SDL_free(path);
   }
   earthsiege::game_shell menu{resources,save_directory,static_cast<int>(std::time(nullptr)&127)};
+  if(!inspect_demo)menu.startup(!skip_intro);
   std::unique_ptr<earthsiege::mission_alert> alert;
   earthsiege::framebuffer alert_frame;
   earthsiege::framebuffer menu_frame;
@@ -207,7 +211,7 @@ auto main(int argc, char *argv[])->int try {
       if(event.type==SDL_TEXTINPUT && !scene){menu.text_input(event.text.text);continue;}
       if(event.type == SDL_KEYDOWN && !event.key.repeat) {
         auto const key{event.key.keysym.sym};
-        if(!scene){if(auto scan{command(key,false,false)})menu.key(static_cast<uint8_t>(*scan));}
+        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{command(key,false,false)})menu.key(static_cast<uint8_t>(*scan));}
         else if(focused) {
           if(key==SDLK_ESCAPE && inspect_demo){scene.reset();if(sound)sound->clear();continue;}
           if((key==SDLK_ESCAPE || key==SDLK_q) && (event.key.keysym.mod&KMOD_CTRL)){open_alert(1);continue;}

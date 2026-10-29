@@ -1,11 +1,19 @@
 #pragma once
+#include <functional>
 #include "shell/mission_launch.h"
 #include "resources/campaign.h"
 #include "resources/mission_text.h"
 #include "simulation/mission_session.h"
 namespace earthsiege {
 /// Owns the GO-to-DBSIM handoff independently of windows and host files.
+struct return_presentation {
+ int16_t condition{},deaths{},continuation{};
+ int32_t recovery{};
+ bool technology{},alive{};
+};
 class game_state {
+ return_presentation returned_;
+
   resource_store const &resources;
   random_state random;
   std::optional<campaign_start> career_;
@@ -20,6 +28,7 @@ class game_state {
   void prepare(std::string name,mission_options const &options);
 public:
   explicit game_state(resource_store const &resources,int seed=17);
+  return_presentation const &returned()const{return returned_;}
   bool campaign() const{return campaign_;}
   bool ready() const{return prepared_.has_value();}
   bool has_career() const{return career_.has_value();}
@@ -47,6 +56,6 @@ public:
   std::unique_ptr<mission_session> launch();
   /// GO is a fresh process after flight: restore its saved career and RNG.
   void resume_shell(int16_t seed,std::optional<campaign_start> saved={});
-  void complete(mission_results const &results,mission_counters const &counters);
+  void complete(mission_results const &results,mission_counters const &counters,std::function<void()> const &before_repair={});
 };
 }

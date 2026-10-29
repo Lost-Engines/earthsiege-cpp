@@ -961,3 +961,30 @@ explicit setup; palette computation and completed pages remain independently
 compared. Live cinematic owners and hardware-dependent retrace pacing follow.
 
 Full rebuild: all 207 CTest checks pass (19.36 seconds).
+
+
+### Live cinematic and campaign-return owners
+
+Opening logos/story, chapter travel, pilot death, victory and defeat now run in
+the native shell with their original scripts and music choices. Input skips a
+segment; skipping Dynamix also suppresses LEAD_IN, while IINTRO and EARTH_W still
+run. --skip-intro matches the original -a boundary: opening and pilot death only.
+The terminal Earth loop waits for input. Next Mission uses commander briefing
+within a chapter, or mechanic/general/travel at the next chapter boundary.
+
+Campaign return selects the mechanic's chain before automatic repairs, using
+HERC condition, new technology, recovery and crew deaths. All 648 original
+selections match the complete RNG state, including the one-choice technology
+random draw. Zero-condition primary entry -1 is safely omitted. The new live
+flow check covers natural opening completion, skip boundaries, ordinary return,
+death, both campaign endings and a chapter transition. Original-format saves
+remain isolated in the test's temporary directory.
+
+The current host presents intermediate palette submissions at nominal 60 Hz.
+Original VGA routine 0x70130 only waits until already inside retrace, allowing
+multiple submissions per refresh depending on CPU speed. No wall-clock fade
+parity is claimed yet. Bay residents during speech, general monitor transitions,
+main-menu ANM playback and full owner scheduling remain separate work.
+
+Full rebuild: all 209 CTest checks pass (20.06 seconds). Opening, chapter-travel
+and damaged-HERC mechanic-return screenshots were inspected.

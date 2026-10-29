@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include "simulation/random_state.h"
 #include <string>
 #include <vector>
@@ -14,4 +15,5 @@ std::vector<uint16_t> chapter_introduction(int chapter);
 /// GO 0x37edd. For mode 2 entry is the introduction ordinal; for mode 7 it
 /// is the mechanic line selected by the return owner.
 speech_selection select_shell_speech(int mode,int chapter,int entry,int grade,int kind,bool experienced,random_state &);
+std::array<int16_t,3> select_mechanic_return(int condition,bool technology,int32_t recovery,int deaths,random_state &random);
 }
