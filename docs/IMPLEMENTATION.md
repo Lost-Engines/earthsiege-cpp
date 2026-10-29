@@ -872,3 +872,17 @@ Full rebuild: all 196 CTest checks pass (20.84 seconds). The live cockpit
 smoke capture also renders the horizon through its original aperture.
 
 Full rebuild: all 198 CTest checks pass (20.74 seconds).
+
+### Cloud and ground-mark integration
+
+Native missions draw clouds and procedural marks between the horizon and
+scenery, using the original detail preference bytes and shared visual RNG.
+Cloud initialization consumes eight inherited ring offsets even though its
+derived distance callback is empty. Wind moves active clouds once per draw;
+all slots recycle with hysteresis. Only active ground marks recycle, and detail
+>= 240 retains their prior anchor/count. Both fields initialize at zero detail.
+
+All 224 ground-mark frames match every pixel, point, anchor, count and RNG word.
+All 144 cloud frames / 501 draws also match complete fields and pixels, including
+both cloud faces and cockpit masks. All 198 tests pass. High-detail ground and
+combined-layer comparisons continue; original frame scheduling remains separate.

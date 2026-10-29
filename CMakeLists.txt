@@ -222,6 +222,10 @@ add_library(earthsiege_core
   src/resources/weapon_mounts.h
   src/simulation/actor_placement.cpp
   src/simulation/actor_placement.h
+  src/render/clouds.cpp
+  src/render/clouds.h
+  src/render/ground_marks.cpp
+  src/render/ground_marks.h
   src/render/panorama.cpp
   src/render/panorama.h
   src/render/background_bands.cpp
@@ -1017,4 +1021,13 @@ if(BUILD_TESTING)
   add_executable(cockpit_panorama_test tests/cockpit_panorama_test.cpp)
   target_link_libraries(cockpit_panorama_test PRIVATE earthsiege_core)
   add_test(NAME cockpit_panorama COMMAND cockpit_panorama_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_panorama.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(ground_marks_test tests/ground_marks_test.cpp)
+  target_link_libraries(ground_marks_test PRIVATE earthsiege_core)
+  add_test(NAME ground_marks COMMAND ground_marks_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/ground_marks.bin)
+  add_executable(clouds_test tests/clouds_test.cpp)
+  target_link_libraries(clouds_test PRIVATE earthsiege_core)
+  add_test(NAME clouds COMMAND clouds_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/clouds.bin)
 endif()

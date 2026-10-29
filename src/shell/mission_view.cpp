@@ -42,6 +42,8 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     clock{resources, cockpit.layout},
     lamps{resources, "simvol0", "ttm/" + read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())) + ".TTM"},
     display_colours{session->scenery().colours()},
+    clouds{session->scenery().environment(),read_bitmaps(resources.read("simvol0","dba/"+session->scenery().environment().resource_names[1]+".DBA"))},
+    marks{session->scenery().environment()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
   auto const &horizon{session->scenery().environment().resource_names[0]};
@@ -237,6 +239,8 @@ void mission_view::draw() {
     auto const bands{make_background_bands(session->scenery().environment(), background)};
     draw_background_bands(frame, bands, background.bounds);
     if(panorama_enabled) draw_panorama(frame,horizon_images,place_panorama(horizon_images,bands,background,camera.angles.z,session->scenery().environment().background.horizon_offset),background.bounds);
+    clouds.draw(frame,camera.position,camera.angles,view.projection,view.bounds,cloud_detail,ui_random);
+    marks.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ground_detail,ui_random);
     auto const objects{session->visible_objects(!inside)};
     auto &effects{session->visual_effects()};
     auto const ground{effects.ground_flashes()};
