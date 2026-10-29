@@ -10,6 +10,8 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/shell/control_settings.cpp
+  src/render/control_settings_artwork.cpp
   src/render/shell_statistics.cpp
   src/render/shell_door.cpp
   src/resources/lpf_animation.cpp
@@ -1148,4 +1150,13 @@ if(BUILD_TESTING)
   add_executable(shell_single_return_test tests/shell_single_return_test.cpp)
   target_link_libraries(shell_single_return_test PRIVATE earthsiege_core)
   add_test(NAME shell_single_return COMMAND shell_single_return_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_single_return.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(control_settings_test tests/control_settings_test.cpp)
+  target_link_libraries(control_settings_test PRIVATE earthsiege_core)
+  add_test(NAME control_settings COMMAND control_settings_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/control_settings.bin)
+  add_executable(control_settings_raster_test tests/control_settings_raster_test.cpp)
+  target_link_libraries(control_settings_raster_test PRIVATE earthsiege_core)
+  add_test(NAME control_settings_raster COMMAND control_settings_raster_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/control_settings_raster.bin)
 endif()

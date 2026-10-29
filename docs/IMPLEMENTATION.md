@@ -1086,3 +1086,12 @@ mission counters, casualties and squad totals. The full suite passed 215 checks;
 the initial fixture-file mistake was corrected, and all three affected checks
 (including the 216th check and live menu/history assertions) subsequently pass.
 Original capture scripts and browseable panels are in earthsiege-reverse.
+
+### Controls dialog reference port
+
+The standalone GO controls policy now matches 36 original sequences and all
+1,944 option changes, including reverse cycling, remembered joystick mode,
+two-stick/pedal exclusion, calibration-time persistence and Done committing
+preferences. The original CTL_ALRT resources render identically in 72 complete
+dialog raster comparisons. These checks isolate the dialog from physical
+devices and the host pointer. Live device integration follows separately.
