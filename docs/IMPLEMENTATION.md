@@ -870,3 +870,5 @@ original unbounded loop.
 
 Full rebuild: all 196 CTest checks pass (20.84 seconds). The live cockpit
 smoke capture also renders the horizon through its original aperture.
+
+Full rebuild: all 198 CTest checks pass (20.74 seconds).
