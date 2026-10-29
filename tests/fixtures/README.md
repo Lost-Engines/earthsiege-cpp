@@ -472,3 +472,8 @@ These are direct portable exports from the corresponding `capture_wingmate_order
 sibling analysis repository.
 
 `hmp.bin` imports original HMI timer packet captures (0x7ef95), including generated branch/program/controller restoration packets, source offsets, routing tables and the twenty source resources. `native_music.py` supplies device IDs and a MIDI sink; the scheduler itself executes original instructions. Delta values were independently compared with 0x6ed60 by `check_music.py`. Import with `tools/import_music_fixtures.py ../earthsiege-reverse/analysis`.
+
+`fm_driver.bin` comes from `capture_fm_driver.py`: both original HMI FM modules,
+16,276 MIDI operations, 223,115 ordered OPL register writes and retained channel,
+voice and sustain-queue state. All programs/drum notes, stealing, pitch range,
+stereo pan and sustain overflow are covered. No chip/analogue equivalence is implied.

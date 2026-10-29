@@ -8,6 +8,7 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/audio/hmi_fm.cpp
   src/simulation/footsteps.cpp
   src/resources/hmp.cpp
   src/audio/hmp_player.cpp
@@ -737,4 +738,10 @@ if(BUILD_TESTING)
   add_executable(hmp_test tests/hmp_test.cpp)
   target_link_libraries(hmp_test PRIVATE earthsiege_core)
   add_test(NAME hmp COMMAND hmp_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hmp.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(hmi_fm_test tests/hmi_fm_test.cpp)
+  target_link_libraries(hmi_fm_test PRIVATE earthsiege_core)
+  add_test(NAME hmi_fm COMMAND hmi_fm_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fm_driver.bin)
 endif()

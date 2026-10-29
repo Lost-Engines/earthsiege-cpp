@@ -597,3 +597,10 @@ The native mission also consumes original yaw/pitch servo requests at each aim u
 ### Native HMP scheduler
 
 The resource reader and timer scheduler match all 103,958 original event deltas, all 80 device-routing fixtures (1,020 track routes), and all 169,947 timed MIDI packets across 20 songs. The comparisons include source offsets and generated branch-restoration packets. Per-track elapsed clocks reset after each event; global loops rebase active tracks in the original order, restoring their programs/controllers. All supplied songs use explicit status bytes and only end-of-track meta events. Unused system/meta forms and zero-time infinite loops fail explicitly; game-installed branch callbacks and the HMI library's separate fade API are outside this scheduler's current scope. The game does not install those branch callbacks and uses its own music fade control.
+
+The HMI OPL2/OPL3 MIDI drivers are now native register-level implementations,
+verified against 16,276 original commands and 223,115 register writes. This
+includes the nine paired OPL3 voices, original bank conversion, sustain queue,
+allocation, controller and pitch-bend differences. The original release-cache
+overlap with frequency registers is preserved. Chip synthesis and the music
+owner still need integration; this does not yet make live mission music available.

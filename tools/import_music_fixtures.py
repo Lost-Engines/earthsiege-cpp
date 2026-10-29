@@ -19,3 +19,5 @@ for row in checks['cases']:
    wire=bytes.fromhex(event['wire']);out+=struct.pack('<IIiH',event['tick'],event['device'],event['source_offset']if event['source_offset']is not None else -1,len(wire))+wire
   packets+=len(native['packets'])
 (root/'tests/fixtures/hmp.bin').write_bytes(out);print(len(checks['cases']),'songs,',packets,'original scheduler packets')
+
+(root/"tests/fixtures/fm_driver.bin").write_bytes((music/"fm-driver.bin").read_bytes())
