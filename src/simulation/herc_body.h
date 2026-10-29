@@ -7,6 +7,7 @@
 #include "simulation/animation_rig.h"
 #include "simulation/locomotion.h"
 #include "simulation/footsteps.h"
+#include "simulation/sound_request.h"
 #include "simulation/weapon_assembly.h"
 
 namespace earthsiege {
@@ -24,6 +25,7 @@ struct herc_controls {
 /// Own one HERC's movement, aiming, articulated state and mounted geometry
 class herc_body {
   herc_definition const &source;
+  sound_sink sounds;
   animation_rig rig;
   weapon_assembly armament;
   locomotion_state movement_state;
@@ -38,7 +40,7 @@ class herc_body {
   std::optional<size_t> elevation_channel;
 
 public:
-  herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles);
+  herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, sound_sink sounds = {});
   void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   void mark_collapsed();
   void apply_damage(damage_consequences const &consequences);

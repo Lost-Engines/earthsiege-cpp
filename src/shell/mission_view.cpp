@@ -42,6 +42,7 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
     camera{session->make_camera(camera_mode::attached)} {
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
+  audio.play(19);
   clock.refresh();
   lamps.advance(0);
   instruments.add_slider(throttle.slider_layout(), 0);
@@ -140,6 +141,7 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
 
 void mission_view::step(bool const control, bool const zoom) {
   audio.advance();
+  audio.engine(camera.mode != camera_mode::attached);
   if(paused) { pointer_events.clear(); return; }
   // The original 120 Hz timer invokes both UI clocks every second callback.
   // Accumulate the nominal 60 Hz ticks separately from the 40 Hz physics loop.

@@ -22,13 +22,27 @@ void mission_audio::update_gain(size_t const id){
 }
 void mission_audio::position(size_t const id,vec3<int32_t> const &where){positions.at(id)=where;positioned[id]=true;update_gain(id);}
 void mission_audio::dispatch(sound_request const &request,vec3<int32_t> const &origin){
-  switch(request.action){
-    case sound_action::play:play(request.id);break;
-    case sound_action::positioned:play_at(request.id,request.position);break;
-    case sound_action::stop:stop(request.id);break;
-    case sound_action::continuous:if(playing(request.id))submit_position(request.id,request.position,origin);else play_at(request.id,request.position);break;
+  if(auto const *sample{std::get_if<sample_sound_request>(&request)}){
+    switch(sample->action){
+      case sound_action::play:play(sample->id);break;
+      case sound_action::positioned:play_at(sample->id,sample->position);break;
+      case sound_action::stop:stop(sample->id);break;
+      case sound_action::continuous:if(playing(sample->id))submit_position(sample->id,sample->position,origin);else play_at(sample->id,sample->position);break;
+    }
+  }else if(auto const *servo{std::get_if<servo_sound_request>(&request)}){
+    if(auto const action{advance_servo_sound(servos.at(servo->axis),servo->control,servo->angle,playing(33))}){
+      if(*action==sound_action::stop)stop(33);else play(33);
+    }
+  }else if(auto const *target{std::get_if<target_sound_request>(&request)}){
+    if(auto const id{advance_target_sound(target_tone,target->locked,target->changed,static_cast<uint32_t>(ticks/2))})play(*id);
   }
 }
+void mission_audio::engine(bool const external_view){
+  if(auto const action{engine_sound_gate(external_view,playing(45),playing(19))}){
+    if(*action==sound_action::stop)stop(45);else play(45);
+  }
+}
+
 bool mission_audio::play(size_t const id){return bank.play(id);}
 bool mission_audio::play_at(size_t const id,vec3<int32_t> const &where){position(id,where);return play(id);}
 bool mission_audio::speech(std::string_view const path){

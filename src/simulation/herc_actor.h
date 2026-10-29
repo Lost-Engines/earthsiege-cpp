@@ -33,7 +33,7 @@ class herc_actor {
   vec3<int32_t> section_position(size_t section, bool radial) const;
 
 public:
-  herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<int16_t const> weapon_values = {});
+  herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<int16_t const> weapon_values = {}, sound_sink sounds = {});
   herc_actor(herc_actor const &) = delete;
   herc_actor(herc_actor &&) = delete;
   herc_actor &operator=(herc_actor const &) = delete;

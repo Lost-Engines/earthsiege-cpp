@@ -44,7 +44,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     // unresolved actor's original sentinel position. Place the complete roster later.
     crew_member member{
       .definition{definition.get()},
-      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, equipment, position, angles, values)},
+      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, equipment, position, angles, values, actor.player_controlled ? sound_sink{[this](auto const &event){sound_requests.push_back(event);}} : sound_sink{})},
       .attachments{}, .source{actor.source}, .group{actor.group}, .side{placements.groups.at(actor.group).mode},
       .waiting{script.groups.at(actor.group).trigger >= 0}, .player_roster{actor.player_roster},
       .pilot_slot{actor.player_roster ? std::optional<int16_t>{roster.hercs.at(actor.source-script.hercs.size()).slot} : std::nullopt},
@@ -195,7 +195,7 @@ bool mission_session::player_command(uint16_t const code) {
   if(code >= 2 && code <= 10) return player_weapons->click_control(code - 2, false); // 1..9
   if(code == 14) input_router.request_centre();                             // Backspace
   else if(code == 15) cycle_target();                                       // Tab; view-specific gating belongs to the cockpit
-  else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; sound_requests.emplace_back(sound_action::play,actor.impacts().detectable ? 26 : 27); }
+  else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; sound_requests.push_back(sample_sound_request{sound_action::play,static_cast<uint16_t>(actor.impacts().detectable ? 26 : 27)}); }
   else return false;
   return true;
 }

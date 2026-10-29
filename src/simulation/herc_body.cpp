@@ -10,8 +10,8 @@
 
 namespace earthsiege {
 
-herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> const equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles)
-  : source{definition}, rig{std::get<shape_part>(definition.models.roots.front().content)}, armament{definition.models.roots.front(), definition.mounts, equipment, weapons, templates}, movement_state{.position{vec3<int32_t>{position}}, .angles{vec3<uint16_t>{angles}}} {
+herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> const equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, sound_sink sink)
+  : source{definition}, sounds{std::move(sink)}, rig{std::get<shape_part>(definition.models.roots.front().content)}, armament{definition.models.roots.front(), definition.mounts, equipment, weapons, templates}, movement_state{.position{vec3<int32_t>{position}}, .angles{vec3<uint16_t>{angles}}} {
   body_channel = rig.add_channel(source.profile.movement.forward_stop_sequence);
   if(source.profile.torso.sequence >= 0) torso_channel = rig.add_channel(source.profile.torso.sequence);
   if(source.profile.elevation.sequence >= 0) elevation_channel = rig.add_channel(source.profile.elevation.sequence);
@@ -73,7 +73,9 @@ void herc_body::prepare_requested(int16_t const speed, int16_t const steering, f
 
 void herc_body::prepare_aim(vec2<int16_t> const &aim, frame_ratio const ratio) {
   update_aim(torso_state, source.profile.torso, aim.x, ratio);
+  if(sounds) sounds(servo_sound_request{0,aim.x,torso_state.angle});
   update_aim(elevation_state, source.profile.elevation, aim.y, ratio);
+  if(sounds) sounds(servo_sound_request{1,aim.y,elevation_state.angle});
   if(torso_channel) rig.channel(*torso_channel).set_phase(source.profile.torso.sequence, static_cast<int16_t>(static_cast<uint16_t>(torso_state.angle) >> 2));
   if(elevation_channel) rig.channel(*elevation_channel).set_phase(source.profile.elevation.sequence, static_cast<int16_t>(static_cast<uint16_t>(elevation_state.angle) >> 2));
 }

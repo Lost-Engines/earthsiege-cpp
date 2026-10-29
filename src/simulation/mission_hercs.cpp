@@ -47,7 +47,7 @@ void mission_session::resume_herc_orders(size_t const index) {
 }
 void mission_session::movement_event_received(size_t const index, movement_event const event) {
   if(event == movement_event::collapsed) crew[index].actor->random_damage(120, 150, random, damage_events(index));
-  sound_requests.emplace_back(sound_action::positioned,event == movement_event::collapsed ? 41 : 30,crew[index].actor->body().movement().position);
+  sound_requests.push_back(sample_sound_request{sound_action::positioned,static_cast<uint16_t>(event == movement_event::collapsed ? 41 : 30),crew[index].actor->body().movement().position});
 }
 void mission_session::move_herc(size_t const index, movement_request const &request, frame_ratio const ratio) {
   auto &member{crew.at(index)}; auto &actor{*member.actor};
@@ -100,7 +100,7 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
   auto &member{crew.at(index)}; auto &actor{*member.actor};
   if(ramming) {
     actor.advance(ratio);
-    if(index == player_index) for(auto const id:actor.footstep_sounds()) sound_requests.emplace_back(sound_action::positioned,id,actor.body().movement().position);
+    if(index == player_index) for(auto const id:actor.footstep_sounds()) sound_requests.push_back(sample_sound_request{sound_action::positioned,id,actor.body().movement().position});
     if(contact_herc(index) || member.contact_received) {
       auto const centre{actor.body().movement().position};
       for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && distance(centre, crew[i].actor->body().movement().position) < 3000)
@@ -114,9 +114,9 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
     if(index != player_index) {
       member.collision_bias = static_cast<int16_t>((random.next() & 1) ? -5000 : 5000);
       actor.recover_from_collision(20000, actor.body().movement().gait_rate > 0);
-    } else sound_requests.emplace_back(sound_action::play,41);
+    } else sound_requests.push_back(sample_sound_request{sound_action::play,41});
   });
-  if(index == player_index) for(auto const id:actor.footstep_sounds()) sound_requests.emplace_back(sound_action::positioned,id,actor.body().movement().position);
+  if(index == player_index) for(auto const id:actor.footstep_sounds()) sound_requests.push_back(sample_sound_request{sound_action::positioned,id,actor.body().movement().position});
 }
 
 void mission_session::damage_consequences_changed(size_t const index, damage_consequences const &previous, damage_consequences const &current) {
@@ -290,7 +290,8 @@ void mission_session::update_herc_sensors(size_t const index, frame_ratio const 
     input.target = herc_sensor_target{vec3<int32_t>{observations[target].position}, target < crew.size(), observations[target].detectable, target < crew.size() && crew[target].sensors.ecm_active};
   }
   advance_herc_sensors(member.sensors, actor.impacts(), relationship.changed, input, ratio, random,
-    [&]{activity->actor(relationship.selected.value()).awareness.event_busy = true;});
+    [&]{activity->actor(relationship.selected.value()).awareness.event_busy = true;},
+    [&]{sound_requests.push_back(target_sound_request{member.sensors.hud_locked,relationship.changed});});
 }
 
 void mission_session::dispatch_herc(size_t const index, frame_ratio const ratio) {

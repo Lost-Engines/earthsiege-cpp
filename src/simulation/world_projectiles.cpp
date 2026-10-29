@@ -21,10 +21,10 @@ std::optional<size_t> world_projectiles::launch(projectile_owner const owner, we
   if(shot.kind == shot_kind::beam) {
     // A beam applies its impact before trying to allocate its visible ribbon.
     auto const path{dispatch_beam(shot, definitions, [&](impact_request const &request){ return hit ? hit(owner, request) : std::nullopt; })};
-    if(projectiles.available() == 0) { if(sounds) sounds({sound_action::positioned,11,shot.muzzle.position}); return std::nullopt; }
+    if(projectiles.available() == 0) { if(sounds) sounds(sample_sound_request{sound_action::positioned,11,shot.muzzle.position}); return std::nullopt; }
     auto const slot{projectiles.emplace(owner, make_beam_effect(definitions.projectiles.at(shot.projectile).subtype, path, random))};
     retained_rocket_clocks[*slot] = 0;
-    if(sounds) sounds({sound_action::positioned,11,shot.muzzle.position});
+    if(sounds) sounds(sample_sound_request{sound_action::positioned,11,shot.muzzle.position});
     return slot;
   }
   // The original bullet/rocket wrappers dereference a failed allocation. Keep
@@ -34,7 +34,7 @@ std::optional<size_t> world_projectiles::launch(projectile_owner const owner, we
   auto const created{projectiles.emplace(owner, shot, definitions, motions, bullet_models, rocket_models, retained_rocket_clocks[*slot])};
   auto const subtype{static_cast<size_t>(definitions.projectiles.at(shot.projectile).subtype)};
   auto const noise{shot.kind == shot_kind::rocket ? motions.rockets.at(subtype).shot_noise : motions.bullets.at(subtype).shot_noise};
-  if(sounds) sounds({sound_action::positioned,static_cast<uint16_t>(noise+10),shot.muzzle.position});
+  if(sounds) sounds(sample_sound_request{sound_action::positioned,static_cast<uint16_t>(noise+10),shot.muzzle.position});
   return created;
 }
 

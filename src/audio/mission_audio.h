@@ -1,5 +1,6 @@
 #pragma once
 #include "audio/pcm_mixer.h"
+#include "audio/audio_controls.h"
 #include "audio/spatial_audio.h"
 #include "resources/resource_store.h"
 #include "simulation/sound_request.h"
@@ -11,6 +12,8 @@ class mission_audio {
   pcm_sound_bank bank;
   pcm_mixer mixer{bank};
   sound_sources sources;
+  std::array<servo_sound_state,2> servos;
+  target_sound_state target_tone;
   std::array<vec3<int32_t>,60> positions{};
   std::array<bool,60> positioned{};
   uint64_t ticks{},sample_frames{};
@@ -21,6 +24,7 @@ class mission_audio {
 public:
   explicit mission_audio(resource_store const &resources);
   void dispatch(sound_request const &request, vec3<int32_t> const &listener);
+  void engine(bool external_view);
   bool play(size_t id);
   bool play_at(size_t id,vec3<int32_t> const &where);
   bool speech(std::string_view path);

@@ -28,4 +28,4 @@ buffered completion. The original positional-volume query divides by zero if
 queried while the master gain is zero; this reconstruction returns zero in that
 case. Unused, manually supplied sample-loop ranges are bounded to their data.
 
-Mission inspection now plays the original PCM effects and wingmate speech through SDL audio. Firing, explosions, radar switches, flyer engines and authored player footsteps use their original triggers and distance/pan rules. Music and the remaining cockpit sound controllers are still being integrated.
+Mission inspection now plays the original PCM effects and wingmate speech through SDL audio. Firing, explosions, radar switches, flyer engines and authored player footsteps use their original triggers and distance/pan rules. Aiming servos, target-lock tones and the cockpit engine loop are connected too; music is still being integrated.

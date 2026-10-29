@@ -45,7 +45,7 @@ std::optional<size_t> world_effects::add_explosion(int16_t const selected, vec3<
       lighting.intensity(source, *effect.state.light_intensity);
     }
   }
-  if(sounds) sounds({sound_action::positioned,static_cast<uint16_t>(effect.state.sound),position});
+  if(sounds) sounds(sample_sound_request{sound_action::positioned,static_cast<uint16_t>(effect.state.sound),position});
   return slot;
 }
 

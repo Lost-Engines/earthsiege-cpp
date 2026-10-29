@@ -10,9 +10,9 @@
 
 namespace earthsiege {
 
-herc_actor::herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> const equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<int16_t const> const weapon_values)
+herc_actor::herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> const equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<int16_t const> const weapon_values, sound_sink sounds)
   : source{definition}, weapon_definitions{weapons}, loadout{assemble_herc_loadout(definition, equipment, weapons)},
-    body_state{definition, weapons, templates, equipment, position, angles},
+    body_state{definition, weapons, templates, equipment, position, angles, std::move(sounds)},
     components{loadout.damage, initial_herc_damage(loadout, body_state.model().cell_frames().size())},
     power_state{.reserve{herc_power_capacity}, .shields{static_cast<int16_t>(definition.profile.shield_capacity >> 1), static_cast<int16_t>(definition.profile.shield_capacity >> 1), shield_balance_one / 2, definition.profile.shield_capacity}},
     armament{weapons, templates, definition.mounts, equipment, weapon_values},

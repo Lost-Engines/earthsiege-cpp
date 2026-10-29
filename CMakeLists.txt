@@ -9,6 +9,7 @@ find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
   src/simulation/footsteps.cpp
+  src/audio/audio_controls.cpp
   src/audio/mission_audio.cpp
   src/audio/pcm_mixer.cpp
   src/audio/pcm_sound.cpp
@@ -722,4 +723,10 @@ if(BUILD_TESTING)
   add_executable(herc_steps_test tests/herc_steps_test.cpp)
   target_link_libraries(herc_steps_test PRIVATE earthsiege_core)
   add_test(NAME herc_steps COMMAND herc_steps_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/herc_steps.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(audio_controls_test tests/audio_controls_test.cpp)
+  target_link_libraries(audio_controls_test PRIVATE earthsiege_core)
+  add_test(NAME audio_controls COMMAND audio_controls_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/audio_controls.bin)
 endif()
