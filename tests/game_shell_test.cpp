@@ -21,6 +21,9 @@ int main(int argc,char **argv)try{
  click(shell,1100);screen(shell,1100);shell.key(80);require(shell.current_dialog().selection(1101)==1,"mission keyboard selection");
  click(shell,1110);screen(shell,1110);auto original{shell.settings().current()};click(shell,1111);require(shell.settings().current()[12]!=original[12],"single option changes");shell.key(1);screen(shell,1100);require(shell.settings().current()==original,"single cancel rolls back");
  click(shell,1501);screen(shell,1501);require(shell.state().ready()&&!shell.state().campaign(),"single mission prepared");click(shell,1800);screen(shell,1800);
+ auto idle_random{shell.state().random_snapshot()};
+ for(unsigned i{};i<240;++i)shell.advance(3);
+ require(idle_random.words!=shell.state().random_snapshot().words||idle_random.first!=shell.state().random_snapshot().first,"resident bay scripts advance in live shell");
  auto initial_slot{shell.state().roster().selected};auto const initial_herc{*shell.state().roster().find(initial_slot)};
  auto const old_weapon{initial_herc.weapons[0]};auto const old_count{shell.state().inventory()[static_cast<size_t>(old_weapon)].size()};
  armament_catalog catalog{resources};auto const &region{catalog.hotspots(initial_herc.chassis)[0]};
@@ -35,6 +38,9 @@ int main(int argc,char **argv)try{
  click(shell,100);screen(shell,1501);
  click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");shell.mission_return(single->results(),single->mission_variables());screen(shell,1510);
  click(shell,1000);click(shell,1200);screen(shell,1200);click(shell,1210);screen(shell,1210);shell.text_input("Test Pilot");click(shell,100);screen(shell,1700);require(shell.state().campaign(),"registered campaign");auto name{shell.state().mission_name()};
+ framebuffer bay_before;shell.draw(bay_before);bool moving{};
+ for(unsigned i{};i<600&&!moving;++i){shell.advance(3);framebuffer f;shell.draw(f);moving=f.pixels()!=bay_before.pixels();}
+ require(moving,"original workers animate in the service bay");
  auto crew_before{shell.state().crew()};
  click(shell,1610);screen(shell,1610);
  if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("crew-test.ppm");frame.save(path,shell.colours());}

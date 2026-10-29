@@ -27,6 +27,8 @@ public:
   mission_text const &text()const{return text_;}
   prepared_mission const &prepared()const{return prepared_.value();}
   player_roster const &player()const{return player_;}
+  random_state &presentation_random(){return random;}
+  int16_t mission_kind()const{return prepared_?prepared_->compiled.script.header.objective_kind:last_kind_;}
   random_state::state const &random_snapshot()const{return random.snapshot();}
   campaign_start const &career()const{return career_.value();}
   career_state &crew();

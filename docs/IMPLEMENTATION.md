@@ -783,3 +783,27 @@ original visible/background frame pairs agree across the eight chassis and
 condition boundaries. Overlay coordinates are signed 32-bit values after a
 signed 16-bit sprite index, a correction also made in the analysis catalogue.
 The five affected shell/animation regression checks pass.
+
+
+### Resident service-bay scene
+
+The live menus now run the 25 programs named by CFG/TM_FILES, retaining them
+while moving between bay screens. Worker assignments, elevator positions and
+construction changes match 128 original initializations and 512 subsequent
+changes, including every shared RNG word. Animations consume the same random
+stream as the original shell's later mission choices.
+
+The complete compositor matches 1,984 original visible/background frame pairs
+and all 25 interpreter states per frame. These include the eight completed HERCs
+and all 17 partial-construction stages, original body/equipment ordering,
+elevators, bay numbers, workers and welding. Static coordinate construction
+0x25090 is part of the reference setup. The capture supplies page restoration
+and excludes dialogs/sound; it is not a claim of whole-shell replay equivalence.
+
+GO 0x45d24 creates a PIT clock with divisor 0x26d3; the TTM callback is registered
+every two interrupts. Its approximately 60 Hz rate is confirmed in the original
+DOSBox snapshot, where all clock pointers name the same initialized object.
+The host supplies nominal 120 Hz timer ticks and advances bay programs every
+second tick. The seven affected native checks pass, including live menu motion,
+construction, save/reload and launch guards. Ambient playback, weapon preview
+rotation and the remaining presentation owners continue separately.

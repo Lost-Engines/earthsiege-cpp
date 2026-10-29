@@ -32,10 +32,33 @@ void game_shell::show(unsigned id){
   if(id==2000){build_menu.emplace(game.roster(),game.crew(),prices,build_chassis);refresh_construction();}
   if(id==1910)for(uint16_t i{};i<3;++i)menu->items(static_cast<uint16_t>(1914+i),{"",""},game.crew().repair_policy==i);
   if(id==4444)if(auto h{game.roster().find(game.roster().selected)})menu->replace_text("###",std::to_string(chassis_recovery(*h,prices)/1000));
+  if(id==2000&&bay_motion)bay_motion->construction(game.roster(),prices,game.presentation_random());
   if(id==1220){history_slots.clear();std::vector<std::string> labels;auto const &states{game.career().career.states};
     for(size_t i{1};i<states.size();++i)if(states[i].valid){history_slots.push_back(i);labels.push_back("MISSION "+std::to_string(states[i].missions));}
     menu->items(1223,std::move(labels));menu->enable(1222,!history_slots.empty());menu->enable(1230,!history_slots.empty());}
+  refresh_bay();
 }
+void game_shell::refresh_bay(){
+ if(warning_parent)return;
+ if(region(screen())!=4000){bay_motion.reset();displayed_hangar.clear();return;}
+ if(!bay_motion){
+  bay_backdrop.clear();bay_backdrop.image(read_bitmaps(resources.read("shell0","res32/regn4000.dbm")).front(),0,0);
+  bay_motion=std::make_unique<bay_scene>(resources);
+  bay_motion->reset(game.roster(),game.crew(),game.campaign(),game.mission_kind(),prices,game.presentation_random(),bay_backdrop);
+  displayed_hangar.clear();displayed_mount=-2;
+ }
+ auto current{write_hangar(game.roster())};auto const mount{screen()==1800?selected_mount:-1};
+ if(current!=displayed_hangar||mount!=displayed_mount){
+  bay_motion->redraw(game.roster(),bay,armament,mount,bay_backdrop,game.presentation_random());
+  displayed_hangar=std::move(current);displayed_mount=mount;
+ }
+}
+void game_shell::advance(unsigned timer_ticks){
+ if(warning_parent)return;
+ for(unsigned i{};i<timer_ticks;++i)if((++animation_ticks%2)==0&&bay_motion)
+  bay_motion->advance(1,game.presentation_random());
+}
+
 void game_shell::refresh_armament(std::optional<int16_t> wanted){
   auto const h{game.roster().find(game.roster().selected)};
   if(!h){menu->items(1808,{});menu->enable(1111,false);return;}
@@ -155,7 +178,8 @@ void game_shell::mission_return(mission_results const &result,mission_counters c
   game.resume_shell(return_seed,game.campaign()?std::optional{saves.load(careers.entries.at(static_cast<size_t>(careers.selected)))}:std::nullopt);
   game.complete(result,counters);save_career();show(game.campaign()?1520:1510);
 }
-void game_shell::action(uint16_t id){
+void game_shell::action(uint16_t id){action_impl(id);refresh_bay();}
+void game_shell::action_impl(uint16_t id){
   auto const current{screen()};
   switch(current){
     case 3333:case 7770:case 7772:
@@ -255,7 +279,11 @@ void game_shell::action(uint16_t id){
 
     case 2000:
       if(id==1710){save_career();build_chassis=build_menu->chassis();build_menu.reset();show(1710);return;}
-      if(id==2001)build_menu->activate(game.roster(),game.crew(),game.inventory(),armament);
+      if(id==2001){
+        bool const cancelling{build_menu->building(game.roster())};
+        build_menu->activate(game.roster(),game.crew(),game.inventory(),armament);
+        if(cancelling&&bay_motion)bay_motion->construction(game.roster(),prices,game.presentation_random());
+      }
       else if(id==2003||id==2004)build_menu->cycle(game.crew(),id==2004?1:-1);
       refresh_construction();return;
     case 1900:
@@ -312,7 +340,7 @@ void game_shell::mouse_up(int x,int y){
   auto previous{pressed_mount};pressed_mount.reset();
   if(previous&&screen()==1800){
     if(auto h{game.roster().find(game.roster().selected)})if(armament.hit(h->chassis,x,y)==previous){
-      selected_mount=*previous;missile_menu=false;refresh_armament();
+      selected_mount=*previous;missile_menu=false;refresh_armament();refresh_bay();
     }
     return;
   }
@@ -326,10 +354,10 @@ void game_shell::draw_text(framebuffer &target,std::string const &value,rectangl
 }
 void game_shell::draw(framebuffer &target)const{
   if(warning_parent){target=warning_frame;menu->draw(target,false);return;}
-  menu->draw(target);auto const current{screen()};
+  if(bay_motion){target=bay_motion->image();menu->draw(target,false);}else menu->draw(target);
+  auto const current{screen()};
   if(current==1800||((current==1700||current==1710||current==1900||current==1920||current==4444)&&game.has_career())){
-    if(auto h{game.roster().find(game.roster().selected)})bay.draw(target,*h,armament,current==1800?selected_mount:-1);
-    menu->draw(target,false);
+
     if(current==1800){
       int icon{-1};auto const selected{menu->selection(1808)};
       if(missile_menu)icon=14+selected;

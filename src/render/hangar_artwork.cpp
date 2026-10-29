@@ -14,13 +14,25 @@ hangar_artwork::hangar_artwork(resource_store const &resources)
       for(unsigned j{};j<count;++j)band.push_back({f.integer<int16_t>(),f.integer<int32_t>(),f.integer<int32_t>()});
     }
     f.require_end();
+    if(i>=2)construction_[i]=read_bitmaps(resources.read("shell0","res32/"+std::string{i==7?"colo":names[i]}+"bild.dba"));
   }
 }
 void hangar_artwork::draw(framebuffer &frame,player_herc const &h,armament_catalog const &catalog,int selected_mount)const {
+  body(frame,h);equipment(frame,h,catalog,selected_mount);
+}
+void hangar_artwork::body(framebuffer &frame,player_herc const &h,int remaining)const{
+  auto const ch{static_cast<size_t>(h.chassis)};
+  if(!remaining)frame.image(weapons_.at(ch).at(0),origin[ch][0],origin[ch][1],true);
+  else if(ch>=2&&static_cast<size_t>(remaining)<=construction_[ch].size()){
+    constexpr std::array<std::array<int,4>,8> positions{{{0,0,0,0},{0,0,0,0},{84,97,0,0},{86,94,0,0},{84,92,0,0},{78,50,78,85},{78,51,78,91},{74,41,74,82}}};
+    auto const index{static_cast<size_t>(remaining-1)};
+    frame.image(construction_[ch][index],positions[ch][index*2],positions[ch][index*2+1],true);
+  }
+  damage(frame,h);
+}
+void hangar_artwork::equipment(framebuffer &frame,player_herc const &h,armament_catalog const &catalog,int selected_mount)const{
   // GO's point constructor at 0x25090 and painter order at 0x803d8.
   auto const ch{static_cast<size_t>(h.chassis)};auto const &bank{weapons_.at(ch)};
-  frame.image(bank.at(0),origin[ch][0],origin[ch][1],true);
-  damage(frame,h);
   for(size_t j{};j<h.weapons.size();++j){
     auto const mount{order[ch].at(j)};auto const weapon{h.weapons.at(static_cast<size_t>(mount))};
     auto const record{catalog.find(h.chassis,mount,weapon)};

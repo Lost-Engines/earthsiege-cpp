@@ -1,5 +1,6 @@
 #pragma once
 #include "shell/dialog.h"
+#include "shell/bay_scene.h"
 #include "shell/game_state.h"
 #include "shell/save_store.h"
 #include "render/hangar_artwork.h"
@@ -32,6 +33,13 @@ class game_shell {
   void refresh_construction();
   armament_catalog armament;
   hangar_artwork bay;
+  std::unique_ptr<bay_scene> bay_motion;
+  framebuffer bay_backdrop;
+  std::vector<uint8_t> displayed_hangar;
+  int displayed_mount{-2};
+  uint64_t animation_ticks{};
+  void refresh_bay();
+  void action_impl(uint16_t id);
   crew_artwork crew_view;
   std::optional<crew_assignment> crew_edit;
   int selected_mount{-1};
@@ -68,6 +76,7 @@ public:
   void cancel_press(){pressed_mount.reset();menu->cancel_press();}
   std::unique_ptr<mission_session> launch();
   void mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed=17);
+  void advance(unsigned timer_ticks=3);
   void draw(framebuffer &target)const;
   palette const &colours()const{return menu->current_palette();}
 };

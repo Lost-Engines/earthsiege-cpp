@@ -17,6 +17,8 @@ add_library(earthsiege_core
   src/shell/game_shell.cpp
   src/shell/launch_checks.cpp
   src/shell/shell_animation.cpp
+  src/shell/bay_animation_plan.cpp
+  src/shell/bay_scene.cpp
   src/render/shell_animation_artwork.cpp
   src/shell/save_store.cpp
   src/resources/career_index.cpp
@@ -961,4 +963,16 @@ if(BUILD_TESTING)
   add_executable(hangar_damage_art_test tests/hangar_damage_art_test.cpp)
   target_link_libraries(hangar_damage_art_test PRIVATE earthsiege_core)
   add_test(NAME hangar_damage_art COMMAND hangar_damage_art_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hangar_damage_art.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(bay_animation_plan_test tests/bay_animation_plan_test.cpp)
+  target_link_libraries(bay_animation_plan_test PRIVATE earthsiege_core)
+  add_test(NAME bay_animation_plan COMMAND bay_animation_plan_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/bay_animation_plan.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(bay_scene_test tests/bay_scene_test.cpp)
+  target_link_libraries(bay_scene_test PRIVATE earthsiege_core)
+  add_test(NAME bay_scene COMMAND bay_scene_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/bay_scene.bin)
 endif()
