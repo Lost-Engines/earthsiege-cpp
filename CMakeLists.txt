@@ -8,6 +8,9 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/shell/cockpit_displays.cpp
+  src/simulation/mission_communications.cpp
+  src/simulation/wingmate_orders.cpp
   src/simulation/mission_displays.cpp
   src/shell/mfd_controller.cpp
   src/render/missile_display.cpp
@@ -252,6 +255,17 @@ add_executable(earthsiege
 target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
 
 if(BUILD_TESTING)
+  add_executable(capture_cockpit tools/capture_cockpit.cpp)
+  target_link_libraries(capture_cockpit PRIVATE earthsiege_core)
+  add_executable(mission_orders_test tests/mission_orders_test.cpp)
+  target_link_libraries(mission_orders_test PRIVATE earthsiege_core)
+  add_test(NAME mission_orders COMMAND mission_orders_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_orders.bin")
+  add_executable(wingmate_dispatch_test tests/wingmate_dispatch_test.cpp)
+  target_link_libraries(wingmate_dispatch_test PRIVATE earthsiege_core)
+  add_test(NAME wingmate_dispatch COMMAND wingmate_dispatch_test "${PROJECT_SOURCE_DIR}/tests/fixtures/wingmate_dispatch.bin")
+  add_executable(wingmate_orders_test tests/wingmate_orders_test.cpp)
+  target_link_libraries(wingmate_orders_test PRIVATE earthsiege_core)
+  add_test(NAME wingmate_orders COMMAND wingmate_orders_test "${PROJECT_SOURCE_DIR}/tests/fixtures/wingmate_orders.bin")
   add_executable(mission_displays_test tests/mission_displays_test.cpp)
   target_link_libraries(mission_displays_test PRIVATE earthsiege_core)
   add_test(NAME mission_displays COMMAND mission_displays_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/mission_displays.bin")

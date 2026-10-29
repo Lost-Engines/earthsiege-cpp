@@ -55,6 +55,9 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   }
   auto const groups{weapons.group_bounds()};
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
+  displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments);
+  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
@@ -76,6 +79,7 @@ void mission_view::consume_pointer_events() {
   instruments.window_bounds({origin[0], origin[1], origin[0] + 319, origin[1] + 199});
   if(camera.mode == camera_mode::attached) for(auto const &event : pointer_events) {
     if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right)}) {
+      if(displays->activate(*action,*session,instruments)) continue;
       if(action->index == 0) requested_throttle = static_cast<int16_t>(throttle.slider_layout().vertical ? -action->value : action->value);
       else if(action->index < 3) { if(action->value & 1) shield_to_front = action->index == 1; }
       else {
@@ -126,6 +130,8 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
   if(panel != view) clock.refresh();
   panel = view;
   change_camera(camera_mode::attached);
+  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
 }
 
 void mission_view::step(bool const control, bool const zoom) {
@@ -145,7 +151,12 @@ void mission_view::step(bool const control, bool const zoom) {
   input.camera_source = player_axis_pair::movement;
   input.fire = keys.fire || (control && zoom);
   input.enter = keys.enter;
-  if(!commands.empty()) { input.command=commands.front(); commands.pop_front(); }
+  if(!commands.empty()) {
+    input.command=commands.front(); commands.pop_front();
+    if(input.command>=59 && input.command<=64 && camera.mode==camera_mode::attached && panel!=cockpit_view::forward)
+      change_cockpit_view(cockpit_view::forward);
+    if(displays->command(input.command,*session,instruments)) input.command=0;
+  }
   auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control, cockpit.layout.bounds(0x450))};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
@@ -176,6 +187,8 @@ void mission_view::step(bool const control, bool const zoom) {
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
+  auto const &origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
 }
 
 void mission_view::draw() {
@@ -223,6 +236,7 @@ void mission_view::draw() {
     for(size_t i{}; i < faces.size(); ++i) faces[i] = std::to_underlying(instruments.at(weapon_groups[i]).face);
     weapons.draw_groups(frame, session->player_weapon_controls().current_group(), faces, x, y);
     navigation.draw(frame, x, y, session->player_weapon_controls().auto_tracking());
+    displays->draw(frame,instruments,x,y);
     if(auto const marker{session->target_marker()}) {
       auto camera_transform{rotation_transform(camera.angles)};
       camera_transform.translation = camera.position;

@@ -517,3 +517,24 @@ labels, armour and internal fractions, side, position, activity, detection and
 radar state. The dormant original last-position flag is preserved. Player rocket
 launches expose their actual pool slot for the camera tracker; page rendering and
 wingmate delivery still need to be connected to the live cockpit.
+
+The live cockpit now renders all six healthy MFD pages through their original
+mouse controls, refresh schedule and F1–F6 shortcuts. Navigation/scanner/camera
+pages consume the actual mission, and STATUS/TARGET keep separate stateful name
+fonts. The missile camera follows actual player rocket slots and checks effects
+in original oldest-first order. Captures of all six pages across the four demo
+starts can be reproduced with `capture_cockpit assets OUTPUT_DIRECTORY`.
+
+FLASH COMM delivery is integrated into live HERC controllers. Verification covers
+1,536 original receiver branches, 256 group-dispatch sequences, and 48 sequential
+orders across four complete original starting worlds, including target ownership,
+strategy, controller clocks, radio response IDs and gameplay RNG. Original
+Alt+A/G/H/O/C/E/F shortcuts route through this path too. Radio responses are
+retained for the pending text/portrait/speech consumer. The original group
+dispatcher's uninitialized priority for neutral orders is explicitly represented
+in the fixture; the application uses zero, as documented in README.md. Original
+aimed-component scratch is compared only once an original write initializes it.
+
+Validation at this checkpoint: full build and all 133 tests pass. Damage flicker,
+radio presentation, complete input/view transitions and the wider application
+remain integration work; the inspection mode is not a completed game.

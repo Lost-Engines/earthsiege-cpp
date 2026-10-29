@@ -1,0 +1,117 @@
+#include "cockpit_displays.h"
+#include <algorithm>
+#include <utility>
+
+namespace earthsiege {
+cockpit_displays::cockpit_displays(resource_store const &resources, cockpit_layout const &layout,
+  mission_session &session, pointer_controls &input)
+  : controls{resources,layout}, controller{session.player_id()}, communications{resources},
+    status{resources}, target{resources}, scanner{resources},
+    navigation{cache,session.scenery()}, missile{resources,cache,session.scenery()} {
+  auto const bounds{controls.button_bounds()};
+  for(size_t i{};i<buttons.size();++i) buttons[i]=input.add_button(bounds[i]);
+  auto const row_bounds{communications.row_bounds(controls.display_bounds())};
+  for(size_t i{};i<rows.size();++i) rows[i]=input.add_button(row_bounds[i]);
+  enable_controls(input);
+}
+void cockpit_displays::enable_controls(pointer_controls &input) {
+  auto const enabled{mfd_enabled_buttons(controller.state().page)};
+  auto const set{[&](size_t i,bool value){if((input.at(i).face!=control_face::disabled)!=value)input.enable(i,value);}};
+  for(size_t i{};i<buttons.size();++i) set(buttons[i],enabled[i]);
+  for(size_t i{};i<rows.size();++i) set(rows[i],controller.state().page==mfd_page::communications && !choices.choices[i].disabled);
+}
+void cockpit_displays::transmit(size_t const choice, mission_session &session) {
+  choices.selected=choice;
+  if(session.transmit_order(static_cast<uint16_t>(choices.command())) && choice>=4)
+    choices.choices[choice].alternate=!choices.choices[choice].alternate;
+}
+bool cockpit_displays::command(uint16_t const code, mission_session &session, pointer_controls &input) {
+  if(code>=59 && code<=64) return activate({buttons[code-59],1},session,input);
+  size_t choice;
+  switch(code) {
+    case 0x21e: choice=0; break; // Alt+A: attack
+    case 0x222: choice=1; break; // Alt+G: ignore
+    case 0x223: choice=2; break; // Alt+H: help
+    case 0x218: choice=3; break; // Alt+O: form up
+    case 0x22e: if(choices.choices[4].alternate) return true; choice=4; break; // Alt+C: scan
+    case 0x212: if(!choices.choices[4].alternate) return true; choice=4; break; // Alt+E: EMCON
+    case 0x221: choice=5; break; // Alt+F: fire/hold
+    default: return false;
+  }
+  transmit(choice,session);
+  if(controller.state().page==mfd_page::communications) controller.select_choice(choice);
+  return true;
+}
+bool cockpit_displays::activate(control_activation const &action, mission_session &session, pointer_controls &input) {
+  for(size_t i{};i<buttons.size();++i) if(action.index==buttons[i]) {
+    auto const result{controller.button(i,session.player_id(),session.target_selection(),choices.choices)};
+    switch(result) {
+      case mfd_action::toggle_radar: session.player_command(19); break;
+      case mfd_action::cycle_target: session.cycle_target(); break;
+      case mfd_action::transmit:
+        transmit(controller.state().choice,session);
+        break;
+      case mfd_action::none: break;
+    }
+    enable_controls(input); return true;
+  }
+  for(size_t i{};i<rows.size();++i) if(action.index==rows[i]) {
+    controller.select_choice(i); return true;
+  }
+  return false;
+}
+void cockpit_displays::paint(mfd_page const page, mission_session &session, camera_state const &camera, uint32_t const ticks) {
+  auto const &bounds{painted_bounds};
+  switch(page) {
+    case mfd_page::status: status.draw(cache,bounds,session.instrument_damage(controller.state().selected_actor)); break;
+    case mfd_page::target: target.draw(cache,bounds,session.instrument_damage(controller.state().selected_actor)); break;
+    case mfd_page::communications:
+      choices.selected=controller.state().choice; communications.draw(cache,bounds,choices); break;
+    case mfd_page::navigation: navigation.draw(bounds,camera.position,camera.angles,{}); break;
+    case mfd_page::scanner: scanner.draw(cache,bounds,session.scanner_state(camera.angles.z,ticks,mfd_ranges[controller.state().range_index])); break;
+    case mfd_page::missile_camera: {
+      std::vector<missile_camera_object> missiles;
+      session.ordnance().live().for_each([&](size_t id,live_projectile const &object) {
+        if(auto const *instance{std::get_if<projectile_instance>(&object.state)}) {
+          auto const &flight{instance->flight()};
+          if(flight.kind==projectile_kind::rocket) missiles.push_back({id,vec3<int32_t>{flight.position},vec3<uint16_t>{flight.angles}});
+        }
+      });
+      std::vector<missile_camera_explosion> explosions;
+      auto &effects{session.visual_effects()};
+      effects.live_explosions().for_each([&](size_t id,live_explosion const &object){explosions.push_back({id,vec3<int32_t>{object.state.position}});});
+      std::ranges::reverse(explosions); // The original camera searches oldest-first.
+      auto const image{tracker.advance(missiles,explosions)};
+      auto const objects{session.visible_objects()}; auto const ground{effects.ground_flashes()};
+      missile.draw(bounds,image,session.camera_ready(),session.player_sensors().hud_locked,ticks,{},objects,&effects.lights(),ground);
+      break;
+    }
+  }
+}
+void cockpit_displays::update(mission_session &session, pointer_controls &input, camera_state const &camera,
+  uint32_t const ticks, int const origin_x, int const origin_y) {
+  auto bounds{controls.display_bounds()}; bounds.left-=origin_x; bounds.right-=origin_x; bounds.top-=origin_y; bounds.bottom-=origin_y;
+  bool const inside{camera.mode==camera_mode::attached};
+  bool const shown{inside && bounds.right>=0 && bounds.left<static_cast<int>(screen_width) && bounds.bottom>=0 && bounds.top<static_cast<int>(screen_height)};
+  if(shown && (!visible || !initialized || bounds.left!=painted_bounds.left || bounds.top!=painted_bounds.top)) {
+    controller.repaint(); initialized=true;
+  }
+  visible=shown; painted_bounds=bounds;
+  auto const &launch{session.latest_player_rocket()};
+  if(launch.sequence!=watched_sequence) {watched_sequence=launch.sequence;tracker.watch(launch.slot);}
+  for(auto const &request:controller.advance(ticks,shown,!inside,session.eo_selected(),session.player_id(),session.target_selection()))
+    paint(request.page,session,camera,ticks);
+  enable_controls(input);
+}
+void cockpit_displays::draw(framebuffer &frame, pointer_controls const &input, int const offset_x, int const offset_y) const {
+  std::array<unsigned int,mfd_button_count> faces;
+  for(size_t i{};i<faces.size();++i) faces[i]=std::to_underlying(input.at(buttons[i]).face);
+  controls.draw(frame,controller.state().page,faces,offset_x,offset_y);
+  if(!visible) return;
+  auto const &pixels{cache.pixels()};
+  for(int y{std::max(0,painted_bounds.top)};y<=std::min(static_cast<int>(screen_height)-1,painted_bounds.bottom);++y)
+    for(int x{std::max(0,painted_bounds.left)};x<=std::min(static_cast<int>(screen_width)-1,painted_bounds.right);++x)
+      frame.pixel(x,y,pixels[static_cast<size_t>(y)*screen_width+static_cast<size_t>(x)]);
+}
+mfd_state const &cockpit_displays::state() const {return controller.state();}
+} // namespace earthsiege

@@ -17,6 +17,7 @@ void mfd_controller::select(mfd_page const page, size_t const player, std::optio
   if(page == mfd_page::status) data.selected_actor = player;
   else if(page == mfd_page::target) data.selected_actor = target;
 }
+void mfd_controller::repaint() { data.pending_paint = 2; }
 void mfd_controller::request_update() { data.refresh[std::to_underlying(data.page)] = true; }
 void mfd_controller::select_choice(size_t const choice) {
   if(choice >= 6) throw std::out_of_range{"communications choice"};

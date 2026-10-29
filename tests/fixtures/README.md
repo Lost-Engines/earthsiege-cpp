@@ -455,3 +455,18 @@ original damage helpers and virtual total-damage calls; only the unused tenth
 weapon metric is padded as documented for the damage-diagram fixture. Generate
 with `../earthsiege-reverse/tools/capture_mission_displays.py`; the binary is its
 direct portable export.
+
+- `wingmate_orders.bin` (`ESWORD01`): 1,536 original HERC order branches, including
+  explicit target/position orders and reply suppression. Original strategy,
+  target selection and radio insertion are recorded boundaries.
+- `wingmate_dispatch.bin` (`ESWDIS01`): 256 original group recipient sequences.
+  Member replies are supplied inputs; the original uninitialized priority word
+  is explicitly varied instead of treating allocator memory as defined.
+- `mission_orders.bin` (`ESMORD01`): 48 live command transitions across four demo
+  starts. Original targeting, strategy, controllers and gameplay RNG execute.
+  Only radio insertion is intercepted. The original RNG initializer uses zero
+  warm-up draws. A write watch marks initialized aimed-component scratch.
+
+These are direct portable exports from the corresponding `capture_wingmate_orders`,
+`capture_wingmate_dispatch` and `capture_mission_orders` Python tools in the
+sibling analysis repository.

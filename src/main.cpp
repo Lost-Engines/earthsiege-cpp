@@ -44,9 +44,16 @@ auto held_key(SDL_Keycode const code)->std::optional<earthsiege::held_key> {
   }
 }
 
-auto command(SDL_Keycode const code, bool const alt)->std::optional<uint16_t> {
+auto command(SDL_Keycode const code, bool const alt, bool const control)->std::optional<uint16_t> {
   uint16_t scan;
   switch(code) {
+    case SDLK_a: scan=30; break;
+    case SDLK_g: scan=34; break;
+    case SDLK_h: scan=35; break;
+    case SDLK_o: scan=24; break;
+    case SDLK_c: scan=46; break;
+    case SDLK_e: scan=18; break;
+    case SDLK_f: scan=33; break;
     case SDLK_w: scan=17; break;
     case SDLK_b: scan=48; break;
     case SDLK_z: scan=44; break;
@@ -58,10 +65,11 @@ auto command(SDL_Keycode const code, bool const alt)->std::optional<uint16_t> {
     case SDLK_KP_MINUS: scan=74; break;
     case SDLK_KP_PLUS: scan=78; break;
     default:
-      if(code>=SDLK_1 && code<=SDLK_9) scan=static_cast<uint16_t>(2+code-SDLK_1);
+      if(code>=SDLK_F1 && code<=SDLK_F6) scan=static_cast<uint16_t>(59+code-SDLK_F1);
+      else if(code>=SDLK_1 && code<=SDLK_9) scan=static_cast<uint16_t>(2+code-SDLK_1);
       else return std::nullopt;
   }
-  return static_cast<uint16_t>(scan | (alt ? 0x200 : 0));
+  return static_cast<uint16_t>(scan | (alt ? 0x200 : 0) | (control ? 0x400 : 0));
 }
 
 } // namespace
@@ -145,9 +153,9 @@ auto main(int argc, char *argv[])->int try {
           else running = false;
         } else if(scene && focused) {
           if(event.key.keysym.sym == SDLK_p) scene->toggle_pause();
-          if(event.key.keysym.sym == SDLK_F1) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
-          if(event.key.keysym.sym == SDLK_F2) scene->change_camera(earthsiege::camera_mode::orbit);
-          if(event.key.keysym.sym == SDLK_F3) scene->change_camera(earthsiege::camera_mode::free);
+          if(event.key.keysym.sym == SDLK_F1 && (event.key.keysym.mod & KMOD_CTRL)) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
+          if(event.key.keysym.sym == SDLK_F2 && (event.key.keysym.mod & KMOD_CTRL)) scene->change_camera(earthsiege::camera_mode::orbit);
+          if(event.key.keysym.sym == SDLK_F3 && (event.key.keysym.mod & KMOD_CTRL)) scene->change_camera(earthsiege::camera_mode::free);
           if(event.key.keysym.sym == SDLK_F7) scene->change_cockpit_view(earthsiege::cockpit_view::lower);
           if(event.key.keysym.sym == SDLK_F8) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
           if(event.key.keysym.sym == SDLK_F9) scene->change_cockpit_view(earthsiege::cockpit_view::left);
@@ -158,7 +166,7 @@ auto main(int argc, char *argv[])->int try {
         if(focused && (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat) {
           bool const alt{(event.key.keysym.mod & KMOD_ALT)!=0};
           if(auto const key{held_key(event.key.keysym.sym)}) scene->key(*key, event.type == SDL_KEYDOWN, alt);
-          if(event.type==SDL_KEYDOWN)if(auto const code{command(event.key.keysym.sym,alt)})scene->command(*code);
+          if(event.type==SDL_KEYDOWN)if(auto const code{command(event.key.keysym.sym,alt,(event.key.keysym.mod & KMOD_CTRL)!=0)})scene->command(*code);
         }
         if(focused && event.type==SDL_MOUSEMOTION) scene->mouse_position(event.motion.x,event.motion.y);
         if(focused && (event.type==SDL_MOUSEBUTTONDOWN || event.type==SDL_MOUSEBUTTONUP)) {

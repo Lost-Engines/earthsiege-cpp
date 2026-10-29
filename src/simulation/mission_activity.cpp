@@ -57,6 +57,7 @@ std::span<engagement_state const> mission_activity::decisions() const { return c
 std::span<target_relationship> mission_activity::targets() { return relationships; }
 std::span<target_relationship const> mission_activity::targets() const { return relationships; }
 uint16_t &mission_activity::entry_stagger() { return stagger; }
+uint16_t mission_activity::entry_stagger() const { return stagger; }
 size_t mission_activity::size() const { return actors.size(); }
 bool mission_activity::waiting(size_t const index) const { return groups.at(actors.at(index).group).activation_trigger.has_value(); }
 mission_counters const &mission_activity::variables() const { return counters; }

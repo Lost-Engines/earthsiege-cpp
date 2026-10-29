@@ -28,6 +28,7 @@ public:
   mfd_state const &state() const;
   void select(mfd_page page, size_t player, std::optional<size_t> target);
   void request_update();
+  void repaint();
   void select_choice(size_t choice);
   mfd_action button(size_t index, size_t player, std::optional<size_t> target, std::span<communications_choice const, 6> choices);
   std::vector<mfd_paint> advance(uint32_t ticks, bool visible, bool external_camera, bool eo_selected, size_t player, std::optional<size_t> target);

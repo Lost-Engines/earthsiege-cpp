@@ -74,6 +74,7 @@ public:
   std::span<target_relationship> targets();
   std::span<target_relationship const> targets() const;
   uint16_t &entry_stagger();
+  uint16_t entry_stagger() const;
   size_t size() const;
   bool waiting(size_t index) const;
   mission_counters const &variables() const;

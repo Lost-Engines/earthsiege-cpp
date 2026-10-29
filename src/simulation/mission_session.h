@@ -11,6 +11,7 @@
 #include "resources/player_roster.h"
 #include "simulation/camera.h"
 #include "simulation/mission_activity.h"
+#include "simulation/wingmate_orders.h"
 #include "simulation/mission_objectives.h"
 #include "simulation/flyer_attack.h"
 #include "simulation/herc_actor.h"
@@ -39,6 +40,8 @@ struct combat_notice {
   int16_t value{0};
   vec3<int32_t> position;
 };
+
+struct wingmate_radio_response { size_t actor; uint16_t message; };
 
 struct player_rocket_launch {
   uint64_t sequence{};
@@ -178,6 +181,7 @@ class mission_session {
   world_effects effects;
   world_projectiles projectiles;
   player_rocket_launch camera_rocket;
+  std::vector<wingmate_radio_response> radio_responses;
   std::unique_ptr<player_armament> player_weapons;
   int32_t player_weapon_range{};
   player_input_router input_router;
@@ -225,6 +229,9 @@ public:
   int16_t exchange_player_instruments(int16_t requested_throttle, std::optional<bool> shield_to_front = {});
   void clear_player_input();
   bool player_command(uint16_t code);
+  wingmate_order_state order_state(size_t actor) const;
+  bool transmit_order(uint16_t command);
+  std::vector<wingmate_radio_response> take_radio_responses();
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;
