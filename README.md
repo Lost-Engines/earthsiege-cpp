@@ -95,3 +95,5 @@ projected ground texture, moving clouds, procedural ground marks and
 pitch-dependent reflective palette. Combined output matches 288 original
 frames across all 24 worlds, including cockpit masks and detail settings.
 Original frame scheduling and impact flashes remain separate work.
+
+The original cinematic fade-in reads an uninitialized rectangle type. This build initializes it, giving deterministic fades instead of depending on prior stack contents.

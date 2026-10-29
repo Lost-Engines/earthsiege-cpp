@@ -53,11 +53,19 @@ void shell_animation::execute(uint16_t page,random_state &random,shell_animation
      sound->volume(static_cast<uint8_t>(random.bounded(25)+10));sound->play();current.fade_latched=true;
     }
     break;
-   case 0x1101:case 0x1111:break;
+   case 0x1101:case 0x1111:case 0x1071:case 0xf04f:break; // GO has no font-load/select handler.
    case 0x110:current.mode=3;break;
    case 0x1051:shape_bank=static_cast<uint8_t>(a.at(0));break;
    case 0xf02f:
     if(!current.executed)output.push_back({instruction.opcode,{shape_bank},instruction.text});
+    break;
+   case 0x80:output.push_back({0x80,{shape_bank},{}});break;
+   case 0x2002:output.push_back({instruction.opcode,{a.begin(),a.end()},{}});break;
+   case 0x1061:case 0xf01f:case 0xf05f:case 0x4114:case 0x4124:
+    if(!current.executed)output.push_back({instruction.opcode,{a.begin(),a.end()},instruction.text});
+    break;
+   case 0x20:
+    if(!current.executed)output.push_back({0x4204,{0,0,319,199},{}});
     break;
    case 0x1021:case 0x2022:
     if(!current.wait_latched){
@@ -86,7 +94,7 @@ void shell_animation::execute(uint16_t page,random_state &random,shell_animation
      output.push_back({instruction.opcode,{std::min(x,right),std::min(y,bottom),std::max(x,right),std::max(y,bottom)},{}});
     }
     break;
-   case 0xa504:case 0xa524:{
+   case 0xa504:case 0xa524:case 0xa104:case 0xa0a4:{
     std::vector<int32_t> args(a.begin(),a.end());
     if(current.depth){args[0]=wrap_word(args[0]+current.x);args[1]=wrap_word(args[1]+current.y);}
     output.push_back({instruction.opcode,std::move(args),{}});break;

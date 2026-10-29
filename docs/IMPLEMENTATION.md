@@ -939,3 +939,25 @@ Chapter travel movies, campaign mechanic response chains and remaining cinematic
 owners continue next. Bay resident programs are currently paused during speech.
 
 Full rebuild: all 206 CTest checks pass (51.90 seconds). Commander and general screenshots were inspected.
+
+
+### Cinematic interpreter and palette transitions
+
+The original screen loads, retained-page copies, drawing colours, vector lines,
+palette selection and fade arithmetic are now implemented. GO ignores the
+retained font-load/select tokens; it does not invoke the generic font path.
+All 820 original updates across 18 opening, ending, chapter-travel and monitor
+scripts match interpreter/RNG state, both complete drawing pages and 2,096
+intermediate palette submissions. Cinematic lines share the verified original
+rasterizer rather than the generic framebuffer line helper.
+
+The fade range uses byte arguments and an inclusive end: an authored count of
+256 changes only the first colour. More significantly, GO's FADE_IN path at
+0x4933b does not initialize its temporary copy-region kind. Three independent
+scratch patterns (0, 0x11111111, 0x22222222) appear unchanged at the copy dispatch.
+The fixture supplies a zeroed scratch stack for this undefined field, and C++
+uses an initialized rectangle. Intermediate image parity is bounded to that
+explicit setup; palette computation and completed pages remain independently
+compared. Live cinematic owners and hardware-dependent retrace pacing follow.
+
+Full rebuild: all 207 CTest checks pass (19.36 seconds).
