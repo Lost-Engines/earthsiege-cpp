@@ -21,7 +21,7 @@ namespace earthsiege {
 /// Inspect original demo starting states while full mission consumers are integrated
 class mission_view {
   std::unique_ptr<mission_session> session;
-  random_state ui_random;
+  random_state &ui_random;
   mission_audio audio;
   framebuffer frame;
   cockpit_artwork cockpit;

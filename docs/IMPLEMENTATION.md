@@ -636,3 +636,20 @@ Validation after music integration: all 159 CTest checks pass (19.08 seconds),
 and a 120-frame mission run passes with SDL dummy video/audio. The native music
 checks include 44,444 timed packets through the real original repeat filter.
 No hardware listening comparison is claimed.
+
+
+### Persistent smoke and detached weapons
+
+Live mission damage now creates the original 20-slot attached-smoke controllers
+and 200-slot puff pool. Emitter attachments follow current owner/part transforms;
+existing puffs update before new emissions. Family counts, nine-frame cells,
+overshoot discard, deferred retirement and retained slot velocity agree across
+12,906 original frames and 113,400 puff states. The cockpit, music and smoke
+share the secondary random generator; combat retains its separate stream.
+
+Physical weapon detachment uses the articulated mount, the MECHWPN2 template,
+WPNTEX textures and original outward launch velocity. All 28 external-mount
+cases / 808 subsequent updates agree with original captures. These bodies share
+the existing 150-slot debris pool. The supplied smoke families are 0 and 1;
+unbacked family 2 is rejected. Exhausted visual pools discard new objects safely
+instead of following the original null-dereference paths.

@@ -2,9 +2,48 @@
 #include <algorithm>
 #include <stdexcept>
 #include "simulation/fixed_math.h"
+#include "resources/combat.h"
 #include "simulation/model_math.h"
 
 namespace earthsiege {
+
+smoke_emitter_state create_smoke_emitter(int16_t const family, random_state &random) {
+  if(family < 0 || family > 1) throw std::out_of_range{"smoke family has no supplied model"};
+  return {family, static_cast<int16_t>(family == 0 ? 200 : 500), 0, static_cast<int16_t>(family * 4 + (random.next() & 3))};
+}
+std::optional<int16_t> advance_smoke_emitter(smoke_emitter_state &state, frame_ratio const ratio) {
+  if(!state.remaining) return {};
+  state.timer = std::max<int16_t>(0, wrap_word(state.timer - ratio));
+  if(state.timer) return {};
+  state.timer = 200; --state.remaining;
+  auto const root{state.root}; state.root = static_cast<int16_t>(state.family * 4 + ((state.root + 1) & 3));
+  return root;
+}
+bool advance_smoke_puff(smoke_puff_state &state, uint16_t const frames, frame_ratio const ratio) {
+  for(unsigned int axis{}; axis < 3; ++axis) state.position[axis] = wrap_long(static_cast<int64_t>(state.position[axis]) + state.velocity[axis]);
+  state.timer = std::max(0, wrap_long(static_cast<int64_t>(state.timer) - ratio));
+  if(state.timer) return false;
+  state.timer = 200; state.cell = static_cast<uint16_t>((state.cell + 1U) % frames);
+  return state.cell == 0;
+}
+vec3<int32_t> smoke_attachment_position(model_transform const &owner, std::optional<vec3<int16_t>> const &offset, model_transform const *part) {
+  if(!part && !offset) return vec3<int32_t>{owner.translation};
+  auto local{part ? (offset ? transform_point(*offset, *part) : vec3<int32_t>{part->translation}) : vec3<int32_t>{*offset}};
+  auto result{rotate_vector(local, owner)};
+  for(unsigned int axis{}; axis < 3; ++axis) result[axis] = wrap_long(static_cast<int64_t>(result[axis]) + owner.translation[axis]);
+  return result;
+}
+debris_particle create_detached_weapon(weapon_definition const &definition, weapon_mount const &mount, model_transform const &hardpoint, vec3<int32_t> const &owner_centre) {
+  auto const position{transform_point(weapon_mount_offset(mount, definition), hardpoint)};
+  auto const heading{bearing_angle(owner_centre, position)};
+  auto const elevation{static_cast<uint16_t>(mount.source[24] | (mount.source[25] << 8))};
+  auto const horizontal{wrap_word((400 * model_cosine(elevation) + matrix_rounding) >> matrix_fraction_bits)};
+  vec3<int16_t> const velocity{
+    wrap_word((horizontal * model_cosine(static_cast<uint16_t>(heading + angle_quarter_turn)) + matrix_rounding) >> matrix_fraction_bits),
+    wrap_word((horizontal * model_cosine(heading) + matrix_rounding) >> matrix_fraction_bits),
+    wrap_word((400 * model_cosine(static_cast<uint16_t>(elevation - angle_quarter_turn)) + matrix_rounding) >> matrix_fraction_bits)};
+  return {definition.model_indices[2], vec3<int32_t>{position}, transform_angles(hardpoint), vec3<int16_t>{velocity}};
+}
 
 explosion_state create_explosion(explosion_definition const &definition, size_t const cells, vec3<int32_t> const &position, random_state &random) {
   int16_t constexpr explosion_sound_first{10};

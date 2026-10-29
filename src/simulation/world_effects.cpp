@@ -18,14 +18,19 @@ void live_explosion::synchronize_cells() {
   if(secondary) secondary->cell_frames().front() = state.secondary_cell.value();
 }
 
-live_debris::live_debris(debris_particle value, shape_part const &shape) : state{std::move(value)}, model{shape} {}
+live_debris::live_debris(debris_particle value, shape_part const &shape, bool const weapon) : state{std::move(value)}, model{shape}, detached_weapon{weapon} {}
+live_smoke_puff::live_smoke_puff(smoke_puff_state value, shape_part const &shape) : state{std::move(value)}, model{shape} {}
 
 world_effects::world_effects(resource_store const &resources, sound_sink sink)
   : sounds{std::move(sink)}, explosion_definitions{read_explosions(resources.read("simvol0", "dat/EXPLOS.DAT"))},
     debris_definitions{read_debris(resources.read("simvol0", "dat/DEBRIS.DAT"))},
     explosion_models{read_model(resources.read("simvol0", "dts/EXPLOS.DTS"))},
     debris_models{read_model(resources.read("simvol0", "dts/DEBRIS.DTS"))},
-    flat_models{read_model(resources.read("simvol0", "dts/FLAT.DTS"))} {
+    flat_models{read_model(resources.read("simvol0", "dts/FLAT.DTS"))},
+    smoke_models{read_model(resources.read("simvol0", "dts/SMOKE.DTS"))},
+    detached_weapon_models{read_model(resources.read("simvol0", "dts/MECHWPN2.DTS"))},
+    smoke_textures{read_bitmaps(resources.read("simvol0", "dba/SMOKE.DBA"))},
+    weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))} {
   for(size_t bank{0}; bank != explosion_textures.size(); ++bank) explosion_textures[bank] = read_bitmaps(resources.read("simvol0", "dba/EXPLO" + std::to_string(bank) + ".DBA"));
 }
 
@@ -58,6 +63,20 @@ void world_effects::add_debris(int16_t const group, vec3<int32_t> const &positio
   }
 }
 
+std::optional<size_t> world_effects::add_smoke(int16_t const family, std::function<vec3<int32_t>()> attachment, random_state &random) {
+  if(!emitters.available()) return {};
+  return emitters.emplace(live_smoke_emitter{create_smoke_emitter(family, random), std::move(attachment)});
+}
+std::optional<size_t> world_effects::add_puff(int16_t const root, vec3<int32_t> const &position) {
+  auto const slot{puffs.next_free_slot()}; if(!slot) return {};
+  auto const &shape{std::get<shape_part>(smoke_models.roots.at(static_cast<size_t>(root)).content)};
+  return puffs.emplace(smoke_puff_state{root, vec3<int32_t>{position}, vec3<int16_t>{retained_puff_velocities[*slot]}}, shape);
+}
+std::optional<size_t> world_effects::add_detached_weapon(debris_particle state) {
+  auto const &shape{std::get<shape_part>(detached_weapon_models.roots.at(static_cast<size_t>(state.model)).content)};
+  return debris.emplace(std::move(state), shape, true);
+}
+
 void world_effects::advance(frame_ratio const ratio) {
   auto const &secondary{std::get<shape_part>(flat_models.roots.at(1).content)};
   explosions.for_each_oldest([&](size_t const slot, live_explosion &effect){
@@ -72,6 +91,17 @@ void world_effects::advance(frame_ratio const ratio) {
       explosions.defer_erase(slot);
     }
   });
+  puffs.for_each_oldest([&](size_t const slot, live_smoke_puff &puff){
+    if(puffs.retiring(slot)) return;
+    auto const &shape{std::get<shape_part>(smoke_models.roots.at(static_cast<size_t>(puff.state.root)).content)};
+    if(advance_smoke_puff(puff.state, static_cast<uint16_t>(shape.cell_frame_counts.front()), ratio)) puffs.defer_erase(slot);
+    puff.model.cell_frames().front() = puff.state.cell;
+  });
+  emitters.for_each_oldest([&](size_t const slot, live_smoke_emitter &emitter){
+    if(emitters.retiring(slot)) return;
+    if(auto const root{advance_smoke_emitter(emitter.state, ratio)}) add_puff(*root, emitter.attachment());
+    if(!emitter.state.remaining) emitters.defer_erase(slot);
+  });
   debris.for_each_oldest([&](size_t const slot, live_debris &particle){
     if(!debris.retiring(slot) && advance_debris(particle.state)) debris.defer_erase(slot);
   });
@@ -81,6 +111,8 @@ void world_effects::collect() {
   light_owners.collect([&](size_t, size_t const source){ lighting.remove(source); });
   explosions.collect();
   debris.collect();
+  puffs.collect([&](size_t const slot, live_smoke_puff const &puff){retained_puff_velocities[slot] = puff.state.velocity;});
+  emitters.collect();
 }
 
 effect_lighting &world_effects::lights() { return lighting; }
@@ -101,10 +133,16 @@ void world_effects::append_models(std::vector<scene_model> &models) {
     auto placement{rotation_transform(particle.state.angles)};
     placement.translation = particle.state.position;
     models.push_back({
-      .roots{&debris_models.roots.at(static_cast<size_t>(particle.state.model)), 1},
+      .roots{&(particle.detached_weapon ? detached_weapon_models : debris_models).roots.at(static_cast<size_t>(particle.state.model)), 1},
       .instance{particle.model}, .placement{placement}, .native_class{1},
-      .textures{}, .attachments{}, .detail_thresholds{}, .detail{},
+      .textures{particle.detached_weapon ? std::span<bitmap const>{weapon_textures} : std::span<bitmap const>{}}, .attachments{}, .detail_thresholds{}, .detail{},
     });
+  });
+  puffs.for_each_oldest([&](size_t, live_smoke_puff &puff){
+    auto placement{rotation_transform({0,0,0})}; placement.translation = puff.state.position;
+    models.push_back({.roots{&smoke_models.roots.at(static_cast<size_t>(puff.state.root)), 1},
+      .instance{puff.model}, .placement{placement}, .native_class{4},
+      .textures{smoke_textures}, .attachments{}, .detail_thresholds{}, .detail{}});
   });
 }
 std::vector<ground_flash> world_effects::ground_flashes() {
@@ -115,6 +153,8 @@ std::vector<ground_flash> world_effects::ground_flashes() {
   return result;
 }
 
+object_pool<live_smoke_puff> const &world_effects::live_smoke() const { return puffs; }
+object_pool<live_smoke_emitter> const &world_effects::smoke_controllers() const { return emitters; }
 object_pool<live_explosion> const &world_effects::live_explosions() const { return explosions; }
 object_pool<live_debris> const &world_effects::live_particles() const { return debris; }
 

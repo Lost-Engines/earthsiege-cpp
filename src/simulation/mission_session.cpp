@@ -199,6 +199,7 @@ bool mission_session::player_command(uint16_t const code) {
   else return false;
   return true;
 }
+random_state &mission_session::interface_random() { return visual_random; }
 music_contacts mission_session::music_observations()const{
   music_contacts result;auto const observations{observe()};auto const &knowledge{activity->actor(player_index).awareness};auto const &body{player()};
   cockpit_observer const observer{vec3<int32_t>{body.movement().position},body.movement().angles.z,body.torso().angle,crew[player_index].side,settings.detection_range()};
@@ -295,8 +296,25 @@ herc_damage_events mission_session::damage_events(size_t const index) {
   herc_damage_events events;
   events.explosion = [&, index](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition, position, rng); };
   events.debris = [&, index](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition, position, rng); };
-  events.attached_smoke = [&, index](int16_t const part, vec3<int16_t> const &position){ frame_notices.push_back({combat_notice_kind::attached_smoke, index, part, 0, vec3<int32_t>{position}}); };
-  events.weapon_ejected = [&, index](size_t const slot){ frame_notices.push_back({combat_notice_kind::ejected_weapon, index, static_cast<int16_t>(slot), 0, {}}); };
+  events.attached_smoke = [&, index](int16_t const part, vec3<int16_t> const &position){
+    frame_notices.push_back({combat_notice_kind::attached_smoke, index, part, 0, vec3<int32_t>{position}});
+    effects.add_smoke(0, [this, index, part, offset = vec3<int16_t>{position}]{
+      auto const &member{crew.at(index)}; auto const &body{member.actor->body()};
+      auto const *node{part < 0 ? nullptr : find_model_part(member.definition->models.roots.front(), part)};
+      auto const *transform{node ? &body.model().transforms()[static_cast<size_t>(node->header.transform)] : nullptr};
+      return smoke_attachment_position(body.placement(), std::optional<vec3<int16_t>>{offset}, transform);
+    }, visual_random);
+  };
+  events.weapon_ejected = [&, index](size_t const slot){
+    frame_notices.push_back({combat_notice_kind::ejected_weapon, index, static_cast<int16_t>(slot), 0, {}});
+    auto const &member{crew.at(index)}; auto const &body{member.actor->body()};
+    auto const &mount{member.definition->mounts.at(slot)};
+    auto const &definition{weapon_definitions.weapons.at(static_cast<size_t>(member.actor->weapons().slots()[slot]->definition))};
+    auto const *node{find_model_part(member.definition->models.roots.front(), mount.model_part)};
+    auto const hardpoint{compose_transforms(body.model().transforms()[static_cast<size_t>(node->header.transform)], body.placement())};
+    auto const centre{smoke_attachment_position(body.placement(), {}, &body.model().transforms()[static_cast<size_t>(find_model_part(member.definition->models.roots.front(), member.definition->profile.camera_part)->header.transform)])};
+    effects.add_detached_weapon(create_detached_weapon(definition, mount, hardpoint, centre));
+  };
   events.salvage = [&, index](int16_t const weapon, int16_t const quality){ frame_notices.push_back({combat_notice_kind::salvage, index, weapon, quality, {}}); };
   events.shield_warning = [&, index]{ frame_notices.push_back({combat_notice_kind::shield_warning, index, 0, 0, {}}); };
   events.cockpit_damage = [&, index](size_t const part){ frame_notices.push_back({combat_notice_kind::cockpit_damage, index, static_cast<int16_t>(part), 0, {}}); };
@@ -307,7 +325,12 @@ ground_damage_events mission_session::base_damage_events(size_t const index) {
   ground_damage_events events;
   events.explosion = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_explosion(definition, position, rng); };
   events.debris = [&](int16_t const definition, vec3<int32_t> const &position, random_state &rng){ effects.add_debris(definition, position, rng); };
-  events.attached_smoke = [&, index](vec3<int16_t> const &position){ frame_notices.push_back({combat_notice_kind::attached_smoke, base_id(index), -1, 1, vec3<int32_t>{position}}); };
+  events.attached_smoke = [&, index](vec3<int16_t> const &position){
+    frame_notices.push_back({combat_notice_kind::attached_smoke, base_id(index), -1, 1, vec3<int32_t>{position}});
+    effects.add_smoke(1, [this, index, offset = vec3<int16_t>{position}]{
+      return smoke_attachment_position(bases.at(index).actor->placement(), std::optional<vec3<int16_t>>{offset});
+    }, visual_random);
+  };
   events.destroyed = [&, index] {
     auto const id{base_id(index)};
     activity->notify_destroyed(id, observe());

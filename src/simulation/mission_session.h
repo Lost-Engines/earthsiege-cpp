@@ -180,6 +180,7 @@ class mission_session {
   void advance_player_objectives(size_t index, frame_ratio ratio);
   std::vector<actor_contact> frame_contacts;
   random_state random;
+  random_state visual_random;
   std::vector<sound_request> sound_requests;
   world_effects effects;
   world_projectiles projectiles;
@@ -238,6 +239,7 @@ public:
   std::vector<wingmate_radio_response> take_radio_responses();
   std::vector<sound_request> take_sounds();
   music_contacts music_observations()const;
+  random_state &interface_random();
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;

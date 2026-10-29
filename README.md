@@ -34,3 +34,5 @@ FM synthesis uses the unmodified LGPL Nuked OPL3 core in `third_party/nuked-opl3
 The host stream runs at 44.1 kHz; original 11.025 kHz PCM values are held between
 DAC updates. FM and PCM receive equal mix headroom. This reproduces the software
 protocol, not a particular Sound Blaster card’s analogue circuitry or balance.
+
+Damage now produces attached smoke and physically ejected weapons, with the original animation timing, attachment transforms and debris motion.

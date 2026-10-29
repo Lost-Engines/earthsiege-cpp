@@ -26,7 +26,7 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources, uns
 } // namespace
 
 mission_view::mission_view(resource_store const &resources, unsigned int const demo)
-  : session{demo_start(resources, demo)},
+  : session{demo_start(resources, demo)}, ui_random{session->interface_random()},
     audio{resources},
     cockpit{read_cockpit(resources, read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())))},
     reactor{resources, cockpit.layout},
