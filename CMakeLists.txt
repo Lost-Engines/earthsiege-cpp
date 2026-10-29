@@ -12,6 +12,7 @@ add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 add_library(earthsiege_core
   src/render/crew_artwork.cpp
   src/render/hangar_artwork.cpp
+  src/render/weapon_preview.cpp
   src/render/dialog_widgets.cpp
   src/shell/mission_alert.cpp
   src/shell/game_shell.cpp
@@ -54,6 +55,7 @@ add_library(earthsiege_core
   src/audio/hmp_player.cpp
   src/audio/audio_controls.cpp
   src/audio/mission_audio.cpp
+  src/audio/shell_audio.cpp
   src/audio/pcm_mixer.cpp
   src/audio/pcm_sound.cpp
   src/audio/spatial_audio.cpp
@@ -975,4 +977,10 @@ if(BUILD_TESTING)
   add_executable(bay_scene_test tests/bay_scene_test.cpp)
   target_link_libraries(bay_scene_test PRIVATE earthsiege_core)
   add_test(NAME bay_scene COMMAND bay_scene_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/bay_scene.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(shell_audio_test tests/shell_audio_test.cpp)
+  target_link_libraries(shell_audio_test PRIVATE earthsiege_core)
+  add_test(NAME shell_audio COMMAND shell_audio_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/shell_music.bin)
 endif()

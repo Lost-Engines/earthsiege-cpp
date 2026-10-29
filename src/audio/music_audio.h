@@ -16,7 +16,7 @@ class music_audio:private pcm_midi_backend {
 public:
   music_audio(resource_store const&,pcm_sound_bank&,bool opl3=true);
   ~music_audio();
-  void load(bytes song);
+  void load(bytes song,uint16_t loops=255);
   void play();
   void stop();
   bool playing()const;

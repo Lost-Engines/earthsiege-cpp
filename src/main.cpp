@@ -259,7 +259,7 @@ auto main(int argc, char *argv[])->int try {
       else pending = 0;
       scene->draw();
     } else {
-      while(pending>=25){menu.advance(3);pending-=25;}
+      while(pending>=25){menu.advance(3);auto samples{menu.take_audio()};if(sound)sound->queue(samples);pending-=25;}
       menu.draw(menu_frame);
     }
     if(alert){alert_frame=scene?scene->image():menu_frame;alert->draw(alert_frame);}

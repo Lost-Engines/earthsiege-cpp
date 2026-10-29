@@ -1,6 +1,8 @@
 #pragma once
 #include "shell/dialog.h"
+#include "audio/shell_audio.h"
 #include "shell/bay_scene.h"
+#include "render/weapon_preview.h"
 #include "shell/game_state.h"
 #include "shell/save_store.h"
 #include "render/hangar_artwork.h"
@@ -15,6 +17,7 @@ class game_shell {
   save_store saves;
   career_index careers;
   preferences preferences_;
+  shell_audio audio;
   game_state game;
   std::unique_ptr<dialog> menu;
   std::unique_ptr<dialog> warning_parent;
@@ -45,6 +48,9 @@ class game_shell {
   int selected_mount{-1};
   std::optional<int> pressed_mount;
   bool missile_menu{};
+  std::unique_ptr<weapon_preview> weapon_motion;
+  int preview_index{-2};
+  void refresh_preview();
   std::vector<int16_t> weapon_choices;
   void refresh_armament(std::optional<int16_t> wanted={});
   void choose_armament();
@@ -77,6 +83,7 @@ public:
   std::unique_ptr<mission_session> launch();
   void mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed=17);
   void advance(unsigned timer_ticks=3);
+  std::vector<int16_t> take_audio(){return audio.take_output();}
   void draw(framebuffer &target)const;
   palette const &colours()const{return menu->current_palette();}
 };

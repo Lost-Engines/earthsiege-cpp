@@ -15,11 +15,12 @@ unsigned region(unsigned screen){
 }
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
- :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},game{r,seed},
+ :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},audio{r},game{r,seed},
  strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r}{show(1000);}
 void game_shell::show(unsigned id){
   if(menu)last_screen=menu->id();
   menu=std::make_unique<dialog>(resources,id,region(id));text_scroll=0;
+  audio.enabled(preferences_.current()[0]!=0,preferences_.current()[1]!=0);audio.region(region(id));
   if(id==1000){menu->enable(1700,!careers.entries.empty());std::vector<std::string> names;for(auto const &entry:careers.entries)names.push_back(entry.name);menu->items(1002,std::move(names),std::max(0,int(careers.selected)));}
   if(id==1100){std::vector<std::string> labels;for(size_t i{35};i<=41;++i)labels.push_back(strings.at(i));menu->items(1101,std::move(labels),single_kind);}
   if(id==1110||id==1310){preferences_.commit(false);refresh_values();}
@@ -36,27 +37,46 @@ void game_shell::show(unsigned id){
   if(id==1220){history_slots.clear();std::vector<std::string> labels;auto const &states{game.career().career.states};
     for(size_t i{1};i<states.size();++i)if(states[i].valid){history_slots.push_back(i);labels.push_back("MISSION "+std::to_string(states[i].missions));}
     menu->items(1223,std::move(labels));menu->enable(1222,!history_slots.empty());menu->enable(1230,!history_slots.empty());}
-  refresh_bay();
+  refresh_bay();refresh_preview();
 }
 void game_shell::refresh_bay(){
  if(warning_parent)return;
- if(region(screen())!=4000){bay_motion.reset();displayed_hangar.clear();return;}
+ if(region(screen())!=4000){if(bay_motion)audio.clear_sample();bay_motion.reset();displayed_hangar.clear();return;}
  if(!bay_motion){
   bay_backdrop.clear();bay_backdrop.image(read_bitmaps(resources.read("shell0","res32/regn4000.dbm")).front(),0,0);
   bay_motion=std::make_unique<bay_scene>(resources);
-  bay_motion->reset(game.roster(),game.crew(),game.campaign(),game.mission_kind(),prices,game.presentation_random(),bay_backdrop);
+  bay_motion->reset(game.roster(),game.crew(),game.campaign(),game.mission_kind(),prices,game.presentation_random(),bay_backdrop,audio.effects());
   displayed_hangar.clear();displayed_mount=-2;
  }
  auto current{write_hangar(game.roster())};auto const mount{screen()==1800?selected_mount:-1};
  if(current!=displayed_hangar||mount!=displayed_mount){
-  bay_motion->redraw(game.roster(),bay,armament,mount,bay_backdrop,game.presentation_random());
+  bay_motion->redraw(game.roster(),bay,armament,mount,bay_backdrop,game.presentation_random(),audio.effects());
   displayed_hangar=std::move(current);displayed_mount=mount;
  }
 }
 void game_shell::advance(unsigned timer_ticks){
+ audio.enabled(preferences_.current()[0]!=0,preferences_.current()[1]!=0);
+ for(unsigned i{};i<timer_ticks;++i){
+  if((++animation_ticks%2)==0&&!warning_parent){
+   if(bay_motion)bay_motion->advance(1,game.presentation_random(),audio.effects());
+   if(weapon_motion)weapon_motion->advance(1,game.presentation_random());
+  }
+  audio.advance();
+ }
+}
+
+void game_shell::refresh_preview(){
  if(warning_parent)return;
- for(unsigned i{};i<timer_ticks;++i)if((++animation_ticks%2)==0&&bay_motion)
-  bay_motion->advance(1,game.presentation_random());
+ int index{-1};
+ if(screen()==1800){
+  auto const selected{menu->selection(1808)};
+  if(missile_menu)index=14+selected;
+  else if(selected>=0&&static_cast<size_t>(selected)<weapon_choices.size())
+   index=weapon_choices[static_cast<size_t>(selected)]==17?-1:weapon_choices[static_cast<size_t>(selected)];
+ }
+ if(index==preview_index)return;
+ preview_index=index;weapon_motion.reset();
+ if(index>=0){framebuffer base;menu->draw(base);weapon_motion=std::make_unique<weapon_preview>(resources,index,base,game.presentation_random());}
 }
 
 void game_shell::refresh_armament(std::optional<int16_t> wanted){
@@ -172,13 +192,13 @@ void game_shell::next_mission(){
 void game_shell::begin(){launch_requested=true;save_career();}
 std::unique_ptr<mission_session> game_shell::launch(){
   if(!launch_requested)throw std::runtime_error{"no requested launch"};
-  launch_requested=false;auto result{game.launch()};save_career();return result;
+  launch_requested=false;audio.suspend();auto result{game.launch()};save_career();return result;
 }
 void game_shell::mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed){
   game.resume_shell(return_seed,game.campaign()?std::optional{saves.load(careers.entries.at(static_cast<size_t>(careers.selected)))}:std::nullopt);
-  game.complete(result,counters);save_career();show(game.campaign()?1520:1510);
+  game.complete(result,counters);save_career();show(game.campaign()?1520:1510);audio.resume();
 }
-void game_shell::action(uint16_t id){action_impl(id);refresh_bay();}
+void game_shell::action(uint16_t id){action_impl(id);refresh_bay();refresh_preview();}
 void game_shell::action_impl(uint16_t id){
   auto const current{screen()};
   switch(current){
@@ -340,7 +360,7 @@ void game_shell::mouse_up(int x,int y){
   auto previous{pressed_mount};pressed_mount.reset();
   if(previous&&screen()==1800){
     if(auto h{game.roster().find(game.roster().selected)})if(armament.hit(h->chassis,x,y)==previous){
-      selected_mount=*previous;missile_menu=false;refresh_armament();refresh_bay();
+      selected_mount=*previous;missile_menu=false;refresh_armament();refresh_bay();refresh_preview();
     }
     return;
   }
@@ -359,10 +379,7 @@ void game_shell::draw(framebuffer &target)const{
   if(current==1800||((current==1700||current==1710||current==1900||current==1920||current==4444)&&game.has_career())){
 
     if(current==1800){
-      int icon{-1};auto const selected{menu->selection(1808)};
-      if(missile_menu)icon=14+selected;
-      else if(selected>=0&&static_cast<size_t>(selected)<weapon_choices.size())icon=weapon_choices[static_cast<size_t>(selected)]==17?-1:weapon_choices[static_cast<size_t>(selected)];
-      if(auto view{menu->find(1803)})bay.weapon(target,icon,view->bounds);
+      if(weapon_motion)if(auto view{menu->find(1803)})weapon_motion->draw(target,view->bounds);
     }
   }
   if(current==2000&&build_menu)build_view.draw(target,*build_menu,game.roster(),game.crew(),prices);

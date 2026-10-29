@@ -10,7 +10,7 @@ auto music_audio::start(midi_sample const &s)->int32_t {pcm_voice_state v;v.key=
 void music_audio::stop(int32_t h){bank.stop_voice(static_cast<size_t>(h));}
 void music_audio::volume(int32_t h,uint32_t value){bank.voice_volume(static_cast<size_t>(h),static_cast<uint16_t>(value));}
 void music_audio::pan(int32_t h,uint32_t value){bank.voice_pan(static_cast<size_t>(h),static_cast<uint16_t>(value));}
-void music_audio::load(bytes song){player.load(song);player.set_loops(255);}
+void music_audio::load(bytes song,uint16_t loops){player.load(song);player.set_loops(loops);}
 void music_audio::play(){player.play();}
 void music_audio::stop(){player.stop();}
 bool music_audio::playing()const{return player.playing();}

@@ -21,9 +21,15 @@ int main(int argc,char **argv)try{
  click(shell,1100);screen(shell,1100);shell.key(80);require(shell.current_dialog().selection(1101)==1,"mission keyboard selection");
  click(shell,1110);screen(shell,1110);auto original{shell.settings().current()};click(shell,1111);require(shell.settings().current()[12]!=original[12],"single option changes");shell.key(1);screen(shell,1100);require(shell.settings().current()==original,"single cancel rolls back");
  click(shell,1501);screen(shell,1501);require(shell.state().ready()&&!shell.state().campaign(),"single mission prepared");click(shell,1800);screen(shell,1800);
- auto idle_random{shell.state().random_snapshot()};
+ auto idle_random{shell.state().random_snapshot()};framebuffer preview_before;shell.draw(preview_before);
  for(unsigned i{};i<240;++i)shell.advance(3);
  require(idle_random.words!=shell.state().random_snapshot().words||idle_random.first!=shell.state().random_snapshot().first,"resident bay scripts advance in live shell");
+ auto menu_pcm{shell.take_audio()};require(std::ranges::any_of(menu_pcm,[](auto sample){return sample!=0;}),"shell audio reaches output");
+ framebuffer preview_after;shell.draw(preview_after);bool preview_changed{};auto bounds{shell.current_dialog().find(1803)->bounds};
+ for(int y{bounds.top};y<=bounds.bottom;++y)for(int x{bounds.left};x<=bounds.right;++x)
+  preview_changed|=preview_before.pixels()[static_cast<size_t>(y*320+x)]!=preview_after.pixels()[static_cast<size_t>(y*320+x)];
+ require(preview_changed,"selected weapon performs its original turn animation");
+
  auto initial_slot{shell.state().roster().selected};auto const initial_herc{*shell.state().roster().find(initial_slot)};
  auto const old_weapon{initial_herc.weapons[0]};auto const old_count{shell.state().inventory()[static_cast<size_t>(old_weapon)].size()};
  armament_catalog catalog{resources};auto const &region{catalog.hotspots(initial_herc.chassis)[0]};

@@ -5,7 +5,7 @@ The native game is being built from the supplied Earthsiege 1.0 data and origina
 Current integration: single missions and careers can launch, fly and return with
 saved results. Arming, crew assignment, repair, salvage, construction and launch
 warnings are connected to the original shell controls and static artwork.
-Cinematics, resident shell animations, full environment presentation and
+Cinematics, briefing maps, full environment presentation and
 end-to-end replay verification remain. Later entries supersede the older
 integration boundaries in this cumulative record.
 
@@ -807,3 +807,28 @@ The host supplies nominal 120 Hz timer ticks and advances bay programs every
 second tick. The seven affected native checks pass, including live menu motion,
 construction, save/reload and launch guards. Ambient playback, weapon preview
 rotation and the remaining presentation owners continue separately.
+
+Full rebuild after the bay increment: all 188 CTest checks pass (41.44 seconds).
+
+
+### Shell music, workshop sound and weapon previews
+
+The shell now supplies original region music and resident TTM sample requests
+to the native HMI/FM/PCM pipeline. All 16 original music replacement cases /
+848 ordered events agree, including enabled/disabled playback, the 100..1 fade,
+period-two waits and 65535 loop count. Menu music and all six workshop samples
+produce stereo output; preference changes and mission audio handoff are connected.
+
+The capture executes GO 0x20a70 and its fade loop. SoundManager allocation,
+playback calls and waits are recording boundaries. The current host advances
+that fade over timer ticks while menus remain responsive; original blocking
+input/presentation timing still needs the full presentation owner. These checks
+do not imply end-to-end sound-card waveform equivalence.
+
+Arming's W1800W00..13 and W1800R00..03 programs now run their original one-turn
+animation and retain the final frame. Existing interpreter/raster fixtures
+cover those programs, and the live shell test checks visible movement as well
+as audible output. The normal control loads these eighteen programs; retained
+G00/G01 resources are not substituted for the original selection behavior.
+
+Full rebuild: all 189 CTest checks pass (20.38 seconds).
