@@ -8,6 +8,8 @@ include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
 
 add_library(earthsiege_core
+  src/audio/midi_gain.cpp
+  src/audio/hmi_pcm.cpp
   src/audio/hmi_fm.cpp
   src/simulation/footsteps.cpp
   src/resources/hmp.cpp
@@ -744,4 +746,16 @@ if(BUILD_TESTING)
   add_executable(hmi_fm_test tests/hmi_fm_test.cpp)
   target_link_libraries(hmi_fm_test PRIVATE earthsiege_core)
   add_test(NAME hmi_fm COMMAND hmi_fm_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/fm_driver.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(hmi_pcm_test tests/hmi_pcm_test.cpp)
+  target_link_libraries(hmi_pcm_test PRIVATE earthsiege_core)
+  add_test(NAME hmi_pcm COMMAND hmi_pcm_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pcm_midi.bin)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(midi_gain_test tests/midi_gain_test.cpp)
+  target_link_libraries(midi_gain_test PRIVATE earthsiege_core)
+  add_test(NAME midi_gain COMMAND midi_gain_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/music_gain.bin)
 endif()

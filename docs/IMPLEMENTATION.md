@@ -604,3 +604,9 @@ includes the nine paired OPL3 voices, original bank conversion, sustain queue,
 allocation, controller and pitch-bend differences. The original release-cache
 overlap with frequency registers is preserved. Chip synthesis and the music
 owner still need integration; this does not yet make live mission music available.
+
+The sampled-percussion MIDI driver and HMI gain stage also pass original-code
+comparisons (10,000 percussion operations and 4,000 gain updates). Physical ring
+slot removal, per-device rather than per-channel percussion gain, untracked notes
+when the eight-entry bookkeeping budget is full, and direct-volume rounding are
+retained. These drivers are ready for connection to the shared digital mixer.

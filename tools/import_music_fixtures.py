@@ -21,3 +21,6 @@ for row in checks['cases']:
 (root/'tests/fixtures/hmp.bin').write_bytes(out);print(len(checks['cases']),'songs,',packets,'original scheduler packets')
 
 (root/"tests/fixtures/fm_driver.bin").write_bytes((music/"fm-driver.bin").read_bytes())
+
+for source,target in [("pcm-midi.bin","pcm_midi.bin"),("music-gain.bin","music_gain.bin")]:
+ (root/"tests/fixtures"/target).write_bytes((music/source).read_bytes())

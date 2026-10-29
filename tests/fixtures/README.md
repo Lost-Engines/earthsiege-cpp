@@ -477,3 +477,8 @@ sibling analysis repository.
 16,276 MIDI operations, 223,115 ordered OPL register writes and retained channel,
 voice and sustain-queue state. All programs/drum notes, stealing, pitch range,
 stereo pan and sustain overflow are covered. No chip/analogue equivalence is implied.
+
+`pcm_midi.bin`: 10,000 original percussion-driver operations and 13,592 backend
+events, including the original bank and a copy with the note-off sentinel changed
+to exercise its dormant interruptible-sample branch. `music_gain.bin`: 4,000
+original gain updates and 62,286 physical MIDI packets with remapping disabled.
