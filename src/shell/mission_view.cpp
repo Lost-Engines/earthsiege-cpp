@@ -78,6 +78,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
   session->initialise_weapon_instruments();
   auto const rows{session->player_weapon_controls().displays()};
+  painted_weapon_rows.assign(rows.begin(),rows.end());
   for(size_t i{}; i < rows.size(); ++i) {
     auto const &row{rows[i]};
     weapon_control_binding binding{i, instruments.add_button(weapons.button_bounds(row.control_number, row.kind)), {}, row.state.requested_charge};
@@ -355,7 +356,8 @@ bool mission_view::step(bool const control, bool const zoom,mission_dialog_handl
 void mission_view::prepare_frame(uint32_t now){
   finish_launch();
   audio.update_music(session->music_observations(),ui_random);
-  audio.engine(camera.mode!=camera_mode::attached);
+  // 58574 reads cockpit view 4, which can precede camera ownership by a frame.
+  audio.engine(transitions.snapshot().view==4);
   audio.flush_positions(camera.position);
   update_interface_clock(now);
   // Original 4cb14 consumes the mouse queue before world simulation.
@@ -425,6 +427,10 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   }
   session->refresh_target_instruments(camera.mode==camera_mode::attached&&panel==cockpit_view::forward,true);
   session->update_player_interface();
+  // 2cf28 paints weapon widgets before 155a8/cf78 exchanges their next state.
+  // Keep presentation one exchange behind without delaying simulation controls.
+  auto const previous_weapon_rows{session->player_weapon_controls().displays()};
+  painted_weapon_rows.assign(previous_weapon_rows.begin(),previous_weapon_rows.end());
   session->exchange_weapon_instruments(ratio);
   for(auto &binding : weapon_controls) {
     auto const &state{session->player_weapon_controls().displays()[binding.row].state};
@@ -582,7 +588,7 @@ void mission_view::draw() {
     }
     shields.draw(frame, shield.balance, {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);
     for(auto const &binding : weapon_controls) {
-      auto const &row{session->player_weapon_controls().displays()[binding.row]};
+      auto const &row{painted_weapon_rows.at(binding.row)};
       std::optional<int> boundary;
       if(binding.slider) { instruments.painted(*binding.slider); boundary = instruments.at(*binding.slider).boundary; }
       weapons.draw(frame, row.control_number, row.kind, row.name, row.state, std::to_underlying(instruments.at(binding.button).face), boundary, x, y);
@@ -621,6 +627,8 @@ void mission_view::draw() {
     int const y{inside?cockpit.windows[static_cast<size_t>(painted)].instrument_origin[1]:0};
     surface.store(frame,page*160,y);
   }
+  auto const next_weapon_rows{session->player_weapon_controls().displays()};
+  painted_weapon_rows.assign(next_weapon_rows.begin(),next_weapon_rows.end());
   if(!startup){display_device.present(colours);present_view();}
 }
 

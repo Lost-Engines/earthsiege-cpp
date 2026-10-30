@@ -49,6 +49,7 @@ class mission_view {
   throttle_gauge throttle;
   shield_instruments shields;
   weapon_instruments weapons;
+  std::vector<weapon_display> painted_weapon_rows;
   navigation_instruments navigation;
   waypoint_instruments waypoints;
   clock_instrument clock;

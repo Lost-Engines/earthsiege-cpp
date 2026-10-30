@@ -11,6 +11,12 @@
 #include "resources/resource_store.h"
 using namespace earthsiege;
 namespace {
+struct replay_sound_request {
+ int32_t frame;
+ uint8_t kind; // 0 start, 1 stop
+ uint16_t id;
+ bool operator==(replay_sound_request const &)const=default;
+};
 std::array<int32_t,24> camera_values(camera_state const &camera){
  return {camera.position.x,camera.position.y,camera.position.z,
                 int32_t{camera.angles.x},int32_t{camera.angles.y},int32_t{camera.angles.z},
@@ -33,13 +39,14 @@ int main(int argc,char **argv)try{
  auto tape{read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")))};
  mission_view view{resources,tape};
  std::ofstream audio_log;int64_t audio_frame{-1};
- std::vector<std::pair<int32_t,uint16_t>> audio_requests;
+ std::vector<replay_sound_request> audio_requests;
  if(auto const *path{std::getenv("EARTHSIEGE_REPLAY_AUDIO")}){
   audio_log.open(path);if(!audio_log)throw std::runtime_error{"Cannot open audio diagnostics"};
  }
  view.audio_observer([&](audio_event const &e){
-  if(e.kind==audio_event_kind::play||e.kind==audio_event_kind::music_play)
-   audio_requests.emplace_back(static_cast<int32_t>(std::max<int64_t>(0,audio_frame)),static_cast<uint16_t>(e.id));
+  if(e.kind==audio_event_kind::play||e.kind==audio_event_kind::music_play||e.kind==audio_event_kind::stop||e.kind==audio_event_kind::music_stop)
+   audio_requests.push_back({static_cast<int32_t>(std::max<int64_t>(0,audio_frame)),
+     static_cast<uint8_t>(e.kind==audio_event_kind::stop||e.kind==audio_event_kind::music_stop),static_cast<uint16_t>(e.id)});
   if(audio_log.is_open()){
    auto const &voices{view.audio_state().voices()};
    audio_log<<"{\"frame\":"<<audio_frame<<",\"kind\":"<<std::to_underlying(e.kind)<<",\"id\":"<<e.id<<",\"path\":"<<std::quoted(std::string(e.path))<<",\"accepted\":"<<e.accepted<<",\"voices\":"<<std::ranges::count_if(voices,[](auto const &v){return v.flags&0x8000;})<<"}\n";
@@ -116,6 +123,25 @@ int main(int argc,char **argv)try{
   diagnostics.open(diagnostic_path/"frames.jsonl");
   if(!diagnostics)throw std::runtime_error{"Cannot open replay diagnostics"};
  }
+ struct weapon_frame {
+  uint32_t frame;
+  uint16_t x,y,width,height;
+  std::vector<uint8_t> rgb;
+ };
+ std::vector<weapon_frame> weapon_frames;size_t next_weapon_frame{};
+ if(has_camera){
+  auto raw_frames{read_file(std::filesystem::path{argv[2]}.parent_path()/("demo"+std::to_string(demo)+"_weapon_frames.bin"))};
+  binary_reader rasters{raw_frames};auto signature{rasters.take(8)};
+  if(std::string(signature.begin(),signature.end())!="ESWPF001")rasters.fail("weapon frame format");
+  auto const n{rasters.integer<uint32_t>()};
+  for(uint32_t i{};i<n;++i){
+   weapon_frame value{rasters.integer<uint32_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),{}};
+   if(value.x+value.width>screen_width||value.y+value.height>screen_height)rasters.fail("weapon frame bounds");
+   auto rgb{rasters.take(size_t{value.width}*value.height*3)};value.rgb.assign(rgb.begin(),rgb.end());
+   weapon_frames.push_back(std::move(value));
+  }
+  rasters.require_end();
+ }
  uint32_t checked{};
  for(uint32_t frame{};frame<count;++frame){
   audio_frame=int64_t{frame}-1;
@@ -149,6 +175,16 @@ int main(int argc,char **argv)try{
   }
   if(has_radio_inputs&&observation_index!=observations.size())throw std::runtime_error{"packet "+std::to_string(packet)+" unconsumed radio inputs: "+std::to_string(observations.size()-observation_index)};
   auto const &session{view.simulation()};
+  if(phase==1)while(next_weapon_frame<weapon_frames.size()&&weapon_frames[next_weapon_frame].frame==frame-1){
+   auto const &expected{weapon_frames[next_weapon_frame++]};size_t byte{};
+   for(unsigned y{};y<expected.height;++y)for(unsigned x{};x<expected.width;++x){
+    auto const index{view.image().pixels()[(expected.y+y)*screen_width+expected.x+x]};
+    auto const colour{view.colours().colours[index]};
+    for(auto shift:{16,8,0})if(static_cast<uint8_t>(colour>>shift)!=expected.rgb[byte++])
+     throw std::runtime_error{"Original weapon-name raster differs at frame "+std::to_string(frame-1)+
+       " pixel "+std::to_string(expected.x+x)+","+std::to_string(expected.y+y)};
+   }
+  }
   if(diagnostics.is_open()){
    auto const &visual_state{session.interface_random().snapshot()};
    diagnostics<<"{\"row\":"<<frame<<",\"packet\":"<<packet<<",\"phase\":"<<+phase<<",\"visual\":[";
@@ -161,7 +197,16 @@ int main(int argc,char **argv)try{
     auto const &clouds{view.cloud_state()};auto const &anchor{clouds.anchor()};auto const &wind{clouds.wind()};
     for(auto v:{anchor.x,anchor.y,anchor.z,wind.x,wind.y,wind.z})diagnostics<<v<<',';
     for(auto const &p:clouds.points())diagnostics<<p.x<<','<<p.y<<','<<p.z<<',';
-    diagnostics<<"0]}\n";
+    diagnostics<<"0],\"weapons\":{\"selection\":"<<session.player_weapon_controls().selection()<<",\"rows\":[";
+    bool first_row{true};
+    for(auto const &row:session.player_weapon_controls().displays()){
+     if(!first_row)diagnostics<<',';
+     first_row=false;
+     auto const &state{row.state};
+     diagnostics<<'['<<row.bank_slot<<','<<row.control_number<<','<<+std::to_underlying(row.kind)<<','
+       <<state.value<<','<<state.requested_charge<<','<<state.disabled<<','<<state.selected<<','<<state.included<<','<<state.ready<<']';
+    }
+    diagnostics<<"]}}\n";
    if(phase==1&&(frame-1)%60==0){
     std::ostringstream name;name<<"frame-"<<std::setw(5)<<std::setfill('0')<<frame-1<<".ppm";
     auto path{diagnostic_path/name.str()};view.image().save(path,view.colours());
@@ -283,6 +328,8 @@ int main(int argc,char **argv)try{
   if(frame%100==0)std::cout<<frame<<" original states agree\n";
  }
  if(argc==3){
+  if(next_weapon_frame!=weapon_frames.size())throw std::runtime_error{"Unconsumed weapon raster observations"};
+  if(!weapon_frames.empty())std::cout<<weapon_frames.size()<<" original weapon-name rectangles agree\n";
   if(terminal){
    auto compare_file=[&](char const *name,std::vector<uint8_t> const &actual){
     auto expected{file.take(file.integer<uint32_t>())};
@@ -297,24 +344,24 @@ int main(int argc,char **argv)try{
   if(has_radio_inputs){
    auto audio_raw{read_file(std::filesystem::path{argv[2]}.parent_path()/("demo"+std::to_string(demo)+"_audio.bin"))};
    binary_reader sounds{audio_raw};auto signature{sounds.take(8)};
-   if(std::string(signature.begin(),signature.end())!="ESREQ001")sounds.fail("audio format");
-   std::vector<std::pair<int32_t,uint16_t>> expected;
+   if(std::string(signature.begin(),signature.end())!="ESREQ002")sounds.fail("audio format");
+   std::vector<replay_sound_request> expected;
    auto const requests{sounds.integer<uint32_t>()};
    for(uint32_t i{};i<requests;++i){
-    auto const frame{sounds.integer<int32_t>()};auto const id{sounds.integer<uint16_t>()};
-    expected.emplace_back(frame,id);
+    auto const frame{sounds.integer<int32_t>()};auto const kind{sounds.integer<uint8_t>()};auto const id{sounds.integer<uint16_t>()};
+    expected.push_back({frame,kind,id});
    }
    sounds.require_end();
    // Engine start retries depend on the separately clocked PCM completion and
    // voice allocator. Retain them in the fixture, but compare other requests
    // exactly in frame/call order without injecting any expected request.
-   auto engine=[](auto const &request){return request.second==16||request.second==45;};
+   auto engine=[](auto const &request){return request.kind==0&&(request.id==16||request.id==45);};
    std::erase_if(expected,engine);std::erase_if(audio_requests,engine);
    if(expected!=audio_requests){
     size_t i{};while(i<expected.size()&&i<audio_requests.size()&&expected[i]==audio_requests[i])++i;
-    throw std::runtime_error{"Ordered non-engine sound request differs at "+std::to_string(i)};
+    throw std::runtime_error{"Ordered sound start/stop request differs at "+std::to_string(i)};
    }
-   std::cout<<expected.size()<<" ordered non-engine sound requests agree\n";
+   std::cout<<expected.size()<<" ordered non-engine starts and all stops agree\n";
   }
   if(terminal&&next_packet!=expected_packets)file.fail("recorded input consumption");
   if(terminal&&expected_packets!=tape.frames.size())file.fail("source TAP packet count");

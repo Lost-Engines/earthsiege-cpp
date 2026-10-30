@@ -1691,3 +1691,30 @@ capture_view_palette.py observes unchanged original camera/draw/present routines
 through 48 controlled transition frames; view-palette.json retains every palette
 upload. The native correction removes that extra upload rather than patching
 the resulting colour.
+
+
+## Weapon display ordering and cockpit-engine transitions
+
+Original 59c08 calls 2cf28 to paint cockpit widgets before 155a8/cf78 exchanges
+weapon state. The previous native presentation painted the new selection and
+capacitor values immediately. It now retains the values for that paint while
+keeping the independently verified simulation exchange in order. An original
+DEMO1 frame-1320 memory capture confirms that bank selection, charges and widget
+state already agree even though the displayed highlight belongs to the prior
+exchange. Repeated draw-only calls advance to the already exchanged values.
+
+The replay tests additionally compare 584 original 18x7 weapon-name rectangles
+in stable forward views. Positions are taken from live original widget objects;
+eight rectangles near the recorded software pointer are excluded explicitly.
+These are expected RGB outputs, never inputs to the game. Complete sampled frame
+maxima are now 385/382/728/444 differing pixels in demos 1–4; these totals still
+include reference cursors, clock differences and remaining scene differences.
+
+Original 58574 gates cockpit-engine sound 45 on cockpit view 4, not on camera
+ownership. During a prepared transition those change on different frames.
+Reading the view state restores the original stop timing, including a frozen
+options preview. ESREQ002 now checks 4,474 non-engine starts and all 2,599 stops
+in exact combined frame/call order (7,073 requests), including engine stops.
+Engine starts/retries remain separately reported because they depend on the PCM
+completion and voice-allocation timeline: current differing-frame counts for
+cockpit engine 45 are 17/5/1/10, and flyer engine 16 differs in two DEMO3 frames.
