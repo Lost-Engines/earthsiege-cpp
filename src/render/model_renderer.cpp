@@ -95,8 +95,9 @@ class model_draw {
     if(points.size() == 1) {
       if(view.bounds.contains(points[0].x, points[0].y)) target.pixel(points[0].x, points[0].y, colour);
     } else if(points.size() == 2 || outline) {
-      for(size_t index{1}; index < points.size(); ++index) draw_model_line(target, vec2<int32_t>{points[index]}, vec2<int32_t>{points[index - 1]}, view.bounds, colour);
-      if(points.size() > 2) draw_model_line(target, vec2<int32_t>{points[0]}, vec2<int32_t>{points.back()}, view.bounds, colour);
+      auto const raster{target.clip()?line_raster_mode::clip_regions:line_raster_mode::direct};
+      for(size_t index{1}; index < points.size(); ++index) draw_model_line(target, vec2<int32_t>{points[index]}, vec2<int32_t>{points[index - 1]}, view.bounds, colour, raster);
+      if(points.size() > 2) draw_model_line(target, vec2<int32_t>{points[0]}, vec2<int32_t>{points.back()}, view.bounds, colour, raster);
     } else draw_solid_polygon(target, points, view.bounds, colour, polygon_winding::preserve);
   }
 

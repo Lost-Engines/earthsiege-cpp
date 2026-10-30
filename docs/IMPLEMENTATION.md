@@ -1893,3 +1893,25 @@ All 94 complete indexed frames and retained ground positions match; 41 frames
 exercise 165 original ground draw calls. Idle and explosion-flash pages correctly
 leave those positions untouched. This supplements the existing 94 missile
 camera/tracker cases without changing their reference data.
+
+
+## Line pixels in clip-region lists
+
+Original 6a064 has two raster paths. Plain rectangular viewports call the VGA
+writer 8cb90, which accumulates endpoint-inclusive (delta + 1) steps. Clip-region
+lists instead build centred Bresenham spans with 7d358, then intersect those
+spans with each rectangular or curved region. The paths differ on shallow
+diagonals. Clipping the direct writer's pixels afterwards does not reproduce
+the span writer.
+
+Native model outlines now select the span path when drawing through those
+regions. Two-dimensional briefing routes retain their original direct path;
+a framebuffer clip alone does not identify the original drawing context.
+The independent masked-lines fixture covers 3,000 original complete rasters
+through full rectangles, curved masks and overlapping rectangles, in addition
+to the existing 6,000 direct-line comparisons.
+
+This accounts for all three remaining scene pixels in DEMO3 frame 1320.
+Together with the quantized ground-projection correction, the complete
+320x200 RGB image now agrees exactly. It joins the replay fixtures, which now
+cover twelve complete frames and six scene regions.
