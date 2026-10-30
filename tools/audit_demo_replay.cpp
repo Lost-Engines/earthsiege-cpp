@@ -10,10 +10,22 @@
 #include "shell/mission_alert.h"
 #include "resources/resource_store.h"
 using namespace earthsiege;
+namespace {
+std::array<int32_t,24> camera_values(camera_state const &camera){
+ return {camera.position.x,camera.position.y,camera.position.z,
+                int32_t{camera.angles.x},int32_t{camera.angles.y},int32_t{camera.angles.z},
+                int32_t{camera.orbit_distance},int32_t{camera.movement},
+                int32_t{camera.orbit_angles.x},int32_t{camera.orbit_angles.y},int32_t{camera.orbit_angles.z},
+                int32_t{camera.angular_rates.x},int32_t{camera.angular_rates.y},int32_t{camera.angular_rates.z},
+                int32_t{std::to_underlying(camera.mode)},int32_t{camera.focus_offset.x},int32_t{camera.focus_offset.y},int32_t{camera.focus_offset.z},
+                int32_t{camera.attachment_offset.x},int32_t{camera.attachment_offset.y},int32_t{camera.attachment_offset.z},
+                int32_t{camera.look_offset.x},int32_t{camera.look_offset.y},int32_t{camera.look_offset.z}};
+}
+}
 int main(int argc,char **argv)try{
  if(argc<3)return 1;
  resource_store resources{argv[1]};auto raw{read_file(argv[2])};binary_reader file{raw};
- auto magic{file.take(8)};auto version{std::string(magic.begin(),magic.end())};bool has_radio_inputs{version=="ESRPLY08"},visual{has_radio_inputs||version=="ESRPLY06"},terminal{visual||version=="ESRPLY05"},extended{terminal||version=="ESRPLY04"};
+ auto magic{file.take(8)};auto version{std::string(magic.begin(),magic.end())};bool has_camera{version=="ESRPLY09"},has_radio_inputs{has_camera||version=="ESRPLY08"},visual{has_radio_inputs||version=="ESRPLY06"},terminal{visual||version=="ESRPLY05"},extended{terminal||version=="ESRPLY04"};
  if(version!="ESRPLY03"&&!extended)file.fail("format");
  auto demo{file.integer<uint32_t>()},count{file.integer<uint32_t>()};
  auto prefs{extended?file.take(17):bytes{}};
@@ -120,6 +132,8 @@ int main(int argc,char **argv)try{
     return observations[observation_index++].second;
    });
   }
+  std::array<int32_t,24> expected_camera{};
+  if(has_camera)for(auto &value:expected_camera)value=file.integer<int32_t>();
   audio_clock(clock);
   if(packet!=-1&&packet!=-3){
    tape_frame record;
@@ -139,7 +153,15 @@ int main(int argc,char **argv)try{
    auto const &visual_state{session.interface_random().snapshot()};
    diagnostics<<"{\"row\":"<<frame<<",\"packet\":"<<packet<<",\"phase\":"<<+phase<<",\"visual\":[";
    for(size_t i{};i<visual_state.words.size();++i){if(i)diagnostics<<',';diagnostics<<visual_state.words[i];}
-   diagnostics<<','<<visual_state.first<<','<<visual_state.second<<"]}\n";
+   diagnostics<<','<<visual_state.first<<','<<visual_state.second<<"],\"camera\":[";
+    auto const &camera{view.view_camera()};
+    auto const values{camera_values(camera)};
+    for(size_t i{};i<values.size();++i){if(i)diagnostics<<',';diagnostics<<values[i];}
+    diagnostics<<"],\"clouds\":[";
+    auto const &clouds{view.cloud_state()};auto const &anchor{clouds.anchor()};auto const &wind{clouds.wind()};
+    for(auto v:{anchor.x,anchor.y,anchor.z,wind.x,wind.y,wind.z})diagnostics<<v<<',';
+    for(auto const &p:clouds.points())diagnostics<<p.x<<','<<p.y<<','<<p.z<<',';
+    diagnostics<<"0]}\n";
    if(phase==1&&(frame-1)%60==0){
     std::ostringstream name;name<<"frame-"<<std::setw(5)<<std::setfill('0')<<frame-1<<".ppm";
     auto path{diagnostic_path/name.str()};view.image().save(path,view.colours());
@@ -149,6 +171,11 @@ int main(int argc,char **argv)try{
     std::ofstream pal{path.replace_extension(".pal"),std::ios::binary};
     for(auto const &c:view.colours().dac_colours)pal.write(reinterpret_cast<char const *>(c.data()),3);
    }
+  }
+  if(has_camera){
+   auto const actual{camera_values(view.view_camera())};
+   for(size_t i{};i<actual.size();++i)if(actual[i]!=expected_camera[i])
+    throw std::runtime_error{"frame "+std::to_string(frame)+" camera component "+std::to_string(i)+": native "+std::to_string(actual[i])+", original "+std::to_string(expected_camera[i])};
   }
   auto const &rng{session.random_snapshot()};
   random_state::state expected;for(auto &v:expected.words)v=file.integer<uint16_t>();expected.first=file.integer<uint8_t>();expected.second=file.integer<uint8_t>();

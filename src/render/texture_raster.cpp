@@ -156,9 +156,13 @@ void draw_textured_polygon(framebuffer &target, std::span<projected_vertex const
         auto const u{wrap_long(static_cast<int64_t>(uv.x) + 32768) >> 16};
         auto const v{wrap_long(static_cast<int64_t>(uv.y) + 32768) >> 16};
         int64_t const index{u + static_cast<int64_t>(v) * texture.width};
-        if(index < 0 || static_cast<uint64_t>(index) >= texture.pixels.size()) throw std::out_of_range{"texture sample outside bitmap"};
-        auto const colour{texture.pixels[static_cast<size_t>(index)]};
-        if(!translation.empty() || colour != 0) target.pixel(axis ? row : column, axis ? column : row, translation.empty() ? colour : translation[colour]);
+        // Rounded quads can fold and extrapolate beyond the bitmap. The DOS
+        // mapper reads unrelated heap bytes there. Preserve every defined
+        // sample and leave undefined samples untouched, without a host overread.
+        if(index >= 0 && static_cast<uint64_t>(index) < texture.pixels.size()) {
+          auto const colour{texture.pixels[static_cast<size_t>(index)]};
+          if(!translation.empty() || colour != 0) target.pixel(axis ? row : column, axis ? column : row, translation.empty() ? colour : translation[colour]);
+        }
         for(unsigned int component{0}; component != 2; ++component) uv[component] = wrap_long(static_cast<int64_t>(uv[component]) + delta[component]);
       }
     }

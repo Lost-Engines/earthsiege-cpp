@@ -141,7 +141,7 @@ bool mission_session::advance_frame(player_input &player_controls, frame_ratio c
     if(actor < crew.size()) dispatch_herc(actor, time_ratio);
     else if(actor < base_id(0)) dispatch_flyer(actor - flyer_id(0), time_ratio);
   });
-  if(!prepare_player())return false; // Original Q can leave between world AI and player input.
+  if(!prepare_player())return false; // Original Q leaves after player controls, before perception and power.
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
@@ -225,10 +225,10 @@ void mission_session::cycle_target() {
   cockpit_observer const observer{vec3<int32_t>{body.movement().position}, body.movement().angles.z, body.torso().angle, crew[player_index].side, settings.detection_range()};
   set_displayed_target(cycle_cockpit_target(candidates, observer, displayed_target));
 }
-std::optional<player_input_actions> mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control, rectangle const aiming_viewport, std::function<bool(player_input &)> const &dispatch_command) {
+std::optional<player_input_actions> mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control, rectangle const aiming_viewport, std::function<bool(player_input &)> const &dispatch_command, std::function<void(player_input_actions const &)> const &camera_controls) {
   player_input_actions actions;
   bool const completed{advance_frame(input, ratio, [&]{
-    if(dispatch_command && !dispatch_command(input))return false;
+    bool const continue_frame{!dispatch_command || dispatch_command(input)};
     if(input.command) player_command(input.command);
     auto &actor{*crew[player_index].actor};
     player_input_context context{.external_control{external_control}, .disabled{actor.damage().consequences.disabled}, .auto_tracking{player_weapons->auto_tracking()}, .position{vec3<int32_t>{actor.body().movement().position}}, .target{}};
@@ -243,10 +243,11 @@ std::optional<player_input_actions> mission_session::step_player(player_input in
       context.target = player_input_target{vec3<int32_t>{observations[*selected].position}, vec3<int16_t>{offset}, observations[*selected].dead};
     }
     actions = input_router.route(input, context);
+    if(camera_controls)camera_controls(actions);
     actor.apply_player_controls(actions, ratio, [&](movement_event event){movement_event_received(player_index, event);});
     if(actions.fire_allowed) fire_selected(actions.fire);
     if(actions.cycle_target) cycle_target();
-    return true;
+    return continue_frame;
   })};
   if(!completed)return {};
   return actions;

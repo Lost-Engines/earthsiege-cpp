@@ -9,6 +9,7 @@
 #include "render/weapon_instruments.h"
 #include "render/navigation_instruments.h"
 #include "render/clock_instrument.h"
+#include "render/external_view.h"
 #include "render/presentation_player.h"
 #include "resources/cockpit.h"
 #include "resources/input_tape.h"
@@ -51,6 +52,7 @@ class mission_view {
   navigation_instruments navigation;
   waypoint_instruments waypoints;
   clock_instrument clock;
+  external_view_artwork external_artwork;
   presentation_player lamps;
   uint64_t elapsed_milliseconds{};
   frame_clock pacing;
@@ -139,6 +141,8 @@ public:
   void mouse_button(bool right, bool pressed);
   void clear_input();
   void toggle_pause();
+  auto const &cloud_state()const{return environment.cloud_state();}
+  camera_state const &view_camera()const{return camera;}
   void change_camera(camera_mode mode);
   void change_cockpit_view(cockpit_view view);
   void advance_time(unsigned milliseconds);

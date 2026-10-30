@@ -83,6 +83,7 @@ add_library(earthsiege_core
   src/render/shell_cinematic.cpp
   src/resources/portrait_sync.cpp
   src/render/radio_banner.cpp
+ src/render/external_view.cpp
   src/shell/radio_controller.cpp
   src/resources/radio_catalogue.cpp
   src/simulation/radio_queue.cpp
@@ -1314,4 +1315,14 @@ if(BUILD_TESTING)
  add_executable(empty_portraits_test tests/empty_portraits_test.cpp)
  target_link_libraries(empty_portraits_test PRIVATE earthsiege_core)
  add_test(NAME empty_portraits COMMAND empty_portraits_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/empty_portraits.bin)
+endif()
+
+if(BUILD_TESTING)
+ add_executable(external_view_test tests/external_view_test.cpp)
+ target_link_libraries(external_view_test PRIVATE earthsiege_core)
+ add_test(NAME external_view COMMAND external_view_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/external_view.bin)
+endif()
+
+if(BUILD_TESTING)
+ add_test(NAME folded_texture COMMAND texture_raster_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/folded_texture.bin)
 endif()

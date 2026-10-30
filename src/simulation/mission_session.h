@@ -244,7 +244,7 @@ public:
   void cycle_weapon();
   void set_auto_tracking(bool enabled);
   void toggle_weapon_pair();
-  std::optional<player_input_actions> step_player(player_input input, frame_ratio ratio, bool external_control = false, rectangle aiming_viewport = {0, 0, 320, 200}, std::function<bool(player_input &)> const &dispatch_command = {});
+  std::optional<player_input_actions> step_player(player_input input, frame_ratio ratio, bool external_control = false, rectangle aiming_viewport = {0, 0, 320, 200}, std::function<bool(player_input &)> const &dispatch_command = {}, std::function<void(player_input_actions const &)> const &camera_controls = {});
   void update_player_interface();
   void refresh_target_instruments(bool visible,bool validate=false);
   void initialise_weapon_instruments();

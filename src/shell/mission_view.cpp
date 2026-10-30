@@ -47,6 +47,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     navigation{resources, cockpit.layout},
     waypoints{resources, cockpit.layout},
     clock{resources, cockpit.layout},
+    external_artwork{resources},
     lamps{resources, "simvol0", "ttm/" + read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())) + ".TTM"},
     display_colours{session->scenery().colours()},
     impact_colours{read_palette(resources.read("simvol0","dpl/IMPACT1.DPL"))},
@@ -210,11 +211,11 @@ void mission_view::toggle_pause() {
 
 void mission_view::change_camera(camera_mode const mode) { transitions.reset(mode==camera_mode::attached?static_cast<int>(panel):4);set_camera(mode,impact_view().mode); }
 void mission_view::set_camera(camera_mode const mode,unsigned previous,bool reset_input) {
-  if(mode == camera_mode::free) camera.mode = mode;                             // detach at the current position and orientation
-  else camera = session->make_camera(mode);
+  // 5894c/58a44 retain the target camera across cockpit and external views.
+  camera.mode = mode;
   impact.change_view(previous,impact_view());
   if(reset_input){clear_input();external_view_requested=external_view_active=mode!=camera_mode::attached;}
-  update_camera(camera, session->view_target());
+  if(reset_input)update_camera(camera, session->view_target());
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
@@ -227,7 +228,8 @@ void mission_view::apply_cockpit_view(cockpit_view const view,bool reset_input) 
   if(panel != view) clock.refresh();
   auto const previous{impact_view().mode};
   panel = view;
-  set_camera(camera_mode::attached,previous,reset_input);
+  if(reset_input)set_camera(camera_mode::attached,previous,true);
+  else impact.change_view(previous,impact_view());
   // A completed scroll changes view ownership after the frame update.
   // Widgets advance on the next frame, not again while presenting the old one.
   if(!reset_input)return;
@@ -261,8 +263,7 @@ void mission_view::present_view(){
     display_device.changed(80,6);
   }
   if(before==after)return;
-  if(after==4)set_camera(camera_mode::orbit,impact_view().mode,false);
-  else apply_cockpit_view(static_cast<cockpit_view>(after),false);
+  if(after!=4)apply_cockpit_view(static_cast<cockpit_view>(after),false);
 }
 
 void mission_view::finish_launch(){
@@ -407,11 +408,11 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   input.release_action=static_cast<control_release_action>(routing.mode);
   return true;
   };
-  auto const result{session->step_player(initial_input, ratio, control, cockpit.layout.bounds(0x450),dispatch)};
+  auto const result{session->step_player(initial_input, ratio, control, cockpit.layout.bounds(0x450),dispatch,[&](auto const &actions){
+    steer_camera(camera,actions.zoom,actions.camera.y,actions.camera.x);
+  })};
   if(!result)return false;
   if(dialogs.outcome)if(auto const prompt{session->take_mission_prompt()};prompt&&dialogs.outcome(*prompt))return false;
-  auto const &actions{*result};
-  steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
   shield_to_front.reset();
   if(requested_throttle != throttle_request) {
@@ -436,6 +437,10 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
         instruments.set_value(*binding.slider, state.requested_charge);
       }
     }
+  }
+  if(transitions.snapshot().prepared){
+    auto const requested{external_view_requested?camera_mode::orbit:camera_mode::attached};
+    if(camera.mode!=requested)set_camera(requested,impact_view().mode,false);
   }
   update_camera(camera, session->view_target());
   auto const &player{session->player_actor()};
@@ -519,6 +524,7 @@ void mission_view::draw() {
   auto &colours{impact.snapshot().impact_palette?impact_colours:display_colours};
   model_view view;
   if(options_camera){view.bounds={0,0,319,110};view.projection.centre={160,50};}
+  else if(!inside){view.bounds=external_view_artwork::bounds;view.projection.centre=external_view_artwork::centre;}
   if(inside) {
     cockpit.draw_composed(frame, painted,shift);
     auto const centre{window.projection_centre()};
@@ -533,8 +539,11 @@ void mission_view::draw() {
       }
     }
   }
-  {
-    scoped_framebuffer_clip clip{frame, inside ? &mask : nullptr};
+  if(!inside)mask=external_view_artwork::clipping(view.bounds);
+  // 59c8f skips the world while the lower panel is stable. The transition
+  // still draws it, but idle lower-panel frames do not advance cloud wind.
+  if(transitions.snapshot().view!=1||transitions.snapshot().prepared) {
+    scoped_framebuffer_clip clip{frame, &mask};
     // 25b68 passes the cockpit's authored layout offset to 26264. The
     // projection centre alone leaves uncovered sky in an off-centre side view.
     auto const background_offset{inside?vec2<int32_t>{window.instrument_origin[0],window.instrument_origin[1]}:vec2<int32_t>{0,0}};
@@ -590,6 +599,7 @@ void mission_view::draw() {
     }
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
+  if(!inside&&!options_camera)external_artwork.draw(frame,external_camera_control);
   radio->advance_queue(*session,interface_ticks);
   radio->draw(frame);
   flush_interface_audio();

@@ -13,7 +13,7 @@ enum class camera_mode : int16_t {
 struct camera_state {
   vec3<int32_t> position;
   vec3<uint16_t> angles;
-  int16_t orbit_distance{10000};
+  int16_t orbit_distance{0};
   int16_t movement{0};
   vec3<uint16_t> orbit_angles;
   vec3<int16_t> angular_rates;

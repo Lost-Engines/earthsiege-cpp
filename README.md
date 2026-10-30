@@ -117,3 +117,10 @@ Cockpit edge strips switch between forward, lower and side views, with the
 original directional pointers. Pilot selection uses the authored indicator
 lamps. The original unused-portrait clearing quirk is reproduced without its
 invalid stack pointer.
+
+
+External views retain the original camera distance and rotation between switches,
+with the original framing and status labels. Hidden clouds pause while the lower
+cockpit panel is open. Complete demo checks now include camera state.
+If a distorted texture polygon requests pixels outside its image, those pixels
+are safely omitted rather than reading unrelated memory.

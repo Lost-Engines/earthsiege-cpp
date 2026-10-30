@@ -19,6 +19,7 @@ class environment_renderer {
  ground_texture texture;
  environment_palette reflection;
 public:
+ cloud_field const &cloud_state()const{return clouds;}
  environment_renderer(resource_store const &,world_environment const &);
  void initialize_palette(palette &colours,uint16_t pitch) { reflection.update(colours,pitch); }
  void draw(framebuffer &,vec3<int32_t> const &,vec3<uint16_t> const &,camera_projection const &,

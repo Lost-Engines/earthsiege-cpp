@@ -1636,3 +1636,49 @@ This reduced DEMO3's flyer-engine request differences from 376 frames to six,
 and DEMO4's from three to one. Remaining start retries coincide with differences
 in audio channel availability/completion timing; that timeline remains under
 comparison. This supersedes the earlier substantial retry-difference count.
+
+
+## Retained external cameras and world draw ownership
+
+All four complete demo comparisons now include 24 camera components on every
+observed initial/frame/exit state: 7,032 states in total. ESRPLY09 stores these
+expected results separately from the TAP inputs. They are checked after native
+execution, never supplied to the camera. The captures are
+demo1-camera-playback-v3 through demo4-camera-playback-v3, made with the unchanged
+game and passive DOSBox observer, sound enabled and startup/radio clocks retained.
+
+Original 5894c changes camera ownership after player controls and before the
+camera transform. 58a44 retains an existing camera for its target. The first
+orbit starts at distance zero and clamps to 2,500 on update; later cockpit/orbit
+switches retain distance, orbit angles and rates. The previous integration
+recreated it at distance 10,000 and switched one presentation too early.
+Player control routing also finishes after a Q dialog accepts exit; the outer
+frame then leaves before perception/power. This includes the final camera-rate
+update even though no further camera transform or world draw occurs.
+
+The external viewport is (0,30)-(319,170), with projection centre (160,105).
+Its rectangular clip region selects row-based texture traversal, just like the
+cockpit masks. Using column traversal caused visible texture and cloud
+differences. Original 58b68 places GREEN6X8 labels at x=50/215, baseline 189,
+using STRINGS0 groups 14 and 32. Both control-owner label rasters match.
+
+Original 59c8f skips environment and scene rendering while lower-panel view 1
+is stable, and resumes it during the prepared transition. Advancing hidden
+clouds on those frames had displaced the entire cloud field by the time the
+player returned to the forward view. Native camera and cloud diagnostics are
+available through EARTHSIEGE_REPLAY_DIAGNOSTICS.
+
+A projected folded quad exposed an additional original column-mapper boundary:
+with a 40x40 texture it reads offsets 2,215 and 2,805, outside 1,600 bitmap bytes.
+The actual mission uses the row mapper, which stays in range for this quad.
+capture_folded_texture.py isolates both original modes with sentinel guard
+bytes. The native safety rule leaves undefined samples untouched; all defined
+pixels remain exact. Four captures test this boundary, in addition to the 600
+ordinary texture rasters. This does not emulate arbitrary adjacent heap bytes.
+
+Whole-frame comparison remains separate from these exact state/raster checks.
+Across 120 sampled frames, the largest differences in demos 1–3 are now
+515/627/728 RGB pixels, down from tens of thousands in external views. Demo 4
+still exposes lower-panel and MFD composition differences (up to 4,552 pixels);
+those remain under investigation. Cursor and independent clock-phase pixels
+are included in these counts.
