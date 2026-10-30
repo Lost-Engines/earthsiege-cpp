@@ -3,6 +3,7 @@
 #include "resources/interface_strings.h"
 #include "resources/resource_store.h"
 #include <optional>
+#include <functional>
 #include "vectorstorm/vector/vector2.h"
 #include "simulation/joystick_routing.h"
 namespace earthsiege {
@@ -22,8 +23,11 @@ class mission_alert {
   std::optional<vec2<int32_t>> warp;
   bool fire_held{true},next_held{true};
   void focus(int);
+  std::function<void()> click;
+  int activate(int index){if(click)click();return index;}
 public:
   mission_alert(resource_store const &resources,int message,int initial_focus=0);
+  void feedback(std::function<void()> callback){click=std::move(callback);}
   int message()const{return message_;}
   int count()const;
   bool exits_mission(int response)const;

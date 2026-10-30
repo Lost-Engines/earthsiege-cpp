@@ -5,8 +5,9 @@ mission_options_dialog::mission_options_dialog(resource_store const &r,preferenc
  :resources{r},prefs{p},saves{s},calibrations{c},settings{p},artwork{r}{focus_button(0);}
 void mission_options_dialog::focus_button(int i){focus=i;auto b{artwork.button(static_cast<unsigned>(i))};warp=vec2<int32_t>{(b.left+b.right)/2,(b.top+b.bottom)/2};}
 void mission_options_dialog::activate(unsigned i,bool backward){
+ if(click)click();
  auto action{settings.activate(i,backward)};
- if(action==mission_preference_action::controls){controls=std::make_unique<controls_dialog>(resources,prefs,saves,calibrations,true);return;}
+ if(action==mission_preference_action::controls){controls=std::make_unique<controls_dialog>(resources,prefs,saves,calibrations,true);controls->feedback(click);return;}
  if(action==mission_preference_action::done){
   constexpr std::array<uint8_t,7> selected{0,1,2,3,4,5,6};bool changed{};
   for(auto index:selected)changed|=prefs.current()[index]!=prefs.saved()[index];

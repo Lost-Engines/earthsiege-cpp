@@ -38,6 +38,7 @@ public:
   bool is_dragging() const;
   bool is_double_click() const;
   void window_bounds(rectangle bounds);
+  void bounds(size_t index,rectangle value){controls.at(index).bounds=value;}
   void enable(size_t index, bool enabled);
   void set_value(size_t index, int value);
   void painted(size_t index);

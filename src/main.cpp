@@ -178,10 +178,14 @@ auto main(int argc, char *argv[])->int try {
   if(display)try{sound=std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr<<"Audio unavailable: "<<e.what()<<'\n';}
   std::unique_ptr<earthsiege::joystick_devices> sticks;
   if(display)try{sticks=std::make_unique<earthsiege::joystick_devices>();}catch(std::exception const &e){std::cerr<<"Joystick input unavailable: "<<e.what()<<'\n';}
-  std::array<earthsiege::software_cursor,3> mission_cursors{
+  std::array<earthsiege::software_cursor,7> mission_cursors{
     earthsiege::software_cursor{resources.read("simvol0","dci/CURSOR.DCI")},
     earthsiege::software_cursor{resources.read("simvol0","dci/PCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0","dci/MCURSOR.DCI")}};
+    earthsiege::software_cursor{resources.read("simvol0","dci/MCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0","dci/NCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0","dci/SCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0","dci/ECURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0","dci/WCURSOR.DCI")}};
   earthsiege::software_cursor shell_cursor{resources.read("shell0","RES32/ARROW.DCI")};
   earthsiege::software_cursor alert_cursor{resources.read("simvol0","dci/ALERT.DCI")};
   auto const cursor_image{[&]()->earthsiege::software_cursor const *{
@@ -202,7 +206,7 @@ auto main(int argc, char *argv[])->int try {
   uint64_t pending{0};
   auto const open_alert{[&](int message){
     alert=std::make_unique<earthsiege::mission_alert>(resources,message);
-    if(scene)scene->clear_input();
+    if(scene){scene->clear_input();alert->feedback([&]{scene->click_sound();});}
     pending=0;
   }};
   auto const respond{[&](int response){
@@ -334,7 +338,7 @@ auto main(int argc, char *argv[])->int try {
       if(code!=88&&code!=0x219&&code!=25&&code!=0x401&&code!=0x410&&code!=16)return unhandled;
       modal_command_pending=false;
       if(code==88||code==0x219){
-        options=menu.flight_options();scene->begin_options();scene_dirty=true;pending=0;
+        options=menu.flight_options();options->feedback([&]{scene->click_sound();});scene->begin_options();scene_dirty=true;pending=0;
       }else if(code==25)open_alert(0);
       else if(code==0x401||code==0x410)open_alert(1);
       else if(code==16){

@@ -59,27 +59,27 @@ void mission_audio::update_music(music_contacts const &contacts,random_state &ra
   if(music_state.track>=0)playback.playing[static_cast<size_t>(music_state.track)]=music->playing();
   for(auto const &event:advance_combat_music(music_state,playback,contacts.actors,contacts.flyers,static_cast<uint32_t>(ticks/2),true,true,random)){
     switch(event.action){
-      case music_action::load:music->load(resources.read("simsound",songs.at(event.track)));break;
-      case music_action::play:music->play();break;
-      case music_action::stop:music->stop();break;
-      case music_action::volume:music->set_volume(event.value);break;
+      case music_action::load:music->load(resources.read("simsound",songs.at(event.track)));if(observe)observe({audio_event_kind::music_load,event.track,songs.at(event.track)});break;
+      case music_action::play:music->play();if(observe)observe({audio_event_kind::music_play,event.track,{}});break;
+      case music_action::stop:music->stop();if(observe)observe({audio_event_kind::music_stop,event.track,{}});break;
+      case music_action::volume:music->set_volume(event.value);if(observe)observe({audio_event_kind::music_volume,event.track,{}});break;
     }
   }
 }
 
-bool mission_audio::play(size_t const id){return effects_enabled&&bank.play(id);}
+bool mission_audio::play(size_t const id){auto const accepted{effects_enabled&&bank.play(id)};if(observe)observe({audio_event_kind::play,id,{},accepted});return accepted;}
 bool mission_audio::play_at(size_t const id,vec3<int32_t> const &where){position(id,where);return play(id);}
 bool mission_audio::speech(std::string_view const path){
   if(!speech_enabled)return true; // Original disabled speech still advances the portrait.
   for(size_t slot{47};slot<57;++slot)if(!bank.playing(slot)){
     for(auto const volume:{"speech","simvoice"})if(auto const *entry{resources.archives().at(volume).find(path)}){
-      bank.bind(slot,resources.archives().at(volume).read(*entry));return bank.play(slot);
+      bank.bind(slot,resources.archives().at(volume).read(*entry));auto const accepted{bank.play(slot)};if(observe)observe({audio_event_kind::speech,slot,path,accepted});return accepted;
     }
     return false;
   }
   return false;
 }
-void mission_audio::stop(size_t const id){bank.stop(id);}
+void mission_audio::stop(size_t const id){bank.stop(id);if(observe)observe({audio_event_kind::stop,id,{}});}
 bool mission_audio::playing(size_t const id)const{return bank.playing(id);}
 void mission_audio::submit_position(size_t const id,vec3<int32_t> const &where,vec3<int32_t> const &origin){sources.submit(id,where,origin);}
 void mission_audio::flush_positions(vec3<int32_t> const &origin){
@@ -105,6 +105,7 @@ void mission_audio::advance(unsigned int const timer_ticks){
     sample_frames=next;output_frames=next_output;
   }
 }
+void mission_audio::advance_to(uint64_t const target){if(target>ticks)advance(static_cast<unsigned>(target-ticks));}
 std::vector<uint8_t> mission_audio::take_samples(){mixed_output.clear();return std::exchange(output,{});}
 std::vector<int16_t> mission_audio::take_output(){output.clear();return std::exchange(mixed_output,{});}
 pcm_sound_bank const &mission_audio::state()const{return bank;}

@@ -186,6 +186,8 @@ class mission_session {
   random_state random;
   random_state visual_random;
   std::vector<sound_request> sound_requests;
+  sound_sink sound_player;
+  void emit_sound(sound_request const &event){if(sound_player)sound_player(event);else sound_requests.push_back(event);}
   world_effects effects;
   world_projectiles projectiles;
   player_rocket_launch camera_rocket;
@@ -258,6 +260,7 @@ public:
   bool transmit_order(wingmate_order const &order, std::optional<size_t> recipient);
   std::vector<radio_event> take_radio_events();
   void on_radio(std::function<void(radio_event const &)> handler){radio_handler=std::move(handler);}
+  void sound_output(sound_sink sink){sound_player=std::move(sink);}
   std::vector<sound_request> take_sounds();
   music_contacts music_observations()const;
   random_state &interface_random();

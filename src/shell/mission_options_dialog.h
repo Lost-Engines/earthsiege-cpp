@@ -17,8 +17,10 @@ class mission_options_dialog {
  void focus_button(int);
  void activate(unsigned,bool backward=false);
  void finish_child();
+ std::function<void()> click;
 public:
  mission_options_dialog(resource_store const &,preferences &,save_store const &,std::array<joystick_calibration,2> &);
+ void feedback(std::function<void()> callback){click=std::move(callback);}
  bool done()const{return done_;}
  bool child_active()const{return controls!=nullptr;}
  int focused()const{return focus;}

@@ -5,6 +5,7 @@
 #include "render/control_settings_artwork.h"
 #include "render/calibration_artwork.h"
 #include "simulation/fixed_math.h"
+#include <functional>
 namespace earthsiege {
 std::array<joystick_calibration,2> load_host_calibrations(save_store const &);
 class controls_dialog {
@@ -23,8 +24,10 @@ class controls_dialog {
  void focus_button(int);
  void activate(unsigned,bool backward=false,bool joystick=false);
  void sample();
+ std::function<void()> click;
 public:
  controls_dialog(resource_store const &,preferences &,save_store const &,std::array<joystick_calibration,2> &,bool in_flight=false);
+ void feedback(std::function<void()> callback){click=std::move(callback);}
  bool done()const{return done_;}
  bool calibrating()const{return calibration.has_value();}
  void draw(framebuffer &)const;

@@ -86,10 +86,13 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   auto const groups{weapons.group_bounds()};
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
   radio=std::make_unique<cockpit_radio>(resources,cockpit.layout,*session,ui_random);
+  session->sound_output([this](sound_request const &request){audio.dispatch(request,camera.position);});
+  radio->sound_output([this](uint16_t id,bool idle_only){if(!idle_only||!audio.playing(id))audio.play(id);});
   radio->speech_output([this](std::string_view path){return audio.speech(path);});
   session->on_radio([this](radio_event const &event){radio->submit(event,interface_ticks);});
   displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments,ui_random);
   hdd=std::make_unique<cockpit_hdd>(resources,cockpit.layout,*session,instruments,ui_random);
+  for(size_t i{};i<edge_controls.size();++i)edge_controls[i]=instruments.add_button(cockpit_edge_bounds(0)[i]);
   auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
@@ -153,14 +156,22 @@ void mission_view::mouse_button(bool const right, bool const pressed) {
 void mission_view::consume_pointer_events() {
   auto const origin{instrument_origin()};
   instruments.window_bounds({origin[0], origin[1], origin[0] + 319, origin[1] + 199});
+  auto edges{cockpit_edge_bounds(static_cast<int>(painted_panel()))};
+  for(size_t i{};i<edges.size();++i){
+    auto b{edges[i]};b.left+=origin[0];b.right+=origin[0];b.top+=origin[1];b.bottom+=origin[1];
+    instruments.bounds(edge_controls[i],b);
+  }
   if(camera.mode == camera_mode::attached) for(auto const &queued : pointer_events) {
     auto const &event{queued.input};
     hdd->pointer(event.mouse.x+origin[0],event.mouse.y+origin[1]);
     if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right,queued.timestamp.value_or(interface_ticks*2))}) {
-      if(hdd->activate(*action,*session,instruments,mfd_ranges[displays->state().range_index]))continue;
-      if(displays->activate(*action,*session,instruments)) continue;
+      if(auto const edge{std::ranges::find(edge_controls,action->index)};edge!=edge_controls.end()){
+        transitions.request(cockpit_edge_request(static_cast<int>(panel),static_cast<size_t>(edge-edge_controls.begin())));continue;
+      }
+      if(hdd->activate(*action,*session,instruments,mfd_ranges[displays->state().range_index])){flush_interface_audio();continue;}
+      if(displays->activate(*action,*session,instruments)){flush_interface_audio();continue;}
       if(action->index == 0) requested_throttle = static_cast<int16_t>(throttle.slider_layout().vertical ? -action->value : action->value);
-      else if(action->index < 3) { if(action->value & 1) shield_to_front = action->index == 1; }
+      else if(action->index < 3) { if(action->value & 1){shield_to_front = action->index == 1;audio.play(17);} }
       else {
         if(action->value & 1) for(size_t i{}; i < weapon_groups.size(); ++i)
           if(action->index == weapon_groups[i]) session->weapon_group_control(static_cast<unsigned int>(i));
@@ -173,6 +184,7 @@ void mission_view::consume_pointer_events() {
           }
         }
       }
+      if(action->index>=3&&!instruments.at(action->index).slider&&(action->value&1))audio.play(17);
     }
   }
   pointer_events.clear();
@@ -337,8 +349,9 @@ bool mission_view::step(bool const control, bool const zoom,mission_dialog_handl
 }
 void mission_view::prepare_frame(uint32_t now){
   finish_launch();
-  audio.engine(camera.mode!=camera_mode::attached);
   audio.update_music(session->music_observations(),ui_random);
+  audio.engine(camera.mode!=camera_mode::attached);
+  audio.flush_positions(camera.position);
   update_interface_clock(now);
   // Original 4cb14 consumes the mouse queue before world simulation.
   consume_pointer_events();
@@ -378,7 +391,7 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
     if((input.command==15||input.command==28)&&camera.mode!=camera_mode::attached){external_camera_control=!external_camera_control;input.command=0;}
     // 38034 routes TRACK through the widget. The bank reads the pending
     // flag during the later instrument exchange, after this frame's aiming.
-    if(input.command==0x214&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->weapon_group_control(4);input.command=0;}
+    if(input.command==0x214&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->weapon_group_control(4);audio.play(17);input.command=0;}
     if(input.command>=59 && input.command<=64 && camera.mode==camera_mode::attached && panel!=cockpit_view::forward)
       transitions.request(panel==cockpit_view::lower?1:6);
     if(input.command==65 || input.command==66)transitions.request(0);
@@ -389,6 +402,7 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
     if(hdd->command(input.command,*session,instruments,mfd_ranges[displays->state().range_index]))input.command=0;
     else if(displays->command(input.command,*session,instruments))input.command=0;
   }
+  flush_interface_audio();
   hat_view(hat);
   input.release_action=static_cast<control_release_action>(routing.mode);
   return true;
@@ -428,8 +442,7 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
   impact.update(interface_ticks,impact_view(),ui_random);
-  for(auto const &request:session->take_sounds())audio.dispatch(request,player.body().movement().position);
-  audio.flush_positions(player.body().movement().position);
+  for(auto const &request:session->take_sounds())audio.dispatch(request,camera.position);
   // Camera ownership changes in 5894c after this frame's player controls,
   // before the later 22904/226f0 presentation can prepare another view.
   if(transitions.snapshot().prepared)external_view_active=external_view_requested;
@@ -599,6 +612,7 @@ void mission_view::draw() {
 
 int mission_view::pointer_cursor(int x,int y)const{
   if(startup||camera.mode!=camera_mode::attached)return -1;
+  if(auto const edge{cockpit_edge_cursor(static_cast<int>(panel),x,y)})return edge;
   if(panel==cockpit_view::lower)return hdd->state().cursor?2:0;
   auto bounds{cockpit.layout.bounds(0x48c)};auto const parent{cockpit.layout.bounds(0x450)};
   auto const origin{instrument_origin()};

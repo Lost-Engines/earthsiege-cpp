@@ -74,12 +74,13 @@ bool cockpit_displays::activate(control_activation const &action, mission_sessio
         break;
       case mfd_action::none: break;
     }
-    enable_controls(input); return true;
+    sounds.push_back(17);enable_controls(input); return true;
   }
   for(size_t i{};i<rows.size();++i) if(action.index==rows[i]) {
     // Original 3ac04 routes a same-row double click to TRANSMIT, whose
     // 3a46c callback rejects it because the shared double-click latch is set.
     if(!action.double_click || controller.state().choice!=i)controller.select_choice(i);
+    if(action.value&1)sounds.push_back(17);
     return true;
   }
   return false;

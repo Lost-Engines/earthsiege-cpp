@@ -24,6 +24,7 @@ std::optional<size_t> cockpit_radio::speaker_index(std::optional<size_t> const a
   for(size_t i{};i<members.size();++i)if(members[i].actor==*actor)return i;
   return {};
 }
+void cockpit_radio::play_sound(uint16_t id,bool idle_only){if(sound_player)sound_player(id,idle_only);else sounds.push_back(id);}
 uint32_t cockpit_radio::read_input(radio_input_point point,uint32_t fallback)const{return observation?observation(point,fallback):fallback;}
 bool cockpit_radio::submit(radio_event event,uint32_t const ticks){
   if(event.cancel)return controller.cancel_message(event.id,event.speaker);
@@ -38,7 +39,7 @@ void cockpit_radio::advance_portraits(mission_session &session,uint32_t const fa
   for(size_t i{};i<members.size();++i){
     auto &p{members[i]};auto const order{session.order_state(p.actor)};
     auto const paint{[&](int const kind,int const value){
-      if(kind==3){sounds.push_back(static_cast<uint16_t>(value));return;}
+      if(kind==3){play_sound(static_cast<uint16_t>(value),true);return;}
       if(!visible)return;
       if(kind==0){
         if(order.dead){labels.draw_static(cache,p.painted,p.pilot,i,p.noise_frame);p.noise_frame=(p.noise_frame+1)%5;}
@@ -79,12 +80,12 @@ void cockpit_radio::prepare(mission_session &session,camera_state const &camera,
     .show{[&](radio_message const &message){
       system_painted=true;system_text=catalogue.at(message.text).text.substr(0,80);
       switch(message.event.id){
-        case 6:case 14:sounds.push_back(25);break;
-        case 8:case 11:case 12:case 13:case 15:case 17:case 19:case 20:sounds.push_back(24);break;
-        case 16:case 18:case 27:case 28:sounds.push_back(23);break;
-        case 31:system_blink=true;sounds.push_back(26);break;
-        case 32:case 33:system_blink=false;sounds.push_back(26);break;
-        default:if(message.event.id<=30)sounds.push_back(26);break;
+        case 6:case 14:play_sound(25);break;
+        case 8:case 11:case 12:case 13:case 15:case 17:case 19:case 20:play_sound(24);break;
+        case 16:case 18:case 27:case 28:play_sound(23);break;
+        case 31:system_blink=true;play_sound(26);break;
+        case 32:case 33:system_blink=false;play_sound(26);break;
+        default:if(message.event.id<=30)play_sound(26);break;
       }
       return true;
     }},
@@ -109,7 +110,7 @@ void cockpit_radio::advance_queue(mission_session &session,uint32_t ticks){
       if(p.transmission)p.transmission->begin(static_cast<uint8_t>(message.event.id),std::move(timeline),begin);
       else p.transmission.emplace(static_cast<uint8_t>(message.event.id),std::move(timeline),begin);
       p.speech=std::format("simvoice/P{}_{:02}{:03}.SFX",speakers[*index].voice,message.event.id,message.flags);
-      sounds.push_back(28);
+      play_sound(28,true);
       if(visible)advance_portraits(session,ticks);
     }},
     .show{[&](radio_message const &message){text_speaker=speaker_index(message.event.speaker);text=banner.format(text_speaker?labels.name(members[*text_speaker].pilot):"XXXX",catalogue.at(message.text).text);return true;}},

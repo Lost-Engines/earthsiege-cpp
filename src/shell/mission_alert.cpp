@@ -38,10 +38,10 @@ void mission_alert::focus(int i){
  focus_=i;if(i>=0){auto b{button(i)};warp=vec2<int32_t>{(b.left+b.right)/2,(b.top+b.bottom)/2};}
 }
 alert_input_result mission_alert::input(uint16_t scan,bool fire,bool next,bool wcs){
- if(fire){if(focus_<0){focus(0);return {true,{}};}return {true,focus_};}
+ if(fire){if(focus_<0){focus(0);return {true,{}};}return {true,activate(focus_)};}
  if(next){focus((focus_+1)%count());return {true,{}};}
- if(scan==1){focus(0);return {true,0};}
- if(scan==28){if(focus_<0){focus(0);return {true,{}};}return {true,focus_};}
+ if(scan==1){focus(0);return {true,activate(0)};}
+ if(scan==28){if(focus_<0){focus(0);return {true,{}};}return {true,activate(focus_)};}
  if(scan==15||(scan==82&&wcs))focus((focus_+1)%count());
  else if(scan==0x20f)focus(focus_<0?count()-1:(focus_+count()-1)%count());
  else if(scan!=82)return {};
@@ -53,5 +53,5 @@ std::optional<int> mission_alert::devices(std::array<joystick_hardware,2> const 
 }
 std::optional<vec2<int32_t>> mission_alert::take_warp(){return std::exchange(warp,{});}
 void mission_alert::mouse_down(int x,int y){pressed_=-1;for(int i{};i<count();++i)if(button(i).contains(x,y)){pressed_=focus_=i;}}
-std::optional<int> mission_alert::mouse_up(int x,int y){int const previous{pressed_};pressed_=-1;if(previous>=0&&button(previous).contains(x,y))return previous;return {};}
+std::optional<int> mission_alert::mouse_up(int x,int y){int const previous{pressed_};pressed_=-1;if(previous>=0&&button(previous).contains(x,y))return activate(previous);return {};}
 }

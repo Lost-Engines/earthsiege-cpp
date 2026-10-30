@@ -9,6 +9,10 @@
 
 namespace earthsiege {
 /// Simulation sound resources and deterministic 120 Hz digital output clock.
+enum class audio_event_kind { play,stop,speech,music_load,music_play,music_stop,music_volume };
+struct audio_event {audio_event_kind kind;size_t id{};std::string_view path;bool accepted{true};};
+using audio_event_sink=std::function<void(audio_event const &)>;
+
 class mission_audio {
   resource_store const &resources;
   pcm_sound_bank bank;
@@ -32,6 +36,7 @@ class mission_audio {
   void position(size_t id,vec3<int32_t> const &where);
   void update_gain(size_t id);
 public:
+  audio_event_sink observe;
   explicit mission_audio(resource_store const &resources);
   bool preferences(bool music,bool effects,bool speech);
   void dispatch(sound_request const &request, vec3<int32_t> const &listener);
@@ -45,6 +50,7 @@ public:
   void submit_position(size_t id,vec3<int32_t> const &where,vec3<int32_t> const &listener);
   void flush_positions(vec3<int32_t> const &listener);
   void advance(unsigned int timer_ticks=3);
+  void advance_to(uint64_t timer_ticks);
   std::vector<uint8_t> take_samples();
   std::vector<int16_t> take_output();
   pcm_sound_bank const &state()const;

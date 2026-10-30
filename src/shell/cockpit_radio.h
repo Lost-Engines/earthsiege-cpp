@@ -21,6 +21,8 @@ class cockpit_radio {
   radio_controller controller,system_controller;
   radio_input_source observation;
   std::function<bool(std::string_view)> speech_player;
+  std::function<void(uint16_t,bool)> sound_player;
+  void play_sound(uint16_t id,bool idle_only=false);
   uint32_t read_input(radio_input_point point,uint32_t fallback)const;
   uint32_t system_ticks{};
   bool system_blink{},system_enabled{true},system_painted{};
@@ -51,6 +53,7 @@ class cockpit_radio {
   void advance_portraits(mission_session &session,uint32_t ticks);
 public:
   cockpit_radio(resource_store const &resources,cockpit_layout const &layout,mission_session const &session,random_state &ui_random,bool reduced_detail=false);
+  void sound_output(std::function<void(uint16_t,bool)> player){sound_player=std::move(player);}
   void speech_output(std::function<bool(std::string_view)> player){speech_player=std::move(player);}
   void input_source(radio_input_source source){observation=std::move(source);}
   radio_presentation_state const &system_state()const{return system_controller.state();}

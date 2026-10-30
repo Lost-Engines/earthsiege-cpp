@@ -20,7 +20,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     weapon_definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))},
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
-    random{std::move(initial_random)}, effects{resources,[this](auto const &event){sound_requests.push_back(event);}}, projectiles{resources, weapon_definitions,[this](auto const &event){sound_requests.push_back(event);}} {
+    random{std::move(initial_random)}, effects{resources,[this](auto const &event){emit_sound(event);}}, projectiles{resources, weapon_definitions,[this](auto const &event){emit_sound(event);}} {
   auto const placements{layout.place(script, roster)};
   activity=std::make_unique<mission_activity>(script,placements,initial_counters);
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
@@ -45,7 +45,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     // unresolved actor's original sentinel position. Place the complete roster later.
     crew_member member{
       .definition{definition.get()},
-      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, equipment, position, angles, values, actor.player_controlled ? sound_sink{[this](auto const &event){sound_requests.push_back(event);}} : sound_sink{})},
+      .actor{std::make_unique<herc_actor>(*definition, weapon_definitions, weapon_models, equipment, position, angles, values, actor.player_controlled ? sound_sink{[this](auto const &event){emit_sound(event);}} : sound_sink{})},
       .attachments{}, .source{actor.source}, .group{actor.group}, .side{placements.groups.at(actor.group).mode},
       .waiting{script.groups.at(actor.group).trigger >= 0}, .player_roster{actor.player_roster},
       .pilot_slot{actor.player_roster ? std::optional<int16_t>{roster.hercs.at(actor.source-script.hercs.size()).slot} : std::nullopt},
@@ -198,7 +198,7 @@ bool mission_session::player_command(uint16_t const code) {
   if(code >= 2 && code <= 10) return player_weapons->click_control(code - 2, false); // 1..9
   if(code == 14) input_router.request_centre();                             // Backspace
   else if(code == 15) cycle_target();                                       // Tab; view-specific gating belongs to the cockpit
-  else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; sound_requests.push_back(sample_sound_request{sound_action::play,static_cast<uint16_t>(actor.impacts().detectable ? 26 : 27)}); }
+  else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; emit_sound(sample_sound_request{sound_action::play,static_cast<uint16_t>(actor.impacts().detectable ? 26 : 27)}); }
   else return false;
   return true;
 }
@@ -261,7 +261,9 @@ void mission_session::exchange_weapon_instruments(frame_ratio const ratio) {
   player_weapons->exchange_displays(player_weapon_range, crew[player_index].sensors.locks, ratio);
 }
 void mission_session::weapon_group_control(unsigned int const button) { player_weapons->request_group_control(button); }
-void mission_session::weapon_control(unsigned int const control_number, bool const secondary) { player_weapons->click_control(control_number, secondary); }
+void mission_session::weapon_control(unsigned int const control_number, bool const secondary) {
+  if(player_weapons->click_control(control_number, secondary)&&!secondary)emit_sound(sample_sound_request{sound_action::play,26});
+}
 void mission_session::weapon_charge_request(unsigned int const control_number, int32_t const value) { player_weapons->request_charge(control_number, value); }
 void mission_session::update_player_interface() {
   auto &member{crew[player_index]};

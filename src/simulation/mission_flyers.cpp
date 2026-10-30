@@ -45,7 +45,7 @@ void mission_session::navigate_flyer(size_t const index){
 void mission_session::dispatch_flyer(size_t const index,frame_ratio const ratio){
   auto &member{flyers.at(index)};auto &actor{*member.actor};auto const id{flyer_id(index)};
   auto &state{activity->decisions()[id]};auto &group{activity->group(member.group)};
-  sound_requests.push_back(sample_sound_request{state.dead ? sound_action::stop : sound_action::continuous,16,actor.motion().position});
+  emit_sound(sample_sound_request{state.dead ? sound_action::stop : sound_action::continuous,16,actor.motion().position});
   auto const formation{[&]{
     auto const &leader{*flyers.at(group.members.front()-flyer_id(0)).actor};
     auto const &offset{layout.formation_offset(actor_kind::flyer,static_cast<size_t>(group.formation),activity->actor(id).member-1)};

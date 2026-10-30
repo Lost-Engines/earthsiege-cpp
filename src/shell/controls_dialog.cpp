@@ -17,6 +17,7 @@ controls_dialog::controls_dialog(resource_store const &r,preferences &p,save_sto
 rectangle controls_dialog::button(unsigned i)const{return calibration?calibration_view.button(i):artwork.button(i);}
 void controls_dialog::focus_button(int i){focus=i;auto b{button(static_cast<unsigned>(i))};warp=vec2<int32_t>{(b.left+b.right)/2,(b.top+b.bottom)/2};}
 void controls_dialog::activate(unsigned i,bool backward,bool joystick){
+ if(click)click();
  if(calibration){
   calibration->activate(i);
   if(calibration->done()){calibration.reset();focus_button(6);}

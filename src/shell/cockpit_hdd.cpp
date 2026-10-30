@@ -77,7 +77,7 @@ void cockpit_hdd::execute_button(size_t i,mission_session &session,pointer_contr
 bool cockpit_hdd::activate(control_activation const &action,mission_session &session,pointer_controls &input,int32_t const range){
   for(size_t i{};i<button_ids.size();++i)if(action.index==button_ids[i]){
     // 3d430 stores only the last request; 3cd28 dispatches it after simulation.
-    if(action.value&1)pending_button=i;
+    if(action.value&1){pending_button=i;sounds.push_back(17);}
     return true;
   }
   if(page!=0)return false;

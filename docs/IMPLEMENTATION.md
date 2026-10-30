@@ -6,8 +6,8 @@ Current integration: single missions and careers can launch, fly and return with
 saved results. Arming, crew assignment, repair, salvage, construction and launch
 warnings are connected to the original shell controls and static artwork.
 Opening, travel and ending movies, original environment layers and workshop
-dialogue, menu doors, credits and cockpit impact effects are connected. Complete
-frame scheduling/replay verification remains. Later entries supersede the older
+dialogue, menu doors, credits and cockpit impact effects are connected. All four original recordings now agree on gameplay, complete visual RNG and
+final return files. Full image and audio-stream equality remain under comparison. Later entries supersede the older
 integration boundaries in this cumulative record.
 
 Working components:
@@ -1547,7 +1547,48 @@ message; its coordinates follow the cockpit origin during scrolling. The old
 native redraw restored cockpit artwork over that retained blank. This accounted
 for 1,479 pixels in the sampled forward view after returning from the lower
 panel. The original VGA writer was traced to 2fa72 and its subsequent page copy.
-Sampled complete frames now differ by 13–146 RGB pixels, depending on the frame,
+Sampled forward-view frames now differ by 13–146 RGB pixels, depending on the frame,
 including reference cursor layers, clock phase and isolated world edges. The
 replay-state comparisons remain exact; complete image identity is a separate
 claim and has not yet been established.
+
+
+## Cockpit edge controls and ordered audio integration
+
+The cockpit now responds to the original three edge controls: bottom switches
+to the lower panel, its top returns forward, and side strips enter/leave the
+left and right views. Original inclusive bounds, corner precedence, directional
+DCI cursors and release-button handling are preserved. All 1,365 original
+hover/request cases agree. These controls were missing from the integrated
+input path despite the underlying pan renderer matching its isolated fixtures;
+DEMO1's recorded bottom-edge click now enters the lower panel.
+
+World sound requests dispatch at their original call sites, preserving order
+relative to UI, radio and effect requests. Radio opening/closing tones respect
+the original already-playing gate. MFD/HDD buttons, shield and weapon controls,
+weapon selection, options and alerts produce their original feedback.
+Alert-input fixtures also compare the original click count for each response.
+
+Original 58574 selects music before gating the cockpit engine, then flushes
+positioned effects against the retained camera position before simulation.
+The listener refresh keeps the original ten-call cadence and identity
+orientation. Previously the native path refreshed after simulation against
+the HERC's ground position, shifting distant engines' audible boundaries.
+
+The four replay tests additionally compare 4,474 ordered non-engine requests
+(1,328 / 1,500 / 1,052 / 594), including their frame and call order. All requests
+are retained in separate ESREQ001 fixtures generated from the unchanged DOSBox
+trace; expected requests are never fed into the game. Optional
+EARTHSIEGE_REPLAY_AUDIO writes the native requests, driver acceptance and active
+voice counts. Audio advances against the recorded outer clocks during replay.
+
+Engine 16/45 starts depend on whether their prior sample is still playing and
+whether the shared 32-voice pool can accept it. These requests remain in the
+fixtures and analysis comparison reports, but are excluded from the exact
+request assertion pending complete DMA/interrupt timeline comparison. The
+third recording still has substantial flyer-engine retry differences; the
+fourth differs in three frames. This is not a claim of complete audio equality.
+
+The corrected lower-panel transition also exposes retained portrait/background
+and button differences in full frames (about 4,100 RGB pixels in two sampled
+lower views). The earlier 13–146-pixel results refer to sampled forward views.

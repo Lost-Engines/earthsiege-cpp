@@ -104,6 +104,7 @@ class mission_view {
   bool external_view_active{},external_view_requested{}; // 5894c applies prepared views after input.
   player_input pointer;
   pointer_controls instruments;
+  std::array<size_t,3> edge_controls;
   std::unique_ptr<cockpit_displays> displays;
   std::unique_ptr<cockpit_radio> radio;
   std::unique_ptr<cockpit_hdd> hdd;
@@ -161,6 +162,10 @@ public:
   void draw();
   void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { detail={horizon,cloud,ground,true}; }
   std::vector<int16_t> take_audio();
+  void click_sound(){audio.play(17);}
+  void audio_clock(uint64_t ticks){audio.advance_to(ticks);}
+  void audio_observer(audio_event_sink sink){audio.observe=std::move(sink);}
+  pcm_sound_bank const &audio_state()const{return audio.state();}
   std::optional<vec2<int32_t>> take_pointer_warp();
   std::vector<framebuffer> take_pan_frames();
   framebuffer const &image() const;

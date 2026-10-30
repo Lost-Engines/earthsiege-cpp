@@ -1,6 +1,32 @@
 #include "cockpit_transition.h"
 #include <utility>
 namespace earthsiege {
+std::array<rectangle,3> cockpit_edge_bounds(int view){
+  switch(view){
+    case 1:return {{{0,0,319,3},{0,0,5,200},{314,0,319,200}}};
+    case 2:return {{{-1,197,318,200},{-315,0,-310,200},{-1,0,4,200}}};
+    case 3:return {{{1,197,320,200},{315,0,320,200},{629,0,634,200}}};
+    default:return {{{0,197,319,200},{0,0,5,200},{314,0,319,200}}};
+  }
+}
+int cockpit_edge_request(int view,size_t edge){
+  if(edge==0)return view==0?0:view==1?1:-1;
+  if(edge==1)return view==0?5:view==3?6:-1;
+  if(edge==2)return view==0?4:view==2?6:-1;
+  return -1;
+}
+int cockpit_edge_cursor(int view,int x,int y){
+  auto bounds{cockpit_edge_bounds(view)};
+  for(size_t i{};i<bounds.size();++i)if(bounds[i].contains(x,y)){
+    auto const request{cockpit_edge_request(view,i)};
+    if(request==0)return 4;
+    if(request==1)return 3;
+    if(request==4||(request==6&&view==3))return 5;
+    if(request==5||(request==6&&view==2))return 6;
+    return 0;
+  }
+  return 0;
+}
 void cockpit_transition::request(int action){
   if(value.pending!=-1)return;
   auto v{value.view};

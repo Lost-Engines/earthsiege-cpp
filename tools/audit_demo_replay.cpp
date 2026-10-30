@@ -20,6 +20,20 @@ int main(int argc,char **argv)try{
  auto expected_packets{terminal?file.integer<uint32_t>():uint32_t{0}};
  auto tape{read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")))};
  mission_view view{resources,tape};
+ std::ofstream audio_log;int64_t audio_frame{-1};
+ std::vector<std::pair<int32_t,uint16_t>> audio_requests;
+ if(auto const *path{std::getenv("EARTHSIEGE_REPLAY_AUDIO")}){
+  audio_log.open(path);if(!audio_log)throw std::runtime_error{"Cannot open audio diagnostics"};
+ }
+ view.audio_observer([&](audio_event const &e){
+  if(e.kind==audio_event_kind::play||e.kind==audio_event_kind::music_play)
+   audio_requests.emplace_back(static_cast<int32_t>(std::max<int64_t>(0,audio_frame)),static_cast<uint16_t>(e.id));
+  if(audio_log.is_open()){
+   auto const &voices{view.audio_state().voices()};
+   audio_log<<"{\"frame\":"<<audio_frame<<",\"kind\":"<<std::to_underlying(e.kind)<<",\"id\":"<<e.id<<",\"path\":"<<std::quoted(std::string(e.path))<<",\"accepted\":"<<e.accepted<<",\"voices\":"<<std::ranges::count_if(voices,[](auto const &v){return v.flags&0x8000;})<<"}\n";
+  }
+ });
+ auto audio_clock=[&](uint32_t clock){view.audio_clock(uint64_t{clock}*2);view.take_audio();};
  preferences settings{prefs};std::array<joystick_calibration,2> calibrations;
  if(extended)view.configure_input(settings,calibrations);
  if(visual){
@@ -27,14 +41,14 @@ int main(int argc,char **argv)try{
   for(unsigned i{};i<frames;++i){
    auto draw_clock{file.integer<uint32_t>()},palette_clock{file.integer<uint32_t>()},end_clock{file.integer<uint32_t>()};
    if(!view.starting())file.fail("startup completed early");
-   view.draw_startup(draw_clock);view.finish_startup_frame(palette_clock,end_clock);
+   audio_clock(draw_clock);view.draw_startup(draw_clock);audio_clock(end_clock);view.finish_startup_frame(palette_clock,end_clock);
   }
   if(view.starting())file.fail("startup did not finish");
  }
  save_store replay_saves{std::filesystem::path{argv[2]}.parent_path()/"replay-settings"};
  size_t next_packet{},modal_packets{},alert_count{};bool suppressed{},exited{};
  auto alert=[&](int message){
-  mission_alert dialog{resources,message};
+  mission_alert dialog{resources,message};dialog.feedback([&]{view.click_sound();});
   if(next_packet>=tape.frames.size())throw std::runtime_error{"Missing alert initialization poll"};
   ++next_packet;++modal_packets;suppressed=true;
   bool left{};std::optional<int> response;
@@ -62,7 +76,7 @@ int main(int argc,char **argv)try{
   suppressed=true;view.begin_options();
   if(next_packet>=tape.frames.size())throw std::runtime_error{"Missing modal initialization poll"};
   ++next_packet;++modal_packets;
-  mission_options_dialog options{resources,settings,replay_saves,calibrations};
+  mission_options_dialog options{resources,settings,replay_saves,calibrations};options.feedback([&]{view.click_sound();});
   bool left{},right{};
   while(!options.done()){
    if(next_packet>=tape.frames.size())throw std::runtime_error{"Recording ended inside preferences"};
@@ -92,6 +106,7 @@ int main(int argc,char **argv)try{
  }
  uint32_t checked{};
  for(uint32_t frame{};frame<count;++frame){
+  audio_frame=int64_t{frame}-1;
   auto phase{terminal?file.integer<uint8_t>():uint8_t{1}};
   auto packet{file.integer<int32_t>()};auto clock{file.integer<uint32_t>()};auto ratio{file.integer<uint16_t>()};auto actors{file.integer<uint16_t>()};
   if(argc>3&&frame>std::stoul(argv[3]))break;
@@ -105,6 +120,7 @@ int main(int argc,char **argv)try{
     return observations[observation_index++].second;
    });
   }
+  audio_clock(clock);
   if(packet!=-1&&packet!=-3){
    tape_frame record;
    if(packet>=0){
@@ -251,6 +267,28 @@ int main(int argc,char **argv)try{
    compare_file("MISSION.VAR",write_mission_counters(view.mission_variables()));
   }
   file.require_end();
+  if(has_radio_inputs){
+   auto audio_raw{read_file(std::filesystem::path{argv[2]}.parent_path()/("demo"+std::to_string(demo)+"_audio.bin"))};
+   binary_reader sounds{audio_raw};auto signature{sounds.take(8)};
+   if(std::string(signature.begin(),signature.end())!="ESREQ001")sounds.fail("audio format");
+   std::vector<std::pair<int32_t,uint16_t>> expected;
+   auto const requests{sounds.integer<uint32_t>()};
+   for(uint32_t i{};i<requests;++i){
+    auto const frame{sounds.integer<int32_t>()};auto const id{sounds.integer<uint16_t>()};
+    expected.emplace_back(frame,id);
+   }
+   sounds.require_end();
+   // Engine start retries depend on the separately clocked PCM completion and
+   // voice allocator. Retain them in the fixture, but compare other requests
+   // exactly in frame/call order without injecting any expected request.
+   auto engine=[](auto const &request){return request.second==16||request.second==45;};
+   std::erase_if(expected,engine);std::erase_if(audio_requests,engine);
+   if(expected!=audio_requests){
+    size_t i{};while(i<expected.size()&&i<audio_requests.size()&&expected[i]==audio_requests[i])++i;
+    throw std::runtime_error{"Ordered non-engine sound request differs at "+std::to_string(i)};
+   }
+   std::cout<<expected.size()<<" ordered non-engine sound requests agree\n";
+  }
   if(terminal&&next_packet!=expected_packets)file.fail("recorded input consumption");
   if(terminal&&expected_packets!=tape.frames.size())file.fail("source TAP packet count");
   if(terminal&&alert_count&&!exited)file.fail("terminal dialog did not leave mission");
