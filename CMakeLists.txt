@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/render/software_cursor.cpp
   src/render/palette_device.cpp
   src/shell/control_settings.cpp
   src/shell/controls_dialog.cpp
@@ -1295,4 +1296,10 @@ if(BUILD_TESTING)
  add_executable(palette_device_test tests/palette_device_test.cpp)
  target_link_libraries(palette_device_test PRIVATE earthsiege_core)
  add_test(NAME palette_device COMMAND palette_device_test "${PROJECT_SOURCE_DIR}/tests/fixtures/palette_device.bin")
+endif()
+
+if(BUILD_TESTING)
+  add_executable(software_cursor_test tests/software_cursor_test.cpp)
+  target_link_libraries(software_cursor_test PRIVATE earthsiege_core)
+  add_test(NAME software_cursor COMMAND software_cursor_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/software_cursors.bin")
 endif()

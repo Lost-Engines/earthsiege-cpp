@@ -1522,3 +1522,32 @@ callers. At sampled replay frame 300, the remaining 13 differing RGB pixels
 are the separately drawn software cursor. Other frames still contain radio
 clear-region, marker, cursor and clock differences; this is not a claim of
 whole-recording pixel equality.
+
+
+## Original software pointers and retained radio clearing
+
+The native window draws DCI sprites in the indexed presentation, using each
+resource's signed hotspot and transparent pixels. It hides the host pointer
+inside the game window. The cockpit selects its normal cross or green aiming
+diamond using the original HUD input rectangle; the lower map uses the command
+cursor state. Shell screens and flight dialogs use their own arrow resources.
+Movie/startup and external-view presentation suppress the pointer. Presentation
+adds the cursor after composing the retained scene, so it does not contaminate
+cockpit pages, pan fixtures or gameplay state.
+
+All 110 original cursor rasters agree, covering all eleven retained DCI resources
+and ten positions including every clipped corner. The original 66948 loader and
+VGA show routine execute unchanged. A private X11/SDL check additionally verifies
+sprite pixels for aiming, cockpit controls, the clipped corner and a modal
+pointer at scale two; screenshots and checks are in build/cursor-live.
+
+Radio system-message regions retain their cleared colour-63 background after
+expiry. Cockpit full repaint 2fa00 also clears this rectangle with no active
+message; its coordinates follow the cockpit origin during scrolling. The old
+native redraw restored cockpit artwork over that retained blank. This accounted
+for 1,479 pixels in the sampled forward view after returning from the lower
+panel. The original VGA writer was traced to 2fa72 and its subsequent page copy.
+Sampled complete frames now differ by 13–146 RGB pixels, depending on the frame,
+including reference cursor layers, clock phase and isolated world edges. The
+replay-state comparisons remain exact; complete image identity is a separate
+claim and has not yet been established.

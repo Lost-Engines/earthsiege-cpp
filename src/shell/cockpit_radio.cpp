@@ -71,13 +71,13 @@ void cockpit_radio::prepare(mission_session &session,camera_state const &camera,
   advance_portraits(session,ticks);
   // 2fab8 forces system captions on and marks readiness only after advancing.
   // These alerts have their own queue and cannot interrupt a pilot transmission.
-  system_enabled=inside;
+  system_enabled=inside;system_origin_x=origin_x;system_origin_y=origin_y;
   if(system_enabled){
   system_ticks=read_input(radio_input_point::system_queue,ticks);
   system_controller.advance(system_ticks,true,{
     .start{[](radio_message const &){}},
     .show{[&](radio_message const &message){
-      system_text=catalogue.at(message.text).text.substr(0,80);
+      system_painted=true;system_text=catalogue.at(message.text).text.substr(0,80);
       switch(message.event.id){
         case 6:case 14:sounds.push_back(25);break;
         case 8:case 11:case 12:case 13:case 15:case 17:case 19:case 20:sounds.push_back(24);break;
@@ -123,7 +123,13 @@ void cockpit_radio::draw(framebuffer &frame)const{
       frame.pixel(x,y,cache.pixels()[static_cast<size_t>(y*320+x)]);
   }
   if(controller.state().visible)banner.draw(frame,text,text_speaker);
-  if(system_enabled&&system_controller.state().visible)banner.draw_system(frame,system_text,system_bounds,!system_blink||(system_ticks&32));
+  // Original 2fb18 erases an expired system message to colour 63. The
+  // retained cockpit page keeps that blank region until its next full repaint.
+  if(system_enabled&&system_painted){
+    auto bounds{system_bounds};bounds.left-=system_origin_x;bounds.right-=system_origin_x;
+    bounds.top-=system_origin_y;bounds.bottom-=system_origin_y;
+    banner.draw_system(frame,system_text,bounds,system_controller.state().visible&&(!system_blink||(system_ticks&32)));
+  }
 }
 radio_presentation_state const &cockpit_radio::state()const{return controller.state();}
 std::vector<uint16_t> cockpit_radio::take_sounds(){return std::exchange(sounds,{});}

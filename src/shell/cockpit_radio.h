@@ -23,9 +23,10 @@ class cockpit_radio {
   std::function<bool(std::string_view)> speech_player;
   uint32_t read_input(radio_input_point point,uint32_t fallback)const;
   uint32_t system_ticks{};
-  bool system_blink{},system_enabled{true};
+  bool system_blink{},system_enabled{true},system_painted{};
   std::string system_text;
   rectangle system_bounds;
+  int system_origin_x{},system_origin_y{};
   radio_banner banner;
   wingmate_portrait labels;
   struct member {
@@ -59,6 +60,7 @@ public:
   void prepare(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);
   void advance_queue(mission_session &session,uint32_t ticks);
   void draw(framebuffer &frame)const;
+  void repaint(){system_painted=true;}
   radio_presentation_state const &state()const;
   std::vector<uint16_t> take_sounds();
   std::vector<std::string> take_speech();

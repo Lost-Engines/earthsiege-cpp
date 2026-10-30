@@ -710,3 +710,10 @@ All seven state fields, including both page indices, are compared.
 resource identity and the VGA device adapter, retaining all 768 DAC bytes and
 the next write index after every upload. Seeded inputs cover dirty-range unions,
 idle uploads, palette switches and the original extra DAC pre-write.
+
+
+`software_cursors.bin` (ESCURS01): 110 unchanged original DCI/VGA cursor
+rasters from `tools/capture_software_cursors.py`, with all eleven cursor resources
+and ten explicit positions. CRC32 covers the complete 320x200 page after the
+original loader and cursor-show routine, including transparent pixels, original
+hotspots and clipping at all four edges.

@@ -241,6 +241,7 @@ void mission_view::present_view(){
   // Preparing a cockpit page invokes the shield's full painter (39178),
   // even when its charge did not change. The upload belongs to the next present.
   if(!state.prepared&&after_state.prepared&&after_state.pending!=2){
+    radio->repaint(); // 2fa00 clears the message rectangle even with no text.
     auto const &shield{session->player_actor().power().shields};
     displayed_shields=std::array<int32_t,3>{static_cast<int32_t>(shield.front)*1024/shield.capacity,
                                          static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
@@ -594,6 +595,15 @@ void mission_view::draw() {
     surface.store(frame,page*160,y);
   }
   if(!startup){display_device.present(colours);present_view();}
+}
+
+int mission_view::pointer_cursor(int x,int y)const{
+  if(startup||camera.mode!=camera_mode::attached)return -1;
+  if(panel==cockpit_view::lower)return hdd->state().cursor?2:0;
+  auto bounds{cockpit.layout.bounds(0x48c)};auto const parent{cockpit.layout.bounds(0x450)};
+  auto const origin{instrument_origin()};
+  bounds.left+=parent.left;bounds.right+=parent.left;bounds.top+=parent.top;bounds.bottom+=parent.top;
+  return bounds.contains(x+origin[0],y+origin[1])?1:0;
 }
 
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}

@@ -1,3 +1,4 @@
+#include "render/software_cursor.h"
 #include <algorithm>
 #include <charconv>
 #include <cstdlib>
@@ -177,6 +178,19 @@ auto main(int argc, char *argv[])->int try {
   if(display)try{sound=std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr<<"Audio unavailable: "<<e.what()<<'\n';}
   std::unique_ptr<earthsiege::joystick_devices> sticks;
   if(display)try{sticks=std::make_unique<earthsiege::joystick_devices>();}catch(std::exception const &e){std::cerr<<"Joystick input unavailable: "<<e.what()<<'\n';}
+  std::array<earthsiege::software_cursor,3> mission_cursors{
+    earthsiege::software_cursor{resources.read("simvol0","dci/CURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0","dci/PCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0","dci/MCURSOR.DCI")}};
+  earthsiege::software_cursor shell_cursor{resources.read("shell0","RES32/ARROW.DCI")};
+  earthsiege::software_cursor alert_cursor{resources.read("simvol0","dci/ALERT.DCI")};
+  auto const cursor_image{[&]()->earthsiege::software_cursor const *{
+    if(alert||options)return &alert_cursor;
+    if(!scene)return menu.presentation_active()?nullptr:&shell_cursor;
+    if(!display)return nullptr;
+    auto const p{display->pointer_position()};auto const kind{scene->pointer_cursor(p[0],p[1])};
+    return kind<0?nullptr:&mission_cursors.at(static_cast<size_t>(kind));
+  }};
   auto applied_preferences{menu.settings().current()};
   bool scene_dirty{scene!=nullptr};
   bool running{true};
@@ -307,7 +321,7 @@ auto main(int argc, char *argv[])->int try {
       }
       alert_frame=scene->image();
       if(alert)alert->draw(alert_frame);else options->draw(alert_frame);
-      display->present(alert_frame,scene->colours());
+      display->present(alert_frame,scene->colours(),cursor_image());
       ++frames;
       if(frame_limit&&frames>=frame_limit)running=false;
       SDL_Delay(8);
@@ -394,7 +408,7 @@ auto main(int argc, char *argv[])->int try {
     if(options){alert_frame=scene->image();options->draw(alert_frame);}
     auto const &frame{(alert||options)?alert_frame:scene ? scene->image() : menu_frame};
     auto const &colours{scene ? scene->colours() : menu.colours()};
-    if(display) display->present(frame, colours);
+    if(display) display->present(frame,colours,cursor_image());
     ++frames;
     if(frame_limit && frames >= frame_limit) running = false;
     if(display) SDL_Delay(8);

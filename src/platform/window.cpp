@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <string>
 #include "resources/artwork.h"
+#include "render/software_cursor.h"
 
 namespace earthsiege {
 
@@ -22,6 +23,7 @@ window::window(unsigned int scale) {
   }
   scale = std::clamp(scale, 1u, 16u);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+  SDL_ShowCursor(SDL_DISABLE);
   handle.reset(SDL_CreateWindow("Metaltech: Earthsiege C++", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, static_cast<int>(screen_width * scale), static_cast<int>(screen_height * scale), SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI));
   if(!handle) throw std::runtime_error{SDL_GetError()};
   renderer.reset(SDL_CreateRenderer(handle.get(), -1, SDL_RENDERER_SOFTWARE));
@@ -32,14 +34,23 @@ window::window(unsigned int scale) {
   if(!texture) throw std::runtime_error{SDL_GetError()};
 }
 
-void window::present(framebuffer const &frame, palette const &colours) {
-  auto const &pixels{frame.pixels()};
+void window::present(framebuffer const &frame,palette const &colours,software_cursor const *cursor) {
+  auto presented{frame};
+  if(cursor&&SDL_GetMouseFocus()==handle.get()){
+    auto const p{pointer_position()};
+    if(p[0]>=0&&p[0]<320&&p[1]>=0&&p[1]<200)cursor->draw(presented,p[0],p[1]);
+  }
+  auto const &pixels{presented.pixels()};
   for(unsigned int index{}; index < pixels.size(); ++index) display[index] = colours.colours[pixels[index]];
   if(SDL_UpdateTexture(texture.get(), nullptr, display.data(), screen_width * sizeof(uint32_t)) != 0) throw std::runtime_error{SDL_GetError()};
   SDL_SetRenderDrawColor(renderer.get(), 0, 0, 0, 255);
   SDL_RenderClear(renderer.get());
   SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
   SDL_RenderPresent(renderer.get());
+}
+
+std::array<int,2> window::pointer_position()const{
+  int wx{},wy{},x{},y{};SDL_GetMouseState(&wx,&wy);mouse_position(wx,wy,x,y);return {x,y};
 }
 
 auto window::poll(SDL_Event &event)->bool { return SDL_PollEvent(&event) != 0; }

@@ -8,6 +8,7 @@
 namespace earthsiege {
 
 struct palette;
+class software_cursor;
 
 struct sdl_context {
   sdl_context();
@@ -25,7 +26,8 @@ class window {
 
 public:
   explicit window(unsigned int scale = 0);
-  void present(framebuffer const &frame, palette const &colours);
+  void present(framebuffer const &frame, palette const &colours,software_cursor const *cursor=nullptr);
+  std::array<int,2> pointer_position()const;
   auto poll(SDL_Event &event)->bool;
   void warp_mouse(int x,int y);
   void mouse_position(int window_x, int window_y, int &x, int &y) const;

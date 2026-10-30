@@ -133,6 +133,8 @@ public:
   void key(held_key key, bool pressed, bool alt);
   void command(uint16_t code);
   void mouse_position(int x, int y);
+  /// Original primary/secondary cursor selection; -1 means hidden.
+  int pointer_cursor(int x,int y)const;
   void mouse_button(bool right, bool pressed);
   void clear_input();
   void toggle_pause();
