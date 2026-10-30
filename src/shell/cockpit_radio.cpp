@@ -6,13 +6,17 @@
 namespace earthsiege {
 cockpit_radio::cockpit_radio(resource_store const &source,cockpit_layout const &layout,mission_session const &session,random_state &ui_random,bool const reduced_detail)
   :resources{source},random{ui_random},catalogue{source},system_bounds{layout.bounds(0x694)},banner{source},labels{source},parent{layout.bounds(0x4bc)}{
+  for(size_t slot{};slot<portrait_bounds.size();++slot){
+    auto b{layout.bounds(0x5ac+slot*16)};
+    b.left+=parent.left+1;b.right+=parent.left-1;b.top+=parent.top+1;b.bottom+=parent.top-1;
+    portrait_bounds[slot]=b;
+  }
   auto const &world{session.activity_state()};auto const &group{world.group(world.actor(session.player_id()).group)};
   for(auto const actor:group.members){
     if(actor==session.player_id())continue;
     auto const identity{session.pilot_identity(actor)};
     if(!identity || *identity<0 || *identity>=36)throw std::runtime_error{"wingmate has no valid pilot identity"};
-    auto const pilot{static_cast<size_t>(*identity/3)};auto const slot{members.size()};auto b{layout.bounds(0x5ac+slot*16)};
-    b.left+=parent.left+1;b.right+=parent.left-1;b.top+=parent.top+1;b.bottom+=parent.top-1;
+    auto const pilot{static_cast<size_t>(*identity/3)};auto const slot{members.size()};auto const b{portrait_bounds[slot]};
     members.push_back({actor,pilot,b,b,radio_portrait{source,pilot,reduced_detail},{},0,false,{}});
     auto const voice{static_cast<uint8_t>(pilot/4+1)};speakers.push_back({actor,static_cast<uint8_t>(voice==3?4:voice),actor==group.members.front()});
     if(members.size()==3)break;
@@ -119,6 +123,11 @@ void cockpit_radio::advance_queue(mission_session &session,uint32_t ticks){
 
 }
 void cockpit_radio::draw(framebuffer &frame)const{
+  if(visible){
+    auto bounds{portrait_bounds};
+    for(auto &b:bounds){b.left-=system_origin_x;b.right-=system_origin_x;b.top-=system_origin_y;b.bottom-=system_origin_y;}
+    wingmate_portrait::draw_empty(frame,bounds,(1u<<members.size())-1);
+  }
   if(visible)for(auto const &p:members)if(p.initialized){
     for(int y{std::max(0,p.painted.top)};y<=std::min(199,p.painted.bottom);++y)for(int x{std::max(0,p.painted.left)};x<=std::min(319,p.painted.right);++x)
       frame.pixel(x,y,cache.pixels()[static_cast<size_t>(y*320+x)]);

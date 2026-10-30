@@ -29,7 +29,10 @@ struct cockpit_artwork {
   std::array<bitmap, 3> panels;
   std::array<cockpit_window, 4> windows;
   cockpit_layout layout;
+  // Individual DBn bitmap selector, also used by resource inspection.
   void draw(framebuffer &target, cockpit_view view,int displacement=0) const;
+  // Visible shared-page artwork, including the front/lower overlap.
+  void draw_composed(framebuffer &target,cockpit_view view,int displacement=0)const;
 };
 
 screen_mask read_screen_mask(bytes source, std::vector<uint8_t> *unused = nullptr);

@@ -3,6 +3,18 @@
 #include <numeric>
 
 namespace earthsiege {
+void wingmate_portrait::draw_empty(framebuffer &target,std::array<rectangle,3> const &bounds,unsigned int occupied){
+  // Original 3cb90's active-portrait painter leaves a temporary brush pointer
+  // in the context. Its next empty fill works, but overwrites that brush with
+  // the rectangle, so subsequent empty fills do nothing. Preserve the visible
+  // result for the three original slots without retaining an invalid pointer.
+  bool temporary{},valid{true};
+  for(size_t slot{};slot<bounds.size();++slot){
+    if(occupied&(1u<<slot)){temporary=true;valid=true;}
+    else if(valid){target.fill(bounds[slot],63);if(temporary)valid=false;}
+  }
+}
+
 wingmate_portrait::wingmate_portrait(resource_store const &resources)
   :red{read_font(resources.read("simvol0","dfn/CPRED.DFN"))},blue{read_font(resources.read("simvol0","dfn/CPBLUE.DFN"))},
    strings{read_interface_strings(resources.read("simvol0","str/STRINGS0.STR"))},

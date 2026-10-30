@@ -43,6 +43,7 @@ class cockpit_radio {
   std::vector<member> members;
   std::vector<radio_speaker> speakers;
   rectangle parent;
+  std::array<rectangle,3> portrait_bounds;
   framebuffer cache;
   bool visible{},text_enabled{true};
   std::string text;

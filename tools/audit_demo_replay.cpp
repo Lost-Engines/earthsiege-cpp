@@ -237,7 +237,7 @@ int main(int argc,char **argv)try{
     check(label+"power",actor.power().reserve,get.template operator()<int16_t>(0x228));
     check(label+"front shield",actor.power().shields.front,get.template operator()<int16_t>(0x1b8));
     check(label+"rear shield",actor.power().shields.rear,get.template operator()<int16_t>(0x1ba));
-   }else if(kind==6){auto const &actor{flyers.at(f++).actor};position=actor.motion().position;angles=actor.angles();}
+   }else if(kind==6){auto const &actor{flyers.at(f++).actor};position=actor.motion().position;angles=actor.angles();check(label+"flyer dead",actor.dead(),get.template operator()<uint8_t>(0x93)!=0);}
    else if(kind==5){auto const &actor{bases.at(b++).actor};position=actor.placement().translation;angles={get.template operator()<uint16_t>(6),get.template operator()<uint16_t>(8),get.template operator()<uint16_t>(10)};}
    else file.fail("actor kind");
    for(unsigned axis{};axis<3;++axis){

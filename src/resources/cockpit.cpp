@@ -130,6 +130,17 @@ void cockpit_artwork::draw(framebuffer &target, cockpit_view view,int displaceme
   }
 }
 
+void cockpit_artwork::draw_composed(framebuffer &target,cockpit_view view,int displacement)const{
+  draw(target,view,displacement);
+  // Original page preparation blits DB1 at the lower view's authored offset,
+  // then DB0 above it. Their overlap belongs to DB0 (three rows for HERCULES).
+  if(view==cockpit_view::lower)for(int y{};y<200;++y){
+    int const sy{y+displacement+windows[1].instrument_origin[1]};
+    if(sy<0||sy>=static_cast<int>(panels[0].height))continue;
+    for(int x{};x<320;++x)target.pixel(x,y,panels[0].pixels[static_cast<size_t>(sy*320+x)]);
+  }
+}
+
 void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int chassis) {
   if(chassis >= 8) throw std::out_of_range{"cockpit chassis index"};
   auto const copy{[&](unsigned int target, unsigned int source){

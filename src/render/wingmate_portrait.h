@@ -15,6 +15,7 @@ class wingmate_portrait {
   void label(framebuffer &target,rectangle bounds,font const &face,std::string_view text,uint8_t background=0)const;
 public:
   explicit wingmate_portrait(resource_store const &resources);
+  static void draw_empty(framebuffer &target,std::array<rectangle,3> const &bounds,unsigned int occupied);
   std::string const &name(size_t pilot)const;
   void draw_name(framebuffer &target,rectangle portrait,size_t pilot,size_t slot)const;
   void draw_idle(framebuffer &target,rectangle portrait,size_t pilot,size_t slot,std::span<int16_t const,19> armour,int16_t orders)const;

@@ -24,11 +24,12 @@ class cockpit_hdd {
   std::array<std::optional<size_t>,9> weapon_label_refs;
   rectangle bounds,map_bounds,command_bounds,list_bounds,painted;
   std::array<rectangle,15> buttons;
+  std::array<rectangle,3> selection_lights;
   std::array<rectangle,8> rows;
   std::array<size_t,15> button_ids;
   std::array<size_t,8> row_ids;
   size_t map_id;
-  int direction_art{},page{},mode{},scroll{},subject{};
+  int direction_art{},selection_style{},page{},mode{},scroll{},subject{};
   int mouse_x{},mouse_y{},origin_x{},origin_y{};
   bool visible{},dirty{true};
   std::optional<size_t> pending_button;

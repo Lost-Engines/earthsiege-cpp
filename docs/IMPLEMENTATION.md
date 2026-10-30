@@ -1592,3 +1592,47 @@ fourth differs in three frames. This is not a claim of complete audio equality.
 The corrected lower-panel transition also exposes retained portrait/background
 and button differences in full frames (about 4,100 RGB pixels in two sampled
 lower views). The earlier 13–146-pixel results refer to sampled forward views.
+
+
+## Lower cockpit composition and the original temporary brush bug
+
+The original HDD painter 3cb90 stores a pointer to its local brush. Drawing an
+occupied pilot via 3df60 replaces that pointer with another stack-local brush.
+Restoring the window does not restore the brush pointer. The next empty portrait
+fill succeeds, but 53d9c reuses that stack space for its rectangle; further empty
+slots then see an invalid brush kind and retain the underlying artwork.
+
+With one wingmate this clears slot two to colour 63 while slot three retains
+86. With no occupied slots, all three clear. The native renderer reproduces the
+observed slot behavior with ordinary owned values, without an invalid pointer.
+capture_empty_portraits.py executes the original full painter and transitions
+under all eight explicit occupancy masks; all twelve unused-slot rasters match.
+The JSON records the brush words before and after the overwrite.
+
+GAU offset 634 selects the pilot highlight style. All eight shipped cockpits use
+style 1: the small lamp rectangles at 5fc/60c/61c, coloured 59 when selected and
+57 otherwise. Style 0 uses portrait outlines. Native integration had always
+drawn outlines; that added 654 incorrect border pixels in the sampled lower view.
+Original 3eb3c is the style consumer; the lamp rectangles are distinct from the
+portrait's inset interior.
+
+The original front artwork overwrites the overlapping top of the lower artwork
+on the shared VGA surface. HERCULES's lower origin is y=197, so its first three
+visible rows come from DB0. This is now retained in direct panel rendering too.
+The sampled DEMO1 lower frame 420 now differs by 25 RGB pixels rather than 4,109:
+13 reference-cursor pixels and twelve lamp/clock-phase pixels. Frame 480 differs
+by 110. This is a sampled comparison, not whole-recording image equality.
+
+
+## Flyer engine destruction state
+
+Original 1afa8 reads the live actor's byte at 93 before stopping or positioning
+engine sound 16. The integration had read a cached decision-state flag, which
+can remain stale until another controller refresh. It now reads flyer_actor's
+actual destruction state; the replay audit also compares that flag against the
+original on every frame. Gameplay, random state and return files still agree.
+
+This reduced DEMO3's flyer-engine request differences from 376 frames to six,
+and DEMO4's from three to one. Remaining start retries coincide with differences
+in audio channel availability/completion timing; that timeline remains under
+comparison. This supersedes the earlier substantial retry-difference count.

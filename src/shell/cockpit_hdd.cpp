@@ -21,6 +21,8 @@ cockpit_hdd::cockpit_hdd(resource_store const &r,cockpit_layout const &layout,mi
   auto const parent{layout.bounds(0x4bc)};auto const rect{[&](size_t offset){return translate(layout.bounds(offset),parent.left,parent.top);}};
   bounds=rect(0x4cc);command_bounds=rect(0x4dc);list_bounds=rect(0x4ec);map_bounds=bounds;map_bounds.right=command_bounds.left-2;
   direction_art=layout.words[0x62c/4];for(size_t i{};i<buttons.size();++i){buttons[i]=rect(0x50c+i*16);button_ids[i]=input.add_button(buttons[i]);}
+  selection_style=layout.words[0x634/4];
+  for(size_t i{};i<selection_lights.size();++i)selection_lights[i]=rect(0x5fc+i*16);
   int const step{(command_bounds.bottom-command_bounds.top)/9};
   for(size_t i{};i<rows.size();++i){auto b{command_bounds};b.top+=static_cast<int>(i+1)*step;b.bottom=b.top+static_cast<int>(fonts[0].height);rows[i]=b;row_ids[i]=input.add_button(b);}
   map_id=input.add_button(map_bounds);auto const &p{session.player().movement().position};controller.camera({p.x,p.y,initial_tactical_height(map_state.mission_bounds,map_bounds)});enable(input);
@@ -174,7 +176,11 @@ void cockpit_hdd::draw(framebuffer &frame,pointer_controls const &input,int cons
   for(size_t i{};i<buttons.size();++i){auto const b{translate(buttons[i],x,y)};bool const pressed{input.at(button_ids[i]).face!=control_face::normal};
     if(i<8){auto const base{i<2?22+2*static_cast<int>(i):i<6?direction_art+2*static_cast<int>(i-2):51+2*static_cast<int>(i-6)};frame.image(button_art.at(static_cast<size_t>(base)+(pressed?1:0)),b.left,b.top,true);}
     else if(i==9)label(frame,fonts[2],page==0?strings.at(10).at(0).text:strings.at(11).at(static_cast<size_t>(mode)).text,b,63);
-    else if(i>=10 && i<=12)outline(frame,b,controller.state().wingmate==static_cast<int>(i-10)?56:63);
+    else if(i>=10 && i<=12){
+      bool const selected{controller.state().wingmate==static_cast<int>(i-10)};
+      if(selection_style==0)outline(frame,b,selected?56:63);
+      else if(selection_style==1)frame.fill(translate(selection_lights[i-10],x,y),selected?59:57);
+    }
     else if(i>=13 && page==0)label(frame,fonts[2],strings.at(8).at(i-13).text,b,pressed && (i==14 || controller.state().ready)?59:63);
   }
 }

@@ -94,7 +94,7 @@ The flight environment now includes the original sky bands, horizon panorama,
 projected ground texture, moving clouds, procedural ground marks and
 pitch-dependent reflective palette. Combined output matches 288 original
 frames across all 24 worlds, including cockpit masks and detail settings.
-Original frame scheduling remains separate work; impact flashes and cockpit displacement are integrated.
+Live frame scheduling, impact flashes and cockpit displacement are integrated.
 
 The original cinematic fade-in reads an uninitialized rectangle type. This build initializes it, giving deterministic fades instead of depending on prior stack contents.
 
@@ -111,3 +111,9 @@ steps. Audio continues during mission dialogs; losing window focus suspends it.
 
 
 F12 or Alt+P opens the original in-flight preferences panel, with a rotating HERC preview. Music, effects, radio mode, horizon, sky, ground and model detail update live. Controls and joystick calibration are available inside it; Escape accepts a panel and returns to its parent. Closing preferences restores the previous flight view.
+
+
+Cockpit edge strips switch between forward, lower and side views, with the
+original directional pointers. Pilot selection uses the authored indicator
+lamps. The original unused-portrait clearing quirk is reproduced without its
+invalid stack pointer.

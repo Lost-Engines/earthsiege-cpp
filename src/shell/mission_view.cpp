@@ -520,7 +520,7 @@ void mission_view::draw() {
   model_view view;
   if(options_camera){view.bounds={0,0,319,110};view.projection.centre={160,50};}
   if(inside) {
-    cockpit.draw(frame, painted,shift);
+    cockpit.draw_composed(frame, painted,shift);
     auto const centre{window.projection_centre()};
     view.projection.centre = {centre[0], centre[1]};
     view.bounds = window.bounds;
