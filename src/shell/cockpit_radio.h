@@ -30,7 +30,7 @@ class cockpit_radio {
   std::vector<radio_speaker> speakers;
   rectangle parent;
   framebuffer cache;
-  bool visible{};
+  bool visible{},text_enabled{true};
   std::string text;
   std::optional<size_t> text_speaker;
   std::vector<uint16_t> sounds;
@@ -39,6 +39,7 @@ class cockpit_radio {
   void advance_portraits(mission_session &session,uint32_t ticks);
 public:
   cockpit_radio(resource_store const &resources,cockpit_layout const &layout,mission_session const &session,random_state &ui_random,bool reduced_detail=false);
+  void captions(bool enabled){text_enabled=enabled;}
   bool submit(radio_event event,uint32_t ticks);
   void update(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y);
   void draw(framebuffer &frame)const;

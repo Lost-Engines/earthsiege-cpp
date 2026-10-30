@@ -95,7 +95,7 @@ auto actor_detail_index(size_t const model_count, std::span<int32_t const> const
 }
 
 auto detail_draw_index(detail_part const &part, int16_t radius, vec3<int32_t> const &eye, model_detail const &detail)->unsigned int {
-  if(part.children.empty() || part.children.size() != part.distances.size() || detail.bias >= part.children.size() || detail.projection_shift > 30) throw std::runtime_error{"invalid model detail selection"};
+  if(part.children.empty() || part.children.size() != part.distances.size() || detail.projection_shift > 30) throw std::runtime_error{"invalid model detail selection"};
   auto const projected{projected_radius(radius, eye, detail)};
   unsigned int index{detail.bias};
   while(index + 1 < part.children.size() && projected > part.distances[index]) ++index;

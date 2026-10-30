@@ -61,6 +61,7 @@ class mission_view {
   earthsiege::environment_detail detail;
   scenery_renderer renderer;
   camera_state camera;
+  std::optional<camera_state> options_camera;
   keyboard_input keyboard;
   device_routing_options routing;
   std::array<joystick_calibration,2> calibrations;
@@ -88,6 +89,7 @@ public:
   mission_counters const &mission_variables() const { return session->mission_variables(); }
   mission_status status(bool requested=false) const { return session->mission_state(requested); }
   std::optional<mission_status> take_mission_prompt() { return session->take_mission_prompt(); }
+  void apply_preferences(preferences const &);
   void configure_input(preferences const &,std::array<joystick_calibration,2> const &);
   void devices(std::array<joystick_hardware,2> const &value,int16_t lever){hardware=value;device_throttle=lever;}
   void key(held_key key, bool pressed, bool alt);
@@ -100,6 +102,9 @@ public:
   void change_cockpit_view(cockpit_view view);
   void advance_time(unsigned milliseconds);
   bool step(bool control, bool zoom);
+  void begin_options();
+  bool step_options();
+  void end_options();
   void draw();
   void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { detail={horizon,cloud,ground,true}; }
   std::vector<int16_t> take_audio();

@@ -22,6 +22,7 @@ class mission_audio {
   target_sound_state target_tone;
   std::array<vec3<int32_t>,60> positions{};
   std::array<bool,60> positioned{};
+  bool music_enabled{true},effects_enabled{true},speech_enabled{true};
   uint64_t ticks{},sample_frames{};
   std::vector<uint8_t> output;
   std::vector<int16_t> mixed_output;
@@ -32,6 +33,7 @@ class mission_audio {
   void update_gain(size_t id);
 public:
   explicit mission_audio(resource_store const &resources);
+  bool preferences(bool music,bool effects,bool speech);
   void dispatch(sound_request const &request, vec3<int32_t> const &listener);
   void engine(bool external_view);
   void update_music(music_contacts const &contacts,random_state &random);

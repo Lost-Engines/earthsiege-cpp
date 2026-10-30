@@ -14,6 +14,7 @@ struct model_view {
   camera_projection projection;
   rectangle bounds{0, 0, 319, 199};
   model_detail detail;
+  std::optional<unsigned> weapon_detail_bias;
 };
 
 /// Replace a body placeholder using the body skeleton and independent weapon cells/textures

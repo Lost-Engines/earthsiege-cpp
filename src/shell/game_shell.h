@@ -15,6 +15,7 @@
 #include "render/shell_statistics.h"
 #include "shell/component_repair.h"
 #include "shell/controls_dialog.h"
+#include "shell/mission_options_dialog.h"
 #include "render/construction_artwork.h"
 namespace earthsiege {
 /// Application-level shell flow. Window input is translated before it reaches
@@ -118,6 +119,7 @@ public:
   void devices(std::array<joystick_hardware,2> const &);
   std::array<joystick_calibration,2> const &device_calibrations()const{return calibrations;}
   std::optional<vec2<int32_t>> take_pointer_warp();
+  std::unique_ptr<mission_options_dialog> flight_options(){return std::make_unique<mission_options_dialog>(resources,preferences_,saves,calibrations);}
   std::unique_ptr<mission_session> launch();
   void mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed=17);
   void advance(unsigned timer_ticks=3);

@@ -106,3 +106,6 @@ The bundled DATA/KEYJOY.CFG retains the original pitch/turn choices. Malformed t
 
 Live missions now use the original elapsed-time pacing and bounded simulation
 steps. Audio continues during mission dialogs; losing window focus suspends it.
+
+
+F12 or Alt+P opens the original in-flight preferences panel, with a rotating HERC preview. Music, effects, radio mode, horizon, sky, ground and model detail update live. Controls and joystick calibration are available inside it; Escape accepts a panel and returns to its parent. Closing preferences restores the previous flight view.

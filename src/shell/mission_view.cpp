@@ -92,7 +92,15 @@ std::array<int32_t,2> mission_view::instrument_origin()const{
  return origin;
 }
 
+void mission_view::apply_preferences(preferences const &prefs){
+  auto const &p{prefs.current()};
+  if(audio.preferences(p[0]!=0,p[1]!=0,p[2]!=0))audio.update_music(session->music_observations(),ui_random);
+  radio->captions(p[2]!=1);
+  environment_detail(p[3]!=0,p[4],p[5]);
+  renderer.shape_detail(p[6]);
+}
 void mission_view::configure_input(preferences const &prefs,std::array<joystick_calibration,2> const &values){
+  apply_preferences(prefs);
   auto const &p{prefs.current()};routing.model=p[7];routing.mode=p[8];routing.pedals=p[9]!=0;routing.wcs=p[10]!=0;mouse_enabled=p[11]!=0;joystick_mode_enabled=p[8]!=0;calibrations=values;
   clear_input();
 }
@@ -274,6 +282,21 @@ bool mission_view::step(bool const control, bool const zoom) {
   return true;
 }
 
+void mission_view::begin_options(){
+  if(options_camera)return;
+  clear_input();options_camera=camera;
+  camera=session->make_camera(camera_mode::orbit);camera.orbit_distance=0;
+  update_camera(camera,session->view_target());
+}
+bool mission_view::step_options(){
+  if(!options_camera||!pacing.take())return false;
+  // Original 577f8: fixed camera-turn request, no world simulation.
+  steer_camera(camera,false,0,-64);update_camera(camera,session->view_target());return true;
+}
+void mission_view::end_options(){
+  if(!options_camera)return;
+  camera=*options_camera;options_camera.reset();clear_input();
+}
 void mission_view::draw() {
   frame.clear();
   bool const inside{camera.mode == camera_mode::attached};
@@ -283,6 +306,7 @@ void mission_view::draw() {
   if(shift)mask.translate(0,-shift);
   auto &colours{impact.snapshot().impact_palette?impact_colours:display_colours};
   model_view view;
+  if(options_camera){view.bounds={0,0,319,110};view.projection.centre={160,50};}
   if(inside) {
     cockpit.draw(frame, panel,shift);
     auto const centre{window.projection_centre()};
@@ -335,7 +359,7 @@ void mission_view::draw() {
     }
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
-  radio->draw(frame);
+  if(!options_camera)radio->draw(frame);
 }
 
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}

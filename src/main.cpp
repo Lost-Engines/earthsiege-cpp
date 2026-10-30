@@ -153,6 +153,7 @@ auto main(int argc, char *argv[])->int try {
   earthsiege::game_shell menu{resources,save_directory,static_cast<int>(std::time(nullptr)&127)};
   if(!inspect_demo)menu.startup(!skip_intro);
   std::unique_ptr<earthsiege::mission_alert> alert;
+  std::unique_ptr<earthsiege::mission_options_dialog> options;
   earthsiege::framebuffer alert_frame;
   earthsiege::framebuffer menu_frame;
   std::unique_ptr<earthsiege::mission_view> scene;
@@ -175,6 +176,7 @@ auto main(int argc, char *argv[])->int try {
   if(display)try{sound=std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr<<"Audio unavailable: "<<e.what()<<'\n';}
   std::unique_ptr<earthsiege::joystick_devices> sticks;
   if(display)try{sticks=std::make_unique<earthsiege::joystick_devices>();}catch(std::exception const &e){std::cerr<<"Joystick input unavailable: "<<e.what()<<'\n';}
+  auto applied_preferences{menu.settings().current()};
   bool scene_dirty{scene!=nullptr};
   bool running{true};
   bool focused{true};
@@ -204,9 +206,20 @@ auto main(int argc, char *argv[])->int try {
           focused = false;
           if(sound)sound->pause(true);
           menu.cancel_press();
+          if(options)options->cancel_press();
           if(scene) scene->clear_input();
         }
         if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED){focused = true;if(sound)sound->pause(false);}
+      }
+      if(options) {
+        if(focused&&event.type==SDL_KEYDOWN&&!event.key.repeat){
+          if(auto scan{command(event.key.keysym.sym,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})options->key(*scan);
+        }else if(focused&&(event.type==SDL_MOUSEBUTTONDOWN||event.type==SDL_MOUSEBUTTONUP)&&(event.button.button==SDL_BUTTON_LEFT||event.button.button==SDL_BUTTON_RIGHT)){
+          bool right{event.button.button==SDL_BUTTON_RIGHT};
+          if(event.type==SDL_MOUSEBUTTONDOWN)options->mouse_down(event.button.x,event.button.y,right);
+          else options->mouse_up(event.button.x,event.button.y,right);
+        }
+        continue;
       }
       if(alert) {
         if(focused && event.type==SDL_KEYDOWN && !event.key.repeat) {
@@ -222,6 +235,7 @@ auto main(int argc, char *argv[])->int try {
         else if(focused) {
           if(key==SDLK_ESCAPE && inspect_demo){scene.reset();if(sound)sound->clear();continue;}
           if((key==SDLK_ESCAPE || key==SDLK_q) && (event.key.keysym.mod&KMOD_CTRL)){open_alert(1);continue;}
+          if(key==SDLK_F12||(key==SDLK_p&&(event.key.keysym.mod&KMOD_ALT))){options=menu.flight_options();scene->begin_options();scene_dirty=true;pending=0;continue;}
           if(key==SDLK_p && !(event.key.keysym.mod&KMOD_ALT)){open_alert(0);continue;}
           if(key==SDLK_q){int const status{static_cast<int>(scene->status(true))};open_alert(status<0?5:status);continue;}
           if(key==SDLK_F1 && (event.key.keysym.mod&KMOD_CTRL))scene->change_cockpit_view(earthsiege::cockpit_view::forward);
@@ -248,22 +262,31 @@ auto main(int argc, char *argv[])->int try {
     }
     if(focused&&!alert&&sticks){
       auto const &p{menu.settings().current()};auto raw{sticks->poll(p[7],p[9]!=0)};
-      if(scene)scene->devices(raw,sticks->throttle());else menu.devices(raw);
+      if(options)options->devices(raw);else if(scene)scene->devices(raw,sticks->throttle());else menu.devices(raw);
     }
-    if(auto const warp{menu.take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
+    if(options){
+      if(auto const warp{options->take_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
+      if(applied_preferences!=menu.settings().current()){
+        scene->apply_preferences(menu.settings());applied_preferences=menu.settings().current();scene_dirty=true;
+      }
+      if(options->done()){scene->end_options();scene->configure_input(menu.settings(),menu.device_calibrations());options.reset();scene_dirty=true;}
+    }else if(!scene){
+      if(auto const warp{menu.take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
+    }
     if(menu.quit_requested())running=false;
     if(menu.ready_to_launch()) {
-      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene_dirty=true;scene->environment_detail(menu.settings().current()[3]!=0,menu.settings().current()[4],menu.settings().current()[5]);pending=0;
+      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene_dirty=true;applied_preferences=menu.settings().current();pending=0;
       if(sound)sound->clear();
     }
     auto const now{display ? SDL_GetTicks64() : previous + 25};
     auto const elapsed{focused?now-previous:0};
-    pending += focused && !alert ? std::min<uint64_t>(elapsed,100) : 0;
+    pending += focused && !alert && !options ? std::min<uint64_t>(elapsed,100) : 0;
     previous = now;
-    if(!focused || alert) pending = 0;
+    if(!focused || alert || options) pending = 0;
     if(scene) {
       scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed,UINT32_MAX)));
-      if(focused&&!alert){
+      if(focused&&options&&scene->step_options())scene_dirty=true;
+      if(focused&&!alert&&!options){
         auto const modifiers{display ? SDL_GetModState() : KMOD_NONE};
         if(scene->step((modifiers & KMOD_CTRL)!=0,(modifiers & KMOD_SHIFT)!=0))scene_dirty=true;
         if(auto const warp{scene->take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
@@ -279,7 +302,8 @@ auto main(int argc, char *argv[])->int try {
       menu.draw(menu_frame);
     }
     if(alert){alert_frame=scene?scene->image():menu_frame;alert->draw(alert_frame);}
-    auto const &frame{alert?alert_frame:scene ? scene->image() : menu_frame};
+    if(options){alert_frame=scene->image();options->draw(alert_frame);}
+    auto const &frame{(alert||options)?alert_frame:scene ? scene->image() : menu_frame};
     auto const &colours{scene ? scene->colours() : menu.colours()};
     if(display) display->present(frame, colours);
     ++frames;
@@ -287,7 +311,7 @@ auto main(int argc, char *argv[])->int try {
     if(display) SDL_Delay(8);
   }
   if(!screenshot.empty()) {
-    (alert ? alert_frame : scene ? scene->image() : menu_frame).save(screenshot, scene ? scene->colours() : menu.colours());
+    ((alert||options) ? alert_frame : scene ? scene->image() : menu_frame).save(screenshot, scene ? scene->colours() : menu.colours());
   }
   return EXIT_SUCCESS;
 } catch(std::exception const &error) {

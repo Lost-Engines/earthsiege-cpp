@@ -12,8 +12,8 @@ std::array<joystick_calibration,2> load_host_calibrations(save_store const &save
  }
  return result;
 }
-controls_dialog::controls_dialog(resource_store const &r,preferences &p,save_store const &s,std::array<joystick_calibration,2> &c)
- :prefs{p},saves{s},calibrations{c},settings{p},artwork{r},calibration_view{r},backdrop{read_bitmaps(r.read("shell0","res32/regn1000.dbm")).front()}{focus_button(0);}
+controls_dialog::controls_dialog(resource_store const &r,preferences &p,save_store const &s,std::array<joystick_calibration,2> &c,bool flight)
+ :prefs{p},saves{s},calibrations{c},settings{p},artwork{r,flight},calibration_view{r,flight},backdrop{read_bitmaps(r.read("shell0","res32/regn1000.dbm")).front()},in_flight{flight}{focus_button(0);}
 rectangle controls_dialog::button(unsigned i)const{return calibration?calibration_view.button(i):artwork.button(i);}
 void controls_dialog::focus_button(int i){focus=i;auto b{button(static_cast<unsigned>(i))};warp=vec2<int32_t>{(b.left+b.right)/2,(b.top+b.bottom)/2};}
 void controls_dialog::activate(unsigned i,bool backward,bool joystick){
@@ -64,7 +64,7 @@ void controls_dialog::devices(std::array<joystick_hardware,2> const &value){
 }
 std::optional<vec2<int32_t>> controls_dialog::take_warp(){return std::exchange(warp,{});}
 void controls_dialog::draw(framebuffer &f)const{
- f.image(backdrop,0,0);
+ if(!in_flight)f.image(backdrop,0,0);
  if(calibration){
   std::array<uint8_t,3> faces{};if(pressed>=0)faces.at(static_cast<size_t>(pressed))=1;
   calibration_view.draw(f,static_cast<unsigned>(calibration->choice()),calibration->message(),faces);

@@ -44,7 +44,17 @@ void mission_audio::engine(bool const external_view){
   }
 }
 
+bool mission_audio::preferences(bool const enable_music,bool const enable_effects,bool const enable_speech){
+  // Original 4e294/4e2c8 stop registered songs/effects only on a falling edge.
+  // Radio's 959e4 flag gates subsequent speech starts; it does not stop a line.
+  if(music_enabled&&!enable_music&&music)music->stop();
+  if(effects_enabled&&!enable_effects)for(size_t id{6};id<60;++id)bank.stop(id);
+  bool const resumed{enable_music&&!music_enabled};
+  music_enabled=enable_music;effects_enabled=enable_effects;speech_enabled=enable_speech;
+  return resumed;
+}
 void mission_audio::update_music(music_contacts const &contacts,random_state &random){
+  if(!music_enabled)return;
   if(!music)music=std::make_unique<music_audio>(resources,bank);
   if(music_state.track>=0)playback.playing[static_cast<size_t>(music_state.track)]=music->playing();
   for(auto const &event:advance_combat_music(music_state,playback,contacts.actors,contacts.flyers,static_cast<uint32_t>(ticks/2),true,true,random)){
@@ -57,9 +67,10 @@ void mission_audio::update_music(music_contacts const &contacts,random_state &ra
   }
 }
 
-bool mission_audio::play(size_t const id){return bank.play(id);}
+bool mission_audio::play(size_t const id){return effects_enabled&&bank.play(id);}
 bool mission_audio::play_at(size_t const id,vec3<int32_t> const &where){position(id,where);return play(id);}
 bool mission_audio::speech(std::string_view const path){
+  if(!speech_enabled)return false;
   for(size_t slot{47};slot<57;++slot)if(!bank.playing(slot)){
     for(auto const volume:{"speech","simvoice"})if(auto const *entry{resources.archives().at(volume).find(path)}){
       bank.bind(slot,resources.archives().at(volume).read(*entry));return bank.play(slot);

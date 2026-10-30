@@ -4,6 +4,7 @@
 #include "render/distance_shading.h"
 #include "render/effect_lighting.h"
 #include "render/model_renderer.h"
+#include "render/shape_preferences.h"
 #include "simulation/scenery_world.h"
 
 namespace earthsiege {
@@ -47,9 +48,11 @@ class scenery_renderer {
   distance_shading shading;
   model_renderer models;
   scene_shading palette_mode;
+  std::optional<shape_preferences> shapes;
 
 public:
   scenery_renderer(framebuffer &target, scenery_world const &world, distance_shade_bindings bindings, scene_shading palette_mode = scene_shading::distance);
+  void shape_detail(uint8_t value){shapes=earthsiege::shape_detail(value);}
   std::vector<size_t> draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights = false, std::span<scene_model const> actors = {}, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {}, model_view view = {});
   std::vector<size_t> draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights, std::span<scene_object const> objects, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {}, model_view view = {});
 };

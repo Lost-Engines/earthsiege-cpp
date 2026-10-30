@@ -26,6 +26,7 @@ class model_draw {
   model_instance const &instance;
   model_transform const &object;
   model_view const &view;
+  model_detail active_detail;
   std::span<bitmap const> textures;
   std::span<light const> lights;
   std::span<uint16_t const> cells;
@@ -173,14 +174,21 @@ class model_draw {
 
 public:
   model_draw(framebuffer &buffer, palette const &palette_data, texture_shade_maps const &shades, model_instance const &model, model_transform const &placement, model_view const &camera, std::span<bitmap const> const bank, std::span<light const> const sources, std::span<uint16_t const> const frames, std::span<model_attachment const> const replacements)
-    : target{buffer}, colours{palette_data}, texture_shades{shades}, instance{model}, object{placement}, view{camera}, textures{bank}, lights{sources}, cells{frames}, attachments{replacements} {
+    : target{buffer}, colours{palette_data}, texture_shades{shades}, instance{model}, object{placement}, view{camera}, active_detail{camera.detail}, textures{bank}, lights{sources}, cells{frames}, attachments{replacements} {
   }
 
   void part(model_part const &source) {
     if(source.kind != model_kind::null) {
       auto const found{std::ranges::find(attachments, source.header.id, &model_attachment::body_part)};
       if(found != attachments.end()) {
-        if(found->geometry) model_draw{target, colours, texture_shades, instance, object, view, found->textures, lights, found->cells, {}}.part(*found->geometry);
+        if(found->geometry){
+          auto weapon_view{view};
+          if(view.weapon_detail_bias)weapon_view.detail.bias=*view.weapon_detail_bias;
+          model_draw{target, colours, texture_shades, instance, object, weapon_view, found->textures, lights, found->cells, {}}.part(*found->geometry);
+          // The original weapon wrapper restores the global bias to zero,
+          // rather than restoring the enclosing HERC's value.
+          if(view.weapon_detail_bias)active_detail.bias=0;
+        }
         return;
       }
     }
@@ -191,7 +199,7 @@ public:
       else if constexpr(std::is_same_v<type, bsp_part>) {
         for(auto const index : bsp_draw_order(value, current.eye, instance.transforms())) part(value.children.at(index));
       } else if constexpr(std::is_same_v<type, detail_part>) {
-        auto detail{view.detail};
+        auto detail{active_detail};
         detail.projection_shift = view.projection.perspective_shift;
         part(value.children.at(detail_draw_index(value, source.header.radius, current.eye, detail)));
       } else if constexpr(std::is_same_v<type, cell_part>) part(value.children.at(cell_draw_index(value, cells)));

@@ -58,7 +58,7 @@ void cockpit_radio::update(mission_session &session,camera_state const &camera,u
   }
   for(auto const &reply:session.take_radio_responses())submit({reply.message,reply.actor,{},{}},ticks);
   advance_portraits(session,ticks);
-  controller.advance(ticks,true,{
+  controller.advance(ticks,text_enabled,{
     .start{[&](radio_message const &message){
       auto const index{speaker_index(message.event.speaker)};
       if(!index){controller.ready();return;}

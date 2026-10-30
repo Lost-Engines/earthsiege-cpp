@@ -11,7 +11,7 @@
 #include "simulation/weapon_assembly.h"
 
 int main(int const argc, char **argv) try {
-  if(argc != 3) return EXIT_FAILURE;
+  if(argc != 3 && argc != 4) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
   auto const definitions{earthsiege::read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))};
   auto const templates{earthsiege::read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))};
@@ -19,7 +19,7 @@ int main(int const argc, char **argv) try {
   auto const bytes{earthsiege::read_file(argv[2])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != "ESDETAIL") file.fail("fixture version");
+  if(std::string(magic.begin(), magic.end()) != (argc==4?"ESSHPFR1":"ESDETAIL")) file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   auto const resource{[&](std::string const &name){
     auto const slash{name.find('/')};
@@ -39,6 +39,8 @@ int main(int const argc, char **argv) try {
     detail.scale = file.integer<int16_t>();
     detail.bias = file.integer<uint16_t>();
     auto const expected_detail{file.integer<uint16_t>()};
+    earthsiege::model_view view;
+    if(argc==4){view.detail.bias=file.integer<uint8_t>();view.weapon_detail_bias=file.integer<uint8_t>();}
     auto owner{earthsiege::read_model(resources.read("simvol0", "dts/" + name + ".DTS"))};
     auto const profile{earthsiege::read_herc_profile(resources.read("simvol0", "dat/" + name + ".DAT"))};
     earthsiege::bind_herc_detail_nodes(owner, profile.detail_part_ids);
@@ -57,7 +59,7 @@ int main(int const argc, char **argv) try {
     auto const eye{earthsiege::inverse_transform(object).translation};
     auto const selected{earthsiege::actor_detail_index(owner.roots.size(), earthsiege::herc_detail_thresholds, owner.roots.front().header.radius, eye, detail)};
     if(selected != expected_detail) throw std::runtime_error{name + " detail differs in case " + std::to_string(row)};
-    renderer.draw(owner.roots.at(selected), instance, object, {}, textures, lights, attachments);
+    renderer.draw(owner.roots.at(selected), instance, object, view, textures, lights, attachments);
     if(earthsiege::crc32(frame.pixels()) != expected) {
       ++failed;
       std::cerr << "case " << row << ' ' << name << " differs: " << earthsiege::crc32(frame.pixels()) << " expected " << expected << '\n';

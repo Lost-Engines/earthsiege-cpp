@@ -13,7 +13,7 @@ class controls_dialog {
  control_settings_state settings;
  control_settings_artwork artwork;
  calibration_artwork calibration_view;
- bitmap backdrop;
+ bitmap backdrop;bool in_flight{};
  std::optional<joystick_calibration_state> calibration;
  std::array<joystick_hardware,2> hardware;
  int focus{},pressed{-1};bool reverse{},done_{},fire_held{};
@@ -24,7 +24,7 @@ class controls_dialog {
  void activate(unsigned,bool backward=false,bool joystick=false);
  void sample();
 public:
- controls_dialog(resource_store const &,preferences &,save_store const &,std::array<joystick_calibration,2> &);
+ controls_dialog(resource_store const &,preferences &,save_store const &,std::array<joystick_calibration,2> &,bool in_flight=false);
  bool done()const{return done_;}
  bool calibrating()const{return calibration.has_value();}
  void draw(framebuffer &)const;

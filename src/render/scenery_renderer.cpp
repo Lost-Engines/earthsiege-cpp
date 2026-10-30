@@ -111,10 +111,16 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
       auto const object_lights{dynamic ? dynamic->select(actor.placement.translation, radius) : lights};
       auto const &placement{actor.placement};
       auto const eye{inverse_transform(compose_transforms(placement, view.camera)).translation};
-      auto detail{actor.detail};
+      auto detail{shapes?shapes->actor:actor.detail};
       detail.projection_shift = view.projection.perspective_shift;
       auto const root{actor.roots.size() == 1 ? 0 : actor_detail_index(actor.roots.size(), actor.detail_thresholds, radius, eye, detail)};
-      models.draw(actor.roots[root], actor.instance, placement, view, actor.textures, object_lights, actor.attachments);
+      auto actor_view{view};
+      if(shapes){
+        actor_view.weapon_detail_bias=shapes->weapon;
+        if(actor.native_class==7)actor_view.detail.bias=shapes->herc;
+        else if(actor.native_class==6)actor_view.detail.bias=shapes->ordinary;
+      }
+      models.draw(actor.roots[root], actor.instance, placement, actor_view, actor.textures, object_lights, actor.attachments);
       continue;
     }
     auto const &object{objects[index]};

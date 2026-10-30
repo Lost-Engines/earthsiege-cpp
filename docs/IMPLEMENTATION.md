@@ -1182,4 +1182,47 @@ including the three radio modes, byte-wrapping detail controls and partial
 preference-file writes. Done saves slots 0–6 without committing the manager's
 saved/previous arrays. Its standalone artwork matches 96 complete original
 rasters, including striped detail bars, value labels and button states; the
-mouse cursor is presented separately. Integration into live F12/Alt+P follows.
+mouse cursor is presented separately. Live F12/Alt+P integration is described below.
+
+
+### Live in-flight options and detail settings
+
+F12/Alt+P now owns the preferences modal and its nested Controls/Calibration
+screens. World updates stop while host time and audio continue. Original 57820
+saves the camera, selects an orbit distance of 2500 with zero initial orbit
+angles, and uses the upper 320x111 viewport (projection centre 160,50).
+Callback 577f8 requests a -64 turn through the original camera acceleration.
+The native owner uses that camera path and restores the saved view on exit.
+Preview redraws use the host's live pacer; the original hardware-panned
+entry/exit transition and exact modal-loop timing remain replay integration work.
+
+Simulator Controls and Calibration use different fonts, positions and value
+backgrounds from the shell. The additional 72/64 complete simulator rasters
+match, alongside the retained shell comparisons. Tab/Alt+Tab focus, reverse
+mouse cycling, +/- detail changes, nested calibration and persistence are
+covered by the application-level test.
+
+Music and effects switches call the original independent gates. Disabling music
+stops its player; while disabled, encounter selection consumes no music RNG.
+The effects switch stops registered PCM objects, including active radio speech.
+Radio mode separately gates future speech starts and text presentation. Merely
+changing to text-only does not cut short an already playing phrase. Re-enabling
+music invokes encounter selection again, including while options are open.
+
+The Shapes tables match all 512 full/low-memory inputs to original 57c08.
+Root-model scale/bias are independent from nested actor, HERC and weapon biases.
+Weapon drawing resets the shared nested bias to zero afterward, as the original
+does. Nested bias beyond a part's child count selects child zero rather than
+rejecting the model. All 640 complete original armed-HERC frames match at every
+pixel across both memory tables, threshold boundaries and four distances.
+Live simulation uses the full-memory table.
+
+The original has a persistence quirk: Controls Done commits the entire
+preference manager but writes only control slots 7-11. Earlier unsaved flight
+edits can therefore be marked saved without reaching disk; a subsequent flight
+edit makes the outer Done write all slots 0-6. The native code retains this.
+Twenty-eight nested original dialog transactions verify current, saved, previous
+and on-disk values. The integration test also exercises real device samples,
+calibration reload, independent sound switches and mission resumption.
+
+Validation: all 234 CTest checks pass after the complete rebuild (25.37 seconds). The live preferences preview was inspected, and a 40-frame headless mission run completes.

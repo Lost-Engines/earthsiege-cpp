@@ -11,13 +11,14 @@ class control_settings_artwork {
  font title,metrics,values;
  std::array<font,3> faces;
  interface_strings strings;
+ int origin_x{49},origin_y{50};uint8_t field_background{31};
  int width{},title_padding{},title_top{},title_height{},title_offset{};
  std::array<rectangle,7> buttons;
  std::array<int,7> offsets{};
  std::array<rectangle,5> fields;
  int field_x{},field_y{};
 public:
- explicit control_settings_artwork(resource_store const &);
+ explicit control_settings_artwork(resource_store const &,bool in_flight=false);
  rectangle button(unsigned i)const{return buttons.at(i);}
  void draw(framebuffer &,std::span<uint8_t const,5> state,std::span<uint8_t const,7> appearance)const;
 };

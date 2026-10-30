@@ -3,8 +3,8 @@
 #include <fstream>
 using namespace earthsiege;
 int main(int argc,char **argv)try{
- if(argc!=3)return 1;
- resource_store resources{argv[1]};control_settings_artwork artwork{resources};
+ if(argc!=3&&argc!=4)return 1;
+ resource_store resources{argv[1]};control_settings_artwork artwork{resources,argc==4};
  auto raw{read_file(argv[2])};binary_reader f{raw};auto magic{f.take(8)};
  if(std::string(magic.begin(),magic.end())!="ESCTLR01")f.fail("fixture version");
  auto count{f.integer<uint32_t>()};
