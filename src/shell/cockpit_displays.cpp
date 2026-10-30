@@ -43,8 +43,8 @@ bool cockpit_displays::command(uint16_t const code, mission_session &session, po
     if(controller.state().page==mfd_page::communications){
       constexpr std::array<uint16_t,7> names{30,34,35,24,46,18,33};
       constexpr std::array<size_t,7> choices_by_key{0,1,2,3,4,4,5};
-      auto const key{std::ranges::find(names,code)};
-      if(key!=names.end()){controller.select_choice(choices_by_key[size_t(key-names.begin())]);return true;}
+      auto const name{std::ranges::find(names,code)};
+      if(name!=names.end()){controller.select_choice(choices_by_key[size_t(name-names.begin())]);return true;}
     }
   }
   size_t choice;

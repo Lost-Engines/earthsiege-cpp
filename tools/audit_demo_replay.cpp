@@ -3,23 +3,47 @@
 #include <string>
 #include "shell/mission_view.h"
 #include "shell/mission_options_dialog.h"
+#include "shell/mission_alert.h"
 #include "resources/resource_store.h"
 using namespace earthsiege;
 int main(int argc,char **argv)try{
  if(argc<3)return 1;
  resource_store resources{argv[1]};auto raw{read_file(argv[2])};binary_reader file{raw};
- auto magic{file.take(8)};auto version{std::string(magic.begin(),magic.end())};bool extended{version=="ESRPLY04"};
+ auto magic{file.take(8)};auto version{std::string(magic.begin(),magic.end())};bool terminal{version=="ESRPLY05"},extended{terminal||version=="ESRPLY04"};
  if(version!="ESRPLY03"&&!extended)file.fail("format");
  auto demo{file.integer<uint32_t>()},count{file.integer<uint32_t>()};
  auto prefs{extended?file.take(17):bytes{}};
+ auto expected_packets{terminal?file.integer<uint32_t>():uint32_t{0}};
  auto tape{read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")))};
  mission_view view{resources,tape};
  preferences settings{prefs};std::array<joystick_calibration,2> calibrations;
  if(extended)view.configure_input(settings,calibrations);
  save_store replay_saves{std::filesystem::path{argv[2]}.parent_path()/"replay-settings"};
- size_t next_packet{},modal_packets{};bool suppressed{};
- auto modal=[&](uint16_t code){
-  if(code!=88)return false;
+ size_t next_packet{},modal_packets{},alert_count{};bool suppressed{},exited{};
+ auto alert=[&](int message){
+  mission_alert dialog{resources,message};
+  if(next_packet>=tape.frames.size())throw std::runtime_error{"Missing alert initialization poll"};
+  ++next_packet;++modal_packets;suppressed=true;
+  bool left{};std::optional<int> response;
+  while(!response){
+   if(next_packet>=tape.frames.size())throw std::runtime_error{"Recording ended inside alert"};
+   auto const &input{tape.frames[next_packet++]};++modal_packets;
+   // 4cb14 dispatches queued mouse callbacks before the modal key handler.
+   for(auto const &event:input.mouse){
+    bool const held{bool(event.kind&1)};
+    if(held&&!left)dialog.mouse_down(event.position.x,event.position.y);
+    if(!held&&left)response=dialog.mouse_up(event.position.x,event.position.y);
+    left=held;
+   }
+   if(!response)response=dialog.input(input.command,input.buttons&1,input.buttons&2,settings.current()[10]!=0).response;
+  }
+  ++alert_count;
+  std::cout<<"Alert "<<message<<" response "<<*response<<" at packet "<<next_packet-1<<'\n';
+  exited=dialog.exits_mission(*response);return exited;
+ };
+ auto modal=[&](uint16_t code)->mission_command_result{
+  if(code==16)return alert(static_cast<int>(view.status(true)))?mission_command_result::exit_mission:mission_command_result::handled;
+  if(code!=88&&code!=0x219)return mission_command_result::unhandled;
   // Original 45f00 blocks buttons and consumes one initialization poll before
   // the dialog loop. Playback skips the live debounce which would clear them.
   suppressed=true;view.begin_options();
@@ -43,13 +67,14 @@ int main(int argc,char **argv)try{
     left=l;right=r;
    }
   }
-  view.apply_preferences(settings);view.end_options();return true;
+  view.apply_preferences(settings);view.end_options();return mission_command_result::handled;
  };
  uint32_t checked{};
  for(uint32_t frame{};frame<count;++frame){
+  auto phase{terminal?file.integer<uint8_t>():uint8_t{1}};
   auto packet{file.integer<int32_t>()};auto clock{file.integer<uint32_t>()};auto ratio{file.integer<uint16_t>()};auto actors{file.integer<uint16_t>()};
   if(argc>3&&frame>std::stoul(argv[3]))break;
-  if(packet!=-1){
+  if(packet!=-1&&packet!=-3){
    tape_frame record;
    if(packet>=0){
     if(next_packet!=size_t(packet))file.fail("modal input ownership");
@@ -57,7 +82,9 @@ int main(int argc,char **argv)try{
    }
    else record.delta=ratio; // EOF clears the packet but retains the outer ratio.
    if(record.delta!=ratio)file.fail("recorded outer ratio");
-   view.step_recorded(record,clock,suppressed,modal);view.draw();
+   auto const complete{view.step_recorded(record,clock,suppressed,{modal,[&](mission_status status){return alert(static_cast<int>(status));}})};
+   if(terminal&&((phase==2)==complete))file.fail("mission frame termination phase");
+   if(complete)view.draw();
   }
   auto const &session{view.simulation()};
   auto const &rng{session.random_snapshot()};
@@ -160,8 +187,23 @@ int main(int argc,char **argv)try{
   ++checked;
   if(frame%100==0)std::cout<<frame<<" original states agree\n";
  }
- if(argc==3)file.require_end();
+ if(argc==3){
+  if(terminal){
+   auto compare_file=[&](char const *name,std::vector<uint8_t> const &actual){
+    auto expected{file.take(file.integer<uint32_t>())};
+    if(actual.size()!=expected.size())throw std::runtime_error{std::string(name)+" size: native "+std::to_string(actual.size())+", original "+std::to_string(expected.size())};
+    for(size_t i{};i<actual.size();++i)if(actual[i]!=expected[i])
+     throw std::runtime_error{std::string(name)+" byte "+std::to_string(i)+": native "+std::to_string(actual[i])+", original "+std::to_string(expected[i])};
+   };
+   compare_file("RESULTS.DAT",write_mission_results(view.results()));
+   compare_file("MISSION.VAR",write_mission_counters(view.mission_variables()));
+  }
+  file.require_end();
+  if(terminal&&next_packet!=expected_packets)file.fail("recorded input consumption");
+  if(terminal&&expected_packets!=tape.frames.size())file.fail("source TAP packet count");
+  if(terminal&&alert_count&&!exited)file.fail("terminal dialog did not leave mission");
+ }
  std::cout<<modal_packets<<" packets consumed by native modal controls\n";
- std::cout<<"DEMO"<<demo<<": "<<checked<<" original states agree (including initial/EOF when present)\n";
+ std::cout<<"DEMO"<<demo<<": "<<checked<<" original states agree (including initial/EOF/exit when present)\n";
  return 0;
 }catch(std::exception const &e){std::cerr<<e.what()<<'\n';return 1;}

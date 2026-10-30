@@ -245,7 +245,7 @@ void mission_view::prepare_frame(uint32_t now){
   // Original 4cb14 consumes the mouse queue before world simulation.
   consume_pointer_events();
 }
-bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bool suppress_camera,std::function<bool(uint16_t)> const &modal){
+bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bool suppress_camera,mission_dialog_handlers const &dialogs){
   for(auto const &event:record.mouse){
     player_input mouse;mouse.mouse=event.position;mouse.left=(event.kind&1)!=0;mouse.right=(event.kind&2)!=0;
     pointer_events.push_back({mouse,event.timestamp});
@@ -259,11 +259,17 @@ bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bo
   input.camera_source=packet.aiming_camera?player_axis_pair::aiming:player_axis_pair::movement;
   input.fire=packet.buttons[0];input.enter=packet.buttons[2];input.released=packet.buttons[3];
   input.release_action=static_cast<control_release_action>(routing.mode);
-  return step_input(input,packet.hat,static_cast<frame_ratio>(record.delta),routing.external,modal);
+  return step_input(input,packet.hat,static_cast<frame_ratio>(record.delta),routing.external,dialogs);
 }
-bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,std::function<bool(uint16_t)> const &modal){
+bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,mission_dialog_handlers const &dialogs){
   auto dispatch=[&](player_input &input){
-  if(input.command && modal && modal(input.command))input.command=0;
+  if(input.command && dialogs.command){
+    switch(dialogs.command(input.command)){
+      case mission_command_result::exit_mission:return false;
+      case mission_command_result::handled:input.command=0;break;
+      case mission_command_result::unhandled:break;
+    }
+  }
   if(input.command) {
     if(input.command==47){external_view_requested=!external_view_active;transitions.request(external_view_requested?2:3);input.command=0;}
     if((input.command==15||input.command==28)&&camera.mode!=camera_mode::attached){external_camera_control=!external_camera_control;input.command=0;}
@@ -282,8 +288,12 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   }
   hat_view(hat);
   input.release_action=static_cast<control_release_action>(routing.mode);
+  return true;
   };
-  auto const actions{session->step_player(initial_input, ratio, control, cockpit.layout.bounds(0x450),dispatch)};
+  auto const result{session->step_player(initial_input, ratio, control, cockpit.layout.bounds(0x450),dispatch)};
+  if(!result)return false;
+  if(dialogs.outcome)if(auto const prompt{session->take_mission_prompt()};prompt&&dialogs.outcome(*prompt))return false;
+  auto const &actions{*result};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
   shield_to_front.reset();

@@ -1315,3 +1315,32 @@ Integration findings retained in the faithful implementation:
 
 Validation: complete rebuild and all 240 CTest checks passed (34.71 seconds),
 including all four complete simulation-state replays.
+
+
+### Recorded exits and mission-return files
+
+The ESRPLY05 fixtures extend all four comparisons to the original exit state,
+including the partial final frame: 1,940 / 1,831 / 1,687 / 1,574 states
+(7,032 total). All 9,300 source TAP packets are consumed by native simulation
+and dialog owners, without skipping the terminal mouse interaction.
+
+DEMO1 and DEMO3 open Q alerts 13 and 4 and choose response 1. The original
+returns before player controls, perception or power updates on that frame.
+DEMO2 opens automatic outcome alert 6 after those updates and also chooses
+response 1. The native frame owner preserves both exit points. DEMO4 exits
+through EOF. Original constructor/entry/exit observations are retained in
+the analysis modal-ownership.json report.
+
+All final RESULTS.DAT and MISSION.VAR payloads now match the original byte
+for byte. This exposed a statistics mapping error: compiled actor tables use
+HERC/flyer/base order, while runtime +162 and the three returned kill counters
+use HERC/base/flyer. The existing combat_kind conversion now supplies that
+mapping to defeat credit.
+
+Coverage remains simulation, input ownership and return data. Complete replay
+rasters, visual RNG and exact audio-event timing are separate work. The recorded
+dialog callbacks run at original frame boundaries; live SDL modal scheduling
+still needs the same suspended-frame integration.
+
+Validation: complete rebuild and all 240 CTest checks passed (35.51 seconds),
+including all four terminal-state and mission-return comparisons.

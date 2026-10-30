@@ -6,7 +6,7 @@ void mission_session::credit_defeat(size_t attacker,size_t victim){
   if(attacker>=crew.size())return;
   auto &member{crew[attacker]};auto const &target{activity->actor(victim)};
   if(member.side==activity->group(target.group).side)return;
-  auto &count{member.statistics.at(static_cast<size_t>(target.kind))};count=wrap_word(count+1);
+  auto &count{member.statistics.at(static_cast<size_t>(combat_kind(target.kind)))};count=wrap_word(count+1);
 }
 mission_results mission_session::results()const{
   mission_results out;out.grade=result_grade();out.salvage=recovered_weapons;int32_t score{};

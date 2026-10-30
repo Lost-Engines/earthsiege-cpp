@@ -104,10 +104,11 @@ void mission_session::step(herc_controls const &controls, int16_t const time_rat
   advance_frame(input, time_ratio, [&]{
     crew.at(player_index).actor->prepare_player(controls, time_ratio, [&](movement_event event){movement_event_received(player_index, event);});
     fire_selected(input.fire);
+    return true;
   });
 }
 
-void mission_session::advance_frame(player_input &player_controls, frame_ratio const time_ratio, std::function<void()> const &prepare_player) {
+bool mission_session::advance_frame(player_input &player_controls, frame_ratio const time_ratio, std::function<bool()> const &prepare_player) {
   frame_contacts.clear();
   frame_notices.clear();
   for(auto &member : crew) member.actor->begin_frame();
@@ -140,7 +141,7 @@ void mission_session::advance_frame(player_input &player_controls, frame_ratio c
     if(actor < crew.size()) dispatch_herc(actor, time_ratio);
     else if(actor < base_id(0)) dispatch_flyer(actor - flyer_id(0), time_ratio);
   });
-  prepare_player();
+  if(!prepare_player())return false; // Original Q can leave between world AI and player input.
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
@@ -156,6 +157,7 @@ void mission_session::advance_frame(player_input &player_controls, frame_ratio c
   // through this frame's simulation, as in the original shared pools.
   effects.collect();
   projectiles.collect();
+  return true;
 }
 
 bool mission_session::select_weapon(size_t const slot) { return player_weapons->select(slot); }
@@ -223,10 +225,10 @@ void mission_session::cycle_target() {
   cockpit_observer const observer{vec3<int32_t>{body.movement().position}, body.movement().angles.z, body.torso().angle, crew[player_index].side, settings.detection_range()};
   set_displayed_target(cycle_cockpit_target(candidates, observer, displayed_target));
 }
-player_input_actions mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control, rectangle const aiming_viewport, std::function<void(player_input &)> const &dispatch_command) {
+std::optional<player_input_actions> mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control, rectangle const aiming_viewport, std::function<bool(player_input &)> const &dispatch_command) {
   player_input_actions actions;
-  advance_frame(input, ratio, [&]{
-    if(dispatch_command)dispatch_command(input);
+  bool const completed{advance_frame(input, ratio, [&]{
+    if(dispatch_command && !dispatch_command(input))return false;
     if(input.command) player_command(input.command);
     auto &actor{*crew[player_index].actor};
     player_input_context context{.external_control{external_control}, .disabled{actor.damage().consequences.disabled}, .auto_tracking{player_weapons->auto_tracking()}, .position{vec3<int32_t>{actor.body().movement().position}}, .target{}};
@@ -244,7 +246,9 @@ player_input_actions mission_session::step_player(player_input input, frame_rati
     actor.apply_player_controls(actions, ratio, [&](movement_event event){movement_event_received(player_index, event);});
     if(actions.fire_allowed) fire_selected(actions.fire);
     if(actions.cycle_target) cycle_target();
-  });
+    return true;
+  })};
+  if(!completed)return {};
   return actions;
 }
 int16_t mission_session::exchange_player_instruments(int16_t const requested_throttle, std::optional<bool> const shield_to_front) {

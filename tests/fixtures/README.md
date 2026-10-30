@@ -658,12 +658,12 @@ objects during destruction; original speech instructions remain unchanged.
 
 ## Full demo and cockpit presentation fixtures
 
-demo1_replay.bin through demo4_replay.bin (ESRPLY04) are exported by
+demo1_replay.bin through demo4_replay.bin (ESRPLY05) are exported by
 earthsiege-reverse/tools/export_replay_audit.py from the retained unmodified
 DOSBox demo1-observer-b, demo2-complete, demo3-complete and demo4-complete
-captures. They contain 1,939 / 1,830 / 1,686 / 1,573 states respectively:
-each initial state and every completed simulation frame. DEMO4 includes its
-extra zero-input EOF frame with the previous outer ratio.
+captures. They contain 1,940 / 1,831 / 1,687 / 1,574 states respectively:
+each initial state, every completed simulation frame, and the final exit state.
+DEMO4 includes its extra zero-input EOF frame with the previous outer ratio.
 
 The header includes the installed 17-byte preferences block. TAP-embedded
 preferences are restored beside the TAP and do not replace DATA/PREFS.CFG.

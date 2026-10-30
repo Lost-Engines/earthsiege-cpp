@@ -26,6 +26,13 @@
 #include "simulation/mission_session.h"
 
 namespace earthsiege {
+enum class mission_command_result { unhandled, handled, exit_mission };
+struct mission_dialog_handlers {
+  std::function<mission_command_result(uint16_t)> command;
+  /// Return true if the selected outcome response leaves the mission.
+  std::function<bool(mission_status)> outcome;
+};
+
 
 /// Live mission presentation and platform-independent input consumers
 class mission_view {
@@ -90,7 +97,7 @@ class mission_view {
   void apply_cockpit_view(cockpit_view view,bool reset_input);
   void present_view();
   void prepare_frame(uint32_t slow_clock);
-  bool step_input(player_input input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,std::function<bool(uint16_t)> const &modal={});
+  bool step_input(player_input input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,mission_dialog_handlers const &dialogs={});
   std::deque<uint16_t> commands;
 
 public:
@@ -115,7 +122,7 @@ public:
   void advance_time(unsigned milliseconds);
   bool step(bool control, bool zoom);
   /// Recorded axes are already device-mapped. The host supplies the separate 60 Hz presentation clock.
-  bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false,std::function<bool(uint16_t)> const &modal={});
+  bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false,mission_dialog_handlers const &dialogs={});
   mission_session const &simulation()const{return *session;}
   void begin_options();
   bool step_options();
