@@ -11,8 +11,10 @@ int32_t divide(int32_t a,int32_t b){
  if(!b||(a==std::numeric_limits<int32_t>::min()&&b==-1))throw std::domain_error{"original ground projection division outside range"};
  return a/b;
 }
-vec2<int32_t> rotate(vec2<int32_t> const &p,uint16_t angle){
- int32_t const c{model_cosine(angle)},s{model_cosine(static_cast<uint16_t>(angle-16384))};
+vec2<int32_t> rotate(vec2<int32_t> const &p,uint16_t angle,bool inverse=false){
+ int32_t const c{model_cosine(angle)};
+ int32_t const sine{model_cosine(static_cast<uint16_t>(angle-16384))};
+ int32_t const s{inverse?-sine:sine};
  return {wrap_long((static_cast<int64_t>(p.x)*c-static_cast<int64_t>(p.y)*s+8192)>>14),
          wrap_long((static_cast<int64_t>(p.x)*s+static_cast<int64_t>(p.y)*c+8192)>>14)};
 }
@@ -67,7 +69,9 @@ void ground_texture::draw(framebuffer &target,vec3<int32_t> const &position,vec3
   for(int i{};i<rows;++i){
    auto ray{rotate({-origin_y-(row_start+i)-1,1<<view.projection_shift},static_cast<uint16_t>(-angles.x))};
    int const distance{ray.x?divide(wrap_long(static_cast<int64_t>(height)*ray.y),ray.x):10000000};
-   auto ground{rotate({height,distance},angles.x)};
+   // 28fbc transposes its already quantized negative-pitch matrix. Building
+   // a new positive-angle matrix differs at the cosine table\'s rounding ties.
+   auto ground{rotate({height,distance},static_cast<uint16_t>(-angles.x),true)};
    lines[static_cast<size_t>(i)]={
     wrap_long(static_cast<int64_t>(view.offset.x-160)*ground.y)>>view.projection_shift,
     distance,

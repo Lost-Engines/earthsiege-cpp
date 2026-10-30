@@ -1843,3 +1843,18 @@ Three independent original DEMO2 regions cover the corrected shadow in the
 centre and at both viewport edges (frames 900, 960 and 1740). They match exactly;
 the largest complete sampled DEMO2 difference falls from 195 to 90 RGB pixels.
 These regions join the existing original replay scene fixtures.
+
+
+## Ground projection at lookup-table boundaries
+
+Original 28fbc builds a negative-pitch rotation with 694b8 and transposes that
+same quantized matrix with 63df0 for the inverse. Recomputing a positive-pitch
+matrix instead changes the result at the cosine table's rounding ties. This
+caused 61 different scratch-texture pixels at the DEMO3 frame-1320 camera pose.
+
+The native ground projector now transposes the existing coefficients. The
+independent capture_ground_replay_precision.py fixture checks 66 complete
+original ground frames and sampler bitmaps, covering that replay pose and
+neighbouring positive/negative rounding boundaries at several headings.
+All agree. The complete sampled frame now differs by only three RGB pixels;
+that count includes other scene elements and is not a whole-frame equality claim.

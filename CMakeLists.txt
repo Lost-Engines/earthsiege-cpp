@@ -1072,6 +1072,7 @@ if(BUILD_TESTING)
   add_executable(ground_texture_test tests/ground_texture_test.cpp)
   target_link_libraries(ground_texture_test PRIVATE earthsiege_core)
   add_test(NAME ground_texture COMMAND ground_texture_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/ground_texture.bin)
+  add_test(NAME ground_replay_precision COMMAND ground_texture_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/ground_replay_precision.bin")
 endif()
 
 if(BUILD_TESTING)
