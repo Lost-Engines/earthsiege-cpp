@@ -2,15 +2,12 @@
 
 The native game is being built from the supplied Earthsiege 1.0 data and original-code comparisons in `../earthsiege-reverse`. Original x86 execution is confined to the research tools; the game and C++ tests use native implementations and recorded fixtures.
 
-Current integration: single missions and careers can launch, fly and return with
-saved results. Arming, crew assignment, repair, salvage, construction and launch
-warnings are connected to the original shell controls and static artwork.
-Opening, travel and ending movies, original environment layers and workshop
-dialogue, menu doors, credits and cockpit impact effects are connected. All four original recordings now agree on gameplay, complete visual RNG and
-final return files. Full image and audio-stream equality remain under comparison. Later entries supersede the older
-integration boundaries in this cumulative record.
+This is a chronological research and implementation record. Earlier descriptions
+of unfinished integration describe their milestone, not the current build.
+See [current validation and fidelity limits](VALIDATION.md) for the implemented
+game loop, complete test results, original comparisons and remaining boundaries.
 
-Working components:
+Early component milestones:
 
 - Original player weapon-list owner matches 34 loadouts / 11,594 sequential updates, including 609 discharges and paired weapons, ELF spin-up, grenade trigger release, editable groups, charge controls and automatic selection. The device-independent player input router matches 4,096 original calls, retaining mouse origins, nonlinear response, target tracking, centering, camera/flyer routing and Enter edges. Connecting these owners to the live session/cockpit follows these independent comparisons.
 
