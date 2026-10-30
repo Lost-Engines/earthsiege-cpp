@@ -31,6 +31,7 @@ world_effects::world_effects(resource_store const &resources, sound_sink sink)
     detached_weapon_models{read_model(resources.read("simvol0", "dts/MECHWPN2.DTS"))},
     smoke_textures{read_bitmaps(resources.read("simvol0", "dba/SMOKE.DBA"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))} {
+  for(auto const &root:flat_models.roots)flat_instances.emplace_back(std::get<shape_part>(root.content));
   for(size_t bank{0}; bank != explosion_textures.size(); ++bank) explosion_textures[bank] = read_bitmaps(resources.read("simvol0", "dba/EXPLO" + std::to_string(bank) + ".DBA"));
 }
 
@@ -144,6 +145,9 @@ void world_effects::append_models(std::vector<scene_model> &models) {
       .instance{puff.model}, .placement{placement}, .native_class{4},
       .textures{smoke_textures}, .attachments{}, .detail_thresholds{}, .detail{}});
   });
+}
+ground_flash world_effects::ground_attachment(size_t const shape,vec3<int32_t> &position,uint16_t const heading) {
+  return {flat_models.roots.at(shape),flat_instances.at(shape),position,heading};
 }
 std::vector<ground_flash> world_effects::ground_flashes() {
   std::vector<ground_flash> result;

@@ -282,6 +282,7 @@ public:
   std::optional<size_t> weapon_selection() const;
   herc_actor const &player_actor() const;
   world_effects &visual_effects();
+  std::vector<ground_flash> ground_models();
   world_projectiles const &ordnance() const;
   std::span<combat_notice const> combat_notices() const;
   std::vector<scene_object> visible_objects(bool include_player = true);

@@ -1752,3 +1752,26 @@ The independent four-replay comparisons still agree on all 7,032 captured
 states, 584 weapon-label rasters and 7,073 ordered sound requests. Across 120
 sampled full frames the largest RGB differences are now 385/285/408/444 pixels;
 these counts include pointer, clock-phase and remaining scene differences.
+
+
+## Authored HERC ground models
+
+HERC profile bytes 112–116 select FLAT.DTS roots; bytes 117–121 bind them to
+articulated model parts. These are the feet/body shadows, not just footstep
+sound markers. Constructor 11330 creates the flat objects at Z=-100000 until
+their first update. Routine 144dc places each at its part's world-space origin
+and copies the HERC's heading. Routine 11988 sets Z=0 when drawing, after the
+ground-pass 30,000-distance test. The ground pass precedes terrain and actors.
+
+The native mission now retains and draws those objects for all HERCs, including
+the player's own shadow. Destroyed legs permanently lose their corresponding
+attachments; destruction of a chassis configured to disappear removes all of
+them, matching 13250. Explosion ground flashes share the pass and retain their
+existing update/draw behaviour.
+
+The extended ESFOOT02 fixture checks 1,800 unchanged original attachment
+placement, heading and footstep/latch cases. The four independent replays still
+match all captured states, label rasters and sound requests. Across 120 sampled
+full frames, largest RGB differences are now 159/285/108/444 pixels. The former
+large DEMO1/3 external-view discrepancies were these missing ground models.
+The full 249-test suite passes.

@@ -18,6 +18,9 @@ herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &
   // Equipping the original actor evaluates all channels at time zero before
   // binding weapon geometry. Some enemy chassis differ from the raw defaults.
   rig.update_pose();
+  for(size_t i{};i<ground.size()&&source.profile.attachment_types[i]>=0;++i){
+    ground[i].shape=source.profile.attachment_types[i];ground[i].active=true;
+  }
 }
 
 void herc_body::place(vec3<int32_t> const &position, vec3<uint16_t> const &angles) {
@@ -37,6 +40,15 @@ void herc_body::apply_damage(damage_state const &state) {
   for(size_t i{0}; i != cells.size(); ++i) cells[i] = static_cast<uint16_t>(state.cells[i]);
   armament.disable_missing_sections(state.present);
   apply_damage(state.consequences);
+  // 13250 permanently removes each destroyed leg's flat attachment.
+  for(int i{};i<source.profile.legs;++i){
+    auto const part{static_cast<size_t>(i<2?i:i+8)};
+    auto const amount{state.internal.at(part)};
+    auto const capacity{source.damage.hit_points.at(part)};
+    if(amount<0||(capacity&&amount*256/capacity==256))ground.at(static_cast<size_t>(i)).active=false;
+  }
+  if(state.consequences.dead&&source.profile.remove_when_destroyed)
+    for(auto &attachment:ground)attachment.active=false;
 }
 
 void herc_body::update_weapons(weapon_bank const &bank) { armament.update_cells(bank); }
@@ -112,7 +124,7 @@ bool herc_body::advance(frame_ratio const time_ratio, std::function<bool(herc_bo
     rig.restore(*saved);
   }};
   advance();
-  if(!contact || !contact(*this)) return false;
+  if(!contact || !contact(*this)){update_ground_attachments();return false;}
   restore();
   if(blocked) blocked();
   movement_state.throttle = 0;
@@ -126,6 +138,7 @@ bool herc_body::advance(frame_ratio const time_ratio, std::function<bool(herc_bo
       movement_state.gait_rate = 0;
     }
   } else channel.reset(source.profile.movement.forward_stop_sequence);
+  update_ground_attachments();
   return true;
 }
 
@@ -165,12 +178,23 @@ contact_actor herc_body::contact_geometry() const {
   };
 }
 
+void herc_body::update_ground_attachments() {
+  auto const world{placement()};
+  for(size_t i{};i<ground.size();++i){
+    if(!ground[i].active)continue;
+    auto const *part{find_model_part(source.models.roots.front(),source.profile.attachment_parts[i])};
+    if(!part||part->header.transform<0)continue;
+    auto const &local{rig.instance().transforms()[static_cast<size_t>(part->header.transform)].translation};
+    place_ground_attachment(ground[i],local,world,movement_state.angles.z);
+  }
+}
+
 std::vector<uint16_t> herc_body::footstep_sounds() {
   std::vector<footstep_attachment> attachments;
   auto const &profile{source.profile}; auto const world{placement()};
   for(size_t i{};i<profile.attachment_types.size() && profile.attachment_types[i]>=0;++i) {
     auto const *part{find_model_part(source.models.roots.front(),profile.attachment_parts[i])};
-    bool const active{part && part->header.transform>=0};
+    bool const active{ground[i].active && part && part->header.transform>=0};
     if(!active) { attachments.push_back({profile.attachment_types[i],false,0,0}); continue; }
     auto const &transform{rig.instance().transforms()[static_cast<size_t>(part->header.transform)]};
     attachments.push_back({profile.attachment_types[i],true,transform.translation.y,compose_transforms(transform,world).translation.z});

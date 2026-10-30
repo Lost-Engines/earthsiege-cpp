@@ -1,6 +1,14 @@
 #include "footsteps.h"
+#include "simulation/fixed_math.h"
 
 namespace earthsiege {
+void place_ground_attachment(herc_ground_attachment &attachment,
+  vec3<int32_t> const &local, model_transform const &actor, uint16_t const heading) {
+  attachment.position=rotate_vector(local,actor);
+  for(unsigned axis{};axis<3;++axis)attachment.position[axis]=wrap_long(static_cast<int64_t>(attachment.position[axis])+actor.translation[axis]);
+  attachment.heading=heading;
+}
+
 std::vector<uint16_t> advance_footsteps(footstep_state &state, movement_profile const &p,
   std::span<int16_t const,10> trigger, std::span<int16_t const,10> rearm,
   animation_channel_state const &channel, int16_t const rate, bool const player,

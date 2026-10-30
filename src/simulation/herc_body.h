@@ -35,6 +35,8 @@ class herc_body {
   aiming_state torso_state;
   aiming_state elevation_state;
   footstep_state footsteps;
+  std::array<herc_ground_attachment,5> ground;
+  void update_ground_attachments();
   size_t body_channel{0};
   std::optional<size_t> torso_channel;
   std::optional<size_t> elevation_channel;
@@ -60,6 +62,7 @@ public:
   void prepare_aim(vec2<int16_t> const &input, frame_ratio ratio);
   bool advance(frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, std::function<void()> const &blocked = {});
   std::vector<uint16_t> footstep_sounds();
+  auto &ground_attachments(){return ground;}
   model_transform aiming_pivot() const;
   /// Advance player controls; return whether either contact probe blocked motion
   bool step(herc_controls const &controls, int16_t time_ratio, std::function<bool(herc_body const &)> const &contact = {}, movement_event_sink const &events = {});

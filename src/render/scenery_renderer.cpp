@@ -38,7 +38,7 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
     for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(flash.position[axis]) - position[axis]);
     if(fast_distance(delta) >= 30000) continue;
     flash.position.z = 0;
-    model_transform placement;
+    auto placement{rotation_transform({0,0,flash.heading})};
     placement.translation = flash.position;
     models.draw(flash.root, flash.instance, placement, view, {}, dynamic ? dynamic->current() : lights);
   }

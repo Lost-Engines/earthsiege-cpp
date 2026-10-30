@@ -561,7 +561,7 @@ void mission_view::draw() {
     if(!startup)display_device.changed(64,16);
     auto const objects{session->visible_objects(!inside)};
     auto &effects{session->visual_effects()};
-    auto const ground{effects.ground_flashes()};
+    auto const ground{session->ground_models()};
     renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground, view);
   }
   session->refresh_target_instruments(inside&&panel==cockpit_view::forward);

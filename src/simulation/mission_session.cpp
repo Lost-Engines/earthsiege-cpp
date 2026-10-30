@@ -303,6 +303,14 @@ void mission_session::refresh_target_instruments(bool visible,bool validate){
 }
 herc_actor const &mission_session::player_actor() const { return *crew.at(player_index).actor; }
 world_effects &mission_session::visual_effects() { return effects; }
+std::vector<ground_flash> mission_session::ground_models() {
+  std::vector<ground_flash> result;
+  for(auto &member:crew)for(auto &attachment:member.actor->ground_attachments())
+    if(attachment.active)result.push_back(effects.ground_attachment(
+      static_cast<size_t>(attachment.shape),attachment.position,attachment.heading));
+  for(auto const &flash:effects.ground_flashes())result.push_back(flash);
+  return result;
+}
 world_projectiles const &mission_session::ordnance() const { return projectiles; }
 std::span<combat_notice const> mission_session::combat_notices() const { return frame_notices; }
 

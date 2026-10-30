@@ -52,6 +52,7 @@ class world_effects {
   model_resource explosion_models;
   model_resource debris_models;
   model_resource flat_models;
+  std::vector<model_instance> flat_instances;
   model_resource smoke_models;
   model_resource detached_weapon_models;
   std::vector<bitmap> smoke_textures;
@@ -78,6 +79,7 @@ public:
   /// Draw views stay valid until the next simulation update or collection.
   void append_models(std::vector<scene_model> &models);
   std::vector<ground_flash> ground_flashes();
+  ground_flash ground_attachment(size_t shape,vec3<int32_t> &position,uint16_t heading);
   object_pool<live_smoke_puff> const &live_smoke() const;
   object_pool<live_smoke_emitter> const &smoke_controllers() const;
   object_pool<live_explosion> const &live_explosions() const;
