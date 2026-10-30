@@ -1164,3 +1164,13 @@ still suspends time as a host convenience. The complete rebuild passes all
 226 CTest checks, and a 40-frame headless mission smoke run completes.
 Recorded playback bypasses the live pacing in the original; its integration
 and whole-game parity are still separate work.
+
+### Recorded input routing
+
+The complete original 0x4cb14 playback path now matches all 9,300 supplied
+packets and 2,048 independent post-read control contexts. Axes in the tape have
+already passed keyboard/device mapping: rerouting them as live joystick axes
+would be wrong. Playback repeats the physical button-2 mode latch, camera-axis
+suppression, WCS override and backturn policy. Direct pointer fields remain
+zero; recorded mouse events go to the interface queue separately. These checks
+do not substitute for modal ownership or whole-game replay comparisons.

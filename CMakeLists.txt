@@ -1216,3 +1216,11 @@ if(BUILD_TESTING)
  target_link_libraries(frame_pacing_test PRIVATE earthsiege_core)
  add_test(NAME frame_pacing COMMAND frame_pacing_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/frame_pacing.bin)
 endif()
+
+# Original complete recorded-input path, including post-read control policy.
+target_sources(earthsiege_core PRIVATE src/simulation/tape_input.cpp)
+if(BUILD_TESTING)
+ add_executable(tape_input_test tests/tape_input_test.cpp)
+ target_link_libraries(tape_input_test PRIVATE earthsiege_core)
+ add_test(NAME tape_input COMMAND tape_input_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/tape_packets.bin ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/tape_routing_cases.bin)
+endif()
