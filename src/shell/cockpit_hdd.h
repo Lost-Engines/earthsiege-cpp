@@ -31,6 +31,8 @@ class cockpit_hdd {
   int direction_art{},page{},mode{},scroll{},subject{};
   int mouse_x{},mouse_y{},origin_x{},origin_y{};
   bool visible{},dirty{true};
+  std::optional<size_t> pending_button;
+  void execute_button(size_t,mission_session &,pointer_controls &);
   uint32_t deadline{30};
   bool blink_phase{};
   unsigned int prompt_refreshes{};

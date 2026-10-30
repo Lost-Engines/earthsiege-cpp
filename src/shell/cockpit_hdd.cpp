@@ -59,10 +59,8 @@ void cockpit_hdd::pick(mission_session &session,int32_t const range){
   dirty=true;
 }
 void cockpit_hdd::pointer(int const x,int const y){mouse_x=x;mouse_y=y;}
-bool cockpit_hdd::activate(control_activation const &action,mission_session &session,pointer_controls &input,int32_t const range){
-  for(size_t i{};i<button_ids.size();++i)if(action.index==button_ids[i]){
-    if(failure.failed && i>1)return true;
-    if(i<2){page=static_cast<int>(i);dirty=true;enable(input);return true;}
+void cockpit_hdd::execute_button(size_t i,mission_session &session,pointer_controls &input){
+    if(i<2){page=static_cast<int>(i);dirty=true;enable(input);return;}
     switch(i){
       case 2:if(page==0)controller.pan(0,1);else{mode=(mode+1)%3;scroll=0;}break;
       case 3:if(page==0)controller.pan(0,-1);else{mode=(mode+2)%3;scroll=0;}break;
@@ -74,11 +72,17 @@ bool cockpit_hdd::activate(control_activation const &action,mission_session &ses
       case 13:if(page==0)transmit(session);break;
       case 14:controller.cancel();selected_actor.reset();prompt.reset();break;
       default:break;
-    }dirty=true;return true;
+    }dirty=true;
+}
+bool cockpit_hdd::activate(control_activation const &action,mission_session &session,pointer_controls &input,int32_t const range){
+  for(size_t i{};i<button_ids.size();++i)if(action.index==button_ids[i]){
+    // 3d430 stores only the last request; 3cd28 dispatches it after simulation.
+    if(action.value&1)pending_button=i;
+    return true;
   }
   if(page!=0)return false;
   if(action.index==map_id){if(!failure.failed)pick(session,range);return true;}
-  for(size_t i{};i<row_ids.size();++i)if(action.index==row_ids[i]){if(!failure.failed){int const cmd{static_cast<int>(i)+10};if(action.double_click && controller.state().command==cmd && controller.state().ready)transmit(session);else choose(cmd,false);}return true;}
+  for(size_t i{};i<row_ids.size();++i)if(action.index==row_ids[i]){if(!failure.failed){int const cmd{static_cast<int>(i)+10};if(action.double_click && controller.state().command==cmd && controller.state().ready)pending_button=13;else choose(cmd,false);}return true;}
   return false;
 }
 bool cockpit_hdd::command(uint16_t const code,mission_session &session,pointer_controls &input,int32_t const range){
@@ -152,6 +156,9 @@ void cockpit_hdd::paint(mission_session &session){
   if(prompt){auto b{translate(command_bounds,-origin_x,-origin_y)};b.bottom=b.top+static_cast<int>(fonts[0].height);label(cache,fonts[2],strings.at(28).at(*prompt).text,b,58);}
 }
 void cockpit_hdd::update(mission_session &session,pointer_controls &input,camera_state const &camera,uint32_t const ticks,int const x,int const y){
+  if(pending_button && (!failure.failed || *pending_button<=1)){
+    auto const button{*pending_button};pending_button.reset();execute_button(button,session,input);
+  }
   auto const b{translate(bounds,-x,-y)};bool const shown{camera.mode==camera_mode::attached && b.right>=0 && b.left<320 && b.bottom>=0 && b.top<200};
   if(shown && (!visible || x!=origin_x || y!=origin_y))dirty=true;
   visible=shown;origin_x=x;origin_y=y;painted=b;

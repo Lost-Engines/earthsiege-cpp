@@ -19,5 +19,5 @@ struct herc_weapon_selection_state {
   bool unavailable{false};
 };
 
-std::optional<size_t> select_herc_weapon(weapon_bank const &bank, weapon_catalogue const &definitions, herc_weapon_selection_state &state, combat_actor_kind target_kind, int32_t distance, int16_t facing, random_state &random, int16_t &mission_event_delay, std::function<int16_t(bool)> const &target_shield, std::function<void()> const &unarmed_event = {});
+std::optional<size_t> select_herc_weapon(weapon_bank const &bank, weapon_catalogue const &definitions, herc_weapon_selection_state &state, combat_actor_kind target_kind, int32_t distance, int16_t facing, random_state &random, int16_t &mission_event_delay, std::function<int16_t(int16_t)> const &target_shield, std::function<void()> const &unarmed_event = {});
 } // namespace earthsiege

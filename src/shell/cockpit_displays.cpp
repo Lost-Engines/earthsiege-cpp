@@ -28,6 +28,25 @@ void cockpit_displays::transmit(size_t const choice, mission_session &session) {
 }
 bool cockpit_displays::command(uint16_t const code, mission_session &session, pointer_controls &input) {
   if(code>=59 && code<=64) return activate({buttons[code-59],1},session,input);
+  if(visible){
+    // Original 3a5e7 consumes these page-specific keys even when the
+    // corresponding button is disabled. Alt+R also cycles hidden ranges.
+    auto const enabled{mfd_enabled_buttons(controller.state().page)};
+    constexpr std::array<uint16_t,6> keys{32,0x213,20,45,51,52};
+    auto const key{std::ranges::find(keys,code)};
+    if(key!=keys.end()){
+      auto const button{size_t(key-keys.begin())+7};
+      if(enabled[button])activate({buttons[button],1,input.is_double_click()},session,input);
+      else if(button==8){controller.button(8,session.player_id(),session.target_selection(),choices.choices);}
+      return true;
+    }
+    if(controller.state().page==mfd_page::communications){
+      constexpr std::array<uint16_t,7> names{30,34,35,24,46,18,33};
+      constexpr std::array<size_t,7> choices_by_key{0,1,2,3,4,4,5};
+      auto const key{std::ranges::find(names,code)};
+      if(key!=names.end()){controller.select_choice(choices_by_key[size_t(key-names.begin())]);return true;}
+    }
+  }
   size_t choice;
   switch(code) {
     case 0x21e: choice=0; break; // Alt+A: attack
@@ -45,19 +64,23 @@ bool cockpit_displays::command(uint16_t const code, mission_session &session, po
 }
 bool cockpit_displays::activate(control_activation const &action, mission_session &session, pointer_controls &input) {
   for(size_t i{};i<buttons.size();++i) if(action.index==buttons[i]) {
+    if(!(action.value&1))return true;
     auto const result{controller.button(i,session.player_id(),session.target_selection(),choices.choices)};
     switch(result) {
       case mfd_action::toggle_radar: session.player_command(19); break;
       case mfd_action::cycle_target: session.cycle_target(); break;
       case mfd_action::transmit:
-        transmit(controller.state().choice,session);
+        if(!action.double_click)transmit(choices.selected,session);
         break;
       case mfd_action::none: break;
     }
     enable_controls(input); return true;
   }
   for(size_t i{};i<rows.size();++i) if(action.index==rows[i]) {
-    controller.select_choice(i); return true;
+    // Original 3ac04 routes a same-row double click to TRANSMIT, whose
+    // 3a46c callback rejects it because the shared double-click latch is set.
+    if(!action.double_click || controller.state().choice!=i)controller.select_choice(i);
+    return true;
   }
   return false;
 }

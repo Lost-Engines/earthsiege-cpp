@@ -75,6 +75,7 @@ class mission_view {
   void hat_view(std::array<uint8_t,4> const &);
   bool paused{false};
   bool external_camera_control{true};
+  bool external_view_active{},external_view_requested{}; // 5894c applies prepared views after input.
   player_input pointer;
   pointer_controls instruments;
   std::unique_ptr<cockpit_displays> displays;
@@ -89,7 +90,7 @@ class mission_view {
   void apply_cockpit_view(cockpit_view view,bool reset_input);
   void present_view();
   void prepare_frame(uint32_t slow_clock);
-  bool step_input(player_input input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control);
+  bool step_input(player_input input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,std::function<bool(uint16_t)> const &modal={});
   std::deque<uint16_t> commands;
 
 public:
@@ -114,7 +115,7 @@ public:
   void advance_time(unsigned milliseconds);
   bool step(bool control, bool zoom);
   /// Recorded axes are already device-mapped. The host supplies the separate 60 Hz presentation clock.
-  bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false);
+  bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false,std::function<bool(uint16_t)> const &modal={});
   mission_session const &simulation()const{return *session;}
   void begin_options();
   bool step_options();

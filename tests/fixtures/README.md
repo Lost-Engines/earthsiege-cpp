@@ -658,13 +658,21 @@ objects during destruction; original speech instructions remain unchanged.
 
 ## Full demo and cockpit presentation fixtures
 
-demo4_replay.bin (ESRPLY03) is exported by
+demo1_replay.bin through demo4_replay.bin (ESRPLY04) are exported by
 earthsiege-reverse/tools/export_replay_audit.py from the retained unmodified
-DOSBox demo4-complete/frames.jsonl.gz. It contains initial state plus all
-1,572 simulation updates, including EOF, and 1,571 source TAP packet indices.
-Only explicitly compared actor fields, damage, groups and the entire gameplay
-RNG are retained. Observed presentation clock is an external input; expected
-actor/random state is never injected into the native simulation.
+DOSBox demo1-observer-b, demo2-complete, demo3-complete and demo4-complete
+captures. They contain 1,939 / 1,830 / 1,686 / 1,573 states respectively:
+each initial state and every completed simulation frame. DEMO4 includes its
+extra zero-input EOF frame with the previous outer ratio.
+
+The header includes the installed 17-byte preferences block. TAP-embedded
+preferences are restored beside the TAP and do not replace DATA/PREFS.CFG.
+Only explicitly compared actor fields, damage, groups, perception and the
+entire gameplay RNG are retained. Observed presentation clock is an external
+input; expected actor/random state is never injected. DEMO3's two preference
+dialogs consume 54 intervening TAP packets through native modal controls.
+Terminal Q dialogs, visual RNG, complete replay rasters and audio are outside
+this fixture's stated coverage.
 
 cockpit_transition.bin (ESVIEW01) contains all 114 sequential before/after
 states from capture_cockpit_transition_policy.py. The original request,

@@ -1245,7 +1245,7 @@ polls remains a separate whole-game integration task.
 ### Complete DEMO4 simulation comparison
 
 The native mission owner now executes all 1,571 recorded DEMO4 input records,
-including embedded PREFS/KEYJOY settings and queued mouse events. The original
+with queued mouse events and the installed input settings (see the correction below). The original
 runs one final zero-input frame at EOF using the previous outer frame ratio;
 that frame is included. All 1,573 states (initial plus 1,572 updates) agree on
 every actor's position and orientation, HERC steering/gait/throttle/aiming,
@@ -1268,3 +1268,50 @@ The remaining demos, modal tape ownership, full-frame visuals and audio timing
 are still separate integration work.
 
 Validation: complete rebuild and all 237 CTest checks passed (37.85 seconds), including the complete DEMO4 comparison.
+
+
+### All supplied recorded missions: simulation state
+
+All four unmodified DOSBox recordings now have a complete simulation-state
+comparison: DEMO1 1,939 states, DEMO2 1,830, DEMO3 1,686 and DEMO4 1,573
+(7,028 total, including each initial state). The expanded ESRPLY04 fixtures
+also compare contact knowledge/visibility, perception timers, controller entry
+and update latches, commands, attack requests and articulated aiming rates.
+The aimed-component field is checked only where initialized and consumed;
+original actor construction leaves that word as heap residue.
+
+The TAP contains starting PREFS.CFG and KEYJOY.CFG, but original playback writes
+those files beside the TAP path. Running -pTAPES/DEMOx still reads runtime
+controls from DATA/PREFS.CFG and DATA/KEYJOY.CFG. The native owner therefore
+uses installed settings. Each fixture includes the original installed 17-byte
+preferences block; expected actor state is never an input to the implementation.
+
+DEMO3 opens preferences twice. Its native modal consumes the one initialization
+poll and subsequent recorded inputs until Escape closes each dialog: 54 packets
+in total. The persistent playback button-suppression latches are retained.
+The fixtures stop at the final complete simulation frame: the terminal Q
+confirmation and its remaining polls are not yet claimed as a verified owner.
+Whole replay pixels, visual RNG, synthesized output and exact audio scheduling
+remain separate comparisons.
+
+Integration findings retained in the faithful implementation:
+
+- The ordinary mouse queue runs before world AI. MFD commands act immediately;
+  HDD button callbacks only store the last request, dispatched during the later
+  instrument update. Failed HDD panels retain requests other than page changes.
+- Plain MFD keys select pages, contacts and orders. TRANSMIT uses the child
+  panel's last painted choice. Its shared double-click latch suppresses transmit,
+  including a same-row double click routed back through that callback.
+- External camera control switches after player input when the view transition
+  is prepared. Panel selection and control ownership are distinct states; both
+  entering and leaving the external view require the original ordering.
+- AI weapon selection at 18e50 passes a front/rear Boolean to angular shield
+  getter 10e6c. Both 0 and 1 mean front to that getter, so the original always
+  assesses the front shield. This matters when front and rear charges differ:
+  at DEMO2 frame 1068 it selects the 5,000-speed projectile rather than the
+  6,000-speed alternative. Damage absorption still uses the actual impact angle.
+- The HERC obstruction probe runs from the actor toward its target; the original
+  segment API takes destination before origin.
+
+Validation: complete rebuild and all 240 CTest checks passed (34.71 seconds),
+including all four complete simulation-state replays.

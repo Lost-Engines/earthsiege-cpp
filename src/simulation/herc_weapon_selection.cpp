@@ -18,7 +18,7 @@ bool weapon_excluded_from_combat(weapon_state const &weapon) {
   return weapon.controls().disabled || (supply && supply->rounds == 0);
 }
 
-std::optional<size_t> select_herc_weapon(weapon_bank const &bank, weapon_catalogue const &definitions, herc_weapon_selection_state &state, combat_actor_kind const target_kind, int32_t const distance, int16_t const facing, random_state &random, int16_t &mission_event_delay, std::function<int16_t(bool)> const &target_shield, std::function<void()> const &unarmed_event) {
+std::optional<size_t> select_herc_weapon(weapon_bank const &bank, weapon_catalogue const &definitions, herc_weapon_selection_state &state, combat_actor_kind const target_kind, int32_t const distance, int16_t const facing, random_state &random, int16_t &mission_event_delay, std::function<int16_t(int16_t)> const &target_shield, std::function<void()> const &unarmed_event) {
   // Original linear mapper rounds the descending 150..-100 threshold toward
   // its far endpoint. Its signed-word result is also retained after each winner.
   int16_t best{wrap_word(150 + (-250 * state.aim_tolerance - 1023) / 1024)};

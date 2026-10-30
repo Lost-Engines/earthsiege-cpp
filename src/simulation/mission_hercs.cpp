@@ -178,7 +178,9 @@ bool mission_session::enter_skirting(size_t const index) {
 
 bool mission_session::target_path_blocked(size_t const index) const {
   auto const target{activity->targets()[index].selected.value()};
-  auto const start{combat_position(target).position}, end{combat_position(index).position};
+  // 17a00 passes destination before origin to 038b8/20b70.
+  // Their sampled height-field ray runs from this actor toward the target.
+  auto const start{combat_position(index).position}, end{combat_position(target).position};
   std::vector<scenery_collider> buildings;
   for(auto const &member : bases) if(member.side == crew[index].side)
     if(auto const shape{member.actor->obstruction()}) buildings.push_back(*shape);
@@ -259,7 +261,13 @@ void mission_session::aim_herc(size_t const index, size_t const target, int16_t 
       auto &decision{activity->decisions()[index]};
       herc_weapon_selection_state state{member.sensors.locks, member.aim_tolerance, actor.impacts().ecm_remaining, actor.impacts().detectable, decision.unavailable};
       auto const slot{select_herc_weapon(actor.weapons(), weapon_definitions, state, kind, range, direction, random, outcome_clock.poll_remaining,
-        [&](bool front){if(target >= crew.size()) return int16_t{0}; auto const &shield{crew[target].actor->power().shields}; return front ? shield.front : shield.rear;},
+        [&](int16_t angle){
+          if(target >= crew.size())return int16_t{0};
+          auto const &shield{crew[target].actor->power().shields};
+          // Original 18e50 passes a boolean to the angle-taking 10e6c getter.
+          // Both 0 and 1 therefore select the front shield, even from behind.
+          return angle>=-16384 && angle<16384 ? shield.front : shield.rear;
+        },
         [&]{if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);})};
       actor.impacts().detectable = state.detectable; decision.unavailable = state.unavailable;
       return slot;

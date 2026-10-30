@@ -31,11 +31,8 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   : mission_view{resources,demo_tape(resources,demo)} {}
 mission_view::mission_view(resource_store const &resources,input_tape const &tape)
   :mission_view{resources,demo_start(resources,tape)} {
-  configure_input(preferences{tape.starting_files[std::to_underlying(tape_file::preferences)]},{});
-  auto const &raw{tape.starting_files[std::to_underlying(tape_file::keyjoy)]};
-  auto const policy{read_keyjoy(std::string_view{reinterpret_cast<char const *>(raw.data()),raw.size()})};
-  if(policy.invalid_token)throw std::runtime_error{"Unrecognized recorded KEYJOY.CFG token"};
-  routing.tilt_reverse=policy.tilt_reverse;routing.backturn_reverse=policy.backturn_reverse;routing.missile_reverse=policy.missile_reverse;
+  // Playback restores files beside the TAP, while runtime controls still read
+  // DATA/PREFS.CFG and DATA/KEYJOY.CFG. The caller supplies installed preferences.
 }
 
 mission_view::mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission)
@@ -182,7 +179,7 @@ void mission_view::set_camera(camera_mode const mode,unsigned previous,bool rese
   if(mode == camera_mode::free) camera.mode = mode;                             // detach at the current position and orientation
   else camera = session->make_camera(mode);
   impact.change_view(previous,impact_view());
-  if(reset_input)clear_input();
+  if(reset_input){clear_input();external_view_requested=external_view_active=mode!=camera_mode::attached;}
   update_camera(camera, session->view_target());
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
@@ -223,7 +220,7 @@ bool mission_view::step(bool const control, bool const zoom) {
   if(!ratio)return false;
   if(paused) { pointer_events.clear(); return false; }
   prepare_frame(pacing.state().slow);
-  routing.external=control||(camera.mode!=camera_mode::attached&&external_camera_control);routing.missile=session->player_weapon_controls().manual_guidance();
+  routing.external=control||(external_view_active&&external_camera_control);routing.missile=session->player_weapon_controls().manual_guidance();
   auto const keys{keyboard.sample((routing.mode==1&&!routing.external)||routing.missile)};
   joystick_sample keyboard_packet{{keys.movement.x,keys.movement.y,keys.aiming.x,keys.aiming.y},{uint8_t(keys.fire),uint8_t(keys.enter),0,0},{}};
   joystick_sample device;
@@ -245,15 +242,16 @@ void mission_view::prepare_frame(uint32_t now){
   clock.update(now);
   if(now!=interface_ticks)lamps.advance(static_cast<int16_t>(now-interface_ticks));
   interface_ticks=now;
+  // Original 4cb14 consumes the mouse queue before world simulation.
   consume_pointer_events();
 }
-bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bool suppress_camera){
+bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bool suppress_camera,std::function<bool(uint16_t)> const &modal){
   for(auto const &event:record.mouse){
     player_input mouse;mouse.mouse=event.position;mouse.left=(event.kind&1)!=0;mouse.right=(event.kind&2)!=0;
     pointer_events.push_back({mouse,event.timestamp});
   }
   prepare_frame(slow_clock);
-  routing.external=camera.mode!=camera_mode::attached&&external_camera_control;routing.missile=session->player_weapon_controls().manual_guidance();
+  routing.external=external_view_active&&external_camera_control;routing.missile=session->player_weapon_controls().manual_guidance();
   auto const packet{route_tape_frame(routing,record,suppress_camera,device_throttle)};
   player_input input;
   input.command=record.command;
@@ -261,12 +259,13 @@ bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bo
   input.camera_source=packet.aiming_camera?player_axis_pair::aiming:player_axis_pair::movement;
   input.fire=packet.buttons[0];input.enter=packet.buttons[2];input.released=packet.buttons[3];
   input.release_action=static_cast<control_release_action>(routing.mode);
-  return step_input(input,packet.hat,static_cast<frame_ratio>(record.delta),routing.external);
+  return step_input(input,packet.hat,static_cast<frame_ratio>(record.delta),routing.external,modal);
 }
-bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control){
+bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,std::function<bool(uint16_t)> const &modal){
   auto dispatch=[&](player_input &input){
+  if(input.command && modal && modal(input.command))input.command=0;
   if(input.command) {
-    if(input.command==47){transitions.request(camera.mode==camera_mode::attached?2:3);input.command=0;}
+    if(input.command==47){external_view_requested=!external_view_active;transitions.request(external_view_requested?2:3);input.command=0;}
     if((input.command==15||input.command==28)&&camera.mode!=camera_mode::attached){external_camera_control=!external_camera_control;input.command=0;}
     // 38034 routes TRACK through the widget. The bank reads the pending
     // flag during the later instrument exchange, after this frame's aiming.
@@ -326,6 +325,9 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   for(auto const id:hdd->take_sounds())audio.play(id);
   for(auto const &path:radio->take_speech())audio.speech(path);
   audio.flush_positions(player.body().movement().position);
+  // Camera ownership changes in 5894c after this frame's player controls,
+  // before the later 22904/226f0 presentation can prepare another view.
+  if(transitions.snapshot().prepared)external_view_active=external_view_requested;
   present_pending=true;
   return true;
 }
