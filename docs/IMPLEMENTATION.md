@@ -1414,3 +1414,38 @@ The independent Python palette exports and original-reader cockpit references
 were regenerated with the same hardware display convention. All 241 tests pass.
 Whole-frame comparison also identified a separate startup fade/animation omission;
 that is not concealed by this display conversion correction.
+
+
+## Original cockpit launch sequence
+
+The nearby-friendly-base branch at DBSIM 5b396/57ffc is now connected to native
+mission launch. It uses the original INTRO.DBA lift door, lowers the view by
+4,000 units, then advances 35 units per rendered frame (115 frames). The player
+and world simulation remain stationary. A side-zero ground actor within 40,000
+units selects this branch; other starts perform the original initial draw.
+
+The 57cf4 dim palette and 287a8 fade preserve the original channel mixing,
+fixed-point increments and final rounding remainder. Reflection is suspended
+during startup. The 120-tick fade and 30-tick landing shake use the external
+60 Hz clock; the lift itself is frame-driven. Their appearance therefore depends
+on rendering cadence, as in the original. The live host uses its existing frame
+pacer; it does not hard-code a recorded shake count.
+
+During the landing shake the original keeps scanning out the last lift page
+while drawing into the other page. Native presentation retains that behaviour,
+including page origin displacement and restoration. Sound 33 accompanies the
+lift, sound 41 starts on landing, and startup sound 19 begins after the sequence.
+The scene inspector continues to offer immediate entry without the lift.
+
+The unchanged DEMO1 original supplies 115 complete palettes and 34 landing
+random/displacement states. Both the isolated controller and integrated
+mission_view match them, including all 114 visual-RNG bytes and frozen gameplay
+state. Three additional complete original captures have 35, 18 and 34 shake
+frames respectively. The original screenshots are browsable in
+analysis/cockpits/startup.html in the analysis tree.
+
+All 242 CTest checks passed after integration. Frame comparison separately found
+a missing second HUD paint above the lift door; that ordering is corrected.
+Remaining pixel differences include the separately drawn software cursor,
+instrument clock initialization and a transient hardware-DAC versus CPU-palette
+difference. The controller comparison does not imply whole-screen equality.

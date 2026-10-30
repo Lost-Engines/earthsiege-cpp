@@ -22,6 +22,6 @@ public:
  environment_renderer(resource_store const &,world_environment const &);
  void initialize_palette(palette &colours,uint16_t pitch) { reflection.update(colours,pitch); }
  void draw(framebuffer &,vec3<int32_t> const &,vec3<uint16_t> const &,camera_projection const &,
-           rectangle,random_state &,palette &,environment_detail const &detail = {},vec2<int32_t> const &offset={0,0},bool impact=false);
+           rectangle,random_state &,palette &,environment_detail const &detail = {},vec2<int32_t> const &offset={0,0},bool impact=false,bool reflection_enabled=true);
 };
 }

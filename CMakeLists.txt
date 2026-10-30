@@ -24,6 +24,7 @@ add_library(earthsiege_core
   src/render/dialog_widgets.cpp
   src/shell/mission_alert.cpp
   src/shell/cockpit_impact.cpp
+  src/shell/cockpit_startup.cpp
   src/shell/game_shell.cpp
   src/shell/launch_checks.cpp
   src/shell/shell_animation.cpp
@@ -1281,4 +1282,10 @@ if(BUILD_TESTING)
  add_executable(cockpit_pan_test tests/cockpit_pan_test.cpp)
  target_link_libraries(cockpit_pan_test PRIVATE earthsiege_core)
  add_test(NAME cockpit_pan COMMAND cockpit_pan_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_pan.bin ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+endif()
+
+if(BUILD_TESTING)
+ add_executable(cockpit_startup_test tests/cockpit_startup_test.cpp)
+ target_link_libraries(cockpit_startup_test PRIVATE earthsiege_core)
+ add_test(NAME cockpit_startup COMMAND cockpit_startup_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_startup.bin ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 endif()

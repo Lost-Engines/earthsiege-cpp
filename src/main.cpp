@@ -236,6 +236,7 @@ auto main(int argc, char *argv[])->int try {
         if(!alert)return;
         continue;
       }
+      if(scene&&scene->starting())continue;
       if(event.type==SDL_TEXTINPUT && !scene){menu.text_input(event.text.text);continue;}
       if(event.type == SDL_KEYDOWN && !event.key.repeat) {
         auto const key{event.key.keysym.sym};
@@ -338,7 +339,7 @@ auto main(int argc, char *argv[])->int try {
     update_devices_and_dialogs();
     if(menu.quit_requested())running=false;
     if(menu.ready_to_launch()) {
-      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene_dirty=true;applied_preferences=menu.settings().current();pending=0;
+      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene->begin_startup();scene_dirty=!scene->starting();applied_preferences=menu.settings().current();pending=0;
       if(sound)sound->clear();
     }
     auto const now{display ? SDL_GetTicks64() : previous + 25};
@@ -351,8 +352,10 @@ auto main(int argc, char *argv[])->int try {
       if(focused&&options&&scene->step_options())scene_dirty=true;
       if(focused&&!alert&&!options){
         auto const modifiers{display ? SDL_GetModState() : KMOD_NONE};
-        if(scene->step((modifiers & KMOD_CTRL)!=0,(modifiers & KMOD_SHIFT)!=0,
-                       display?dialogs:earthsiege::mission_dialog_handlers{}))scene_dirty=true;
+        if(scene->starting()){
+          if(scene->step_startup())scene_dirty=false;
+        }else if(scene->step((modifiers & KMOD_CTRL)!=0,(modifiers & KMOD_SHIFT)!=0,
+                            display?dialogs:earthsiege::mission_dialog_handlers{}))scene_dirty=true;
         if(!running)break;
         if(leave_mission){
           if(!inspect_demo)menu.mission_return(scene->results(),scene->mission_variables(),static_cast<int16_t>(std::time(nullptr)&127));

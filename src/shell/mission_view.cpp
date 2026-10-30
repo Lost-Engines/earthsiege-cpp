@@ -9,6 +9,7 @@
 #include "resources/resource_store.h"
 #include "simulation/frame_time.h"
 #include "simulation/model_math.h"
+#include "simulation/fixed_math.h"
 #include "simulation/tape_input.h"
 
 namespace earthsiege {
@@ -49,6 +50,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     lamps{resources, "simvol0", "ttm/" + read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())) + ".TTM"},
     display_colours{session->scenery().colours()},
     impact_colours{read_palette(resources.read("simvol0","dpl/IMPACT1.DPL"))},
+    lift_artwork{read_bitmaps(resources.read("simvol0","dba/INTRO.DBA")).at(0)},
     environment{resources,session->scenery().environment()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
     camera{session->make_camera(camera_mode::attached)} {
@@ -68,7 +70,6 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     framebuffer artwork;artwork.clear(63);cockpit.draw(artwork,view);
     surface.store(artwork,x,cockpit.windows[static_cast<size_t>(view)].instrument_origin[1]);
   }
-  audio.play(19);
   clock.refresh();
   lamps.advance(0);
   instruments.add_slider(throttle.slider_layout(), 0);
@@ -114,7 +115,7 @@ cockpit_view mission_view::painted_panel()const{
 }
 std::array<int32_t,2> mission_view::instrument_origin()const{
  auto origin{cockpit.windows[static_cast<size_t>(painted_panel())].instrument_origin};
- if(camera.mode==camera_mode::attached)origin[1]+=impact.snapshot().displacement;
+ if(camera.mode==camera_mode::attached)origin[1]+=startup?startup->displacement():impact.snapshot().displacement;
  return origin;
 }
 
@@ -235,6 +236,63 @@ void mission_view::present_view(){
   else apply_cockpit_view(static_cast<cockpit_view>(after),false);
 }
 
+void mission_view::finish_launch(){
+  if(launch_started)return;
+  launch_started=true;audio.play(19);
+}
+void mission_view::begin_startup(){
+  if(startup||launch_started)return;
+  auto const position{session->player_actor().body().movement().position};
+  auto const bases{session->ground_actors()};
+  bool const nearby{std::ranges::any_of(bases,[&](auto const &base){
+    return base.side==0&&fast_distance(base.actor.placement().translation-position)<40000;
+  })};
+  if(!nearby){
+    // 5b3be draws once before the first music-selection/random consumer.
+    draw();finish_launch();return;
+  }
+  startup.emplace(display_colours);display_colours=startup->colours();
+  startup_height=camera.position.z;
+  clear_input();audio.play(33);
+}
+void mission_view::draw_startup(uint32_t now){
+  if(!startup||startup_draw_pending)return;
+  update_interface_clock(now);
+  startup->prepare_frame(ui_random);
+  camera.position.z=startup_height+startup->height_offset();
+  auto const origin{instrument_origin()};
+  displays->update(*session,instruments,camera,now,origin[0],origin[1]);
+  hdd->update(*session,instruments,camera,now,origin[0],origin[1]);
+  radio->update(*session,camera,now,origin[0],origin[1]);
+  draw();startup_draw_pending=true;
+}
+void mission_view::finish_startup_frame(uint32_t palette_clock,uint32_t end_clock){
+  if(!startup||!startup_draw_pending)return;
+  startup_draw_pending=false;
+  if(startup->lifting()){
+    startup->update_palette(palette_clock,startup_cover);
+    // The fade owns only these two uploaded banks. Shield colours retain
+    // their independent instrument owner.
+    for(unsigned first:{32U,64U})for(unsigned i{first};i<first+16;++i){
+      display_colours.dac_colours[i]=startup->colours().dac_colours[i];
+      display_colours.colours[i]=startup->colours().colours[i];
+    }
+    startup_page=transitions.snapshot().draw_page*160;
+    transitions.present();
+    startup->presented(end_clock);
+    if(!startup->lifting()){audio.stop(33);audio.play(41);}
+  }else{
+    startup->drawn(end_clock);
+    // 57ffc never calls 59b40 in this loop: scan out the last lift page.
+    surface.sample(frame,startup_page,startup->displacement());
+    if(startup->finished()){startup.reset();clear_input();finish_launch();}
+  }
+}
+bool mission_view::step_startup(){
+  if(!startup||!pacing.take())return false;
+  auto const now{pacing.state().slow};
+  draw_startup(now);finish_startup_frame(now,now);return true;
+}
 void mission_view::advance_time(unsigned milliseconds){
   auto const before{elapsed_milliseconds*120/1000};elapsed_milliseconds+=milliseconds;
   auto const ticks{static_cast<unsigned>(elapsed_milliseconds*120/1000-before)};
@@ -262,13 +320,17 @@ bool mission_view::step(bool const control, bool const zoom,mission_dialog_handl
   return step_input(input,packet.hat,*ratio,routing.external,dialogs);
 }
 void mission_view::prepare_frame(uint32_t now){
+  finish_launch();
   audio.engine(camera.mode!=camera_mode::attached);
   audio.update_music(session->music_observations(),ui_random);
+  update_interface_clock(now);
+  // Original 4cb14 consumes the mouse queue before world simulation.
+  consume_pointer_events();
+}
+void mission_view::update_interface_clock(uint32_t now){
   clock.update(now);
   if(now!=interface_ticks)lamps.advance(static_cast<int16_t>(now-interface_ticks));
   interface_ticks=now;
-  // Original 4cb14 consumes the mouse queue before world simulation.
-  consume_pointer_events();
 }
 bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bool suppress_camera,mission_dialog_handlers const &dialogs){
   for(auto const &event:record.mouse){
@@ -388,7 +450,7 @@ void mission_view::draw() {
   auto const painted{painted_panel()};
   bool const inside{camera.mode == camera_mode::attached};
   auto const &window{cockpit.windows[static_cast<size_t>(painted)]};
-  auto const shift{inside?impact.snapshot().displacement:0};
+  auto const shift{inside?(startup?startup->displacement():impact.snapshot().displacement):0};
   auto mask{window.mask};
   if(shift)mask.translate(0,-shift);
   auto &colours{impact.snapshot().impact_palette?impact_colours:display_colours};
@@ -399,13 +461,21 @@ void mission_view::draw() {
     auto const centre{window.projection_centre()};
     view.projection.centre = {centre[0], centre[1]};
     view.bounds = window.bounds;
+    if(startup){
+      view.projection.centre.y-=shift;
+      view.bounds.top-=shift;view.bounds.bottom-=shift;
+      if(startup->lifting()){
+        startup_cover=startup->cover_y(camera.position.z,view.projection);
+        view.bounds.bottom=std::clamp(startup_cover,view.bounds.top,view.bounds.bottom);
+      }
+    }
   }
   {
     scoped_framebuffer_clip clip{frame, inside ? &mask : nullptr};
     // 25b68 passes the cockpit's authored layout offset to 26264. The
     // projection centre alone leaves uncovered sky in an off-centre side view.
     auto const background_offset{inside?vec2<int32_t>{window.instrument_origin[0],window.instrument_origin[1]}:vec2<int32_t>{0,0}};
-    environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,colours,detail,background_offset,impact.snapshot().flash);
+    environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,colours,detail,background_offset,impact.snapshot().flash,!startup);
     auto const objects{session->visible_objects(!inside)};
     auto &effects{session->visual_effects()};
     auto const ground{effects.ground_flashes()};
@@ -451,13 +521,21 @@ void mission_view::draw() {
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
   if(!options_camera)radio->draw(frame);
+  if(startup&&startup->lifting()){
+    scoped_framebuffer_clip clip{frame,&mask};
+    frame.image(lift_artwork,0,startup_cover);
+    frame.fill({window.bounds.left,startup_cover+static_cast<int>(lift_artwork.height),window.bounds.right,window.bounds.bottom},63);
+    // 582b9 repaints the HUD after the lift door has covered the scene.
+    auto const origin{instrument_origin()};
+    navigation.draw(frame,-origin[0],-origin[1],session->player_weapon_controls().auto_tracking());
+  }
   if(!options_camera){
     auto const state{transitions.snapshot()};
     int const page{state.prepared&&state.pending>=4?state.other_page:state.draw_page};
     int const y{inside?cockpit.windows[static_cast<size_t>(painted)].instrument_origin[1]:0};
     surface.store(frame,page*160,y);
   }
-  present_view();
+  if(!startup)present_view();
 }
 
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}

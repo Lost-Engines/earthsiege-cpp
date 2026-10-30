@@ -254,6 +254,7 @@ public:
   std::vector<sound_request> take_sounds();
   music_contacts music_observations()const;
   random_state &interface_random();
+  random_state const &interface_random()const{return visual_random;}
   void on_cockpit_impact(std::function<void()> handler) { cockpit_impact_handler=std::move(handler); }
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);

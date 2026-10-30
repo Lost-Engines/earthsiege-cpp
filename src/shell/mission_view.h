@@ -19,6 +19,7 @@
 #include "shell/preferences.h"
 #include "shell/pointer_controls.h"
 #include "shell/cockpit_impact.h"
+#include "shell/cockpit_startup.h"
 #include "shell/cockpit_transition.h"
 #include "render/cockpit_pan.h"
 #include "shell/cockpit_displays.h"
@@ -70,6 +71,13 @@ class mission_view {
   palette display_colours;
   palette impact_colours;
   cockpit_impact impact;
+  std::optional<cockpit_startup> startup;
+  bitmap lift_artwork;
+  int32_t startup_height{};
+  int startup_cover{},startup_page{};
+  bool startup_draw_pending{},launch_started{};
+  void finish_launch();
+  void update_interface_clock(uint32_t now);
   cockpit_impact_view impact_view() const;
   std::array<int32_t,2> instrument_origin() const;
   environment_renderer environment;
@@ -124,6 +132,13 @@ public:
   void change_camera(camera_mode mode);
   void change_cockpit_view(cockpit_view view);
   void advance_time(unsigned milliseconds);
+  /// Start the original nearby-friendly-base lift, or its ordinary initial draw.
+  void begin_startup();
+  bool starting()const{return startup.has_value();}
+  /// Separate clocks retain original draw / fade / presentation ownership.
+  void draw_startup(uint32_t slow_clock);
+  void finish_startup_frame(uint32_t palette_clock,uint32_t end_clock);
+  bool step_startup();
   bool step(bool control, bool zoom,mission_dialog_handlers const &dialogs={});
   /// Recorded axes are already device-mapped. The host supplies the separate 60 Hz presentation clock.
   bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false,mission_dialog_handlers const &dialogs={});
