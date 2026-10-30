@@ -252,15 +252,19 @@ void mission_view::present_view(){
   auto before{state.view};transitions.present();
   auto const after_state{transitions.snapshot()};
   auto after{after_state.view};
-  // Preparing a cockpit page invokes the shield's full painter (39178),
-  // even when its charge did not change. The upload belongs to the next present.
+  // A prepared cockpit page clears the radio area. Full shield repaints below
+  // schedule their palette upload for the following presentation.
   if(!state.prepared&&after_state.prepared&&after_state.pending!=2){
     radio->repaint(); // 2fa00 clears the message rectangle even with no text.
-    auto const &shield{session->player_actor().power().shields};
-    displayed_shields=std::array<int32_t,3>{static_cast<int32_t>(shield.front)*1024/shield.capacity,
-                                         static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
-    update_shield_colours(display_colours,(*displayed_shields)[0],(*displayed_shields)[1]);
-    display_device.changed(80,6);
+    // Vertical pans reuse the existing pages. Only horizontal preparations
+    // and a return from external view invoke the full shield painter.
+    if(after_state.pending>=3){
+      auto const &shield{session->player_actor().power().shields};
+      displayed_shields=std::array<int32_t,3>{static_cast<int32_t>(shield.front)*1024/shield.capacity,
+                                           static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
+      update_shield_colours(display_colours,(*displayed_shields)[0],(*displayed_shields)[1]);
+      display_device.changed(80,6);
+    }
   }
   if(before==after)return;
   if(after!=4)apply_cockpit_view(static_cast<cockpit_view>(after),false);

@@ -1677,8 +1677,17 @@ pixels remain exact. Four captures test this boundary, in addition to the 600
 ordinary texture rasters. This does not emulate arbitrary adjacent heap bytes.
 
 Whole-frame comparison remains separate from these exact state/raster checks.
-Across 120 sampled frames, the largest differences in demos 1–3 are now
-515/627/728 RGB pixels, down from tens of thousands in external views. Demo 4
-still exposes lower-panel and MFD composition differences (up to 4,552 pixels);
-those remain under investigation. Cursor and independent clock-phase pixels
-are included in these counts.
+Across 120 sampled frames, the largest differences in demos 1–4 are now
+515/627/728/564 RGB pixels, down from tens of thousands in external views.
+Cursor and independent clock-phase pixels are included in these counts;
+weapon selection highlights and smaller scene differences remain under review.
+
+Vertical cockpit pans reuse their existing pages and do not invoke the full
+shield painter. Horizontal preparations and a return from external view do.
+The original VGA upload routine first zeroes the next DAC entry's red component;
+an unnecessary shield upload of entries 80–85 therefore changed entry 86 on the
+following upload. This accounted for most of DEMO4's earlier 4,552-pixel maximum.
+capture_view_palette.py observes unchanged original camera/draw/present routines
+through 48 controlled transition frames; view-palette.json retains every palette
+upload. The native correction removes that extra upload rather than patching
+the resulting colour.
