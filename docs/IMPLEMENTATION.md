@@ -1226,3 +1226,18 @@ and on-disk values. The integration test also exercises real device samples,
 calibration reload, independent sound switches and mission resumption.
 
 Validation: all 234 CTest checks pass after the complete rebuild (25.37 seconds). The live preferences preview was inspected, and a 40-frame headless mission run completes.
+
+### Original alert input
+
+All nineteen Pause, Quit and mission-status dialogs now share the verified
+original input policy. Escape selects response zero; Enter activates the focused
+response (or establishes focus first). Tab and Alt+Tab move forward/backward,
+and Insert advances only with WCS enabled. Combined fire has priority over next
+button and keyboard input. Held physical buttons are suppressed on entry, and
+focus changes warp the pointer to the original button centre.
+
+The 1,600 cases in alert_input.bin execute the original dialog virtual handler
+for both WCS settings, every focus state and simultaneous button/key cases.
+All cases and the nineteen existing complete dialog rasters agree. This
+establishes the dialog input rules; ownership of nested recorded-demo input
+polls remains a separate whole-game integration task.

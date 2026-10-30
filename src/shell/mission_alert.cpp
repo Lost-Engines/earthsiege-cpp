@@ -1,13 +1,15 @@
 #include "mission_alert.h"
 #include <stdexcept>
+#include <utility>
 namespace earthsiege {
-mission_alert::mission_alert(resource_store const &r,int message)
+mission_alert::mission_alert(resource_store const &r,int message,int initial_focus)
  :background{read_bitmaps(r.read("simvol0",message<2?"dba/gnl2alrt.dba":"dba/gnl_alrt.dba")).front()},
  corners{read_bitmaps(r.read("simvol0","dba/corners.dba"))},styles{read_button_styles(r.read("simvol0","dat/styles.dat"))},
  title{read_font(r.read("simvol0","dfn/title.dfn"))},body{read_font(r.read("simvol0","dfn/green6x8.dfn"))},button_metrics{read_font(r.read("simvol0","dfn/cpylw.dfn"))},
  button_fonts{read_font(r.read("simvol0","dfn/active.dfn")),read_font(r.read("simvol0","dfn/pushed.dfn")),read_font(r.read("simvol0","dfn/inactive.dfn"))},
  strings{read_interface_strings(r.read("simvol0","str/gnl_alrt.str"))},message_{message}{
   if(message<0||message>=19)throw std::out_of_range{"mission alert"};
+  focus(initial_focus);
 }
 int mission_alert::count()const{switch(message_){case 0:case 2:case 3:case 7:case 8:case 17:case 18:return 1;default:return 2;}}
 bool mission_alert::exits_mission(int response)const{
@@ -31,12 +33,25 @@ void mission_alert::draw(framebuffer &frame)const{
     frame.text(face,text,bounds.left+40-((face.text_width(text)-1)>>1),bounds.top+((20+static_cast<int>(button_metrics.height))>>1)-3);
   }
 }
-std::optional<int> mission_alert::key(uint8_t scan){
-  if(scan==15||scan==75||scan==77){focus_=(focus_+1)%count();return {};}
-  if(scan==1)return 0;
-  if(scan==28||scan==57)return focus_;
-  return {};
+void mission_alert::focus(int i){
+ if(i<-1||i>=count())throw std::out_of_range{"alert focus"};
+ focus_=i;if(i>=0){auto b{button(i)};warp=vec2<int32_t>{(b.left+b.right)/2,(b.top+b.bottom)/2};}
 }
+alert_input_result mission_alert::input(uint16_t scan,bool fire,bool next,bool wcs){
+ if(fire){if(focus_<0){focus(0);return {true,{}};}return {true,focus_};}
+ if(next){focus((focus_+1)%count());return {true,{}};}
+ if(scan==1){focus(0);return {true,0};}
+ if(scan==28){if(focus_<0){focus(0);return {true,{}};}return {true,focus_};}
+ if(scan==15||(scan==82&&wcs))focus((focus_+1)%count());
+ else if(scan==0x20f)focus(focus_<0?count()-1:(focus_+count()-1)%count());
+ else if(scan!=82)return {};
+ return {true,{}};
+}
+std::optional<int> mission_alert::devices(std::array<joystick_hardware,2> const &raw,bool wcs){
+ auto bits{raw[0].buttons|raw[1].buttons};bool fire{(bits&5)!=0},next{(bits&10)!=0};
+ auto result{input(0,fire&&!fire_held,next&&!next_held,wcs)};fire_held=fire;next_held=next;return result.response;
+}
+std::optional<vec2<int32_t>> mission_alert::take_warp(){return std::exchange(warp,{});}
 void mission_alert::mouse_down(int x,int y){pressed_=-1;for(int i{};i<count();++i)if(button(i).contains(x,y)){pressed_=focus_=i;}}
 std::optional<int> mission_alert::mouse_up(int x,int y){int const previous{pressed_};pressed_=-1;if(previous>=0&&button(previous).contains(x,y))return previous;return {};}
 }

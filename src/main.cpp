@@ -207,6 +207,7 @@ auto main(int argc, char *argv[])->int try {
           if(sound)sound->pause(true);
           menu.cancel_press();
           if(options)options->cancel_press();
+          if(alert)alert->cancel_press();
           if(scene) scene->clear_input();
         }
         if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED){focused = true;if(sound)sound->pause(false);}
@@ -223,7 +224,7 @@ auto main(int argc, char *argv[])->int try {
       }
       if(alert) {
         if(focused && event.type==SDL_KEYDOWN && !event.key.repeat) {
-          if(auto scan{command(event.key.keysym.sym,false,false)})if(auto response{alert->key(static_cast<uint8_t>(*scan))})respond(*response);
+          if(auto scan{command(event.key.keysym.sym,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})if(auto response{alert->input(*scan,event.key.keysym.sym==SDLK_SPACE,false,menu.settings().current()[10]!=0).response})respond(*response);
         } else if(focused && event.type==SDL_MOUSEBUTTONDOWN && event.button.button==SDL_BUTTON_LEFT)alert->mouse_down(event.button.x,event.button.y);
         else if(focused && event.type==SDL_MOUSEBUTTONUP && event.button.button==SDL_BUTTON_LEFT)if(auto response{alert->mouse_up(event.button.x,event.button.y)})respond(*response);
         continue;
@@ -260,10 +261,12 @@ auto main(int argc, char *argv[])->int try {
         if(event.type == SDL_MOUSEBUTTONUP && (event.button.button == SDL_BUTTON_LEFT||event.button.button == SDL_BUTTON_RIGHT)) menu.mouse_up(event.button.x,event.button.y,event.button.button==SDL_BUTTON_RIGHT);
       }
     }
-    if(focused&&!alert&&sticks){
+    if(focused&&sticks){
       auto const &p{menu.settings().current()};auto raw{sticks->poll(p[7],p[9]!=0)};
-      if(options)options->devices(raw);else if(scene)scene->devices(raw,sticks->throttle());else menu.devices(raw);
+      if(alert){if(auto response{alert->devices(raw,p[10]!=0)})respond(*response);}
+      else if(options)options->devices(raw);else if(scene)scene->devices(raw,sticks->throttle());else menu.devices(raw);
     }
+    if(alert){if(auto const warp{alert->take_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);}
     if(options){
       if(auto const warp{options->take_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
       if(applied_preferences!=menu.settings().current()){
