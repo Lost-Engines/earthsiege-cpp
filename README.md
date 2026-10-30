@@ -128,3 +128,5 @@ are safely omitted rather than reading unrelated memory.
 HERCs now draw their original ground shadows, following the animated feet/body
 and disappearing with destroyed parts. Scene lighting and smoke visibility also
 retain the original engine's quirks.
+
+Cockpit gauges preserve the original paint timing and incremental speed-bar updates.

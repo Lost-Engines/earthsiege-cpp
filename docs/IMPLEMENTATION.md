@@ -1800,3 +1800,32 @@ RGB differences are 159/285/108/137 pixels in demos 1–4.
 
 All 250 tests pass. A private SDL-window run also verifies pause freezing,
 options, status, quit cancellation and mission return with isolated saves.
+
+
+## Retained cockpit instrument painting
+
+Original 59c08 paints the widget container (2cf28) before 155a8 exchanges
+reactor, shield and speed values for the next paint. The native renderer now
+retains those values separately from simulation state. A second draw without a
+simulation update uses the already exchanged values. Throttle hit testing also
+retains the painted handle while a programmatic adjustment changes its pending
+position.
+
+The unchanged DEMO2 snapshot after frame 1020 shows shield values 374/374/512
+with the old six DAC colours. Calling only the original widget painter changes
+those colours without advancing simulation. DEMO1 frame 60 similarly retains
+painted speed 921 while its newly exchanged value is 1024.
+
+Speed lamps additionally retain their bitmap contents. The original incremental
+bar setters paint the interval between old and new boundaries inclusively; an
+increasing and decreasing speed can therefore colour the shared boundary pixel
+differently. Raptor's horizontal full painter 3bda8 resets the forward bar cache
+twice instead of resetting the reverse bar. Its resulting retained pixels and
+next-update behaviour are reproduced, rather than recomputing a fresh bar.
+
+The independent ESTHUP01 sequence fixture covers 2,720 original incremental
+and full repaint cases across all eight cockpit layouts. Four replay fixtures
+add 579 original reactor/throttle regions and shield-colour samples, excluding
+13 regions near the original software cursor. Six shield points deliberately
+avoid the separately clocked red lamps. These expected pixels never feed native
+simulation or rendering.

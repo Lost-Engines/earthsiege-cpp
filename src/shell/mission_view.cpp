@@ -77,6 +77,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   instruments.add_slider(throttle.slider_layout(), 0);
   for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
   session->initialise_weapon_instruments();
+  exchange_panel_values();
   auto const rows{session->player_weapon_controls().displays()};
   painted_weapon_rows.assign(rows.begin(),rows.end());
   for(size_t i{}; i < rows.size(); ++i) {
@@ -260,9 +261,8 @@ void mission_view::present_view(){
     // Vertical pans reuse the existing pages. Only horizontal preparations
     // and a return from external view invoke the full shield painter.
     if(after_state.pending>=3){
-      auto const &shield{session->player_actor().power().shields};
-      displayed_shields=std::array<int32_t,3>{static_cast<int32_t>(shield.front)*1024/shield.capacity,
-                                           static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
+      throttle.repaint_lamps();
+      displayed_shields=painted_shields;
       update_shield_colours(display_colours,(*displayed_shields)[0],(*displayed_shields)[1]);
       display_device.changed(80,6);
     }
@@ -419,6 +419,7 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   })};
   if(!result)return false;
   if(dialogs.outcome)if(auto const prompt{session->take_mission_prompt()};prompt&&dialogs.outcome(*prompt))return false;
+  painted_throttle_boundary=instruments.at(0).boundary;
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
   shield_to_front.reset();
   if(requested_throttle != throttle_request) {
@@ -465,6 +466,16 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   return true;
 }
 
+void mission_view::exchange_panel_values(){
+  auto const &player{session->player_actor()};
+  auto const &shield{player.power().shields};
+  painted_shields={static_cast<int32_t>(shield.front)*1024/shield.capacity,
+                  static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
+  painted_reactor=static_cast<int32_t>(player.power().reserve)*1024/herc_power_capacity;
+  auto const &movement{player.body().movement()};auto const &profile{player.profile().movement};
+  int const capacity{movement.gait_rate<0?-profile.reverse_rate:profile.forward_rate};
+  painted_speed=static_cast<int32_t>(movement.gait_rate)*1024/capacity;
+}
 void mission_view::update_widgets(){
   auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
@@ -568,26 +579,22 @@ void mission_view::draw() {
   session->refresh_target_instruments(inside&&panel==cockpit_view::forward);
   if(inside) {
     auto const &player{session->player_actor()};
-    auto const &movement{player.body().movement()};
-    auto const &profile{player.profile().movement};
     auto const origin{instrument_origin()};
     int const x{-origin[0]}, y{-origin[1]};
     lamps.draw(frame, x, y);
     clock.draw(frame, x, y);
-    reactor.draw(frame, static_cast<int32_t>(player.power().reserve) * 1024 / herc_power_capacity, x, y);
-    int const speed_capacity{movement.gait_rate < 0 ? -profile.reverse_rate : profile.forward_rate};
-    instruments.painted(0);
-    throttle.draw_at(frame, static_cast<int32_t>(movement.gait_rate) * 1024 / speed_capacity, instruments.at(0).painted_thumb, x, y);
-    auto const &shield{player.power().shields};
-    std::array<int32_t,3> const shield_state{static_cast<int32_t>(shield.front)*1024/shield.capacity,
-                                           static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
+    reactor.draw(frame, painted_reactor, x, y);
+    instruments.painted(0,painted_throttle_boundary);
+    painted_throttle_boundary.reset();
+    throttle.draw_retained_at(frame, painted_speed, instruments.at(0).painted_thumb, x, y);
+    auto const &shield_state{painted_shields};
     // 392d0 dirties the instrument only when one of these three values changes;
     // only its first repaint (391ee) uploads the six shield DAC entries.
     if(displayed_shields!=shield_state){
       displayed_shields=shield_state;update_shield_colours(colours,shield_state[0],shield_state[1]);
       display_device.changed(80,6);
     }
-    shields.draw(frame, shield.balance, {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);
+    shields.draw(frame, painted_shields[2], {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);
     for(auto const &binding : weapon_controls) {
       auto const &row{painted_weapon_rows.at(binding.row)};
       std::optional<int> boundary;
@@ -630,6 +637,7 @@ void mission_view::draw() {
   }
   auto const next_weapon_rows{session->player_weapon_controls().displays()};
   painted_weapon_rows.assign(next_weapon_rows.begin(),next_weapon_rows.end());
+  exchange_panel_values();
   if(!startup){display_device.present(colours);present_view();}
 }
 

@@ -33,9 +33,17 @@ class throttle_gauge {
   std::array<bitmap, 3> lamps;
   bitmap thumb;
   int thumb_extent;
+  std::array<bitmap, 2> painted_lamps;
+  std::array<int, 2> lamp_boundaries{};
+  bool lamps_initialized{};
+  int32_t last_painted_speed{};
+  void update_lamps(int32_t speed);
+  void update_lamp(size_t index, int32_t speed);
 public:
   throttle_gauge(resource_store const &resources, cockpit_layout const &layout);
   slider_geometry slider_layout() const;
+  void repaint_lamps();
+  void draw_retained_at(framebuffer &target, int32_t speed, rectangle const &thumb_position, int offset_x = 0, int offset_y = 0);
   rectangle thumb_bounds(int32_t requested) const;
   void draw_at(framebuffer &target, int32_t speed, rectangle const &thumb_position, int offset_x = 0, int offset_y = 0) const;
   void draw(framebuffer &target, int32_t speed, int32_t requested, int offset_x = 0, int offset_y = 0) const;

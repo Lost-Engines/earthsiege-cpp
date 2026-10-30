@@ -76,6 +76,10 @@ class mission_view {
   palette impact_colours;
   palette_device display_device;
   std::optional<std::array<int32_t,3>> displayed_shields;
+  std::array<int32_t,3> painted_shields{};
+  int32_t painted_reactor{},painted_speed{};
+  std::optional<int> painted_throttle_boundary;
+  void exchange_panel_values();
   cockpit_impact impact;
   std::optional<cockpit_startup> startup;
   bitmap lift_artwork;

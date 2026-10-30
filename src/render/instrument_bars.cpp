@@ -63,15 +63,20 @@ void crop_bitmap(framebuffer &target, bitmap const &source, rectangle const &who
   }
 }
 
+int bar_boundary(rectangle const &bounds, bool vertical, int32_t value, int32_t capacity) {
+  int const first{vertical ? bounds.top : bounds.left}, last{vertical ? bounds.bottom : bounds.right};
+  int32_t const scale{(last - first) * 65536 / capacity};
+  int const extent{wrap_long(static_cast<int64_t>(value) * scale) >> 16};
+  return std::clamp(vertical == (capacity > 0) ? last - extent : first + extent, first, last);
+}
+
 // The native widget paints the complete lit bitmap, then replaces the unlit
 // interval inclusively. Retain that shared boundary pixel and fixed-point scale.
 void bitmap_bar(framebuffer &target, rectangle const &bounds, bool const vertical,
                 bitmap const &lit, bitmap const &unlit, int32_t const value, int32_t const capacity) {
   int const first{vertical ? bounds.top : bounds.left}, last{vertical ? bounds.bottom : bounds.right};
-  int32_t const scale{(last - first) * 65536 / capacity};
-  int const extent{wrap_long(static_cast<int64_t>(value) * scale) >> 16};
   bool const from_end{vertical == (capacity > 0)};
-  int const boundary{std::clamp(from_end ? last - extent : first + extent, first, last)};
+  int const boundary{bar_boundary(bounds,vertical,value,capacity)};
   crop_bitmap(target, lit, bounds, bounds);
   if(boundary == (from_end ? first : last)) return;
   auto empty{bounds};
@@ -105,6 +110,62 @@ rectangle throttle_gauge::thumb_bounds(int32_t const requested) const {
 
 void throttle_gauge::draw(framebuffer &target, int32_t const speed, int32_t const requested, int const offset_x, int const offset_y) const {
   draw_at(target, speed, thumb_bounds(requested), offset_x, offset_y);
+}
+
+void throttle_gauge::update_lamp(size_t i, int32_t speed) {
+  auto const &bounds{bars[i]};
+  int const capacity{i==0?1024:-1024};
+  int const boundary{bar_boundary(bounds,vertical,speed,capacity)};
+  int &previous{lamp_boundaries[i]};
+  if(boundary==previous)return;
+  bool const from_end{vertical==(capacity>0)};
+  bool const lit{from_end?boundary<previous:boundary>previous};
+  auto const &source{lamps[lit?1:(i==0?0:2)]};
+  auto &image{painted_lamps[i]};
+  auto changed{bounds};
+  if(vertical){changed.top=std::min(boundary,previous);changed.bottom=std::max(boundary,previous);}
+  else {changed.left=std::min(boundary,previous);changed.right=std::max(boundary,previous);}
+  // Original bar setters paint the old-to-new interval inclusively.
+  for(int y{changed.top};y<=changed.bottom;++y)for(int x{changed.left};x<=changed.right;++x){
+    auto sx{static_cast<unsigned>(x-bounds.left)},sy{static_cast<unsigned>(y-bounds.top)};
+    if(sx<image.width&&sy<image.height&&sx<source.width&&sy<source.height)
+      image.pixels[sy*image.width+sx]=source.pixels[sy*source.width+sx];
+  }
+  previous=boundary;
+}
+void throttle_gauge::repaint_lamps() {
+  if(!lamps_initialized){
+    for(size_t i{};i<bars.size();++i){
+      painted_lamps[i]=lamps[i==0?0:2];
+      bool const from_end{vertical==(i==0)};
+      lamp_boundaries[i]=vertical?(from_end?bars[i].bottom:bars[i].top):(from_end?bars[i].right:bars[i].left);
+    }
+    lamps_initialized=true;
+  }
+  for(size_t i{};i<bars.size();++i){
+    // Horizontal full painter 3bda8 resets the forward cache twice instead
+    // of resetting the reverse one. Preserve both its cache and its pixels.
+    size_t const reset{vertical?i:0};
+    bool const from_end{vertical==(reset==0)};
+    lamp_boundaries[reset]=vertical?(from_end?bars[reset].bottom:bars[reset].top):(from_end?bars[reset].right:bars[reset].left);
+    update_lamp(i,i==0?1024:-1024);
+    update_lamp(i,last_painted_speed);
+  }
+}
+void throttle_gauge::update_lamps(int32_t speed) {
+  if(!lamps_initialized)repaint_lamps();
+  if(speed==last_painted_speed)return;
+  for(size_t i{};i<bars.size();++i)update_lamp(i,speed);
+  last_painted_speed=speed;
+}
+void throttle_gauge::draw_retained_at(framebuffer &target,int32_t speed,rectangle const &position,int offset_x,int offset_y) {
+  update_lamps(speed);
+  scoped_framebuffer_clip clip{target,nullptr};
+  for(size_t i{};i<bars.size();++i){
+    auto const bounds{translated(bars[i],offset_x,offset_y)};
+    crop_bitmap(target,painted_lamps[i],bounds,bounds);
+  }
+  target.image(thumb,position.left+offset_x,position.top+offset_y,true);
 }
 
 void throttle_gauge::draw_at(framebuffer &target, int32_t const speed, rectangle const &position, int const offset_x, int const offset_y) const {

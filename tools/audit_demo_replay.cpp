@@ -140,28 +140,28 @@ int main(int argc,char **argv)try{
   diagnostics.open(diagnostic_path/"frames.jsonl");
   if(!diagnostics)throw std::runtime_error{"Cannot open replay diagnostics"};
  }
- struct weapon_frame {
+ struct raster_frame {
   uint32_t frame;
   uint16_t x,y,width,height;
   std::vector<uint8_t> rgb;
-  bool scene{};
+  std::string_view kind{};
  };
- std::vector<weapon_frame> weapon_frames;size_t next_weapon_frame{};size_t scene_frames{};
- if(has_camera)for(bool scene:{false,true}){
-  auto raw_frames{read_file(std::filesystem::path{argv[2]}.parent_path()/("demo"+std::to_string(demo)+(scene?"_scene_frames.bin":"_weapon_frames.bin")))};
+ std::vector<raster_frame> raster_frames;size_t next_raster_frame{};size_t scene_frames{},instrument_frames{};
+ if(has_camera)for(std::string_view kind:{"weapon","scene","instrument"}){
+  auto raw_frames{read_file(std::filesystem::path{argv[2]}.parent_path()/("demo"+std::to_string(demo)+("_"+std::string{kind}+"_frames.bin")))};
   binary_reader rasters{raw_frames};auto signature{rasters.take(8)};
-  if(std::string(signature.begin(),signature.end())!="ESWPF001")rasters.fail("weapon frame format");
+  if(std::string(signature.begin(),signature.end())!="ESWPF001")rasters.fail("raster frame format");
   auto const n{rasters.integer<uint32_t>()};
   for(uint32_t i{};i<n;++i){
-   weapon_frame value{rasters.integer<uint32_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),{}};
-   if(value.x+value.width>screen_width||value.y+value.height>screen_height)rasters.fail("weapon frame bounds");
+   raster_frame value{rasters.integer<uint32_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),rasters.integer<uint16_t>(),{},kind};
+   if(value.x+value.width>screen_width||value.y+value.height>screen_height)rasters.fail("raster frame bounds");
    auto rgb{rasters.take(size_t{value.width}*value.height*3)};value.rgb.assign(rgb.begin(),rgb.end());
-   value.scene=scene;if(scene)++scene_frames;
-   weapon_frames.push_back(std::move(value));
+   value.kind=kind;if(kind=="scene")++scene_frames;else if(kind=="instrument")++instrument_frames;
+   raster_frames.push_back(std::move(value));
   }
   rasters.require_end();
  }
- std::ranges::stable_sort(weapon_frames,{},&weapon_frame::frame);
+ std::ranges::stable_sort(raster_frames,{},&raster_frame::frame);
  uint32_t checked{};
  for(uint32_t frame{};frame<count;++frame){
   audio_frame=int64_t{frame}-1;
@@ -195,13 +195,13 @@ int main(int argc,char **argv)try{
   }
   if(has_radio_inputs&&observation_index!=observations.size())throw std::runtime_error{"packet "+std::to_string(packet)+" unconsumed radio inputs: "+std::to_string(observations.size()-observation_index)};
   auto const &session{view.simulation()};
-  if(phase==1)while(next_weapon_frame<weapon_frames.size()&&weapon_frames[next_weapon_frame].frame==frame-1){
-   auto const &expected{weapon_frames[next_weapon_frame++]};size_t byte{};
+  if(phase==1)while(next_raster_frame<raster_frames.size()&&raster_frames[next_raster_frame].frame==frame-1){
+   auto const &expected{raster_frames[next_raster_frame++]};size_t byte{};
    for(unsigned y{};y<expected.height;++y)for(unsigned x{};x<expected.width;++x){
     auto const index{view.image().pixels()[(expected.y+y)*screen_width+expected.x+x]};
     auto const colour{view.colours().colours[index]};
     for(auto shift:{16,8,0})if(static_cast<uint8_t>(colour>>shift)!=expected.rgb[byte++])
-     throw std::runtime_error{std::string{expected.scene?"Original scene raster differs at frame ":"Original weapon-name raster differs at frame "}+std::to_string(frame-1)+
+     throw std::runtime_error{"Original "+std::string{expected.kind}+" raster differs at frame "+std::to_string(frame-1)+
        " pixel "+std::to_string(expected.x+x)+","+std::to_string(expected.y+y)};
    }
   }
@@ -358,8 +358,8 @@ int main(int argc,char **argv)try{
   if(frame%100==0)std::cout<<frame<<" original states agree\n";
  }
  if(argc==3){
-  if(next_weapon_frame!=weapon_frames.size())throw std::runtime_error{"Unconsumed weapon raster observations"};
-  if(!weapon_frames.empty())std::cout<<weapon_frames.size()-scene_frames<<" original weapon-name rectangles and "<<scene_frames<<" scene rasters agree\n";
+  if(next_raster_frame!=raster_frames.size())throw std::runtime_error{"Unconsumed raster observations"};
+  if(!raster_frames.empty())std::cout<<raster_frames.size()-scene_frames-instrument_frames<<" original weapon-name rectangles, "<<scene_frames<<" scene rasters and "<<instrument_frames<<" gauge samples agree\n";
   if(terminal){
    auto compare_file=[&](char const *name,std::vector<uint8_t> const &actual){
     auto expected{file.take(file.integer<uint32_t>())};

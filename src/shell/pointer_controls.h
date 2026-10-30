@@ -41,7 +41,7 @@ public:
   void bounds(size_t index,rectangle value){controls.at(index).bounds=value;}
   void enable(size_t index, bool enabled);
   void set_value(size_t index, int value);
-  void painted(size_t index);
+  void painted(size_t index, std::optional<int> boundary = {});
   void reset_input();
   std::optional<control_activation> event(int x, int y, bool left, bool right, uint32_t ticks = 0);
 };

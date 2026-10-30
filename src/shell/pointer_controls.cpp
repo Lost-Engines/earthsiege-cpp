@@ -25,9 +25,9 @@ void pointer_controls::set_value(size_t const index, int const value) {
   if(!item.slider) throw std::logic_error{"value assigned to a button"};
   item.boundary = item.slider->boundary_for_value(value);
 }
-void pointer_controls::painted(size_t const index) {
+void pointer_controls::painted(size_t const index, std::optional<int> const boundary) {
   auto &item{controls.at(index)};
-  if(item.slider) item.painted_thumb = item.slider->thumb_at(item.boundary);
+  if(item.slider) item.painted_thumb = item.slider->thumb_at(boundary.value_or(item.boundary));
 }
 void pointer_controls::reset_input() {
   selected.reset(); dragging = left_held = right_held = false;
