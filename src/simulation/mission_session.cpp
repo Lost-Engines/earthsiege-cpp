@@ -147,7 +147,7 @@ bool mission_session::advance_frame(player_input &player_controls, frame_ratio c
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
   auto const observations{observe()};
   activity->scan_areas(observations);
-  activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);});
+  activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);},[&](size_t observer,size_t target){notice_contact(observer,target,time_ratio);});
   for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && !crew[i].actor->damage().consequences.dead) {
     crew[i].actor->update_power(time_ratio, settings.free_weapons(), i == player_index ? player_weapons->selection() : int16_t{-1});
     update_herc_sensors(i, time_ratio);
@@ -334,7 +334,7 @@ herc_damage_events mission_session::damage_events(size_t const index) {
     effects.add_detached_weapon(create_detached_weapon(definition, mount, hardpoint, centre));
   };
   events.salvage = [&, index](int16_t const weapon, int16_t const quality){ frame_notices.push_back({combat_notice_kind::salvage, index, weapon, quality, {}}); recovered_weapons.emplace_back(weapon,quality); };
-  events.shield_warning = [&, index]{ frame_notices.push_back({combat_notice_kind::shield_warning, index, 0, 0, {}}); };
+  events.shield_warning = [&, index]{ frame_notices.push_back({combat_notice_kind::shield_warning, index, 0, 0, {}});announce_system(8); };
   events.cockpit_damage = [&, index](size_t const part){ if(cockpit_impact_handler)cockpit_impact_handler(); frame_notices.push_back({combat_notice_kind::cockpit_damage, index, static_cast<int16_t>(part), 0, {}}); };
   return events;
 }
@@ -396,7 +396,12 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
         bool const eligible{!actors[index].dead&&!actors[index].disabled};
         auto const result{crew[index].actor->receive_impact(incoming, conditions, random, events)};
         auto const &state{crew[index].actor->damage().consequences};
+        if(owner.actor==player_index&&activity->targets()[player_index].selected==index){
+          if(!actors[index].disabled&&state.disabled)announce_system(7);
+          if(!actors[index].dead&&state.dead)announce_system(3);
+        }
         if(eligible&&(state.dead||state.disabled))credit_defeat(owner.actor,index);
+        else if(!actors[index].dead&&state.dead&&crew[index].group==crew[player_index].group&&index!=player_index)announce(index,37,true);
         actors[index].dead = state.dead; actors[index].disabled = state.disabled;
         return result ? std::optional<int32_t>{result->distance} : std::nullopt;
       }},
@@ -411,7 +416,10 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{flyers[index].side}};
         auto const result{flyers[index].actor->receive_impact(incoming,conditions,random,flyer_events(index),owner.actor == player_index && owner.target == flyer_id(index))};
-        if(!actors[flyer_id(index)].dead&&flyers[index].actor->dead())credit_defeat(owner.actor,flyer_id(index));
+        if(!actors[flyer_id(index)].dead&&flyers[index].actor->dead()){
+          if(owner.actor==player_index&&activity->targets()[player_index].selected==flyer_id(index))announce_system(3);
+          credit_defeat(owner.actor,flyer_id(index));
+        }
         actors[flyer_id(index)].dead = flyers[index].actor->dead();
         return result;
       }},
@@ -426,7 +434,10 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{bases[index].side}};
         auto const result{bases[index].actor->receive_impact(incoming, conditions, random, base_damage_events(index))};
-        if(!actors[base_id(index)].dead&&bases[index].actor->dead())credit_defeat(owner.actor,base_id(index));
+        if(!actors[base_id(index)].dead&&bases[index].actor->dead()){
+          if(owner.actor==player_index&&activity->targets()[player_index].selected==base_id(index))announce_system(3);
+          credit_defeat(owner.actor,base_id(index));
+        }
         actors[base_id(index)].dead = bases[index].actor->dead();
         return result;
       }},

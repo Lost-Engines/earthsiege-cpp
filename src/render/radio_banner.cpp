@@ -6,6 +6,10 @@ radio_banner::radio_banner(resource_store const &resources):face{read_font(resou
 std::string radio_banner::format(std::string_view const name,std::string_view const message)const{
   return std::string{name}+": "+std::string{message.substr(0,74)};
 }
+void radio_banner::draw_system(framebuffer &frame,std::string_view text,rectangle b,bool show)const{
+  scoped_framebuffer_clip clip{frame,nullptr};frame.fill(b,63);
+  if(show)frame.text(face,text,b.left+((b.right-b.left)>>1)-(face.text_width(text)>>1),b.bottom-1);
+}
 rectangle radio_banner::bounds(std::string_view const formatted)const{
   int const width{face.text_width(formatted)};int const left{150-(width>>1)};
   return {left,100,left+width+20,110};

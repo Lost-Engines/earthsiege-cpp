@@ -54,7 +54,7 @@ int main(int argc,char **argv)try{
  auto initial_rng{rng.snapshot()};audio.update_music(contacts,rng);
  require(audio.music_status().track==-1&&rng.snapshot().words==initial_rng.words&&rng.snapshot().first==initial_rng.first,"disabled music consumes no selection RNG");
  auto const &speech_volume{resources.archives().at("simvoice")};auto speech{speech_volume.entries().begin()->first};
- require(!audio.speech(speech),"text-only radio blocks new speech");
+ require(audio.speech(speech)&&!audio.playing(47),"text-only radio advances portraits without starting speech");
  audio.preferences(true,false,true);audio.update_music(contacts,rng);
  require(audio.music_status().track>=0,"music can start after enabling");
  require(audio.speech(speech),"radio speech remains independent of effects gate");

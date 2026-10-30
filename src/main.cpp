@@ -283,7 +283,7 @@ auto main(int argc, char *argv[])->int try {
       if(applied_preferences!=menu.settings().current()){
         scene->apply_preferences(menu.settings());applied_preferences=menu.settings().current();scene_dirty=true;
       }
-      if(options->done()){scene->end_options();scene->configure_input(menu.settings(),menu.device_calibrations());options.reset();scene_dirty=true;}
+      if(options->done()){scene->step_options_recorded();scene->draw();scene->end_options();scene->configure_input(menu.settings(),menu.device_calibrations());options.reset();scene_dirty=true;}
     }else if(!scene){
       if(auto const warp{menu.take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
     }

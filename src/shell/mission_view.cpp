@@ -85,12 +85,14 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   auto const groups{weapons.group_bounds()};
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
   radio=std::make_unique<cockpit_radio>(resources,cockpit.layout,*session,ui_random);
+  radio->speech_output([this](std::string_view path){return audio.speech(path);});
+  session->on_radio([this](radio_event const &event){radio->submit(event,interface_ticks);});
   displays=std::make_unique<cockpit_displays>(resources,cockpit.layout,*session,instruments,ui_random);
   hdd=std::make_unique<cockpit_hdd>(resources,cockpit.layout,*session,instruments,ui_random);
   auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
-  radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
+  radio->update(*session,camera,interface_ticks,origin[0],origin[1],transitions.snapshot().prepared&&transitions.snapshot().pending==3);
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
@@ -213,14 +215,17 @@ void mission_view::apply_cockpit_view(cockpit_view const view,bool reset_input) 
   auto const previous{impact_view().mode};
   panel = view;
   set_camera(camera_mode::attached,previous,reset_input);
+  // A completed scroll changes view ownership after the frame update.
+  // Widgets advance on the next frame, not again while presenting the old one.
+  if(!reset_input)return;
   auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
-  radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
+  radio->update(*session,camera,interface_ticks,origin[0],origin[1],transitions.snapshot().prepared&&transitions.snapshot().pending==3);
 }
 
 void mission_view::present_view(){
-  if(!present_pending||options_camera)return;
+  if(!present_pending)return;
   present_pending=false;
   auto const state{transitions.snapshot()};
   if(state.prepared){
@@ -251,6 +256,9 @@ void mission_view::begin_startup(){
     // 5b3be draws once before the first music-selection/random consumer.
     draw();finish_launch();return;
   }
+  // Original enters 57ffc with draw/other pages 0/2 after the launch present.
+  // The odd 115-frame lift restores 2/0 for the first simulation frame.
+  transitions.present();
   startup.emplace(display_colours);display_colours=startup->colours();
   startup_height=camera.position.z;
   clear_input();audio.play(33);
@@ -260,10 +268,6 @@ void mission_view::draw_startup(uint32_t now){
   update_interface_clock(now);
   startup->prepare_frame(ui_random);
   camera.position.z=startup_height+startup->height_offset();
-  auto const origin{instrument_origin()};
-  displays->update(*session,instruments,camera,now,origin[0],origin[1]);
-  hdd->update(*session,instruments,camera,now,origin[0],origin[1]);
-  radio->update(*session,camera,now,origin[0],origin[1]);
   draw();startup_draw_pending=true;
 }
 void mission_view::finish_startup_frame(uint32_t palette_clock,uint32_t end_clock){
@@ -412,15 +416,7 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
   impact.update(interface_ticks,impact_view(),ui_random);
-  auto const origin{instrument_origin()};
-  displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
-  hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
-  radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
   for(auto const &request:session->take_sounds())audio.dispatch(request,player.body().movement().position);
-  for(auto const id:displays->take_sounds())audio.play(id);
-  for(auto const id:radio->take_sounds())audio.play(id);
-  for(auto const id:hdd->take_sounds())audio.play(id);
-  for(auto const &path:radio->take_speech())audio.speech(path);
   audio.flush_positions(player.body().movement().position);
   // Camera ownership changes in 5894c after this frame's player controls,
   // before the later 22904/226f0 presentation can prepare another view.
@@ -429,24 +425,66 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   return true;
 }
 
+void mission_view::update_widgets(){
+  auto const origin{instrument_origin()};
+  displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
+  radio->prepare(*session,camera,interface_ticks,origin[0],origin[1],transitions.snapshot().prepared&&transitions.snapshot().pending==3);
+}
+void mission_view::flush_interface_audio(){
+  for(auto const id:displays->take_sounds())audio.play(id);
+  for(auto const id:radio->take_sounds())audio.play(id);
+  for(auto const id:hdd->take_sounds())audio.play(id);
+}
 void mission_view::begin_options(){
   if(options_camera)return;
   clear_input();options_camera=camera;
-  camera=session->make_camera(camera_mode::orbit);camera.orbit_distance=0;
-  update_camera(camera,session->view_target());
+  // Original 57820 drains any outstanding pan before preparing the orbit
+  // preview. Each preparation draws the frozen world and its interface.
+  while(transitions.snapshot().pending!=-1||transitions.snapshot().prepared){
+    present_pending=true;present_view();update_camera(camera,session->view_target());draw();
+  }
+  options_view=transitions.snapshot().view;
+  auto preview=[&]{
+    camera=session->make_camera(camera_mode::orbit);camera.orbit_distance=0;
+    update_camera(camera,session->view_target());
+  };
+  if(options_view!=4){
+    transitions.request(2);bool prepared{};
+    do{
+      present_pending=true;present_view();
+      if(!prepared&&transitions.snapshot().prepared){prepared=true;preview();}
+      update_camera(camera,session->view_target());draw();
+    }while(!prepared||transitions.snapshot().prepared);
+  }else{preview();draw();}
+}
+void mission_view::step_options_recorded(){
+  if(!options_camera)return;
+  // Original 577f8: fixed camera-turn request, no world simulation.
+  steer_camera(camera,false,0,-64);update_camera(camera,session->view_target());
 }
 bool mission_view::step_options(){
   if(!options_camera||!pacing.take())return false;
-  // Original 577f8: fixed camera-turn request, no world simulation.
-  steer_camera(camera,false,0,-64);update_camera(camera,session->view_target());return true;
+  update_interface_clock(pacing.state().slow);
+  step_options_recorded();return true;
 }
 void mission_view::end_options(){
   if(!options_camera)return;
-  camera=*options_camera;options_camera.reset();clear_input();
+  camera=*options_camera;options_camera.reset();
+  if(options_view!=4){
+    transitions.reset(options_view);panel=static_cast<cockpit_view>(options_view);
+    suppress_interface=true;draw();
+    present_pending=true;present_view();transitions.reset(options_view);
+    suppress_interface=false;draw();
+  }else{
+    transitions.reset(4);draw();present_pending=true;present_view();
+  }
+  clear_input();
 }
 void mission_view::draw() {
   pan_frames.clear();
   frame.clear();
+  if(!suppress_interface)update_widgets();
   auto const painted{painted_panel()};
   bool const inside{camera.mode == camera_mode::attached};
   auto const &window{cockpit.windows[static_cast<size_t>(painted)]};
@@ -520,7 +558,9 @@ void mission_view::draw() {
     }
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
-  if(!options_camera)radio->draw(frame);
+  radio->advance_queue(*session,interface_ticks);
+  radio->draw(frame);
+  flush_interface_audio();
   if(startup&&startup->lifting()){
     scoped_framebuffer_clip clip{frame,&mask};
     frame.image(lift_artwork,0,startup_cover);

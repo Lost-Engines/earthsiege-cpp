@@ -6,6 +6,18 @@ radio_queue const &radio_controller::queue()const{return messages;}
 radio_presentation_state const &radio_controller::state()const{return data;}
 void radio_controller::ready(){data.ready=true;}
 void radio_controller::cancel(){data.cancelling=true;}
+bool radio_controller::cancel_message(uint16_t id,std::optional<size_t> speaker){
+  if(auto const *message{active()};message&&message->event.id==id&&message->event.speaker==speaker){
+    if(data.starting)return false;
+    data.cancelling=true;return true;
+  }
+  auto const &queue{messages.state()};
+  for(size_t i{};i<queue.count;++i){
+    auto const &message{queue.slots[queue.order[i]]};
+    if(message.event.id==id&&message.event.speaker==speaker){messages.erase(i);return true;}
+  }
+  return false;
+}
 radio_message const *radio_controller::active()const{return data.active?&messages.state().slots[*data.active]:nullptr;}
 void radio_controller::advance(uint32_t const ticks,bool const text_enabled,radio_presentation_callbacks const &callbacks){
   messages.expire(ticks);

@@ -1,4 +1,5 @@
 #pragma once
+#include "simulation/radio_queue.h"
 #include <map>
 #include "audio/combat_music.h"
 #include <memory>
@@ -45,7 +46,6 @@ struct combat_notice {
   vec3<int32_t> position;
 };
 
-struct wingmate_radio_response { size_t actor; uint16_t message; };
 
 struct player_rocket_launch {
   uint64_t sequence{};
@@ -189,7 +189,13 @@ class mission_session {
   world_effects effects;
   world_projectiles projectiles;
   player_rocket_launch camera_rocket;
-  std::vector<wingmate_radio_response> radio_responses;
+  std::vector<radio_event> radio_events;
+  std::array<bool,80> announced_contacts{};
+  int16_t contact_cooldown{};
+  void notice_contact(size_t observer,size_t target,frame_ratio ratio);
+  std::function<void(radio_event const &)> radio_handler;
+  void announce_system(uint16_t message);
+  void announce(size_t actor,uint16_t message,bool allow_dead=false);
   std::unique_ptr<player_armament> player_weapons;
   int32_t player_weapon_range{};
   player_input_router input_router;
@@ -250,7 +256,8 @@ public:
   wingmate_order_state order_state(size_t actor) const;
   bool transmit_order(uint16_t command);
   bool transmit_order(wingmate_order const &order, std::optional<size_t> recipient);
-  std::vector<wingmate_radio_response> take_radio_responses();
+  std::vector<radio_event> take_radio_events();
+  void on_radio(std::function<void(radio_event const &)> handler){radio_handler=std::move(handler);}
   std::vector<sound_request> take_sounds();
   music_contacts music_observations()const;
   random_state &interface_random();

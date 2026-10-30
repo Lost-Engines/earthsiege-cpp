@@ -1449,3 +1449,50 @@ a missing second HUD paint above the lift door; that ordering is corrected.
 Remaining pixel differences include the separately drawn software cursor,
 instrument clock initialization and a transient hardware-DAC versus CPU-palette
 difference. The controller comparison does not imply whole-screen equality.
+
+
+## Radio, complete visual RNG and frozen options previews
+
+The four ESRPLY08 replay fixtures now extend all 7,032 gameplay/exit comparisons
+to the complete 114-byte visual RNG, including both index bytes, after every
+captured frame. All 9,300 source inputs and the final RESULTS.DAT/MISSION.VAR
+files still agree. Sources are the unchanged DOSBox runs
+analysis/tapes/replays/demo1-radio-playback through demo4-radio-playback.
+The observer records inputs at their actual consumer instructions; it does not
+patch guest code or inject native actor, queue, portrait or random state.
+
+Independent external inputs are the startup draw/fade/end clocks, interface
+clock, speech-animation clock, and sound driver's success/failure return when
+speech starts. Both clocks are nominally 60 Hz but have different phases.
+The native live game uses its timer and PCM mixer; the replay supplies the
+observed device result to isolate radio/visual behavior. This is not yet an
+end-to-end equality claim for the PCM stream or the causes of driver rejection.
+
+System alerts and pilot speech use separate queues. Native mission events now
+reach them at their original call sites: contact, combat, selected-target,
+shield and objective notices as well as orders. First-contact notification is
+the HERC virtual override at 0e760; base/flyer observers use the empty 0e75c
+method and must not decrement its cooldown. Individual orders cancel that
+pilot's pending status request, rather than creating another status reply.
+
+Original 59c08 updates portraits and the system queue before world rendering,
+then advances the pilot queue afterwards. Options 57820/577f8 uses the same
+render/interface path while simulation is frozen, including entering/leaving
+the external camera and the interface-suppressed return preparation. Both
+DEMO3 options dialogs now consume every recorded observation in this order.
+The lift enters with draw/other pages 0/2 and finishes at 2/0; previously the
+reversed pages changed later held-view arbitration and hid cockpit clicks.
+
+Original speech playback failure is observable in the recordings. At 3e682
+the failure sets both radio readiness and cancellation during the opening
+phase. The queue removes the message but retains its starting latch, so later
+messages can remain blocked until expiry. Native preserves that behavior.
+Disabling speech is different: the original reports success to the portrait
+while making no sound. No guessed hardware success is substituted in either
+path.
+
+Additional isolated comparisons cover 60 system-banner rasters, 15 targeted
+status cancellations and 2,400 portrait transitions with an explicitly rejected
+PCM start, alongside the existing 2,400 ordinary portrait and 1,920 radio
+controller states. Whole-frame pixels, software cursor ownership and full audio
+event timing remain separate integration comparisons.

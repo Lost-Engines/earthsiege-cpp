@@ -70,7 +70,7 @@ void mission_audio::update_music(music_contacts const &contacts,random_state &ra
 bool mission_audio::play(size_t const id){return effects_enabled&&bank.play(id);}
 bool mission_audio::play_at(size_t const id,vec3<int32_t> const &where){position(id,where);return play(id);}
 bool mission_audio::speech(std::string_view const path){
-  if(!speech_enabled)return false;
+  if(!speech_enabled)return true; // Original disabled speech still advances the portrait.
   for(size_t slot{47};slot<57;++slot)if(!bank.playing(slot)){
     for(auto const volume:{"speech","simvoice"})if(auto const *entry{resources.archives().at(volume).find(path)}){
       bank.bind(slot,resources.archives().at(volume).read(*entry));return bank.play(slot);

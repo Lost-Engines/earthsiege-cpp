@@ -1,4 +1,8 @@
 #include <iostream>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <algorithm>
 #include <string>
 #include "shell/mission_view.h"
@@ -9,7 +13,7 @@ using namespace earthsiege;
 int main(int argc,char **argv)try{
  if(argc<3)return 1;
  resource_store resources{argv[1]};auto raw{read_file(argv[2])};binary_reader file{raw};
- auto magic{file.take(8)};auto version{std::string(magic.begin(),magic.end())};bool terminal{version=="ESRPLY05"},extended{terminal||version=="ESRPLY04"};
+ auto magic{file.take(8)};auto version{std::string(magic.begin(),magic.end())};bool has_radio_inputs{version=="ESRPLY08"},visual{has_radio_inputs||version=="ESRPLY06"},terminal{visual||version=="ESRPLY05"},extended{terminal||version=="ESRPLY04"};
  if(version!="ESRPLY03"&&!extended)file.fail("format");
  auto demo{file.integer<uint32_t>()},count{file.integer<uint32_t>()};
  auto prefs{extended?file.take(17):bytes{}};
@@ -18,6 +22,15 @@ int main(int argc,char **argv)try{
  mission_view view{resources,tape};
  preferences settings{prefs};std::array<joystick_calibration,2> calibrations;
  if(extended)view.configure_input(settings,calibrations);
+ if(visual){
+  auto const frames{file.integer<uint16_t>()};view.begin_startup();
+  for(unsigned i{};i<frames;++i){
+   auto draw_clock{file.integer<uint32_t>()},palette_clock{file.integer<uint32_t>()},end_clock{file.integer<uint32_t>()};
+   if(!view.starting())file.fail("startup completed early");
+   view.draw_startup(draw_clock);view.finish_startup_frame(palette_clock,end_clock);
+  }
+  if(view.starting())file.fail("startup did not finish");
+ }
  save_store replay_saves{std::filesystem::path{argv[2]}.parent_path()/"replay-settings"};
  size_t next_packet{},modal_packets{},alert_count{};bool suppressed{},exited{};
  auto alert=[&](int message){
@@ -58,6 +71,7 @@ int main(int argc,char **argv)try{
    // Other input remains explicit rather than silently skipping a dialog.
    if(input.buttons)throw std::runtime_error{"Recorded preferences device buttons need routing"};
    options.key(input.command);
+   view.step_options_recorded();view.draw();
    for(auto const &event:input.mouse){
     bool const l{bool(event.kind&1)},r{bool(event.kind&2)};
     if(l&&!left)options.mouse_down(event.position.x,event.position.y);
@@ -69,11 +83,28 @@ int main(int argc,char **argv)try{
   }
   view.apply_preferences(settings);view.end_options();return mission_command_result::handled;
  };
+ std::filesystem::path diagnostic_path;
+ std::ofstream diagnostics;
+ if(auto const *path{std::getenv("EARTHSIEGE_REPLAY_DIAGNOSTICS")}){
+  diagnostic_path=path;std::filesystem::create_directories(diagnostic_path);
+  diagnostics.open(diagnostic_path/"frames.jsonl");
+  if(!diagnostics)throw std::runtime_error{"Cannot open replay diagnostics"};
+ }
  uint32_t checked{};
  for(uint32_t frame{};frame<count;++frame){
   auto phase{terminal?file.integer<uint8_t>():uint8_t{1}};
   auto packet{file.integer<int32_t>()};auto clock{file.integer<uint32_t>()};auto ratio{file.integer<uint16_t>()};auto actors{file.integer<uint16_t>()};
   if(argc>3&&frame>std::stoul(argv[3]))break;
+  std::vector<std::pair<radio_input_point,uint32_t>> observations;size_t observation_index{};
+  if(has_radio_inputs){
+   auto const n{file.integer<uint16_t>()};
+   for(unsigned i{};i<n;++i){auto point{file.integer<uint8_t>()};auto ticks{file.integer<uint32_t>()};observations.emplace_back(static_cast<radio_input_point>(point),ticks);}
+   view.radio_input([&](radio_input_point point,uint32_t){
+    if(observation_index>=observations.size()||observations[observation_index].first!=point)
+     throw std::runtime_error{"packet "+std::to_string(packet)+" radio input point "+std::to_string(std::to_underlying(point))+" at read "+std::to_string(observation_index)+" expected "+(observation_index<observations.size()?std::to_string(std::to_underlying(observations[observation_index].first)):"end")};
+    return observations[observation_index++].second;
+   });
+  }
   if(packet!=-1&&packet!=-3){
    tape_frame record;
    if(packet>=0){
@@ -86,7 +117,23 @@ int main(int argc,char **argv)try{
    if(terminal&&((phase==2)==complete))file.fail("mission frame termination phase");
    if(complete)view.draw();
   }
+  if(has_radio_inputs&&observation_index!=observations.size())throw std::runtime_error{"packet "+std::to_string(packet)+" unconsumed radio inputs: "+std::to_string(observations.size()-observation_index)};
   auto const &session{view.simulation()};
+  if(diagnostics.is_open()){
+   auto const &visual_state{session.interface_random().snapshot()};
+   diagnostics<<"{\"row\":"<<frame<<",\"packet\":"<<packet<<",\"phase\":"<<+phase<<",\"visual\":[";
+   for(size_t i{};i<visual_state.words.size();++i){if(i)diagnostics<<',';diagnostics<<visual_state.words[i];}
+   diagnostics<<','<<visual_state.first<<','<<visual_state.second<<"]}\n";
+   if(phase==1&&(frame-1)%60==0){
+    std::ostringstream name;name<<"frame-"<<std::setw(5)<<std::setfill('0')<<frame-1<<".ppm";
+    auto path{diagnostic_path/name.str()};view.image().save(path,view.colours());
+    auto const pixels{view.image().pixels()};
+    std::ofstream raster{path.replace_extension(".bin"),std::ios::binary};
+    raster.write(reinterpret_cast<char const *>(pixels.data()),static_cast<std::streamsize>(pixels.size()));
+    std::ofstream pal{path.replace_extension(".pal"),std::ios::binary};
+    for(auto const &c:view.colours().dac_colours)pal.write(reinterpret_cast<char const *>(c.data()),3);
+   }
+  }
   auto const &rng{session.random_snapshot()};
   random_state::state expected;for(auto &v:expected.words)v=file.integer<uint16_t>();expected.first=file.integer<uint8_t>();expected.second=file.integer<uint8_t>();
   size_t errors{};auto check=[&](std::string const &label,auto actual,auto want){
@@ -94,6 +141,11 @@ int main(int argc,char **argv)try{
   };
   check("random first",rng.first,expected.first);check("random second",rng.second,expected.second);
   for(size_t i{};i<rng.words.size();++i)check("random word "+std::to_string(i),rng.words[i],expected.words[i]);
+  if(visual){
+   auto const &actual{session.interface_random().snapshot()};
+   for(size_t i{};i<actual.words.size();++i)check("visual word "+std::to_string(i),actual.words[i],file.integer<uint16_t>());
+   check("visual first",actual.first,file.integer<uint8_t>());check("visual second",actual.second,file.integer<uint8_t>());
+  }
   auto hercs{session.hercs()};auto flyers{session.flying_actors()};auto bases{session.ground_actors()};size_t h{},f{},b{};
   check("actor count",hercs.size()+flyers.size()+bases.size(),size_t(actors));
   for(unsigned a{};a<actors;++a){

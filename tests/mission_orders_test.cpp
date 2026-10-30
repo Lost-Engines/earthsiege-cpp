@@ -21,8 +21,8 @@ int main(int argc,char **argv) try {
       auto const label{"demo "+std::to_string(demo)+" step "+std::to_string(step)+" command "+std::to_string(command)};
       auto const check{[&](std::string const &field,int expected,int actual){if(expected!=actual){std::cerr<<label<<' '<<field<<": expected "<<expected<<", actual "<<actual<<'\n';file.fail(field);}}};
       bool const accepted{session.transmit_order(command)};check("accepted",read(),accepted);
-      auto const replies{session.take_radio_responses()};check("reply count",read(),static_cast<int>(replies.size()));
-      for(auto const &r:replies){check("speaker",read(),static_cast<int>(r.actor));check("reply",read(),r.message);}
+      auto const replies{session.take_radio_events()};check("reply count",read(),static_cast<int>(replies.size()));
+      for(auto const &r:replies){check("speaker",read(),static_cast<int>(r.speaker.value()));check("reply",read(),r.id);}
       for(int i{};i<actors;++i) {
         auto const s{session.order_state(static_cast<size_t>(i))};auto const &decision{session.activity_state().decisions()[static_cast<size_t>(i)]};
         auto const prefix{"actor "+std::to_string(i)+" "};

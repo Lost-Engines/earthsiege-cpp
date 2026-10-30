@@ -18,7 +18,28 @@ wingmate_order_state mission_session::order_state(size_t const index) const {
   }
   return s;
 }
-void mission_session::request_wingmate_status(size_t const actor) { radio_responses.push_back({actor,34}); }
+void mission_session::notice_contact(size_t observer,size_t target,frame_ratio ratio){
+  // HERC override 0e760; ground/flying actors retain no-op 0e75c.
+  if(observer>=crew.size())return;
+  if(observer==player_index){announced_contacts.at(target)=true;return;}
+  // Original 0e760 decrements this timer per notice, not once per frame.
+  contact_cooldown=std::max(wrap_word(int(contact_cooldown)-ratio),int16_t{0});
+  if(activity->actor(target).kind==actor_kind::base||actor_group(observer)!=actor_group(player_index))return;
+  auto const &seen{activity->actor(target).awareness};
+  if(announced_contacts.at(target)||seen.seen||activity->actor(observer).awareness.known.at(target)||activity->actor(player_index).awareness.known.at(target))return;
+  announced_contacts.at(target)=true;
+  if(!contact_cooldown){announce(observer,1);contact_cooldown=10000;}
+}
+void mission_session::announce(size_t actor,uint16_t message,bool allow_dead){
+  if(actor>=crew.size()||(!allow_dead&&crew[actor].actor->damage().consequences.dead))return;
+  radio_event event{message,actor,{},{}};
+  if(radio_handler)radio_handler(event);else radio_events.push_back(event);
+}
+void mission_session::announce_system(uint16_t message){
+  radio_event event{message,{},{},{}};
+  if(radio_handler)radio_handler(event);else radio_events.push_back(event);
+}
+void mission_session::request_wingmate_status(size_t const actor) { announce(actor,34); }
 std::vector<size_t> mission_session::wingmate_ids() const {
   std::vector<size_t> result;
   for(auto const actor:activity->group(crew[player_index].group).members)
@@ -57,18 +78,20 @@ bool mission_session::transmit_order(wingmate_order const &order,std::optional<s
       }},
       .resume{[&]{apply(index);resume_herc_orders(index);refresh();}},
       .enter{[&](behavior type){apply(index);enter_herc(index,type);refresh();}},
-      .acknowledge{[&](uint16_t response){if(!states[index].dead) radio_responses.push_back({index,response});}},
+      .acknowledge{[&](uint16_t response){if(!states[index].dead) announce(index,response);}},
     })};
     apply(index);return accepted;
   }};
   if(recipient) {
     bool const accepted{*recipient<crew.size() && *recipient!=player_index && !states[*recipient].dead && deliver(*recipient,0)};
-    request_wingmate_status(*recipient);
+    // 2b3e8 cancels this pilot's status request after sending an order.
+    radio_event event{34,*recipient,{},{},true};
+    if(radio_handler)radio_handler(event);else radio_events.push_back(event);
     return accepted;
   }
   return dispatch_wingmate_order(states,group.members,order,deliver);
 }
-std::vector<wingmate_radio_response> mission_session::take_radio_responses() {
-  return std::exchange(radio_responses,{});
+std::vector<radio_event> mission_session::take_radio_events() {
+  return std::exchange(radio_events,{});
 }
 } // namespace earthsiege

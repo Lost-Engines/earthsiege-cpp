@@ -10,9 +10,10 @@ void pilot_transmission::begin(uint8_t const id,std::vector<portrait_frame> time
 }
 pilot_transmission_state const &pilot_transmission::state()const{return data;}
 int16_t pilot_transmission::mouth()const{return started?animation.frame():0;}
-pilot_transmission_update pilot_transmission::advance(uint32_t const ticks,bool const shown,bool const dead,random_state &random){
+pilot_transmission_update pilot_transmission::advance(uint32_t const ticks,bool const shown,bool const dead,random_state &random,std::optional<uint32_t> const animation_ticks,std::function<bool(int16_t)> const &play_speech){
   pilot_transmission_update result;
-  if(started)animation.advance(ticks);
+  auto const speech_ticks{animation_ticks.value_or(ticks)};
+  if(started)animation.advance(speech_ticks);
   auto const paint{[&](int kind,int value=0){result.calls.push_back({kind,value});}};
   auto const idle{[&]{if(data.previous!=0)paint(0);}};
   switch(data.phase){
@@ -22,8 +23,9 @@ pilot_transmission_update pilot_transmission::advance(uint32_t const ticks,bool 
       data.phase=2;
       [[fallthrough]];
     case 2:{
-      if(data.previous!=data.phase){result.ready=true;animation.start(ticks);started=true;if(message==37)data.deadline=ticks+5;}
-      auto const frame{animation.frame()};
+      bool playback_ok{true};
+      if(data.previous!=data.phase){result.ready=true;animation.start(speech_ticks);started=true;if(play_speech)playback_ok=play_speech(animation.frame());if(message==37)data.deadline=ticks+5;}
+      auto const frame{playback_ok?animation.frame():int16_t{-1}};
       if(frame==-1){
         result.cancel=true;
         if(message==37){data.permanent_static=true;data.phase=1;}

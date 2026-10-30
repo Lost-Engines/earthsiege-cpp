@@ -23,6 +23,7 @@ public:
   radio_presentation_state const &state() const;
   void ready();
   void cancel();
+  bool cancel_message(uint16_t id,std::optional<size_t> speaker);
   radio_message const *active() const;
   void advance(uint32_t ticks, bool text_enabled, radio_presentation_callbacks const &callbacks);
 };

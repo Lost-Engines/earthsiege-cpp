@@ -85,6 +85,10 @@ class mission_view {
   scenery_renderer renderer;
   camera_state camera;
   std::optional<camera_state> options_camera;
+  int options_view{};
+  bool suppress_interface{};
+  void update_widgets();
+  void flush_interface_audio();
   keyboard_input keyboard;
   device_routing_options routing;
   std::array<joystick_calibration,2> calibrations;
@@ -134,6 +138,7 @@ public:
   void advance_time(unsigned milliseconds);
   /// Start the original nearby-friendly-base lift, or its ordinary initial draw.
   void begin_startup();
+  cockpit_transition::state const &presentation_state()const{return transitions.snapshot();}
   bool starting()const{return startup.has_value();}
   /// Separate clocks retain original draw / fade / presentation ownership.
   void draw_startup(uint32_t slow_clock);
@@ -141,10 +146,12 @@ public:
   bool step_startup();
   bool step(bool control, bool zoom,mission_dialog_handlers const &dialogs={});
   /// Recorded axes are already device-mapped. The host supplies the separate 60 Hz presentation clock.
+  void radio_input(radio_input_source source){radio->input_source(std::move(source));}
   bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false,mission_dialog_handlers const &dialogs={});
   mission_session const &simulation()const{return *session;}
   void begin_options();
   bool step_options();
+  void step_options_recorded();
   void end_options();
   void draw();
   void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { detail={horizon,cloud,ground,true}; }

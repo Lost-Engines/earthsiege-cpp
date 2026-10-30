@@ -1,4 +1,6 @@
 #pragma once
+#include <optional>
+#include <functional>
 #include "resources/portrait_sync.h"
 #include "simulation/random_state.h"
 
@@ -21,7 +23,7 @@ class pilot_transmission {
 public:
   pilot_transmission(uint8_t message_id,std::vector<portrait_frame> timeline,uint32_t ticks);
   void begin(uint8_t message_id,std::vector<portrait_frame> timeline,uint32_t ticks);
-  pilot_transmission_update advance(uint32_t ticks,bool shown,bool dead,random_state &random);
+  pilot_transmission_update advance(uint32_t ticks,bool shown,bool dead,random_state &random,std::optional<uint32_t> animation_ticks=std::nullopt,std::function<bool(int16_t)> const &play_speech={});
   pilot_transmission_state const &state()const;
   int16_t mouth()const;
 };

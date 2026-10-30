@@ -9,12 +9,23 @@
 #include "simulation/mission_session.h"
 
 namespace earthsiege {
+/// External timer reads and PCM-driver results; replay never supplies radio state.
+enum class radio_input_point : uint8_t { portraits, pilot_queue, system_queue, transmission, enqueue, animation, speech_playback };
+using radio_input_source=std::function<uint32_t(radio_input_point,uint32_t)>;
+
 /// Connect radio replies to the original timer, pilot portraits and text overlay.
 class cockpit_radio {
   resource_store const &resources;
   random_state &random;
   radio_catalogue catalogue;
-  radio_controller controller;
+  radio_controller controller,system_controller;
+  radio_input_source observation;
+  std::function<bool(std::string_view)> speech_player;
+  uint32_t read_input(radio_input_point point,uint32_t fallback)const;
+  uint32_t system_ticks{};
+  bool system_blink{},system_enabled{true};
+  std::string system_text;
+  rectangle system_bounds;
   radio_banner banner;
   wingmate_portrait labels;
   struct member {
@@ -39,9 +50,14 @@ class cockpit_radio {
   void advance_portraits(mission_session &session,uint32_t ticks);
 public:
   cockpit_radio(resource_store const &resources,cockpit_layout const &layout,mission_session const &session,random_state &ui_random,bool reduced_detail=false);
+  void speech_output(std::function<bool(std::string_view)> player){speech_player=std::move(player);}
+  void input_source(radio_input_source source){observation=std::move(source);}
+  radio_presentation_state const &system_state()const{return system_controller.state();}
   void captions(bool enabled){text_enabled=enabled;}
   bool submit(radio_event event,uint32_t ticks);
-  void update(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y);
+  void update(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);
+  void prepare(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);
+  void advance_queue(mission_session &session,uint32_t ticks);
   void draw(framebuffer &frame)const;
   radio_presentation_state const &state()const;
   std::vector<uint16_t> take_sounds();

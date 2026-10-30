@@ -53,6 +53,7 @@ void mission_session::advance_player_objectives(size_t const index,frame_ratio c
   }
   advance_player_objective(member.objectives,input,group.route<0 ? nullptr : &routes.at(static_cast<size_t>(group.route)),points,group.route_cursor,ratio,[&](int16_t event){
     frame_notices.push_back({combat_notice_kind::mission_event,index,0,event,{}});
+    announce_system(static_cast<uint16_t>(event));
   });
 }
 } // namespace earthsiege

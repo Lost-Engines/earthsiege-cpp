@@ -71,5 +71,8 @@ int main(int argc,char **argv)try{
  if(live.simulation().player_actor().body().movement().position!=player_position ||
     live.simulation().random_snapshot().words!=simulation_rng.words)
   f.fail("startup advanced simulation");
+ // All four unchanged DOSBox startup snapshots finish on the same page pair.
+ if(live.presentation_state().draw_page!=2||live.presentation_state().other_page!=0)
+  f.fail("startup cockpit page ownership");
  f.require_end();std::cout<<lifts<<" lift frames and "<<shakes<<" shake frames match original palette, camera, clipping and random state\n";return 0;
 }catch(std::exception const &e){std::cerr<<e.what()<<'\n';return 1;}

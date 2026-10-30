@@ -190,7 +190,7 @@ bool mission_session::target_path_blocked(size_t const index) const {
 
 void mission_session::friendly_fire_warning(size_t const index) {
   if(index >= crew.size()) return;
-  warn_friendly_fire(crew[index].reactions, [&]{frame_notices.push_back({combat_notice_kind::friendly_warning, index, 0, 0, {}});});
+  warn_friendly_fire(crew[index].reactions, [&]{frame_notices.push_back({combat_notice_kind::friendly_warning, index, 0, 0, {}});announce(index,8);});
 }
 void mission_session::hit_reaction(size_t const victim, size_t const attacker, int16_t const damage) {
   if(victim >= crew.size()) {activity->share_contact(victim, attacker, observe()); return;}
@@ -201,8 +201,8 @@ void mission_session::hit_reaction(size_t const victim, size_t const attacker, i
      activity->actor(leader).player, activity->targets()[leader].selected == attacker, combat_kind(activity->actor(attacker).kind)},
     member.ignore_hud_target, member.designated, {
     .share_contact{[&]{activity->share_contact(victim, attacker, observe());}},
-    .friendly_warning{[&]{frame_notices.push_back({combat_notice_kind::friendly_warning, victim, 0, 0, {}});}},
-    .under_attack{[&]{frame_notices.push_back({combat_notice_kind::under_attack, victim, 0, 0, {}});}},
+    .friendly_warning{[&]{frame_notices.push_back({combat_notice_kind::friendly_warning, victim, 0, 0, {}});announce(victim,8);}},
+    .under_attack{[&]{frame_notices.push_back({combat_notice_kind::under_attack, victim, 0, 0, {}});announce(victim,3);}},
     .select{[&]{return activity->select(observe(), victim, target_selection_flags::none, activity->targets()[player_index].selected, random);}},
     .resume_orders{[&]{resume_herc_orders(victim);}}, .strategy{[&]{reconsider_herc(victim);}},
   });

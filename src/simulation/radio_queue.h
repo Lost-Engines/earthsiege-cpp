@@ -10,6 +10,7 @@ struct radio_event {
   std::optional<size_t> speaker;
   vec3<int32_t> position{};
   std::optional<size_t> subject;
+  bool cancel{};
 };
 struct radio_descriptor {
   uint8_t id{}, flags{}, priority{}, minimum{}, maximum{}, earliest{}, expiry{};
