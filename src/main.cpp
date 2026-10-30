@@ -82,6 +82,7 @@ auto command(SDL_Keycode const code, bool const alt, bool const control)->std::o
     case SDLK_e: scan=18; break;
     case SDLK_f: scan=33; break;
     case SDLK_w: scan=17; break;
+    case SDLK_v: scan=47; break;
     case SDLK_b: scan=48; break;
     case SDLK_z: scan=44; break;
     case SDLK_r: scan=19; break;

@@ -3,12 +3,15 @@
 #include "simulation/model_math.h"
 
 namespace earthsiege {
-bool can_target_from_cockpit(cockpit_observer const &observer, cockpit_target const &target) {
+bool detectable_from_cockpit(cockpit_observer const &observer, cockpit_target const &target) {
   if(target.dead || target.disabled || target.side == observer.side) return false;
   vec3<int32_t> delta;
   for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(target.position[axis]) - observer.position[axis]);
   auto const distance{fast_distance(delta)};
-  if(!((target.seen && distance < observer.visible_range) || (target.known && distance < observer.contact_range))) return false;
+  return (target.seen && distance < observer.visible_range) || (target.known && distance < observer.contact_range);
+}
+bool can_target_from_cockpit(cockpit_observer const &observer,cockpit_target const &target){
+  if(!detectable_from_cockpit(observer,target))return false;
   auto const error{wrap_word(bearing_angle(observer.position, target.position) - observer.heading + observer.torso)};
   return error >= -8999 && error <= 8999;
 }

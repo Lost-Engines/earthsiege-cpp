@@ -194,6 +194,7 @@ class mission_session {
   int32_t player_weapon_range{};
   player_input_router input_router;
   std::optional<size_t> displayed_target;
+  std::optional<size_t> instrument_target;
   void advance_frame(player_input &input, frame_ratio ratio, std::function<void()> const &prepare_player);
   std::vector<combat_notice> frame_notices;
   std::function<void()> cockpit_impact_handler;
@@ -235,8 +236,9 @@ public:
   void cycle_weapon();
   void set_auto_tracking(bool enabled);
   void toggle_weapon_pair();
-  player_input_actions step_player(player_input input, frame_ratio ratio, bool external_control = false, rectangle aiming_viewport = {0, 0, 320, 200});
+  player_input_actions step_player(player_input input, frame_ratio ratio, bool external_control = false, rectangle aiming_viewport = {0, 0, 320, 200}, std::function<void(player_input &)> const &dispatch_command = {});
   void update_player_interface();
+  void refresh_target_instruments(bool visible,bool validate=false);
   void initialise_weapon_instruments();
   void exchange_weapon_instruments(frame_ratio ratio);
   void weapon_group_control(unsigned int button);

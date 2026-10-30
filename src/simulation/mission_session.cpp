@@ -188,7 +188,7 @@ std::optional<hud_waypoint_state> mission_session::next_waypoint() const {
 }
 void mission_session::set_displayed_target(std::optional<size_t> const target) {
   if(target && *target >= activity->size()) throw std::out_of_range{"cockpit target"};
-  displayed_target = target;
+  displayed_target = instrument_target = target;
 }
 void mission_session::clear_player_input() { input_router.clear_device_state(); }
 bool mission_session::player_command(uint16_t const code) {
@@ -221,11 +221,12 @@ void mission_session::cycle_target() {
   }
   auto const &body{player()};
   cockpit_observer const observer{vec3<int32_t>{body.movement().position}, body.movement().angles.z, body.torso().angle, crew[player_index].side, settings.detection_range()};
-  displayed_target = cycle_cockpit_target(candidates, observer, displayed_target);
+  set_displayed_target(cycle_cockpit_target(candidates, observer, displayed_target));
 }
-player_input_actions mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control, rectangle const aiming_viewport) {
+player_input_actions mission_session::step_player(player_input input, frame_ratio const ratio, bool const external_control, rectangle const aiming_viewport, std::function<void(player_input &)> const &dispatch_command) {
   player_input_actions actions;
   advance_frame(input, ratio, [&]{
+    if(dispatch_command)dispatch_command(input);
     if(input.command) player_command(input.command);
     auto &actor{*crew[player_index].actor};
     player_input_context context{.external_control{external_control}, .disabled{actor.damage().consequences.disabled}, .auto_tracking{player_weapons->auto_tracking()}, .position{vec3<int32_t>{actor.body().movement().position}}, .target{}};
@@ -276,11 +277,22 @@ void mission_session::update_player_interface() {
   player_weapons->refresh_pairs();
   // The original HUD exchanges target ownership after weapons and power. Enter
   // changes the displayed target first; guidance sees it on the following frame.
-  if(relationship.selected != displayed_target) {
+  if(relationship.selected != instrument_target) {
     member.sensors.hud_locked = false;
-    assign_target(activity->targets(), player_index, displayed_target);
-    if(!displayed_target && player_weapons->auto_tracking()) input_router.request_centre();
+    assign_target(activity->targets(), player_index, instrument_target);
+    if(!instrument_target && player_weapons->auto_tracking()) input_router.request_centre();
   }
+}
+void mission_session::refresh_target_instruments(bool visible,bool validate){
+  // 2cf28 paints the HUD before validating the shell's selected target.
+  // 155a8 exchanges that cached HUD value; 59c08 then paints the HUD again.
+  if(visible)instrument_target=displayed_target;
+  if(!validate||!displayed_target)return;
+  auto index{*displayed_target};auto observations{observe()};
+  auto const &body{player()};auto const &target{observations.at(index)};
+  cockpit_observer observer{vec3<int32_t>{body.movement().position},body.movement().angles.z,body.torso().angle,crew[player_index].side,settings.detection_range()};
+  cockpit_target contact{vec3<int32_t>{target.position},activity->group(actor_group(index)).side,activity->actor(index).awareness.seen,activity->actor(player_index).awareness.known[index]!=0,target.dead,target.disabled};
+  if(!detectable_from_cockpit(observer,contact))displayed_target.reset();
 }
 herc_actor const &mission_session::player_actor() const { return *crew.at(player_index).actor; }
 world_effects &mission_session::visual_effects() { return effects; }

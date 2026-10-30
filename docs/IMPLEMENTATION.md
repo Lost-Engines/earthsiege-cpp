@@ -1241,3 +1241,30 @@ for both WCS settings, every focus state and simultaneous button/key cases.
 All cases and the nineteen existing complete dialog rasters agree. This
 establishes the dialog input rules; ownership of nested recorded-demo input
 polls remains a separate whole-game integration task.
+
+### Complete DEMO4 simulation comparison
+
+The native mission owner now executes all 1,571 recorded DEMO4 input records,
+including embedded PREFS/KEYJOY settings and queued mouse events. The original
+runs one final zero-input frame at EOF using the previous outer frame ratio;
+that frame is included. All 1,573 states (initial plus 1,572 updates) agree on
+every actor's position and orientation, HERC steering/gait/throttle/aiming,
+power, shields, damage arrays and flags, target ownership, mobile AI controller
+and clock, group orders/route cursors, and all 114 bytes of gameplay RNG.
+
+Inputs come from the original TAP, not the expected actor states. The reference
+supplies only the separate observed presentation clock and EOF ratio at the
+host boundary. Original captures use normal DOSBox execution at 60,000 cycles.
+The fixture stores only compared fields and omits unrelated pointers/padding.
+
+This exposed and fixed delayed TRACK exchange, external-view input routing,
+wingmate command dispatch after world AI, and the HUD's separately cached target
+handoff/validation. Pending cockpit changes now follow the original VGA-page
+arbitration and cooldown; all 114 sequential original presentation states agree.
+Held hats can no longer accidentally request an extra turn during an immediate
+native view change. These are gameplay/presentation-ownership comparisons, not
+pixel equality of the complete replay or its intermediate hardware-panned frames.
+The remaining demos, modal tape ownership, full-frame visuals and audio timing
+are still separate integration work.
+
+Validation: complete rebuild and all 237 CTest checks passed (37.85 seconds), including the complete DEMO4 comparison.

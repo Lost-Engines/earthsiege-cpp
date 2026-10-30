@@ -11,6 +11,7 @@
 #include "render/clock_instrument.h"
 #include "render/presentation_player.h"
 #include "resources/cockpit.h"
+#include "resources/input_tape.h"
 #include "simulation/keyboard_input.h"
 #include "simulation/frame_clock.h"
 #include "simulation/joystick_routing.h"
@@ -18,6 +19,7 @@
 #include "shell/preferences.h"
 #include "shell/pointer_controls.h"
 #include "shell/cockpit_impact.h"
+#include "shell/cockpit_transition.h"
 #include "shell/cockpit_displays.h"
 #include "shell/cockpit_radio.h"
 #include "shell/cockpit_hdd.h"
@@ -52,6 +54,8 @@ class mission_view {
   std::vector<weapon_control_binding> weapon_controls;
   std::array<size_t, 5> weapon_groups;
   cockpit_view panel{cockpit_view::forward};
+  cockpit_transition transitions;
+  bool present_pending{};
   palette display_colours;
   palette impact_colours;
   cockpit_impact impact;
@@ -70,20 +74,27 @@ class mission_view {
   bool mouse_enabled{true},joystick_mode_enabled{};
   void hat_view(std::array<uint8_t,4> const &);
   bool paused{false};
+  bool external_camera_control{true};
   player_input pointer;
   pointer_controls instruments;
   std::unique_ptr<cockpit_displays> displays;
   std::unique_ptr<cockpit_radio> radio;
   std::unique_ptr<cockpit_hdd> hdd;
-  std::deque<player_input> pointer_events;
+  struct pointer_event { player_input input; std::optional<uint32_t> timestamp; };
+  std::deque<pointer_event> pointer_events;
   int16_t requested_throttle{};
   std::optional<bool> shield_to_front;
   void consume_pointer_events();
-  void set_camera(camera_mode mode,unsigned previous_view);
+  void set_camera(camera_mode mode,unsigned previous_view,bool reset_input=true);
+  void apply_cockpit_view(cockpit_view view,bool reset_input);
+  void present_view();
+  void prepare_frame(uint32_t slow_clock);
+  bool step_input(player_input input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control);
   std::deque<uint16_t> commands;
 
 public:
   mission_view(resource_store const &resources, unsigned int demo);
+  mission_view(resource_store const &resources, input_tape const &tape);
   mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission);
   mission_results results() const { return session->results(); }
   mission_counters const &mission_variables() const { return session->mission_variables(); }
@@ -102,6 +113,9 @@ public:
   void change_cockpit_view(cockpit_view view);
   void advance_time(unsigned milliseconds);
   bool step(bool control, bool zoom);
+  /// Recorded axes are already device-mapped. The host supplies the separate 60 Hz presentation clock.
+  bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false);
+  mission_session const &simulation()const{return *session;}
   void begin_options();
   bool step_options();
   void end_options();

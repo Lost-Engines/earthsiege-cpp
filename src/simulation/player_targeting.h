@@ -21,6 +21,7 @@ struct cockpit_observer {
   int32_t contact_range{60000};
   int32_t visible_range{cockpit_visible_target_range};
 };
+bool detectable_from_cockpit(cockpit_observer const &observer, cockpit_target const &target);
 bool can_target_from_cockpit(cockpit_observer const &observer, cockpit_target const &target);
 /// Enter/Tab scans original actor order inside the ±8999 forward cone.
 /// With no eligible replacement, retain the existing selection, even if stale.

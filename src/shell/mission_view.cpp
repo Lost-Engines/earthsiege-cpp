@@ -9,13 +9,16 @@
 #include "resources/resource_store.h"
 #include "simulation/frame_time.h"
 #include "simulation/model_math.h"
+#include "simulation/tape_input.h"
 
 namespace earthsiege {
 namespace {
 
-std::unique_ptr<mission_session> demo_start(resource_store const &resources, unsigned int const demo) {
-  if(demo < 1 || demo > 4) throw std::runtime_error{"--inspect-demo must be between 1 and 4"};
-  auto const tape{read_input_tape(read_file(resources.root() / "TAPES" / ("DEMO" + std::to_string(demo) + ".TAP")))};
+input_tape demo_tape(resource_store const &resources,unsigned demo){
+  if(demo<1||demo>4)throw std::runtime_error{"demo must be between 1 and 4"};
+  return read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")));
+}
+std::unique_ptr<mission_session> demo_start(resource_store const &resources,input_tape const &tape) {
   auto const script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
   auto const roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
   auto const counters{read_mission_counters(tape.starting_files[std::to_underlying(tape_file::campaign_flags)])};
@@ -25,7 +28,15 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources, uns
 } // namespace
 
 mission_view::mission_view(resource_store const &resources, unsigned int const demo)
-  : mission_view{resources,demo_start(resources,demo)} {}
+  : mission_view{resources,demo_tape(resources,demo)} {}
+mission_view::mission_view(resource_store const &resources,input_tape const &tape)
+  :mission_view{resources,demo_start(resources,tape)} {
+  configure_input(preferences{tape.starting_files[std::to_underlying(tape_file::preferences)]},{});
+  auto const &raw{tape.starting_files[std::to_underlying(tape_file::keyjoy)]};
+  auto const policy{read_keyjoy(std::string_view{reinterpret_cast<char const *>(raw.data()),raw.size()})};
+  if(policy.invalid_token)throw std::runtime_error{"Unrecognized recorded KEYJOY.CFG token"};
+  routing.tilt_reverse=policy.tilt_reverse;routing.backturn_reverse=policy.backturn_reverse;routing.missile_reverse=policy.missile_reverse;
+}
 
 mission_view::mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission)
   : session{std::move(mission)}, ui_random{session->interface_random()},
@@ -106,32 +117,27 @@ void mission_view::configure_input(preferences const &prefs,std::array<joystick_
 }
 void mission_view::hat_view(std::array<uint8_t,4> const &hat){
   if(camera.mode!=camera_mode::attached)return;
-  switch(cockpit_hat_request(static_cast<unsigned>(panel),hat)){
-    case 0:change_cockpit_view(cockpit_view::lower);break;
-    case 1:case 6:change_cockpit_view(cockpit_view::forward);break;
-    case 4:change_cockpit_view(cockpit_view::right);break;
-    case 5:change_cockpit_view(cockpit_view::left);break;
-    default:break;
-  }
+  transitions.request(cockpit_hat_request(static_cast<unsigned>(panel),hat));
 }
 void mission_view::key(held_key const key, bool const pressed, bool const alt) {
   keyboard.event(key, pressed, alt);
 }
 
 void mission_view::command(uint16_t const code) { commands.push_back(code); }
-void mission_view::mouse_position(int const x, int const y) { if(!mouse_enabled)return; pointer.mouse = {x,y}; pointer_events.push_back(pointer); }
+void mission_view::mouse_position(int const x, int const y) { if(!mouse_enabled)return; pointer.mouse = {x,y}; pointer_events.push_back({pointer,{}}); }
 void mission_view::mouse_button(bool const right, bool const pressed) {
   if(!mouse_enabled)return;
   (right ? pointer.right : pointer.left) = pressed;
-  pointer_events.push_back(pointer);
+  pointer_events.push_back({pointer,{}});
 }
 
 void mission_view::consume_pointer_events() {
   auto const origin{instrument_origin()};
   instruments.window_bounds({origin[0], origin[1], origin[0] + 319, origin[1] + 199});
-  if(camera.mode == camera_mode::attached) for(auto const &event : pointer_events) {
+  if(camera.mode == camera_mode::attached) for(auto const &queued : pointer_events) {
+    auto const &event{queued.input};
     hdd->pointer(event.mouse.x+origin[0],event.mouse.y+origin[1]);
-    if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right,interface_ticks*2)}) {
+    if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right,queued.timestamp.value_or(interface_ticks*2))}) {
       if(hdd->activate(*action,*session,instruments,mfd_ranges[displays->state().range_index]))continue;
       if(displays->activate(*action,*session,instruments)) continue;
       if(action->index == 0) requested_throttle = static_cast<int16_t>(throttle.slider_layout().vertical ? -action->value : action->value);
@@ -171,12 +177,12 @@ void mission_view::toggle_pause() {
   clear_input();
 }
 
-void mission_view::change_camera(camera_mode const mode) { set_camera(mode,impact_view().mode); }
-void mission_view::set_camera(camera_mode const mode,unsigned previous) {
+void mission_view::change_camera(camera_mode const mode) { transitions.reset(mode==camera_mode::attached?static_cast<int>(panel):4);set_camera(mode,impact_view().mode); }
+void mission_view::set_camera(camera_mode const mode,unsigned previous,bool reset_input) {
   if(mode == camera_mode::free) camera.mode = mode;                             // detach at the current position and orientation
   else camera = session->make_camera(mode);
   impact.change_view(previous,impact_view());
-  clear_input();
+  if(reset_input)clear_input();
   update_camera(camera, session->view_target());
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
@@ -184,14 +190,27 @@ void mission_view::set_camera(camera_mode const mode,unsigned previous) {
 }
 
 void mission_view::change_cockpit_view(cockpit_view const view) {
+  transitions.reset(static_cast<int>(view));apply_cockpit_view(view,true);
+}
+void mission_view::apply_cockpit_view(cockpit_view const view,bool reset_input) {
   if(panel != view) clock.refresh();
   auto const previous{impact_view().mode};
   panel = view;
-  set_camera(camera_mode::attached,previous);
+  set_camera(camera_mode::attached,previous,reset_input);
   auto const origin{instrument_origin()};
   displays->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   hdd->update(*session,instruments,camera,interface_ticks,origin[0],origin[1]);
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
+}
+
+void mission_view::present_view(){
+  if(!present_pending||options_camera)return;
+  present_pending=false;
+  auto before{transitions.snapshot().view};transitions.present();
+  auto after{transitions.snapshot().view};
+  if(before==after)return;
+  if(after==4)set_camera(camera_mode::orbit,impact_view().mode,false);
+  else apply_cockpit_view(static_cast<cockpit_view>(after),false);
 }
 
 void mission_view::advance_time(unsigned milliseconds){
@@ -202,15 +221,9 @@ void mission_view::advance_time(unsigned milliseconds){
 bool mission_view::step(bool const control, bool const zoom) {
   auto const ratio{pacing.take()};
   if(!ratio)return false;
-  audio.engine(camera.mode != camera_mode::attached);
-  audio.update_music(session->music_observations(),ui_random);
   if(paused) { pointer_events.clear(); return false; }
-  auto const now{pacing.state().slow};
-  clock.update(now);
-  if(now != interface_ticks) lamps.advance(static_cast<int16_t>(now - interface_ticks));
-  interface_ticks = now;
-  consume_pointer_events();
-  routing.external=control;routing.missile=session->player_weapon_controls().manual_guidance();
+  prepare_frame(pacing.state().slow);
+  routing.external=control||(camera.mode!=camera_mode::attached&&external_camera_control);routing.missile=session->player_weapon_controls().manual_guidance();
   auto const keys{keyboard.sample((routing.mode==1&&!routing.external)||routing.missile)};
   joystick_sample keyboard_packet{{keys.movement.x,keys.movement.y,keys.aiming.x,keys.aiming.y},{uint8_t(keys.fire),uint8_t(keys.enter),0,0},{}};
   joystick_sample device;
@@ -223,22 +236,55 @@ bool mission_view::step(bool const control, bool const zoom) {
   input.camera_source=packet.aiming_camera?player_axis_pair::aiming:player_axis_pair::movement;
   input.fire=packet.buttons[0]||(control&&zoom);input.enter=packet.buttons[2];input.released=packet.buttons[3];
   input.release_action=static_cast<control_release_action>(routing.mode);
-  auto const previous_panel{panel};
-  if(!commands.empty()) {
-    input.command=commands.front(); commands.pop_front();
+  if(!commands.empty()){input.command=commands.front();commands.pop_front();}
+  return step_input(input,packet.hat,*ratio,routing.external);
+}
+void mission_view::prepare_frame(uint32_t now){
+  audio.engine(camera.mode!=camera_mode::attached);
+  audio.update_music(session->music_observations(),ui_random);
+  clock.update(now);
+  if(now!=interface_ticks)lamps.advance(static_cast<int16_t>(now-interface_ticks));
+  interface_ticks=now;
+  consume_pointer_events();
+}
+bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bool suppress_camera){
+  for(auto const &event:record.mouse){
+    player_input mouse;mouse.mouse=event.position;mouse.left=(event.kind&1)!=0;mouse.right=(event.kind&2)!=0;
+    pointer_events.push_back({mouse,event.timestamp});
+  }
+  prepare_frame(slow_clock);
+  routing.external=camera.mode!=camera_mode::attached&&external_camera_control;routing.missile=session->player_weapon_controls().manual_guidance();
+  auto const packet{route_tape_frame(routing,record,suppress_camera,device_throttle)};
+  player_input input;
+  input.command=record.command;
+  input.movement={packet.axes[0],packet.axes[1]};input.aiming={packet.axes[2],packet.axes[3]};
+  input.camera_source=packet.aiming_camera?player_axis_pair::aiming:player_axis_pair::movement;
+  input.fire=packet.buttons[0];input.enter=packet.buttons[2];input.released=packet.buttons[3];
+  input.release_action=static_cast<control_release_action>(routing.mode);
+  return step_input(input,packet.hat,static_cast<frame_ratio>(record.delta),routing.external);
+}
+bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control){
+  auto dispatch=[&](player_input &input){
+  if(input.command) {
+    if(input.command==47){transitions.request(camera.mode==camera_mode::attached?2:3);input.command=0;}
+    if((input.command==15||input.command==28)&&camera.mode!=camera_mode::attached){external_camera_control=!external_camera_control;input.command=0;}
+    // 38034 routes TRACK through the widget. The bank reads the pending
+    // flag during the later instrument exchange, after this frame's aiming.
+    if(input.command==0x214&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->weapon_group_control(4);input.command=0;}
     if(input.command>=59 && input.command<=64 && camera.mode==camera_mode::attached && panel!=cockpit_view::forward)
-      change_cockpit_view(cockpit_view::forward);
-    if(input.command==65 || input.command==66)change_cockpit_view(cockpit_view::lower);
+      transitions.request(panel==cockpit_view::lower?1:6);
+    if(input.command==65 || input.command==66)transitions.request(0);
     if(input.command==82){if(joystick_mode_enabled)routing.mode=static_cast<uint8_t>(3-routing.mode);input.command=0;}
     if(input.command==67){hat_view({0,0,0,1});input.command=0;}
     if(input.command==68){hat_view({0,0,1,0});input.command=0;}
-    if(input.command==1&&camera.mode==camera_mode::attached&&panel!=cockpit_view::forward){change_cockpit_view(cockpit_view::forward);input.command=0;}
+    if(input.command==1&&camera.mode==camera_mode::attached&&panel!=cockpit_view::forward){transitions.request(panel==cockpit_view::lower?1:6);input.command=0;}
     if(hdd->command(input.command,*session,instruments,mfd_ranges[displays->state().range_index]))input.command=0;
     else if(displays->command(input.command,*session,instruments))input.command=0;
   }
-  if(panel==previous_panel)hat_view(packet.hat);
+  hat_view(hat);
   input.release_action=static_cast<control_release_action>(routing.mode);
-  auto const actions{session->step_player(input, *ratio, control, cockpit.layout.bounds(0x450))};
+  };
+  auto const actions{session->step_player(initial_input, ratio, control, cockpit.layout.bounds(0x450),dispatch)};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
   shield_to_front.reset();
@@ -246,8 +292,9 @@ bool mission_view::step(bool const control, bool const zoom) {
     requested_throttle = throttle_request;
     instruments.set_value(0, requested_throttle);
   }
+  session->refresh_target_instruments(camera.mode==camera_mode::attached&&panel==cockpit_view::forward,true);
   session->update_player_interface();
-  session->exchange_weapon_instruments(*ratio);
+  session->exchange_weapon_instruments(ratio);
   for(auto &binding : weapon_controls) {
     auto const &state{session->player_weapon_controls().displays()[binding.row].state};
     auto const update_enabled{[&](size_t const index){
@@ -279,6 +326,7 @@ bool mission_view::step(bool const control, bool const zoom) {
   for(auto const id:hdd->take_sounds())audio.play(id);
   for(auto const &path:radio->take_speech())audio.speech(path);
   audio.flush_positions(player.body().movement().position);
+  present_pending=true;
   return true;
 }
 
@@ -321,6 +369,7 @@ void mission_view::draw() {
     auto const ground{effects.ground_flashes()};
     renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground, view);
   }
+  session->refresh_target_instruments(inside&&panel==cockpit_view::forward);
   if(inside) {
     auto const &player{session->player_actor()};
     auto const &movement{player.body().movement()};
@@ -360,6 +409,7 @@ void mission_view::draw() {
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
   if(!options_camera)radio->draw(frame);
+  present_view();
 }
 
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}
