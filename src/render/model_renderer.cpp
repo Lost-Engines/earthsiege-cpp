@@ -246,10 +246,33 @@ public:
 
 } // namespace
 
+int classify_model_bounds(part_header const &header, model_transform const &transform,
+  camera_projection const &projection, rectangle const &bounds, bool const rectangular_clip) {
+  auto point{transform_point(header.centre,transform)};
+  if(wrap_long(static_cast<int64_t>(point.y)+header.radius)<=projection.near_distance)return 0;
+  int32_t width{projection.centre.x};
+  if(width<0)width=wrap_long(static_cast<int64_t>(bounds.right)+bounds.left-projection.centre.x);
+  auto const cosine{model_cosine(direction_angle(1<<projection.perspective_shift,width))};
+  if(!cosine)throw std::domain_error{"model bound projection outside native range"};
+  auto const factor{(1<<24)/cosine};
+  int64_t const product{static_cast<int64_t>(factor)*header.radius};
+  uint32_t const rounding{(product==static_cast<int32_t>(product)?0U:~0U)^512U};
+  auto const radius{wrap_long((product+rounding)>>10)};
+  if(!point.y)point.y=1;
+  auto extent{wrap_long(static_cast<int64_t>(radius)*(int64_t{1}<<projection.perspective_shift)+(point.y>>1))/point.y};
+  if(extent<0)extent=wrap_long(-static_cast<int64_t>(extent));
+  auto const centre{project_point(point,projection,projection_source::model)};
+  rectangle box{wrap_long(static_cast<int64_t>(centre.x)-extent-3),wrap_long(static_cast<int64_t>(centre.y)-extent-3),
+    wrap_long(static_cast<int64_t>(centre.x)+extent+3),wrap_long(static_cast<int64_t>(centre.y)+extent+3)};
+  if(box.right<bounds.left||box.bottom<bounds.top||box.left>bounds.right||box.top>bounds.bottom)return 0;
+  return rectangular_clip&&box.left>bounds.left&&box.top>bounds.top&&box.right<bounds.right&&box.bottom<bounds.bottom?2:1;
+}
+
 model_renderer::model_renderer(framebuffer &buffer, palette const &palette_data) : target{buffer}, colours{palette_data}, texture_shades{make_texture_shades(palette_data)} {
 }
 
 void model_renderer::draw(model_part const &source, model_instance const &instance, model_transform const &object, model_view const &view, std::span<bitmap const> const textures, std::span<light const> const lights, std::span<model_attachment const> const attachments) {
+  if(view.cull_bounds&&!classify_model_bounds(source.header,compose_transforms(object,view.camera),view.projection,view.bounds,false))return;
   model_light_cache cache{lights,object,instance.transforms().size()};
   model_draw{target, colours, texture_shades, instance, object, view, textures, lights, instance.cell_frames(), attachments,cache}.part(source);
 }

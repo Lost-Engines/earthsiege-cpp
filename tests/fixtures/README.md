@@ -775,3 +775,14 @@ five resulting attachment positions (3i) and headings (H), after the sound/latch
 results. Inactive slots are retained but not asserted. This verifies the actual
 144dc placement output as well as gait sound thresholds; capture_footsteps.py
 supplies model lookup and sound submission only.
+
+model_bounds.bin (ESBOUND1) retains 4,096 unchanged original 529bc classifications
+for synthetic bounds, transforms, perspective scales, near planes and viewport
+rectangles. capture_model_bounds.py clears the original half-width factor cache
+between independent configurations.
+
+demo1_scene_frames.bin through demo4_scene_frames.bin reuse ESWPF001 for eleven
+complete original frames and three targeted scene regions. The cases and scope
+are recorded by export_replay_scene_frames.py and scene-regression.json beside
+each original capture. Full-frame coverage includes ground shadows, external
+view framing and scene lighting; regions cover sky and smoke-edge culling.

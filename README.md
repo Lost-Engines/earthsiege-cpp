@@ -124,3 +124,7 @@ with the original framing and status labels. Hidden clouds pause while the lower
 cockpit panel is open. Complete demo checks now include camera state.
 If a distorted texture polygon requests pixels outside its image, those pixels
 are safely omitted rather than reading unrelated memory.
+
+HERCs now draw their original ground shadows, following the animated feet/body
+and disappearing with destroyed parts. Scene lighting and smoke visibility also
+retain the original engine's quirks.

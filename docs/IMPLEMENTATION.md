@@ -1775,3 +1775,28 @@ match all captured states, label rasters and sound requests. Across 120 sampled
 full frames, largest RGB differences are now 159/285/108/444 pixels. The former
 large DEMO1/3 external-view discrepancies were these missing ground models.
 The full 249-test suite passes.
+
+
+## Original whole-object visibility
+
+Original 529bc rejects a model using its stored root centre/radius before
+drawing children. Its integer FOV expansion, near-plane test and three-pixel
+screen margin now match 4,096 independent original classifications. The native
+mission enables that check. Standalone component-raster tests retain their
+explicit original no-object-culling setup.
+
+All SMOKE.DTS outer bounds have radius zero. This makes the original hide a
+puff when its centre leaves the rectangle, even while its expanded bitmap would
+overlap the viewport. DEMO4 frame 1260 contained nine correctly positioned
+native smoke objects that the original rejected this way. Their lifetimes and
+positions were already correct; the missing object test caused the difference.
+
+Fourteen additional replay raster fixtures cover eleven complete 320x200 frames
+and three scene regions (sky, an animated ground shadow, and the smoke boundary).
+They are captured RGB output, never simulation input. The regions avoid the
+original software cursor. These selected exact comparisons do not imply that
+every frame is identical. Across all 120 sampled frames the largest remaining
+RGB differences are 159/285/108/137 pixels in demos 1–4.
+
+All 250 tests pass. A private SDL-window run also verifies pause freezing,
+options, status, quit cancellation and mission return with isolated saves.

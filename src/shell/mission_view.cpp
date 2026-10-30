@@ -533,6 +533,7 @@ void mission_view::draw() {
   if(shift)mask.translate(0,-shift);
   auto &colours{impact.snapshot().impact_palette?impact_colours:display_colours};
   model_view view;
+  view.cull_bounds=true;
   if(options_camera){view.bounds={0,0,319,110};view.projection.centre={160,50};}
   else if(!inside){view.bounds=external_view_artwork::bounds;view.projection.centre=external_view_artwork::centre;}
   if(inside) {

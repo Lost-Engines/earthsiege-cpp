@@ -15,6 +15,7 @@ struct model_view {
   rectangle bounds{0, 0, 319, 199};
   model_detail detail;
   std::optional<unsigned> weapon_detail_bias;
+  bool cull_bounds{false};
 };
 
 /// Replace a body placeholder using the body skeleton and independent weapon cells/textures
@@ -24,6 +25,10 @@ struct model_attachment {
   std::span<uint16_t const> cells;
   std::span<bitmap const> textures;
 };
+
+// Original 529bc: 0 outside, 1 intersects, 2 wholly inside a rectangular clip.
+int classify_model_bounds(part_header const &header, model_transform const &transform,
+  camera_projection const &projection, rectangle const &bounds, bool rectangular_clip);
 
 class model_renderer {
   framebuffer &target;
