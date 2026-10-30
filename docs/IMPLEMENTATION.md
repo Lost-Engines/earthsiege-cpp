@@ -1174,3 +1174,12 @@ would be wrong. Playback repeats the physical button-2 mode latch, camera-axis
 suppression, WCS override and backturn policy. Direct pointer fields remain
 zero; recorded mouse events go to the interface queue separately. These checks
 do not substitute for modal ownership or whole-game replay comparisons.
+
+### In-flight preferences reference components
+
+The original PRF_ALRT option policy matches 1,512 changes across 24 sequences,
+including the three radio modes, byte-wrapping detail controls and partial
+preference-file writes. Done saves slots 0–6 without committing the manager's
+saved/previous arrays. Its standalone artwork matches 96 complete original
+rasters, including striped detail bars, value labels and button states; the
+mouse cursor is presented separately. Integration into live F12/Alt+P follows.
