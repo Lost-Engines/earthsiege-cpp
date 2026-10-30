@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED CONFIG)
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
 add_library(earthsiege_core
+  src/render/palette_device.cpp
   src/shell/control_settings.cpp
   src/shell/controls_dialog.cpp
   src/shell/joystick_calibration.cpp
@@ -1288,4 +1289,10 @@ if(BUILD_TESTING)
  add_executable(cockpit_startup_test tests/cockpit_startup_test.cpp)
  target_link_libraries(cockpit_startup_test PRIVATE earthsiege_core)
  add_test(NAME cockpit_startup COMMAND cockpit_startup_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cockpit_startup.bin ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+endif()
+
+if(BUILD_TESTING)
+ add_executable(palette_device_test tests/palette_device_test.cpp)
+ target_link_libraries(palette_device_test PRIVATE earthsiege_core)
+ add_test(NAME palette_device COMMAND palette_device_test "${PROJECT_SOURCE_DIR}/tests/fixtures/palette_device.bin")
 endif()

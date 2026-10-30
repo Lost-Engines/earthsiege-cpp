@@ -22,7 +22,7 @@ public:
   int16_t displacement()const{return displacement_;}
   int cover_y(int32_t camera_height,camera_projection const &)const;
   void prepare_frame(random_state &);
-  void update_palette(uint32_t now,int cover_y);
+  bool update_palette(uint32_t now,int cover_y);
   void presented(uint32_t now);
   void drawn(uint32_t now);
   palette const &colours()const{return colours_;}

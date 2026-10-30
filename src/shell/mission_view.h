@@ -22,6 +22,7 @@
 #include "shell/cockpit_startup.h"
 #include "shell/cockpit_transition.h"
 #include "render/cockpit_pan.h"
+#include "render/palette_device.h"
 #include "shell/cockpit_displays.h"
 #include "shell/cockpit_radio.h"
 #include "shell/cockpit_hdd.h"
@@ -70,6 +71,8 @@ class mission_view {
   cockpit_view painted_panel()const;
   palette display_colours;
   palette impact_colours;
+  palette_device display_device;
+  std::optional<std::array<int32_t,3>> displayed_shields;
   cockpit_impact impact;
   std::optional<cockpit_startup> startup;
   bitmap lift_artwork;

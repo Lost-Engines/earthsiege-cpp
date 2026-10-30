@@ -1496,3 +1496,29 @@ status cancellations and 2,400 portrait transitions with an explicitly rejected
 PCM start, alongside the existing 2,400 ordinary portrait and 1,920 radio
 controller states. Whole-frame pixels, software cursor ownership and full audio
 event timing remain separate integration comparisons.
+
+
+## VGA palette device and upload ownership
+
+The display now separates the CPU palette from the hardware DAC. Original
+88684 reads the DAC mode and, in write mode, emits a zero before setting its
+new colour index. Since normal uploads finish on an RGB boundary, this clears
+the red component of the colour immediately after the preceding range. The
+next upload need not include that colour. This explains the grey-to-teal
+cockpit change after shield updates without changing the stored DPL palette.
+
+palette_device reproduces the original 27f74 palette identity, unioned dirty
+ranges and idle entry-zero upload. All 500 sequential original manager/DAC
+states agree, including complete palettes, overlapping edits, source changes
+and the next hardware write index. The original routines run unchanged in the
+reference capture; the harness supplies VGA ports and explicit resource edits.
+
+Integration preserves ownership: reflection changes 64–79; shield charge or
+balance changes and cockpit-page preparation upload 80–85; the startup fade
+uploads all 256 entries, including colours whose values are unchanged. Shield
+uploads happen on the first dirty repaint, not every frame. A passive DOSBox
+trace in analysis/tapes/replays/demo1-dac confirms the live upload ranges and
+callers. At sampled replay frame 300, the remaining 13 differing RGB pixels
+are the separately drawn software cursor. Other frames still contain radio
+clear-region, marker, cursor and clock differences; this is not a claim of
+whole-recording pixel equality.

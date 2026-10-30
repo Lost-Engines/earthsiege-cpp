@@ -22,10 +22,10 @@ void cockpit_startup::prepare_frame(random_state &random){
   int const below{displacement_},above{5-displacement_};
   displacement_=static_cast<int16_t>(displacement_+(above>below?std::min(above,amount):-std::min(below,amount)));
 }
-void cockpit_startup::update_palette(uint32_t now,int cover){
-  if(!lifting()||!fading_||cover<=-200)return;
+bool cockpit_startup::update_palette(uint32_t now,int cover){
+  if(!lifting()||!fading_||cover<=-200)return false;
   if(!fade_expiry_)fade_expiry_=now+120;
-  if(now>*fade_expiry_){fading_=false;return;}
+  if(now>*fade_expiry_){fading_=false;return false;}
   int const elapsed{120-static_cast<int>(*fade_expiry_-now)};
   for(size_t i{};i<256;++i){
     for(unsigned c{};c<3;++c)colours_.dac_colours[i][c]=static_cast<uint8_t>(source_.dac_colours[i][c]+((increments_[i][c]*elapsed)>>8));
@@ -33,6 +33,7 @@ void cockpit_startup::update_palette(uint32_t now,int cover){
   }
   // No final snap to the target: preserve the original fixed-point remainder.
   if(now==*fade_expiry_)fading_=false;
+  return true;
 }
 void cockpit_startup::presented(uint32_t now){
   if(!lifting()||finished_)return;

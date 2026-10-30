@@ -64,6 +64,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
   update_camera(camera, session->view_target());
   environment.initialize_palette(display_colours,camera.angles.x);
+  display_device.present(display_colours);
   session->on_cockpit_impact([this]{impact.hit(interface_ticks,impact_view(),ui_random);});
   // Original startup fills the lower/forward artwork on both page pairs.
   for(int x:{0,320})for(auto view:{cockpit_view::lower,cockpit_view::forward}){
@@ -235,7 +236,17 @@ void mission_view::present_view(){
     }
   }
   auto before{state.view};transitions.present();
-  auto after{transitions.snapshot().view};
+  auto const after_state{transitions.snapshot()};
+  auto after{after_state.view};
+  // Preparing a cockpit page invokes the shield's full painter (39178),
+  // even when its charge did not change. The upload belongs to the next present.
+  if(!state.prepared&&after_state.prepared&&after_state.pending!=2){
+    auto const &shield{session->player_actor().power().shields};
+    displayed_shields=std::array<int32_t,3>{static_cast<int32_t>(shield.front)*1024/shield.capacity,
+                                         static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
+    update_shield_colours(display_colours,(*displayed_shields)[0],(*displayed_shields)[1]);
+    display_device.changed(80,6);
+  }
   if(before==after)return;
   if(after==4)set_camera(camera_mode::orbit,impact_view().mode,false);
   else apply_cockpit_view(static_cast<cockpit_view>(after),false);
@@ -260,6 +271,7 @@ void mission_view::begin_startup(){
   // The odd 115-frame lift restores 2/0 for the first simulation frame.
   transitions.present();
   startup.emplace(display_colours);display_colours=startup->colours();
+  display_device.changed(32,16);display_device.changed(64,16);display_device.present(display_colours);
   startup_height=camera.position.z;
   clear_input();audio.play(33);
 }
@@ -274,13 +286,12 @@ void mission_view::finish_startup_frame(uint32_t palette_clock,uint32_t end_cloc
   if(!startup||!startup_draw_pending)return;
   startup_draw_pending=false;
   if(startup->lifting()){
-    startup->update_palette(palette_clock,startup_cover);
-    // The fade owns only these two uploaded banks. Shield colours retain
-    // their independent instrument owner.
-    for(unsigned first:{32U,64U})for(unsigned i{first};i<first+16;++i){
-      display_colours.dac_colours[i]=startup->colours().dac_colours[i];
-      display_colours.colours[i]=startup->colours().colours[i];
+    if(startup->update_palette(palette_clock,startup_cover)){
+      // 287a8 writes the complete fade range, including unchanged colours.
+      // That full DAC upload also restores any earlier pre-write side effect.
+      display_colours=startup->colours();display_device.changed(0,256);
     }
+    display_device.present(display_colours);
     startup_page=transitions.snapshot().draw_page*160;
     transitions.present();
     startup->presented(end_clock);
@@ -514,6 +525,7 @@ void mission_view::draw() {
     // projection centre alone leaves uncovered sky in an off-centre side view.
     auto const background_offset{inside?vec2<int32_t>{window.instrument_origin[0],window.instrument_origin[1]}:vec2<int32_t>{0,0}};
     environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,colours,detail,background_offset,impact.snapshot().flash,!startup);
+    if(!startup)display_device.changed(64,16);
     auto const objects{session->visible_objects(!inside)};
     auto &effects{session->visual_effects()};
     auto const ground{effects.ground_flashes()};
@@ -533,8 +545,14 @@ void mission_view::draw() {
     instruments.painted(0);
     throttle.draw_at(frame, static_cast<int32_t>(movement.gait_rate) * 1024 / speed_capacity, instruments.at(0).painted_thumb, x, y);
     auto const &shield{player.power().shields};
-    update_shield_colours(colours, static_cast<int32_t>(shield.front) * 1024 / shield.capacity,
-                         static_cast<int32_t>(shield.rear) * 1024 / shield.capacity);
+    std::array<int32_t,3> const shield_state{static_cast<int32_t>(shield.front)*1024/shield.capacity,
+                                           static_cast<int32_t>(shield.rear)*1024/shield.capacity,shield.balance};
+    // 392d0 dirties the instrument only when one of these three values changes;
+    // only its first repaint (391ee) uploads the six shield DAC entries.
+    if(displayed_shields!=shield_state){
+      displayed_shields=shield_state;update_shield_colours(colours,shield_state[0],shield_state[1]);
+      display_device.changed(80,6);
+    }
     shields.draw(frame, shield.balance, {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);
     for(auto const &binding : weapon_controls) {
       auto const &row{session->player_weapon_controls().displays()[binding.row]};
@@ -575,13 +593,13 @@ void mission_view::draw() {
     int const y{inside?cockpit.windows[static_cast<size_t>(painted)].instrument_origin[1]:0};
     surface.store(frame,page*160,y);
   }
-  if(!startup)present_view();
+  if(!startup){display_device.present(colours);present_view();}
 }
 
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}
 std::vector<int16_t> mission_view::take_audio(){return audio.take_output();}
 std::vector<framebuffer> mission_view::take_pan_frames(){return std::exchange(pan_frames,{});}
 framebuffer const &mission_view::image() const { return frame; }
-palette const &mission_view::colours() const { return impact.snapshot().impact_palette?impact_colours:display_colours; }
+palette const &mission_view::colours() const { return display_device.colours(); }
 
 } // namespace earthsiege

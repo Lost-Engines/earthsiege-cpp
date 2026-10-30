@@ -702,3 +702,11 @@ All seven state fields, including both page indices, are compared.
   66948 immediately before presentation; export_cockpit_pans.py first checks
   every captured indexed pixel against the prepared surface. The native test
   also drives all six transitions through mission_view.
+
+
+`palette_device.bin` (ESDAC001): 500 sequential executions of the unchanged
+27e98/27f74 palette manager and 88684 VGA upload from the CD executable.
+`tools/capture_palette_device.py` in earthsiege-reverse supplies palette edits,
+resource identity and the VGA device adapter, retaining all 768 DAC bytes and
+the next write index after every upload. Seeded inputs cover dirty-range unions,
+idle uploads, palette switches and the original extra DAC pre-write.
