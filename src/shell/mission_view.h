@@ -20,6 +20,7 @@
 #include "shell/pointer_controls.h"
 #include "shell/cockpit_impact.h"
 #include "shell/cockpit_transition.h"
+#include "render/cockpit_pan.h"
 #include "shell/cockpit_displays.h"
 #include "shell/cockpit_radio.h"
 #include "shell/cockpit_hdd.h"
@@ -63,6 +64,9 @@ class mission_view {
   cockpit_view panel{cockpit_view::forward};
   cockpit_transition transitions;
   bool present_pending{};
+  cockpit_surface surface;
+  std::vector<framebuffer> pan_frames;
+  cockpit_view painted_panel()const;
   palette display_colours;
   palette impact_colours;
   cockpit_impact impact;
@@ -131,6 +135,7 @@ public:
   void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { detail={horizon,cloud,ground,true}; }
   std::vector<int16_t> take_audio();
   std::optional<vec2<int32_t>> take_pointer_warp();
+  std::vector<framebuffer> take_pan_frames();
   framebuffer const &image() const;
   palette const &colours() const;
 };

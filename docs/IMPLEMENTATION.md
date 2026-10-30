@@ -1344,3 +1344,40 @@ still needs the same suspended-frame integration.
 
 Validation: complete rebuild and all 240 CTest checks passed (35.51 seconds),
 including all four terminal-state and mission-return comparisons.
+
+### Original cockpit scrolling
+
+The original camera retains its angles for F9/F10; side panels extend the
+forward image plane through their authored projection origins. A new original
+24-frame camera capture confirms that the native resource reader's existing
+projection rule is correct.
+
+The retained 640x400 cockpit surface and 22904 scanout path now reproduce all
+213 captured scrolling frames across six directions. The original cursor was
+disabled through 66948 before each captured presentation so this comparison
+covers the scrolling surface independently of its cursor overlay. Downward
+scrolling advances five pixels at a time, overshoots the authored 197-pixel
+offset, then corrects it; returning upward does not overshoot. Horizontal
+scrolling advances ten pixels and retains its final repeated origin.
+
+Live drawing now prepares the incoming panel before completing the transition,
+retains both page images and exposes the intermediate frames to SDL. World
+simulation remains suspended while they are presented; the sound clock keeps
+running. The host uses 70 presentations per second for the VGA scroll steps.
+The exact wall-clock cadence on different original hardware configurations,
+reticle overlays and complete scene equality are not implied by the isolated
+surface comparison. Existing complete simulation replays remain unchanged.
+
+Validation: all 241 CTest checks passed (50.46 seconds), including all four
+complete simulation replays and all six mission_view pan directions.
+
+The live side-view smoke check exposed a separate environment-call error:
+mission_view supplied a zero layout offset to the background owner. Original
+25b68 passes afa9c/afaa0, the VUE instrument origin, to 26264 as well as using
+the shifted projection centre. The native call now passes that authored origin,
+fixing the uncovered sky on side panels. Existing environment component tests
+already exercise the separate offset parameter; the missing link was its caller.
+
+After the environment caller correction, all 241 tests passed again (27.04
+seconds). A private X11/SDL smoke run exercised all six transitions; intermediate
+and settled side/lower views were inspected, including corrected sky coverage.

@@ -300,6 +300,21 @@ auto main(int argc, char *argv[])->int try {
       // Scene drawing also consumes original per-frame visual state. Presenting
       // a retained frame must not run those consumers for a second time.
       if(scene_dirty){scene->draw();scene_dirty=false;}
+      auto pans{scene->take_pan_frames()};
+      if(display&&!pans.empty()){
+        uint64_t const start{SDL_GetTicks64()};
+        for(size_t i{};i<pans.size();++i){
+          display->present(pans[i],scene->colours());
+          uint64_t const deadline{start+(i+1)*1000/70};
+          auto tick{SDL_GetTicks64()};
+          if(tick<deadline)SDL_Delay(static_cast<uint32_t>(deadline-tick));
+          tick=SDL_GetTicks64();
+          scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(tick-previous,UINT32_MAX)));
+          previous=tick;
+          if(sound)sound->queue(scene->take_audio());
+          SDL_PumpEvents();
+        }
+      }
       pending=0;
     } else {
       while(pending>=25){menu.advance(3);auto samples{menu.take_audio()};if(sound)sound->queue(samples);pending-=25;}

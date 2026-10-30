@@ -104,6 +104,8 @@ Options / Controls now supports the original joystick profiles, pedals, mouse se
 
 The bundled DATA/KEYJOY.CFG retains the original pitch/turn choices. Malformed tokens are reported safely instead of reproducing the original out-of-bounds table read. SDL calibration uses separate host-joy files so it cannot be confused with DOS gameport counts. See docs/IMPLEMENTATION.md for the host axis and throttle mappings.
 
+Side and lower cockpit views now scroll between panels using the original pixel steps. Music and sound continue during the scroll.
+
 Live missions now use the original elapsed-time pacing and bounded simulation
 steps. Audio continues during mission dialogs; losing window focus suspends it.
 

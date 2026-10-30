@@ -679,3 +679,10 @@ states from capture_cockpit_transition_policy.py. The original request,
 draw and presentation routines execute without replacing transition code;
 only the existing resource/VGA/retrace transport is supplied by NativeScene.
 All seven state fields, including both page indices, are compared.
+
+- cockpit_pan.bin: six original prepared 640x400 VGA surfaces, authored VUE
+  offsets and 213 scanout-origin/pixel-CRC pairs from unchanged 22904/5279d
+  execution. capture_cockpit_pans.py disables the mouse cursor using original
+  66948 immediately before presentation; export_cockpit_pans.py first checks
+  every captured indexed pixel against the prepared surface. The native test
+  also drives all six transitions through mission_view.

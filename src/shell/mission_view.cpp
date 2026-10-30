@@ -63,6 +63,11 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   update_camera(camera, session->view_target());
   environment.initialize_palette(display_colours,camera.angles.x);
   session->on_cockpit_impact([this]{impact.hit(interface_ticks,impact_view(),ui_random);});
+  // Original startup fills the lower/forward artwork on both page pairs.
+  for(int x:{0,320})for(auto view:{cockpit_view::lower,cockpit_view::forward}){
+    framebuffer artwork;artwork.clear(63);cockpit.draw(artwork,view);
+    surface.store(artwork,x,cockpit.windows[static_cast<size_t>(view)].instrument_origin[1]);
+  }
   audio.play(19);
   clock.refresh();
   lamps.advance(0);
@@ -94,8 +99,21 @@ cockpit_impact_view mission_view::impact_view()const{
  return {.mode{camera.mode==camera_mode::attached?static_cast<unsigned>(panel):4},
          .origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin}};
 }
+cockpit_view mission_view::painted_panel()const{
+ auto const &state{transitions.snapshot()};
+ if(state.prepared)switch(state.pending){
+  case 0:return cockpit_view::lower;
+  case 1:return cockpit_view::forward;
+  case 3:return static_cast<cockpit_view>(state.saved_view);
+  case 4:return cockpit_view::right;
+  case 5:return cockpit_view::left;
+  case 6:return cockpit_view::forward;
+  default:break;
+ }
+ return panel;
+}
 std::array<int32_t,2> mission_view::instrument_origin()const{
- auto origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+ auto origin{cockpit.windows[static_cast<size_t>(painted_panel())].instrument_origin};
  if(camera.mode==camera_mode::attached)origin[1]+=impact.snapshot().displacement;
  return origin;
 }
@@ -203,7 +221,14 @@ void mission_view::apply_cockpit_view(cockpit_view const view,bool reset_input) 
 void mission_view::present_view(){
   if(!present_pending||options_camera)return;
   present_pending=false;
-  auto before{transitions.snapshot().view};transitions.present();
+  auto const state{transitions.snapshot()};
+  if(state.prepared){
+    for(auto const &position:cockpit_pan_path(state.pending,state.view,cockpit.windows)){
+      framebuffer image;surface.sample(image,state.draw_page*160+position.x,position.y);
+      pan_frames.push_back(std::move(image));
+    }
+  }
+  auto before{state.view};transitions.present();
   auto after{transitions.snapshot().view};
   if(before==after)return;
   if(after==4)set_camera(camera_mode::orbit,impact_view().mode,false);
@@ -358,9 +383,11 @@ void mission_view::end_options(){
   camera=*options_camera;options_camera.reset();clear_input();
 }
 void mission_view::draw() {
+  pan_frames.clear();
   frame.clear();
+  auto const painted{painted_panel()};
   bool const inside{camera.mode == camera_mode::attached};
-  auto const &window{cockpit.windows[static_cast<size_t>(panel)]};
+  auto const &window{cockpit.windows[static_cast<size_t>(painted)]};
   auto const shift{inside?impact.snapshot().displacement:0};
   auto mask{window.mask};
   if(shift)mask.translate(0,-shift);
@@ -368,14 +395,17 @@ void mission_view::draw() {
   model_view view;
   if(options_camera){view.bounds={0,0,319,110};view.projection.centre={160,50};}
   if(inside) {
-    cockpit.draw(frame, panel,shift);
+    cockpit.draw(frame, painted,shift);
     auto const centre{window.projection_centre()};
     view.projection.centre = {centre[0], centre[1]};
     view.bounds = window.bounds;
   }
   {
     scoped_framebuffer_clip clip{frame, inside ? &mask : nullptr};
-    environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,colours,detail,{0,0},impact.snapshot().flash);
+    // 25b68 passes the cockpit's authored layout offset to 26264. The
+    // projection centre alone leaves uncovered sky in an off-centre side view.
+    auto const background_offset{inside?vec2<int32_t>{window.instrument_origin[0],window.instrument_origin[1]}:vec2<int32_t>{0,0}};
+    environment.draw(frame,camera.position,camera.angles,view.projection,view.bounds,ui_random,colours,detail,background_offset,impact.snapshot().flash);
     auto const objects{session->visible_objects(!inside)};
     auto &effects{session->visual_effects()};
     auto const ground{effects.ground_flashes()};
@@ -421,11 +451,18 @@ void mission_view::draw() {
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
   }
   if(!options_camera)radio->draw(frame);
+  if(!options_camera){
+    auto const state{transitions.snapshot()};
+    int const page{state.prepared&&state.pending>=4?state.other_page:state.draw_page};
+    int const y{inside?cockpit.windows[static_cast<size_t>(painted)].instrument_origin[1]:0};
+    surface.store(frame,page*160,y);
+  }
   present_view();
 }
 
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp(){return hdd->take_warp();}
 std::vector<int16_t> mission_view::take_audio(){return audio.take_output();}
+std::vector<framebuffer> mission_view::take_pan_frames(){return std::exchange(pan_frames,{});}
 framebuffer const &mission_view::image() const { return frame; }
 palette const &mission_view::colours() const { return impact.snapshot().impact_palette?impact_colours:display_colours; }
 
