@@ -168,7 +168,7 @@ auto main(int argc, char *argv[])->int try {
       "Space fires; 1–9 or W/Alt+W selects weapons; Tab selects targets; Enter confirms tactical orders; R toggles radar.\n"
       "Hold right mouse to aim; both buttons centre aim. Backspace recentres.\n"
       "B changes weapon groups; Alt+1–9 edits a group; +/- adjusts charge; Z restores charge settings.\n"
-      "This inspection view includes mission AI and combat; the cockpit is still being integrated.\n";
+      "This is a live mission inspection, not playback of the recorded demo.\n";
   }
   std::unique_ptr<earthsiege::window> display;
   if(!headless){display = std::make_unique<earthsiege::window>(scale);SDL_StartTextInput();}
@@ -180,6 +180,8 @@ auto main(int argc, char *argv[])->int try {
   auto applied_preferences{menu.settings().current()};
   bool scene_dirty{scene!=nullptr};
   bool running{true};
+  bool leave_mission{};
+  bool modal_command_pending{};
   bool focused{true};
   unsigned int frames{};
   uint64_t previous{display ? SDL_GetTicks64() : 0};
@@ -191,17 +193,19 @@ auto main(int argc, char *argv[])->int try {
   }};
   auto const respond{[&](int response){
     int const message{alert->message()};bool const ending{alert->exits_mission(response)};alert.reset();
-    if(sound){sound->clear();sound->pause(!focused);}
     if(message==1 && response==1){running=false;return;}
-    if(scene && message>1 && ending){
-      if(!inspect_demo)menu.mission_return(scene->results(),scene->mission_variables(),static_cast<int16_t>(std::time(nullptr)&127));
-      scene.reset();pending=0;
-    }
+    // The callback may be inside step_player. Release the scene only after
+    // that original partial-frame exit has unwound to the host loop.
+    if(scene && message>1 && ending)leave_mission=true;
   }};
-  while(running) {
+  auto const poll_events{[&]{
+    // Leave subsequent host events queued until the mission has reached its
+    // modal call site. A quick P/Escape pair must pause and resume, not let
+    // Escape act on the underlying mission before Pause has opened.
+    if(modal_command_pending&&!alert&&!options)return;
     SDL_Event event{};
     while(display && display->poll(event)) {
-      if(event.type == SDL_QUIT) running = false;
+      if(event.type == SDL_QUIT){running=false;return;}
       if(event.type == SDL_WINDOWEVENT) {
         if(event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
           focused = false;
@@ -221,6 +225,7 @@ auto main(int argc, char *argv[])->int try {
           if(event.type==SDL_MOUSEBUTTONDOWN)options->mouse_down(event.button.x,event.button.y,right);
           else options->mouse_up(event.button.x,event.button.y,right);
         }
+        if(options->done())return;
         continue;
       }
       if(alert) {
@@ -228,6 +233,7 @@ auto main(int argc, char *argv[])->int try {
           if(auto scan{command(event.key.keysym.sym,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})if(auto response{alert->input(*scan,event.key.keysym.sym==SDLK_SPACE,false,menu.settings().current()[10]!=0).response})respond(*response);
         } else if(focused && event.type==SDL_MOUSEBUTTONDOWN && event.button.button==SDL_BUTTON_LEFT)alert->mouse_down(event.button.x,event.button.y);
         else if(focused && event.type==SDL_MOUSEBUTTONUP && event.button.button==SDL_BUTTON_LEFT)if(auto response{alert->mouse_up(event.button.x,event.button.y)})respond(*response);
+        if(!alert)return;
         continue;
       }
       if(event.type==SDL_TEXTINPUT && !scene){menu.text_input(event.text.text);continue;}
@@ -235,11 +241,7 @@ auto main(int argc, char *argv[])->int try {
         auto const key{event.key.keysym.sym};
         if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{command(key,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})menu.key(*scan);}
         else if(focused) {
-          if(key==SDLK_ESCAPE && inspect_demo){scene.reset();if(sound)sound->clear();continue;}
-          if((key==SDLK_ESCAPE || key==SDLK_q) && (event.key.keysym.mod&KMOD_CTRL)){open_alert(1);continue;}
-          if(key==SDLK_F12||(key==SDLK_p&&(event.key.keysym.mod&KMOD_ALT))){options=menu.flight_options();scene->begin_options();scene_dirty=true;pending=0;continue;}
-          if(key==SDLK_p && !(event.key.keysym.mod&KMOD_ALT)){open_alert(0);continue;}
-          if(key==SDLK_q){int const status{static_cast<int>(scene->status(true))};open_alert(status<0?5:status);continue;}
+          if(key==SDLK_ESCAPE && inspect_demo && !(event.key.keysym.mod&(KMOD_CTRL|KMOD_ALT))){scene.reset();if(sound)sound->clear();continue;}
           if(key==SDLK_F1 && (event.key.keysym.mod&KMOD_CTRL))scene->change_cockpit_view(earthsiege::cockpit_view::forward);
           if(key==SDLK_F2 && (event.key.keysym.mod&KMOD_CTRL))scene->change_camera(earthsiege::camera_mode::orbit);
           if(key==SDLK_F3 && (event.key.keysym.mod&KMOD_CTRL))scene->change_camera(earthsiege::camera_mode::free);
@@ -249,7 +251,12 @@ auto main(int argc, char *argv[])->int try {
         if(focused && (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat) {
           bool const alt{(event.key.keysym.mod & KMOD_ALT)!=0};
           if(auto const key{held_key(event.key.keysym.sym)}) scene->key(*key, event.type == SDL_KEYDOWN, alt);
-          if(event.type==SDL_KEYDOWN)if(auto const code{command(event.key.keysym.sym,alt,(event.key.keysym.mod & KMOD_CTRL)!=0)})scene->command(*code);
+          if(event.type==SDL_KEYDOWN)if(auto const code{command(event.key.keysym.sym,alt,(event.key.keysym.mod & KMOD_CTRL)!=0)}){
+            scene->command(*code);
+            if(*code==88||*code==0x219||*code==25||*code==0x401||*code==0x410||*code==16){
+              modal_command_pending=true;return;
+            }
+          }
         }
         if(focused && event.type==SDL_MOUSEMOTION) scene->mouse_position(event.motion.x,event.motion.y);
         if(focused && (event.type==SDL_MOUSEBUTTONDOWN || event.type==SDL_MOUSEBUTTONUP)) {
@@ -262,6 +269,8 @@ auto main(int argc, char *argv[])->int try {
         if(event.type == SDL_MOUSEBUTTONUP && (event.button.button == SDL_BUTTON_LEFT||event.button.button == SDL_BUTTON_RIGHT)) menu.mouse_up(event.button.x,event.button.y,event.button.button==SDL_BUTTON_RIGHT);
       }
     }
+  }};
+  auto const update_devices_and_dialogs{[&]{
     if(focused&&sticks){
       auto const &p{menu.settings().current()};auto raw{sticks->poll(p[7],p[9]!=0)};
       if(alert){if(auto response{alert->devices(raw,p[10]!=0)})respond(*response);}
@@ -277,6 +286,56 @@ auto main(int argc, char *argv[])->int try {
     }else if(!scene){
       if(auto const warp{menu.take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
     }
+  }};
+  // Run a modal at the original simulation call site. SDL still receives
+  // events and the audio clock runs, but the suspended mission frame cannot
+  // advance until its response is known.
+  auto const run_modal{[&]{
+    while(running&&(alert||options)){
+      poll_events();
+      update_devices_and_dialogs();
+      auto const now{SDL_GetTicks64()};
+      auto const elapsed{focused?now-previous:0};
+      previous=now;pending=0;
+      scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed,UINT32_MAX)));
+      if(sound)sound->queue(scene->take_audio());
+      if(!running||(!alert&&!options))break;
+      if(focused&&options){
+        if(scene->step_options())scene_dirty=true;
+        if(scene_dirty){scene->draw();scene_dirty=false;}
+      }
+      alert_frame=scene->image();
+      if(alert)alert->draw(alert_frame);else options->draw(alert_frame);
+      display->present(alert_frame,scene->colours());
+      ++frames;
+      if(frame_limit&&frames>=frame_limit)running=false;
+      SDL_Delay(8);
+    }
+    return !running||leave_mission;
+  }};
+  earthsiege::mission_dialog_handlers const dialogs{
+    .command{[&](uint16_t code){
+      using enum earthsiege::mission_command_result;
+      if(code!=88&&code!=0x219&&code!=25&&code!=0x401&&code!=0x410&&code!=16)return unhandled;
+      modal_command_pending=false;
+      if(code==88||code==0x219){
+        options=menu.flight_options();scene->begin_options();scene_dirty=true;pending=0;
+      }else if(code==25)open_alert(0);
+      else if(code==0x401||code==0x410)open_alert(1);
+      else if(code==16){
+        auto const status{static_cast<int>(scene->status(true))};
+        open_alert(status<0?5:status);
+      }else return unhandled;
+      return run_modal()?exit_mission:handled;
+    }},
+    .outcome{[&](earthsiege::mission_status status){
+      open_alert(static_cast<int>(status));return run_modal();
+    }}
+  };
+  while(running){
+    poll_events();
+    if(!running)break;
+    update_devices_and_dialogs();
     if(menu.quit_requested())running=false;
     if(menu.ready_to_launch()) {
       inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene_dirty=true;applied_preferences=menu.settings().current();pending=0;
@@ -292,9 +351,17 @@ auto main(int argc, char *argv[])->int try {
       if(focused&&options&&scene->step_options())scene_dirty=true;
       if(focused&&!alert&&!options){
         auto const modifiers{display ? SDL_GetModState() : KMOD_NONE};
-        if(scene->step((modifiers & KMOD_CTRL)!=0,(modifiers & KMOD_SHIFT)!=0))scene_dirty=true;
+        if(scene->step((modifiers & KMOD_CTRL)!=0,(modifiers & KMOD_SHIFT)!=0,
+                       display?dialogs:earthsiege::mission_dialog_handlers{}))scene_dirty=true;
+        if(!running)break;
+        if(leave_mission){
+          if(!inspect_demo)menu.mission_return(scene->results(),scene->mission_variables(),static_cast<int16_t>(std::time(nullptr)&127));
+          scene.reset();leave_mission=false;pending=0;
+          if(sound)sound->clear();
+          continue;
+        }
         if(auto const warp{scene->take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
-        if(auto message{scene->take_mission_prompt()})open_alert(static_cast<int>(*message));
+        if(!display)if(auto message{scene->take_mission_prompt()})open_alert(static_cast<int>(*message));
       }
       auto const samples{scene->take_audio()};if(sound)sound->queue(samples);
       // Scene drawing also consumes original per-frame visual state. Presenting

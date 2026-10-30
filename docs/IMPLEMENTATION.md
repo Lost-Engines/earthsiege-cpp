@@ -1381,3 +1381,23 @@ already exercise the separate offset parameter; the missing link was its caller.
 After the environment caller correction, all 241 tests passed again (27.04
 seconds). A private X11/SDL smoke run exercised all six transitions; intermediate
 and settled side/lower views were inspected, including corrected sky coverage.
+
+
+### Live SDL modal suspension
+
+The live host now opens Pause, mission status, program-exit confirmation and
+flight options inside the same player/outcome callbacks verified by the full
+recordings. World simulation stays suspended at that call site while SDL and
+the audio clock continue. Options retains its original rotating camera preview.
+Leaving a mission releases its owner only after the suspended frame unwinds;
+continuing does not clear the sound queue.
+
+Host input stops at a pending modal command until its callback opens, preserving
+later queued keys for that dialog. In particular, a rapid P/Escape pair cannot
+send Escape to the underlying inspector before Pause appears. Closing a modal
+also ends that event poll before another event can destroy its suspended owner.
+
+The private X11 smoke script tools/check_native_modals.py verifies a retained
+pause image, options entry/return, mission-status cancellation, Ctrl+Escape
+cancellation, a rapid Pause/Escape pair and confirmed return to the main menu.
+Its screenshots are host integration evidence, not original pixel comparisons.

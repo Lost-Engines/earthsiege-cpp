@@ -240,7 +240,7 @@ void mission_view::advance_time(unsigned milliseconds){
   auto const ticks{static_cast<unsigned>(elapsed_milliseconds*120/1000-before)};
   pacing.advance(ticks);audio.advance(ticks);
 }
-bool mission_view::step(bool const control, bool const zoom) {
+bool mission_view::step(bool const control, bool const zoom,mission_dialog_handlers const &dialogs) {
   auto const ratio{pacing.take()};
   if(!ratio)return false;
   if(paused) { pointer_events.clear(); return false; }
@@ -259,7 +259,7 @@ bool mission_view::step(bool const control, bool const zoom) {
   input.fire=packet.buttons[0]||(control&&zoom);input.enter=packet.buttons[2];input.released=packet.buttons[3];
   input.release_action=static_cast<control_release_action>(routing.mode);
   if(!commands.empty()){input.command=commands.front();commands.pop_front();}
-  return step_input(input,packet.hat,*ratio,routing.external);
+  return step_input(input,packet.hat,*ratio,routing.external,dialogs);
 }
 void mission_view::prepare_frame(uint32_t now){
   audio.engine(camera.mode!=camera_mode::attached);

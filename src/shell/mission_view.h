@@ -124,7 +124,7 @@ public:
   void change_camera(camera_mode mode);
   void change_cockpit_view(cockpit_view view);
   void advance_time(unsigned milliseconds);
-  bool step(bool control, bool zoom);
+  bool step(bool control, bool zoom,mission_dialog_handlers const &dialogs={});
   /// Recorded axes are already device-mapped. The host supplies the separate 60 Hz presentation clock.
   bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false,mission_dialog_handlers const &dialogs={});
   mission_session const &simulation()const{return *session;}
