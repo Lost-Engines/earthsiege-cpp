@@ -6,6 +6,24 @@
 #include "resources/cockpit.h"
 
 namespace earthsiege {
+/// Separate original page clocks; a full restore occupies both VGA pages.
+struct hdd_refresh_state {
+  uint32_t map_deadline{30},damage_deadline{30};
+  bool blink_phase{true};
+  unsigned int restore_pages{2};
+  void prepare() { restore_pages=2; }
+  bool advance(bool map_page,uint32_t ticks) {
+    bool const partial{restore_pages==0};
+    if(restore_pages)--restore_pages;
+    if(map_page&&!partial)return false;
+    auto &deadline{map_page?map_deadline:damage_deadline};
+    if(ticks<=deadline)return false;
+    deadline=ticks+30;
+    if(map_page)blink_phase=!blink_phase;
+    return true;
+  }
+};
+
 /// Lower cockpit MAP/DAMAGE pages and original single-wingmate commands.
 class cockpit_hdd {
   random_state &random;
@@ -31,11 +49,11 @@ class cockpit_hdd {
   size_t map_id;
   int direction_art{},selection_style{},page{},mode{},scroll{},subject{};
   int mouse_x{},mouse_y{},origin_x{},origin_y{};
-  bool visible{},dirty{true};
+  bool visible{},dirty{true},map_dirty{true};
   std::optional<size_t> pending_button;
   void execute_button(size_t,mission_session &,pointer_controls &);
-  uint32_t deadline{30};
-  bool blink_phase{};
+  void select_page(int value,pointer_controls &input);
+  hdd_refresh_state refresh;
   unsigned int prompt_refreshes{};
   std::optional<size_t> selected_actor;
   std::optional<size_t> prompt;
@@ -58,5 +76,6 @@ public:
   std::vector<uint16_t> take_sounds();
   std::optional<vec2<int32_t>> take_warp();
   tactical_control_state const &state()const;
+  hdd_refresh_state const &refresh_state()const { return refresh; }
 };
 } // namespace earthsiege

@@ -67,6 +67,7 @@ void missile_display::draw(rectangle const &bounds, missile_camera_frame const &
   scoped_framebuffer_clip clipped{target, &mask};
   model_view view;
   view.bounds = bounds;
+  view.cull_bounds = true;
   view.projection.perspective_shift = 7; view.projection.near_distance = 128;
   view.projection.centre = {bounds.left + ((bounds.right - bounds.left) >> 1), bounds.top + ((bounds.bottom - bounds.top) >> 1)};
   world_environment environment;

@@ -107,7 +107,7 @@ void cockpit_displays::paint(mfd_page const page, mission_session &session, came
       effects.live_explosions().for_each([&](size_t id,live_explosion const &object){explosions.push_back({id,vec3<int32_t>{object.state.position}});});
       std::ranges::reverse(explosions); // The original camera searches oldest-first.
       auto const image{tracker.advance(missiles,explosions)};
-      auto const objects{session.visible_objects()}; auto const ground{effects.ground_flashes()};
+      auto const objects{session.visible_objects()}; auto const ground{session.ground_models()};
       missile.draw(bounds,image,session.camera_ready(),session.player_sensors().hud_locked,ticks,{},objects,&effects.lights(),ground);
       break;
     }

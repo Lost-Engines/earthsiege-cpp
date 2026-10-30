@@ -1858,3 +1858,38 @@ original ground frames and sampler bitmaps, covering that replay pose and
 neighbouring positive/negative rounding boundaries at several headings.
 All agree. The complete sampled frame now differs by only three RGB pixels;
 that count includes other scene elements and is not a whole-frame equality claim.
+
+
+## Lower-panel refresh ownership
+
+The original MAP and DAMAGE pages keep independent 30-tick deadlines
+(3f578, map +149; 3cd28, owner +4ed). MAP starts with blink phase one.
+A page selection requests a two-page VGA restore; the map's timed update resumes
+after those two paints. DAMAGE still checks its own timer during restoration.
+Hidden pages retain their deadlines.
+
+Map pixels also have their own dirty gate (94868). Selecting a wingmate or
+changing command text does not immediately redraw contacts. Panning, zooming,
+a destination pick, full restoration or the next map deadline does. Treating
+every label change as a map redraw incorrectly hides the selected icon early.
+
+capture_hdd_refresh.py executes 274 sequential original states with repeated
+and alternating page selections, exact deadline boundaries and irregular clock
+steps. The native integrated HDD agrees on both deadlines and blink phase.
+The fourteen original assembled-page raster checks also pass. The paused
+snapshot capture explicitly uses the constructor blink phase; its retained
+phase is not assumed to describe a newly constructed interface.
+
+## Missile-camera ground pass
+
+Original missile page 364f8 calls the ordinary world entry 21008, including
+its near-ground attachment pool before scene sorting. The native caller now
+passes HERC shadows as well as explosion ground effects, and enables the
+original model-bound culling used by that scene entry.
+
+capture_missile_display.py --ground adds five original attachment objects,
+using the three valid FLAT shapes, at near, intermediate and cutoff distances.
+All 94 complete indexed frames and retained ground positions match; 41 frames
+exercise 165 original ground draw calls. Idle and explosion-flash pages correctly
+leave those positions untouched. This supplements the existing 94 missile
+camera/tracker cases without changing their reference data.

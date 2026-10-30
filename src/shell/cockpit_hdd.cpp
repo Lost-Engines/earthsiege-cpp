@@ -56,13 +56,16 @@ void cockpit_hdd::select_subject(int const direction,mission_session const &sess
 void cockpit_hdd::pick(mission_session &session,int32_t const range){
   auto const [p,actor]{controller.pick(mouse_x,mouse_y,map_bounds,map_state.contacts)};
   if(controller.state().requires_destination && controller.state().wingmate>=0){
-    if(controller.destination(p,actor,map_state.contacts,session.player().movement().position,range)){sounds.push_back(20);prompt.reset();}
+    if(controller.destination(p,actor,map_state.contacts,session.player().movement().position,range)){sounds.push_back(20);prompt.reset();map_dirty=true;}
   }else if(actor){auto const it{std::ranges::find(wingmates,*actor)};if(it!=wingmates.end())select_wingmate(static_cast<int>(it-wingmates.begin()),session);}
-  dirty=true;
+  dirty=map_dirty=true;
 }
 void cockpit_hdd::pointer(int const x,int const y){mouse_x=x;mouse_y=y;}
+void cockpit_hdd::select_page(int const value,pointer_controls &input){
+  page=value;dirty=map_dirty=true;refresh.prepare();enable(input);
+}
 void cockpit_hdd::execute_button(size_t i,mission_session &session,pointer_controls &input){
-    if(i<2){page=static_cast<int>(i);dirty=true;enable(input);return;}
+    if(i<2){select_page(static_cast<int>(i),input);return;}
     switch(i){
       case 2:if(page==0)controller.pan(0,1);else{mode=(mode+1)%3;scroll=0;}break;
       case 3:if(page==0)controller.pan(0,-1);else{mode=(mode+2)%3;scroll=0;}break;
@@ -70,11 +73,11 @@ void cockpit_hdd::execute_button(size_t i,mission_session &session,pointer_contr
       case 5:if(page==0)controller.pan(1,0);else select_subject(1,session);break;
       case 6:if(page==0)controller.zoom(true);break;
       case 7:if(page==0)controller.zoom(false);break;
-      case 10:case 11:case 12:page=0;enable(input);select_wingmate(static_cast<int>(i-10),session);break;
+      case 10:case 11:case 12:if(page!=0)select_page(0,input);select_wingmate(static_cast<int>(i-10),session);break;
       case 13:if(page==0)transmit(session);break;
       case 14:controller.cancel();selected_actor.reset();prompt.reset();break;
       default:break;
-    }dirty=true;
+    }if(page==0 && i>=2 && i<=7)map_dirty=true;dirty=true;
 }
 bool cockpit_hdd::activate(control_activation const &action,mission_session &session,pointer_controls &input,int32_t const range){
   for(size_t i{};i<button_ids.size();++i)if(action.index==button_ids[i]){
@@ -88,12 +91,12 @@ bool cockpit_hdd::activate(control_activation const &action,mission_session &ses
   return false;
 }
 bool cockpit_hdd::command(uint16_t const code,mission_session &session,pointer_controls &input,int32_t const range){
-  if(code==65 || code==66){page=code-65;dirty=true;enable(input);return true;}
+  if(code==65 || code==66){select_page(code-65,input);return true;}
   if(!visible)return false;
   auto const button{[&](size_t i){return activate({button_ids[i],1},session,input,range);}};
   switch(code){case 72:return button(2);case 80:return button(3);case 75:return button(4);case 77:return button(5);
     case 2:case 3:case 4:return button(code+8);case 13:case 78:return button(7);case 12:case 74:return button(6);
-    case 31:case 23:case 17:page=1;mode=code==31?0:code==23?1:2;scroll=0;dirty=true;enable(input);return true;default:break;}
+    case 31:case 23:case 17:select_page(1,input);mode=code==31?0:code==23?1:2;scroll=0;return true;default:break;}
   if(page==1)return false;
   if(failure.failed)return false;
   constexpr std::array<uint16_t,8> keys{32,30,33,20,34,24,46,18};auto const it{std::ranges::find(keys,code)};
@@ -103,7 +106,7 @@ bool cockpit_hdd::command(uint16_t const code,mission_session &session,pointer_c
     case 14:return button(14);
     case 52:if(controller.state().command>=10)choose((controller.state().command-9)%8+10,false);return true;
     case 51:if(controller.state().command>=10)choose((controller.state().command-3)%8+10,false);return true;
-    case 76:controller.recenter();dirty=true;return true;
+    case 76:controller.recenter();dirty=map_dirty=true;return true;
     case 28:{
       auto const &s{controller.state()};if(!s.requires_destination)return true;
       int const saved_x{mouse_x},saved_y{mouse_y};
@@ -116,7 +119,7 @@ bool cockpit_hdd::command(uint16_t const code,mission_session &session,pointer_c
     case 15:{
       auto const &s{controller.state()};if(s.wingmate<0 || (s.command!=11 && s.command!=12))return true;
       selected_actor=cycle_tactical_target(map_state.contacts,s.camera,map_bounds,session.player().movement().position,s.command==11?1:0,selected_actor);
-      if(selected_actor){controller.designate(*selected_actor);sounds.push_back(26);prompt.reset();}
+      if(selected_actor){controller.designate(*selected_actor);sounds.push_back(26);prompt.reset();map_dirty=true;}
       else sounds.push_back(27);
       dirty=true;return true;
     }
@@ -124,7 +127,8 @@ bool cockpit_hdd::command(uint16_t const code,mission_session &session,pointer_c
   }
 }
 void cockpit_hdd::paint(mission_session &session){
-  cache.fill(painted,63);
+  if(page!=0 || map_dirty)cache.fill(painted,63);
+  else cache.fill(translate(command_bounds,-origin_x,-origin_y),63);
   if(page==1){auto selected{subject==0?std::optional<size_t>{session.player_id()}:subject==4?session.target_selection():std::optional<size_t>{wingmates.at(static_cast<size_t>(subject-1))}};
     auto s{session.full_damage(selected)};s.mode=mode;s.scroll=scroll;s.subject=subject;s.failed=failure.failed;
     if(subject>0 && subject<4)s.subject_name=pilot_names.at(static_cast<size_t>(subject-1));
@@ -149,7 +153,7 @@ void cockpit_hdd::paint(mission_session &session){
       }
     }
   }
-  map.draw(translate(map_bounds,-origin_x,-origin_y),map_state);
+  if(map_dirty){map.draw(translate(map_bounds,-origin_x,-origin_y),map_state);map_dirty=false;}
   for(size_t i{};i<rows.size();++i){auto const b{translate(rows[i],-origin_x,-origin_y)};auto const &entry{strings.at(0).at(i+10)};bool const disabled{s.wingmate<0 || failure.failed};auto const &face{fonts[disabled?3:s.command==static_cast<int>(i)+10?1:0]};
     label(cache,face,entry.text,{b.left+5,b.top,b.right,b.bottom},63,false);
     if(!entry.attributes.empty() && entry.attributes[0]<entry.text.size()){auto const k{entry.attributes[0]};int const x{b.left+5+face.text_width(std::string_view{entry.text}.substr(0,k))};cache.text(fonts[disabled?3:2],std::string_view{entry.text}.substr(k,1),x,b.top+((b.bottom-b.top+static_cast<int>(face.height))>>1));}
@@ -162,12 +166,12 @@ void cockpit_hdd::update(mission_session &session,pointer_controls &input,camera
     auto const button{*pending_button};pending_button.reset();execute_button(button,session,input);
   }
   auto const b{translate(bounds,-x,-y)};bool const shown{camera.mode==camera_mode::attached && b.right>=0 && b.left<320 && b.bottom>=0 && b.top<200};
-  if(shown && (!visible || x!=origin_x || y!=origin_y))dirty=true;
+  if(shown && (!visible || x!=origin_x || y!=origin_y)){dirty=map_dirty=true;refresh.prepare();}
   visible=shown;origin_x=x;origin_y=y;painted=b;
-  if(camera.mode==camera_mode::attached){bool const was{failure.failed};if(advance_instrument_failure(failure,instrument_damage_band(session.player_actor().internal_damage_fraction(4)),ticks,random))sounds.push_back(28);if(was!=failure.failed)dirty=true;}
+  if(camera.mode==camera_mode::attached){bool const was{failure.failed};if(advance_instrument_failure(failure,instrument_damage_band(session.player_actor().internal_damage_fraction(4)),ticks,random))sounds.push_back(28);if(was!=failure.failed){dirty=map_dirty=true;refresh.prepare();}}
   if(!visible)return;
-  if(ticks>deadline){deadline=ticks+30;blink_phase=!blink_phase;if(prompt_refreshes && --prompt_refreshes==0)prompt.reset();dirty=true;}
-  map_state=session.tactical_state(ticks);map_state.blink_phase=blink_phase;auto const &p{session.player().movement().position};auto const &s{controller.state()};controller.camera({p.x+s.pan.x,p.y+s.pan.y,s.camera.z});
+  if(refresh.advance(page==0,ticks)){if(page==0){map_dirty=true;if(prompt_refreshes && --prompt_refreshes==0)prompt.reset();}dirty=true;}
+  map_state=session.tactical_state(ticks);map_state.blink_phase=refresh.blink_phase;auto const &p{session.player().movement().position};auto const &s{controller.state()};controller.camera({p.x+s.pan.x,p.y+s.pan.y,s.camera.z});
   if(dirty){paint(session);dirty=false;}enable(input);
 }
 void cockpit_hdd::draw(framebuffer &frame,pointer_controls const &input,int const x,int const y)const{
