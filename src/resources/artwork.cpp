@@ -63,6 +63,11 @@ auto read_bitmaps(bytes data)->std::vector<bitmap> {
   return result;
 }
 
+auto display_colour(std::array<uint8_t,3> const &dac)->uint32_t {
+  auto expand=[](uint8_t c)->uint32_t{return (static_cast<uint32_t>(c)<<2)|(c>>4);};
+  return 0xff000000u|(expand(dac[0])<<16)|(expand(dac[1])<<8)|expand(dac[2]);
+}
+
 auto read_palette(bytes data)->palette {
   /// Decode VGA DAC colours and the original discrete shade ramps.
   binary_reader file{data, "palette"};
@@ -79,7 +84,7 @@ auto read_palette(bytes data)->palette {
     file.take(1);
     if(red > 63 || green > 63 || blue > 63) file.fail("colour exceeds VGA DAC range");
     result.dac_colours[index] = {static_cast<uint8_t>(red), static_cast<uint8_t>(green), static_cast<uint8_t>(blue)};
-    result.colours[index] = 0xff000000u | ((red * 255 / 63) << 16) | ((green * 255 / 63) << 8) | (blue * 255 / 63);
+    result.colours[index] = display_colour(result.dac_colours[index]);
   }
   if(file.remaining()) {
     auto const ramps{file.integer<uint32_t>()};

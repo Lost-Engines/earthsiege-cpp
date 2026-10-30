@@ -13,7 +13,7 @@ std::string converted(std::string_view name){
 }
 void refresh_rgb(palette &value){
  for(size_t i{};i<256;++i){auto const &c{value.dac_colours[i]};
-  value.colours[i]=0xff000000u|(static_cast<uint32_t>(c[0])*255/63<<16)|(static_cast<uint32_t>(c[1])*255/63<<8)|(static_cast<uint32_t>(c[2])*255/63);
+  value.colours[i]=display_colour(c);
  }
 }
 palette faded(palette const &base,int start,int count,int destination,int percent){

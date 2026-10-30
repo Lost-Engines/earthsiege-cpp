@@ -33,6 +33,8 @@ struct font {
   auto text_width(std::string_view text) const->int;
 };
 
+/// Six-bit VGA components expanded like the original DOSBox reference output.
+auto display_colour(std::array<uint8_t,3> const &dac)->uint32_t;
 auto read_bitmaps(bytes data)->std::vector<bitmap>;
 auto read_palette(bytes data)->palette;
 auto read_font(bytes data)->font;

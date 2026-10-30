@@ -29,7 +29,7 @@ void environment_palette::update(palette &target,uint16_t pitch,bool enabled,boo
  auto const values{ramp(base,impact?impact_colour:endpoints[band])};
  for(size_t i{};i<values.size();++i){
   auto const &c{values[i]};target.dac_colours[64+i]=c;
-  target.colours[64+i]=0xff000000U|(static_cast<uint32_t>(c[0]*255/63)<<16)|(static_cast<uint32_t>(c[1]*255/63)<<8)|static_cast<uint32_t>(c[2]*255/63);
+  target.colours[64+i]=display_colour(c);
  }
 }
 }

@@ -20,8 +20,7 @@ void update_shield_colours(palette &colours, int32_t const front, int32_t const 
       auto &dac{colours.dac_colours[index]};
       for(size_t component{}; component < base.size(); ++component)
         dac[component] = static_cast<uint8_t>(std::max(0, base[component] - dimming[level]));
-      colours.colours[index] = 0xff000000u | (static_cast<uint32_t>(dac[0] * 255 / 63) << 16)
-                             | (static_cast<uint32_t>(dac[1] * 255 / 63) << 8) | static_cast<uint32_t>(dac[2] * 255 / 63);
+      colours.colours[index] = display_colour(dac);
     }
   }
 }

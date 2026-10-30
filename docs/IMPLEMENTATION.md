@@ -1401,3 +1401,16 @@ The private X11 smoke script tools/check_native_modals.py verifies a retained
 pause image, options entry/return, mission-status cancellation, Ctrl+Escape
 cancellation, a rapid Pause/Escape pair and confirmed return to the main menu.
 Its screenshots are host integration evidence, not original pixel comparisons.
+
+### VGA display expansion
+
+Resource palettes, animated shields, environment reflection and shell fades now
+share six-bit component expansion (v << 2) | (v >> 4), matching the retained
+DOSBox VGA reference. The former v * 255 / 63 preview conversion produced
+one-level RGB errors. This does not alter the original six-bit colours, palette
+indices, lighting decisions or shade lookup tables.
+
+The independent Python palette exports and original-reader cockpit references
+were regenerated with the same hardware display convention. All 241 tests pass.
+Whole-frame comparison also identified a separate startup fade/animation omission;
+that is not concealed by this display conversion correction.
