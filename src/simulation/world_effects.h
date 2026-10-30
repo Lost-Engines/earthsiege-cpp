@@ -67,7 +67,7 @@ class world_effects {
   std::array<vec3<int16_t>, smoke_puff_capacity> retained_puff_velocities{};
 
 public:
-  explicit world_effects(resource_store const &resources, sound_sink sounds = {});
+  explicit world_effects(resource_store const &resources, sound_sink sounds = {}, bool alternate_ground_models = false);
   std::optional<size_t> add_explosion(int16_t definition, vec3<int32_t> const &position, random_state &random);
   void add_debris(int16_t group, vec3<int32_t> const &position, random_state &random);
   std::optional<size_t> add_smoke(int16_t family, std::function<vec3<int32_t>()> attachment, random_state &visual_random);

@@ -1829,3 +1829,17 @@ add 579 original reactor/throttle regions and shield-colour samples, excluding
 13 regions near the original software cursor. Six shield points deliberately
 avoid the separately clocked red lamps. These expected pixels never feed native
 simulation or rendering.
+
+
+## World-selected ground-effect models
+
+World descriptor word 18 selects FLAT.DTS when zero and FLAT2.DTS otherwise
+(original loader 6cf8). The mission effect owner now uses that selector for both
+HERC ground attachments and secondary explosion models. Previously it always
+loaded FLAT.DTS, leaving bright orange shadows in worlds that require FLAT2's
+palette index 224 instead of 240.
+
+Three independent original DEMO2 regions cover the corrected shadow in the
+centre and at both viewport edges (frames 900, 960 and 1740). They match exactly;
+the largest complete sampled DEMO2 difference falls from 195 to 90 RGB pixels.
+These regions join the existing original replay scene fixtures.

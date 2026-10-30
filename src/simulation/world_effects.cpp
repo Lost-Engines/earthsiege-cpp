@@ -21,12 +21,12 @@ void live_explosion::synchronize_cells() {
 live_debris::live_debris(debris_particle value, shape_part const &shape, bool const weapon) : state{std::move(value)}, model{shape}, detached_weapon{weapon} {}
 live_smoke_puff::live_smoke_puff(smoke_puff_state value, shape_part const &shape) : state{std::move(value)}, model{shape} {}
 
-world_effects::world_effects(resource_store const &resources, sound_sink sink)
+world_effects::world_effects(resource_store const &resources, sound_sink sink, bool alternate_ground_models)
   : sounds{std::move(sink)}, explosion_definitions{read_explosions(resources.read("simvol0", "dat/EXPLOS.DAT"))},
     debris_definitions{read_debris(resources.read("simvol0", "dat/DEBRIS.DAT"))},
     explosion_models{read_model(resources.read("simvol0", "dts/EXPLOS.DTS"))},
     debris_models{read_model(resources.read("simvol0", "dts/DEBRIS.DTS"))},
-    flat_models{read_model(resources.read("simvol0", "dts/FLAT.DTS"))},
+    flat_models{read_model(resources.read("simvol0", alternate_ground_models ? "dts/FLAT2.DTS" : "dts/FLAT.DTS"))},
     smoke_models{read_model(resources.read("simvol0", "dts/SMOKE.DTS"))},
     detached_weapon_models{read_model(resources.read("simvol0", "dts/MECHWPN2.DTS"))},
     smoke_textures{read_bitmaps(resources.read("simvol0", "dba/SMOKE.DBA"))},

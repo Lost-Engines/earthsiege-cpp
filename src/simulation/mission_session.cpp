@@ -20,7 +20,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     weapon_definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))},
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
-    random{std::move(initial_random)}, effects{resources,[this](auto const &event){emit_sound(event);}}, projectiles{resources, weapon_definitions,[this](auto const &event){emit_sound(event);}} {
+    random{std::move(initial_random)}, effects{resources,[this](auto const &event){emit_sound(event);},terrain.environment().atmosphere_parameters[1]!=0}, projectiles{resources, weapon_definitions,[this](auto const &event){emit_sound(event);}} {
   auto const placements{layout.place(script, roster)};
   activity=std::make_unique<mission_activity>(script,placements,initial_counters);
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
