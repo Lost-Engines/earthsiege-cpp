@@ -12,6 +12,7 @@
 #include "render/presentation_player.h"
 #include "resources/cockpit.h"
 #include "simulation/keyboard_input.h"
+#include "simulation/frame_clock.h"
 #include "simulation/joystick_routing.h"
 #include "resources/input_options.h"
 #include "shell/preferences.h"
@@ -40,6 +41,7 @@ class mission_view {
   clock_instrument clock;
   presentation_player lamps;
   uint64_t elapsed_milliseconds{};
+  frame_clock pacing;
   uint32_t interface_ticks{};
   struct weapon_control_binding {
     size_t row;
@@ -96,7 +98,8 @@ public:
   void toggle_pause();
   void change_camera(camera_mode mode);
   void change_cockpit_view(cockpit_view view);
-  void step(bool control, bool zoom);
+  void advance_time(unsigned milliseconds);
+  bool step(bool control, bool zoom);
   void draw();
   void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { detail={horizon,cloud,ground,true}; }
   std::vector<int16_t> take_audio();

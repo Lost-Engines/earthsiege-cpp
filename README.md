@@ -103,3 +103,6 @@ Cockpit damage now flashes the original damage palette and displaces the cockpit
 Options / Controls now supports the original joystick profiles, pedals, mouse setting and calibration screens. Tab and Alt+Tab move focus; right-click cycles an option backwards. The first two connected SDL controllers supply the original joystick axes, with a single four-axis stick supported as an alternative. Calibrations are saved automatically beside the user saves. Insert or joystick button 2 swaps movement/turret control, button 3 selects a target and button 4 stops movement or centres the turret. Hats follow the original cockpit-view rules.
 
 The bundled DATA/KEYJOY.CFG retains the original pitch/turn choices. Malformed tokens are reported safely instead of reproducing the original out-of-bounds table read. SDL calibration uses separate host-joy files so it cannot be confused with DOS gameport counts. See docs/IMPLEMENTATION.md for the host axis and throttle mappings.
+
+Live missions now use the original elapsed-time pacing and bounded simulation
+steps. Audio continues during mission dialogs; losing window focus suspends it.

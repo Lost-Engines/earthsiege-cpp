@@ -3,3 +3,5 @@
 *.DFL binary
 *.RAW binary
 *.TAP binary
+
+assets/DATA/KEYJOY.CFG -text whitespace=cr-at-eol

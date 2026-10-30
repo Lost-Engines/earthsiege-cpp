@@ -1145,3 +1145,22 @@ gates. Hardware-panned animation and complete replay/frame scheduling remain
 separate integration work.
 
 All 225 CTest checks pass after the complete rebuild (31.89 seconds). The live controls screen was inspected at native pixel scale.
+
+### Original live frame pacing
+
+The host now advances the original 120 Hz timer independently of simulation,
+including during mission alerts. Its wrapping fast/slow clocks and saturating
+countdown match 3,840 original states. Live frames wait for at least two ticks;
+ratios use the actual countdown difference and the original 64–450 clamp.
+The minimum two-tick wait is about 16.7 ms, while the minimum simulated period
+is 25 nominal milliseconds. This original discrepancy is retained instead of
+assuming a fixed 40 Hz update loop. The host uses nominal 120 Hz, without PIT
+electrical emulation.
+
+Scene drawing only runs after a new simulation frame. Host presentation reuses
+the previous image rather than advancing visual consumers and random state a
+second time. Audio continues while mission dialogs are open. Window focus loss
+still suspends time as a host convenience. The complete rebuild passes all
+226 CTest checks, and a 40-frame headless mission smoke run completes.
+Recorded playback bypasses the live pacing in the original; its integration
+and whole-game parity are still separate work.

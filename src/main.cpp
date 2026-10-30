@@ -175,6 +175,7 @@ auto main(int argc, char *argv[])->int try {
   if(display)try{sound=std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr<<"Audio unavailable: "<<e.what()<<'\n';}
   std::unique_ptr<earthsiege::joystick_devices> sticks;
   if(display)try{sticks=std::make_unique<earthsiege::joystick_devices>();}catch(std::exception const &e){std::cerr<<"Joystick input unavailable: "<<e.what()<<'\n';}
+  bool scene_dirty{scene!=nullptr};
   bool running{true};
   bool focused{true};
   unsigned int frames{};
@@ -183,7 +184,6 @@ auto main(int argc, char *argv[])->int try {
   auto const open_alert{[&](int message){
     alert=std::make_unique<earthsiege::mission_alert>(resources,message);
     if(scene)scene->clear_input();
-    if(sound)sound->pause(true);
     pending=0;
   }};
   auto const respond{[&](int response){
@@ -206,7 +206,7 @@ auto main(int argc, char *argv[])->int try {
           menu.cancel_press();
           if(scene) scene->clear_input();
         }
-        if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED){focused = true;if(sound)sound->pause(alert!=nullptr);}
+        if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED){focused = true;if(sound)sound->pause(false);}
       }
       if(alert) {
         if(focused && event.type==SDL_KEYDOWN && !event.key.repeat) {
@@ -253,24 +253,27 @@ auto main(int argc, char *argv[])->int try {
     if(auto const warp{menu.take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
     if(menu.quit_requested())running=false;
     if(menu.ready_to_launch()) {
-      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene->environment_detail(menu.settings().current()[3]!=0,menu.settings().current()[4],menu.settings().current()[5]);pending=0;
+      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene_dirty=true;scene->environment_detail(menu.settings().current()[3]!=0,menu.settings().current()[4],menu.settings().current()[5]);pending=0;
       if(sound)sound->clear();
     }
     auto const now{display ? SDL_GetTicks64() : previous + 25};
-    pending += focused && !alert ? std::min<uint64_t>(now - previous, 100) : 0;
+    auto const elapsed{focused?now-previous:0};
+    pending += focused && !alert ? std::min<uint64_t>(elapsed,100) : 0;
     previous = now;
     if(!focused || alert) pending = 0;
     if(scene) {
-      if(frames) while(pending >= 25) {
+      scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed,UINT32_MAX)));
+      if(focused&&!alert){
         auto const modifiers{display ? SDL_GetModState() : KMOD_NONE};
-        scene->step((modifiers & KMOD_CTRL) != 0, (modifiers & KMOD_SHIFT) != 0);
-        if(auto const warp{scene->take_pointer_warp()};warp && display)display->warp_mouse(warp->x,warp->y);
-        auto const samples{scene->take_audio()};if(sound)sound->queue(samples);
-        pending -= 25;
-        if(auto message{scene->take_mission_prompt()}){open_alert(static_cast<int>(*message));break;}
+        if(scene->step((modifiers & KMOD_CTRL)!=0,(modifiers & KMOD_SHIFT)!=0))scene_dirty=true;
+        if(auto const warp{scene->take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
+        if(auto message{scene->take_mission_prompt()})open_alert(static_cast<int>(*message));
       }
-      else pending = 0;
-      scene->draw();
+      auto const samples{scene->take_audio()};if(sound)sound->queue(samples);
+      // Scene drawing also consumes original per-frame visual state. Presenting
+      // a retained frame must not run those consumers for a second time.
+      if(scene_dirty){scene->draw();scene_dirty=false;}
+      pending=0;
     } else {
       while(pending>=25){menu.advance(3);auto samples{menu.take_audio()};if(sound)sound->queue(samples);pending-=25;}
       menu.draw(menu_frame);

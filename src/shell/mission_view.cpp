@@ -186,15 +186,18 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
   radio->update(*session,camera,interface_ticks,origin[0],origin[1]);
 }
 
-void mission_view::step(bool const control, bool const zoom) {
-  audio.advance();
+void mission_view::advance_time(unsigned milliseconds){
+  auto const before{elapsed_milliseconds*120/1000};elapsed_milliseconds+=milliseconds;
+  auto const ticks{static_cast<unsigned>(elapsed_milliseconds*120/1000-before)};
+  pacing.advance(ticks);audio.advance(ticks);
+}
+bool mission_view::step(bool const control, bool const zoom) {
+  auto const ratio{pacing.take()};
+  if(!ratio)return false;
   audio.engine(camera.mode != camera_mode::attached);
   audio.update_music(session->music_observations(),ui_random);
-  if(paused) { pointer_events.clear(); return; }
-  // The original 120 Hz timer invokes both UI clocks every second callback.
-  // Accumulate the nominal 60 Hz ticks separately from the 40 Hz physics loop.
-  elapsed_milliseconds += 25;
-  auto const now{static_cast<uint32_t>(elapsed_milliseconds * 60 / 1000)};
+  if(paused) { pointer_events.clear(); return false; }
+  auto const now{pacing.state().slow};
   clock.update(now);
   if(now != interface_ticks) lamps.advance(static_cast<int16_t>(now - interface_ticks));
   interface_ticks = now;
@@ -227,7 +230,7 @@ void mission_view::step(bool const control, bool const zoom) {
   }
   if(panel==previous_panel)hat_view(packet.hat);
   input.release_action=static_cast<control_release_action>(routing.mode);
-  auto const actions{session->step_player(input, ratio_from_period(25, nominal_frame_milliseconds), control, cockpit.layout.bounds(0x450))};
+  auto const actions{session->step_player(input, *ratio, control, cockpit.layout.bounds(0x450))};
   steer_camera(camera, actions.zoom, actions.camera.y, actions.camera.x);
   auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
   shield_to_front.reset();
@@ -236,7 +239,7 @@ void mission_view::step(bool const control, bool const zoom) {
     instruments.set_value(0, requested_throttle);
   }
   session->update_player_interface();
-  session->exchange_weapon_instruments(ratio_from_period(25, nominal_frame_milliseconds));
+  session->exchange_weapon_instruments(*ratio);
   for(auto &binding : weapon_controls) {
     auto const &state{session->player_weapon_controls().displays()[binding.row].state};
     auto const update_enabled{[&](size_t const index){
@@ -268,6 +271,7 @@ void mission_view::step(bool const control, bool const zoom) {
   for(auto const id:hdd->take_sounds())audio.play(id);
   for(auto const &path:radio->take_speech())audio.speech(path);
   audio.flush_positions(player.body().movement().position);
+  return true;
 }
 
 void mission_view::draw() {

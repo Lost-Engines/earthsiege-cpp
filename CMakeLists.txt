@@ -217,6 +217,7 @@ add_library(earthsiege_core
   src/simulation/camera.h
   src/simulation/arcsine_table.h
   src/simulation/keyboard_input.cpp
+  src/simulation/frame_clock.cpp
   src/resources/input_options.cpp
   src/simulation/joystick_input.cpp
   src/simulation/joystick_routing.cpp
@@ -1208,4 +1209,10 @@ if(BUILD_TESTING)
  add_executable(game_shell_controls_test tests/game_shell_controls_test.cpp)
  target_link_libraries(game_shell_controls_test PRIVATE earthsiege_core)
  add_test(NAME game_shell_controls COMMAND game_shell_controls_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/build)
+endif()
+
+if(BUILD_TESTING)
+ add_executable(frame_pacing_test tests/frame_pacing_test.cpp)
+ target_link_libraries(frame_pacing_test PRIVATE earthsiege_core)
+ add_test(NAME frame_pacing COMMAND frame_pacing_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/frame_pacing.bin)
 endif()
