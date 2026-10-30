@@ -40,6 +40,23 @@ int main(int argc,char **argv)try{
  mission_view view{resources,tape};
  std::ofstream audio_log;int64_t audio_frame{-1};
  std::vector<replay_sound_request> audio_requests;
+ std::ofstream scene_log;
+ if(auto const *path{std::getenv("EARTHSIEGE_SCENE_DIAGNOSTICS")}){
+  scene_log.open(path);if(!scene_log)throw std::runtime_error{"Cannot open scene diagnostics"};
+  view.observe_scene([&](scene_draw_observation const &object){
+   if(auto const *wanted{std::getenv("EARTHSIEGE_SCENE_FRAME")};wanted&&audio_frame!=std::stoll(wanted))return;
+   scene_log<<"{\"frame\":"<<audio_frame<<",\"position\":["<<object.position.x<<','<<object.position.y<<','<<object.position.z
+    <<"],\"class\":"<<object.native_class<<",\"distance\":"<<object.distance<<",\"radius\":"<<object.radius<<",\"detail\":"<<object.detail<<",\"lights\":[";
+   bool first{true};
+   for(auto const &value:object.lights){
+    if(!first)scene_log<<',';
+    first=false;
+    scene_log<<'['<<std::to_underlying(value.kind)<<','<<value.intensity<<','<<value.position.x<<','<<value.position.y<<','<<value.position.z
+     <<','<<value.direction.x<<','<<value.direction.y<<','<<value.direction.z<<','<<value.attenuation<<','<<value.scale<<']';
+   }
+   scene_log<<"]}\n";
+  });
+ }
  if(auto const *path{std::getenv("EARTHSIEGE_REPLAY_AUDIO")}){
   audio_log.open(path);if(!audio_log)throw std::runtime_error{"Cannot open audio diagnostics"};
  }
@@ -206,7 +223,17 @@ int main(int argc,char **argv)try{
      diagnostics<<'['<<row.bank_slot<<','<<row.control_number<<','<<+std::to_underlying(row.kind)<<','
        <<state.value<<','<<state.requested_charge<<','<<state.disabled<<','<<state.selected<<','<<state.included<<','<<state.ready<<']';
     }
-    diagnostics<<"]}}\n";
+    diagnostics<<"]},\"lights\":[";
+    bool first_light{true};
+    for(auto const *value:view.active_lights()){
+     if(!first_light)diagnostics<<',';
+     first_light=false;
+     diagnostics<<'['<<std::to_underlying(value->kind)<<','<<value->intensity<<','
+      <<value->position.x<<','<<value->position.y<<','<<value->position.z<<','
+      <<value->direction.x<<','<<value->direction.y<<','<<value->direction.z<<','
+      <<value->attenuation<<','<<value->scale<<']';
+    }
+    diagnostics<<"]}\n";
    if(phase==1&&(frame-1)%60==0){
     std::ostringstream name;name<<"frame-"<<std::setw(5)<<std::setfill('0')<<frame-1<<".ppm";
     auto path{diagnostic_path/name.str()};view.image().save(path,view.colours());

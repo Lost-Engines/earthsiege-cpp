@@ -19,6 +19,38 @@ uint32_t packed_material(material_slot const slot) {
   return static_cast<uint16_t>(slot.value) | static_cast<uint32_t>(slot.flags) << 16;
 }
 
+// Original 528ab caches each articulated transform. Its 5d3d0/5d470 light
+// save/restore loops repeatedly use bdba6 (the first light), without advancing
+// the light-array pointer. Other local light vectors retain the last transform.
+class model_light_cache {
+  std::span<light const> sources;
+  std::vector<light> local;
+  std::vector<std::optional<light>> first;
+  int16_t current{-1};
+  void transform(model_transform const &inverse) {
+    local.clear();
+    for(auto const &source:sources)local.push_back(transform_light(source,inverse));
+  }
+public:
+  model_light_cache(std::span<light const> lights,model_transform const &object,size_t transforms)
+    :sources{lights},first(transforms+1){
+    transform(inverse_transform(object));
+    first[0]=local.empty()?light{}:local.front();
+  }
+  std::span<light const> select(int16_t index,model_transform const &inverse){
+    if(index==current)return local;
+    auto &saved{first.at(static_cast<size_t>(index+1))};
+    if(saved){
+      if(!local.empty())local.front()=*saved;
+    }else{
+      transform(inverse);
+      saved=local.empty()?light{}:local.front();
+    }
+    current=index;
+    return local;
+  }
+};
+
 class model_draw {
   framebuffer &target;
   palette const &colours;
@@ -29,6 +61,7 @@ class model_draw {
   model_detail active_detail;
   std::span<bitmap const> textures;
   std::span<light const> lights;
+  model_light_cache &light_cache;
   std::span<uint16_t const> cells;
   std::span<model_attachment const> attachments;
 
@@ -47,8 +80,8 @@ class model_draw {
     auto const camera{compose_transforms(world, view.camera)};
     part_view result{.transform{camera}, .eye{inverse_transform(camera).translation}, .lights{}};
     auto const inverse{inverse_transform(world)};
-    result.lights.reserve(lights.size());
-    for(auto const &source : lights) result.lights.push_back(transform_light(source, inverse));
+    auto const selected{light_cache.select(transform_index<0?-1:transform_index,inverse)};
+    result.lights.assign(selected.begin(),selected.end());
     return result;
   }
 
@@ -173,18 +206,19 @@ class model_draw {
   }
 
 public:
-  model_draw(framebuffer &buffer, palette const &palette_data, texture_shade_maps const &shades, model_instance const &model, model_transform const &placement, model_view const &camera, std::span<bitmap const> const bank, std::span<light const> const sources, std::span<uint16_t const> const frames, std::span<model_attachment const> const replacements)
-    : target{buffer}, colours{palette_data}, texture_shades{shades}, instance{model}, object{placement}, view{camera}, active_detail{camera.detail}, textures{bank}, lights{sources}, cells{frames}, attachments{replacements} {
+  model_draw(framebuffer &buffer, palette const &palette_data, texture_shade_maps const &shades, model_instance const &model, model_transform const &placement, model_view const &camera, std::span<bitmap const> const bank, std::span<light const> const sources, std::span<uint16_t const> const frames, std::span<model_attachment const> const replacements,model_light_cache &cached_lights)
+    : target{buffer}, colours{palette_data}, texture_shades{shades}, instance{model}, object{placement}, view{camera}, active_detail{camera.detail}, textures{bank}, lights{sources}, light_cache{cached_lights}, cells{frames}, attachments{replacements} {
   }
 
   void part(model_part const &source) {
-    if(source.kind != model_kind::null) {
+    if(source.kind==model_kind::null)return;
+    {
       auto const found{std::ranges::find(attachments, source.header.id, &model_attachment::body_part)};
       if(found != attachments.end()) {
         if(found->geometry){
           auto weapon_view{view};
           if(view.weapon_detail_bias)weapon_view.detail.bias=*view.weapon_detail_bias;
-          model_draw{target, colours, texture_shades, instance, object, weapon_view, found->textures, lights, found->cells, {}}.part(*found->geometry);
+          model_draw{target, colours, texture_shades, instance, object, weapon_view, found->textures, lights, found->cells, {},light_cache}.part(*found->geometry);
           // The original weapon wrapper restores the global bias to zero,
           // rather than restoring the enclosing HERC's value.
           if(view.weapon_detail_bias)active_detail.bias=0;
@@ -216,7 +250,8 @@ model_renderer::model_renderer(framebuffer &buffer, palette const &palette_data)
 }
 
 void model_renderer::draw(model_part const &source, model_instance const &instance, model_transform const &object, model_view const &view, std::span<bitmap const> const textures, std::span<light const> const lights, std::span<model_attachment const> const attachments) {
-  model_draw{target, colours, texture_shades, instance, object, view, textures, lights, instance.cell_frames(), attachments}.part(source);
+  model_light_cache cache{lights,object,instance.transforms().size()};
+  model_draw{target, colours, texture_shades, instance, object, view, textures, lights, instance.cell_frames(), attachments,cache}.part(source);
 }
 
 } // namespace earthsiege

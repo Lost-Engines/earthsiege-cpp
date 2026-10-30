@@ -15,7 +15,8 @@ int main(int const argc, char **argv) try {
   auto const bytes{earthsiege::read_file(argv[2])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != "ESMODEL2") file.fail("fixture version");
+  bool const multiple_lights{std::string(magic.begin(),magic.end())=="ESMODEL3"};
+  if(!multiple_lights&&std::string(magic.begin(), magic.end()) != "ESMODEL2") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   std::map<std::string, earthsiege::model_resource> models;
   auto const resource{[&](std::string const &name){
@@ -33,6 +34,17 @@ int main(int const argc, char **argv) try {
     auto const expected{file.integer<uint32_t>()};
     std::array<int16_t, 5> pose;
     for(auto &value : pose) value = file.integer<int16_t>();
+    std::vector<earthsiege::light> lights{earthsiege::default_world_light()};
+    if(multiple_lights){
+      lights.resize(file.integer<uint16_t>());
+      for(auto &value:lights){
+        value.kind=static_cast<earthsiege::light_kind>(file.integer<uint8_t>());
+        value.intensity=file.integer<int32_t>();
+        for(unsigned axis{};axis<3;++axis)value.position[axis]=file.integer<int32_t>();
+        for(unsigned axis{};axis<3;++axis)value.direction[axis]=file.integer<int16_t>();
+        value.attenuation=file.integer<int32_t>();value.scale=file.integer<int32_t>();
+      }
+    }
     if(!models.contains(name)) models.emplace(name, earthsiege::read_model(resource(name)));
     auto const &part{models.at(name).roots.at(root)};
     earthsiege::model_instance instance{std::get<earthsiege::shape_part>(part.content)};
@@ -44,7 +56,6 @@ int main(int const argc, char **argv) try {
     auto const textures{texture_name.empty() ? std::vector<earthsiege::bitmap>{} : earthsiege::read_bitmaps(resource(texture_name))};
     auto object{earthsiege::rotation_transform(angles)};
     object.translation = translation;
-    std::array const lights{earthsiege::default_world_light()};
     earthsiege::framebuffer frame;
     earthsiege::model_renderer renderer{frame, colours};
     try {

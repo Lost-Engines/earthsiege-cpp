@@ -120,6 +120,7 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
         if(actor.native_class==7)actor_view.detail.bias=shapes->herc;
         else if(actor.native_class==6)actor_view.detail.bias=shapes->ordinary;
       }
+      if(observe)observe({vec3<int32_t>{placement.translation},actor.native_class,distance,radius,root,object_lights});
       models.draw(actor.roots[root], actor.instance, placement, actor_view, actor.textures, object_lights, actor.attachments);
       continue;
     }

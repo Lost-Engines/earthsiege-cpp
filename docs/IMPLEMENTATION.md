@@ -1718,3 +1718,37 @@ in exact combined frame/call order (7,073 requests), including engine stops.
 Engine starts/retries remain separately reported because they depend on the PCM
 completion and voice-allocation timeline: current differing-frame counts for
 cockpit engine 45 are 17/5/1/10, and flyer engine 16 differs in two DEMO3 frames.
+
+
+## Original transform-cache lighting behaviour
+
+The model renderer now reproduces an original multiple-light cache defect.
+528ab caches local transforms by articulated transform index, with index -1
+representing the object root. A newly computed transform calls 5c140 and
+transforms every active light. A cached transform calls 5d470; 5298c is a no-op,
+so this is not a recursive push/pop stack.
+
+Both 5d3d0 (save) and 5d470 (restore) repeatedly access the pointer at bdba6
+without advancing through the registered light array. They therefore save and
+restore the first light repeatedly. Later lights retain the local coordinates
+of the most recently computed transform. Null model parts do not change this
+state. Weapon replacements share the enclosing model's transform cache.
+
+This explains a 300-pixel building face discrepancy in DEMO3 frame 840:
+the world-space lights agree, but the original face has intensity 98 while
+independently recomputing every local light gives 160. The native renderer now
+retains the original stateful result. A corrected lighting implementation would
+be a deliberate change for a future enhanced version.
+
+capture_model_light_cache.py executes the unchanged original renderer for all
+401 model roots with two additional light/view arrangements each, including
+directional and positional lights. All 802 complete 320x200 raster CRCs match.
+Existing single-light and armed-model comparisons also remain exact.
+
+The passive scene diagnostics expose selected world-space lights, position,
+distance and detail through EARTHSIEGE_SCENE_DIAGNOSTICS, optionally limited by
+EARTHSIEGE_SCENE_FRAME. They do not supply expected state to the renderer.
+The independent four-replay comparisons still agree on all 7,032 captured
+states, 584 weapon-label rasters and 7,073 ordered sound requests. Across 120
+sampled full frames the largest RGB differences are now 385/285/408/444 pixels;
+these counts include pointer, clock-phase and remaining scene differences.
