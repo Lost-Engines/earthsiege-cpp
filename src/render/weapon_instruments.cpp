@@ -27,7 +27,7 @@ void label(framebuffer &target, font const &face, std::string_view text, rectang
 } // namespace
 
 weapon_instruments::weapon_instruments(resource_store const &resources, cockpit_layout const &source)
-  : layout{source}, buttons{read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA"))},
+  : charge_cache(source.weapon_count()), layout{source}, buttons{read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA"))},
     number_fonts{read_font(resources.read("simvol0", "dfn/CPON.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPPRESS.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPOFF.DFN"))},
@@ -74,9 +74,9 @@ slider_geometry weapon_instruments::charge_slider(unsigned int const slot) const
   return {child_bounds(slot, weapon_instrument_kind::energy, 0x20), false, 1, 0, 1024};
 }
 
-void weapon_instruments::draw(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
-                              std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
-                              std::optional<int> const charge_boundary, int const offset_x, int const offset_y) const {
+void weapon_instruments::draw_row(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
+                                  std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
+                                  int const offset_x, int const offset_y) const {
   scoped_framebuffer_clip clip{target, nullptr};
   auto const button{translate(child_bounds(slot, kind, 0x10), offset_x, offset_y)};
   if(state.disabled && kind != weapon_instrument_kind::ecm) button_face = 2;
@@ -106,6 +106,15 @@ void weapon_instruments::draw(framebuffer &target, unsigned int const slot, weap
     label(target, yellow, std::to_string(state.value), detail, false, 0, 63);
     return;
   }
+}
+
+void weapon_instruments::draw(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
+                              std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
+                              std::optional<int> const charge_boundary, int const offset_x, int const offset_y) const {
+  draw_row(target,slot,kind,name,state,button_face,offset_x,offset_y);
+  if(kind!=weapon_instrument_kind::energy || state.disabled)return;
+  scoped_framebuffer_clip clip{target,nullptr};
+  auto const detail{translate(child_bounds(slot,kind,0x20),offset_x,offset_y)};
   // 0x389ac resets the LED boundary, then paints only the charged interval.
   // Uncharged pixels belong to the cockpit backing, not to a full bar clear.
   int const extent{(static_cast<int16_t>(state.value) * ((detail.right - detail.left) * 65536 / 1024)) >> 16};
@@ -115,6 +124,73 @@ void weapon_instruments::draw(framebuffer &target, unsigned int const slot, weap
   auto const slider{charge_slider(slot)};
   int const boundary{charge_boundary.value_or(slider.boundary_for_value(state.requested_charge))};
   target.image(buttons.at(26), boundary + offset_x, detail.top - 1, true);
+}
+
+void weapon_instruments::repaint() {
+  for(auto &charge:charge_cache)charge.full=true;
+}
+void weapon_instruments::draw_retained(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
+                                       std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
+                                       std::optional<int> const charge_boundary, int const offset_x, int const offset_y) {
+  draw_row(target,slot,kind,name,state,button_face,offset_x,offset_y);
+  if(kind!=weapon_instrument_kind::energy || state.disabled)return;
+  scoped_framebuffer_clip clip{target,nullptr};
+  auto const bounds{child_bounds(slot,kind,0x20)};
+  auto const area{translate({bounds.left,bounds.top-1,bounds.right,bounds.bottom+1},offset_x,offset_y)};
+  // Original 2b214 does not advance controls outside the current cockpit page.
+  if(area.right<0 || area.bottom<0 || area.left>=static_cast<int>(screen_width) || area.top>=static_cast<int>(screen_height))return;
+  auto &cache{charge_cache.at(slot)};
+  auto const &thumb{buttons.at(26)};
+  if(cache.painted.pixels.empty()) {
+    cache.painted.width=static_cast<unsigned>(bounds.right-bounds.left+1);
+    cache.painted.height=static_cast<unsigned>(bounds.bottom-bounds.top+3);
+    cache.painted.pixels.resize(cache.painted.width*cache.painted.height);
+    cache.saved_thumb.resize(2*thumb.height); // fresh DOS allocation, before its first save
+    cache.thumb_boundary=bounds.left;
+    cache.led_boundary=bounds.left;
+  }
+  auto &image{cache.painted};
+  auto pixel=[&](int x,int y,uint8_t colour) {
+    if(x>=0&&y>=0&&x<static_cast<int>(image.width)&&y<static_cast<int>(image.height))
+      image.pixels[y*image.width+x]=colour;
+  };
+  if(cache.full) {
+    for(unsigned y{};y<image.height;++y)for(unsigned x{};x<image.width;++x) {
+      int const sx{area.left+static_cast<int>(x)},sy{area.top+static_cast<int>(y)};
+      if(sx>=0&&sy>=0&&sx<static_cast<int>(screen_width)&&sy<static_cast<int>(screen_height))
+        image.pixels[y*image.width+x]=target.pixels()[sy*screen_width+sx];
+    }
+  }
+  auto const boundary{charge_boundary.value_or(charge_slider(slot).boundary_for_value(state.requested_charge))};
+  if(cache.full || cache.value!=state.value || cache.requested!=state.requested_charge || cache.thumb_boundary!=boundary) {
+    // Full paint restores only a displaced thumb; incremental paint always
+    // restores it, even when only the LED value changed.
+    if(!cache.full || cache.thumb_boundary!=boundary)
+      for(unsigned y{};y<thumb.height;++y)for(unsigned x{};x<2;++x)
+        pixel(cache.thumb_boundary-bounds.left+static_cast<int>(x),static_cast<int>(y),cache.saved_thumb[y*2+x]);
+    if(cache.full)cache.led_boundary=bounds.left;
+    if(cache.full || cache.value!=state.value) {
+      int const next{bounds.left+((static_cast<int16_t>(state.value)*((bounds.right-bounds.left)*65536/1024))>>16)};
+      // 31e5c includes the old endpoint when charging, but preserves the new
+      // endpoint when discharging. Resetting the boundary does not clear pixels.
+      int const first{next>cache.led_boundary?cache.led_boundary:next+1};
+      int const last{next>cache.led_boundary?next:cache.led_boundary};
+      if(next!=cache.led_boundary)
+        for(int x{first};x<=last;++x)for(int y{1};y<static_cast<int>(image.height)-1;++y)
+          pixel(x-bounds.left,y,next>cache.led_boundary?(x&1?49:50):63);
+      cache.led_boundary=next;
+    }
+    for(unsigned y{};y<thumb.height;++y)for(unsigned x{};x<2;++x) {
+      auto const ix{boundary-bounds.left+static_cast<int>(x)};
+      if(ix>=0&&ix<static_cast<int>(image.width)&&y<image.height)
+        cache.saved_thumb[y*2+x]=image.pixels[y*image.width+ix];
+    }
+    for(unsigned y{};y<thumb.height;++y)for(unsigned x{};x<thumb.width;++x)
+      if(auto const colour{thumb.pixels[y*thumb.width+x]})
+        pixel(boundary-bounds.left+static_cast<int>(x),static_cast<int>(y),colour);
+    cache.thumb_boundary=boundary;cache.value=state.value;cache.requested=state.requested_charge;cache.full=false;
+  }
+  target.image(image,area.left,area.top);
 }
 
 } // namespace earthsiege

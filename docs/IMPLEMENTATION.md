@@ -1912,3 +1912,18 @@ This accounts for all three remaining scene pixels in DEMO3 frame 1320.
 Together with the quantized ground-projection correction, the complete
 320x200 RGB image now agrees exactly. It joins the replay fixtures, which now
 cover twelve complete frames and six scene regions.
+
+## Retained weapon charge sliders
+
+Original energy sliders restore a saved two-pixel-wide background rectangle
+before moving the thumb. The sprite itself is padded to eight pixels; using
+that padded width for the save is incorrect. Full painter 389ac restores only
+a displaced thumb and resets the LED boundary without clearing the bar.
+Incremental painter 38b30 restores every dirty thumb, then updates only the
+changed LED interval. Fresh saved backing is zero in the captured DOS startup.
+
+The native cockpit retains this small canvas across frames and requests a full
+repaint on the same horizontal page preparations as the original. A new
+original-instruction fixture checks 1,280 cold, full and incremental paintings
+across all eight cockpits. This removes sixteen persistent black/grey corner
+differences in the initial replay frames; it does not change simulation state.

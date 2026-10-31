@@ -262,6 +262,7 @@ void mission_view::present_view(){
     // and a return from external view invoke the full shield painter.
     if(after_state.pending>=3){
       throttle.repaint_lamps();
+      weapons.repaint();
       displayed_shields=painted_shields;
       update_shield_colours(display_colours,(*displayed_shields)[0],(*displayed_shields)[1]);
       display_device.changed(80,6);
@@ -599,7 +600,7 @@ void mission_view::draw() {
       auto const &row{painted_weapon_rows.at(binding.row)};
       std::optional<int> boundary;
       if(binding.slider) { instruments.painted(*binding.slider); boundary = instruments.at(*binding.slider).boundary; }
-      weapons.draw(frame, row.control_number, row.kind, row.name, row.state, std::to_underlying(instruments.at(binding.button).face), boundary, x, y);
+      weapons.draw_retained(frame, row.control_number, row.kind, row.name, row.state, std::to_underlying(instruments.at(binding.button).face), boundary, x, y);
     }
     std::array<unsigned int, 5> faces;
     for(size_t i{}; i < faces.size(); ++i) faces[i] = std::to_underlying(instruments.at(weapon_groups[i]).face);
