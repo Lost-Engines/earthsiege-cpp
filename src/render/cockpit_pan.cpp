@@ -46,4 +46,35 @@ void cockpit_surface::sample(framebuffer &frame,int x,int y)const{
   for(int row{};row<200;++row)for(int column{};column<320;++column)
     frame.pixel(column,row,pixels_[static_cast<size_t>((y+row)*640+x+column)]);
 }
+
+void cockpit_surface::copy_page(int source_x,int target_x,rectangle bounds){
+  if(source_x%4||target_x%4)throw std::invalid_argument{"unaligned VGA page origin"};
+  auto group=[&](int x,int y,unsigned mask){
+    std::array<uint8_t,4> latch{};
+    auto const source{y*640+source_x+x},target{y*640+target_x+x};
+    if(source<0||target<0||source+3>=static_cast<int>(pixels_.size())||target+3>=static_cast<int>(pixels_.size()))
+      throw std::out_of_range{"VGA page copy outside retained surface"};
+    for(unsigned plane{};plane<4;++plane)latch[plane]=pixels_[source+plane];
+    for(unsigned plane{};plane<4;++plane)if(mask&(1U<<plane))pixels_[target+plane]=latch[plane];
+  };
+  // Original 51cxx: partial left column, then all complete VGA bytes,
+  // then partial right column. Each read latches four pixels atomically.
+  if(bounds.left&3)for(int y{bounds.top};y<=bounds.bottom;++y)
+    group(bounds.left&~3,y,(15U<<(bounds.left&3))&15U);
+  int const first{(bounds.left+3)&~3},end{(bounds.right+1)&~3};
+  for(int y{bounds.top};y<=bounds.bottom;++y)for(int x{first};x<end;x+=4)group(x,y,15);
+  if((bounds.right+1)&3)for(int y{bounds.top};y<=bounds.bottom;++y)
+    group(bounds.right&~3,y,(1U<<((bounds.right+1)&3))-1);
+}
+void cockpit_surface::restore_from_external(int source_x,int target_x){
+  // 22b4d uses inclusive right=320, so the final masked pass crosses a
+  // page boundary and overwrites the source page's first column.
+  copy_page(source_x,target_x,{0,0,320,199});
+  retained_edge.at(static_cast<size_t>(source_x/320))=true;
+}
+void cockpit_surface::restore_artwork_edge(framebuffer &frame,int x,int y)const{
+  if(!retained_edge.at(static_cast<size_t>(x/320)))return;
+  for(int row{};row<200;++row)if(y+row>=0&&y+row<400)
+    frame.pixel(0,row,pixels_[static_cast<size_t>((y+row)*640+x)]);
+}
 } // namespace earthsiege

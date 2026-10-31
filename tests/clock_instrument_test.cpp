@@ -15,7 +15,7 @@ int main(int argc, char **argv) try {
   std::string chassis; std::unique_ptr<clock_instrument> clock;
   for(unsigned int i{}; i < count; ++i) {
     auto const name{file.cstring()};
-    if(chassis != name) { chassis = name; clock = std::make_unique<clock_instrument>(resources, read_cockpit_layout(resources.read("simvol0", "gau/" + name + ".GAU"))); }
+    if(chassis != name) { chassis = name; clock = std::make_unique<clock_instrument>(resources, read_cockpit_layout(resources.read("simvol0", "gau/" + name + ".GAU")), 0, false); }
     auto const now{file.integer<uint32_t>()}; bool const full{file.integer<uint8_t>() != 0};
     auto const label{file.take(5)}; bool const colon{file.integer<uint8_t>() != 0};
     auto const deadline{file.integer<uint32_t>()}, expected{file.integer<uint32_t>()};

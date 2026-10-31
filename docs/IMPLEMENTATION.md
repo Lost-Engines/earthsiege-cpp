@@ -1927,3 +1927,41 @@ repaint on the same horizontal page preparations as the original. A new
 original-instruction fixture checks 1,280 cold, full and incremental paintings
 across all eight cockpits. This removes sixteen persistent black/grey corner
 differences in the initial replay frames; it does not change simulation state.
+
+## Retained VGA page copies
+
+The original external-view return at 22b41 sets the inclusive copy right edge
+to 320 at 22b4d. The copy through 66914 therefore spans 321 pixels, not 320.
+The original planar driver processes the partial left VGA byte, all complete
+four-pixel groups, then the partial right byte. Reads latch all four planes
+before writing them. The extra column crosses the physical page boundary and
+changes the source page's first column by one row.
+
+The native surface now reproduces those bounded physical-page writes and
+retains the affected artwork column until a genuine full page preparation.
+The original +88/+8c draw/other labels are not the hardware drawing selector:
+after presentation the driver writes to the other page. Vertical pans start
+from that freshly drawn page; horizontal pans start from the outgoing page.
+This removes ten persistent alternate-frame border differences after DEMO1's
+external-view return.
+
+capture_cockpit_page_copy.py executes the original VGA routine for 42 complete
+640x400 surfaces, both page directions, aligned and partial boundaries and
+three vertical ranges. All agree, along with the existing 213 original pan
+frames and six live pan paths. The complete suite passed 257 tests.
+
+## HDD subject indicator and initial clock phase
+
+The lower display's small indicator uses the authored rectangle at GAU +4fc.
+Full painter 3cc39 fills it with palette index 59 or 57 from owner byte +4dc,
+initialized to one at 3ca9a. Damage-subject cycling at 3d620 changes that byte
+according to the selected actor's player flag (+9d). It retains that choice
+when returning to MAP. The native renderer had omitted this rectangle entirely.
+The original fourteen-page HDD fixture now includes it and verifies the change.
+
+Clock data byte 94b56 starts at one in the executable. Both initial VGA pages
+receive full clock paints before timed updates. The component clock fixture
+deliberately clears this byte; its zero phase is now an explicit fixture input.
+The live constructor uses the original initialized phase and both page paints.
+A separate replay tool consumes original 43621 timer reads and 79a14 HMI elapsed
+inputs, asserting rather than assigning the original clock and TTM state.

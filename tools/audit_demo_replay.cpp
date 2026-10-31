@@ -236,7 +236,14 @@ int main(int argc,char **argv)try{
       <<value->direction.x<<','<<value->direction.y<<','<<value->direction.z<<','
       <<value->attenuation<<','<<value->scale<<']';
     }
-    diagnostics<<"]}\n";
+    auto const origin{view.cockpit_origin()};
+    auto const &clock_state{view.cockpit_clock()};
+    auto const &lamp_state{view.lamp_state()};
+    auto const &map_refresh{view.map_refresh()};
+    diagnostics<<"],\"cockpit_origin\":["<<origin[0]<<','<<origin[1]<<"],\"inside\":"<<(view.view_camera().mode==camera_mode::attached)<<",\"clock_text\":\""<<clock_state.text()<<"\",\"clock_colon\":"<<clock_state.colon_visible()
+      <<",\"clock_deadline\":"<<clock_state.next_update()<<",\"map_deadline\":"<<map_refresh.map_deadline
+      <<",\"map_phase\":"<<map_refresh.blink_phase<<",\"map_restores\":"<<map_refresh.restore_pages
+      <<",\"lamp\":["<<+lamp_state.page<<','<<lamp_state.mode<<','<<lamp_state.wait_latched<<','<<lamp_state.remaining<<','<<lamp_state.period<<','<<lamp_state.jump<<','<<lamp_state.random<<"]}\n";
    if(phase==1&&(frame-1)%60==0){
     std::ostringstream name;name<<"frame-"<<std::setw(5)<<std::setfill('0')<<frame-1<<".ppm";
     auto path{diagnostic_path/name.str()};view.image().save(path,view.colours());

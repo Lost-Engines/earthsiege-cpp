@@ -12,7 +12,7 @@ class clock_instrument {
   unsigned int seconds{};
   bool colon{};
 public:
-  clock_instrument(resource_store const &resources, cockpit_layout const &layout, uint32_t now = 0);
+  clock_instrument(resource_store const &resources, cockpit_layout const &layout, uint32_t now = 0, bool initial_colon = true);
   void refresh();
   void update(uint32_t now);
   std::string text() const;

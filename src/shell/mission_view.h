@@ -146,6 +146,10 @@ public:
   void mouse_button(bool right, bool pressed);
   void clear_input();
   void toggle_pause();
+  auto const &cockpit_clock()const{return clock;}
+  auto cockpit_origin()const{return instrument_origin();}
+  auto const &lamp_state()const{return lamps.state();}
+  auto const &map_refresh()const{return hdd->refresh_state();}
   auto const &cloud_state()const{return environment.cloud_state();}
   auto active_lights()const{return session->visual_effects().lights().registered();}
   void observe_scene(scene_draw_observer callback){renderer.observe=std::move(callback);}

@@ -20,6 +20,7 @@ cockpit_hdd::cockpit_hdd(resource_store const &r,cockpit_layout const &layout,mi
   for(size_t i{};i<wingmates.size();++i)pilot_names[i]=pilots.at(static_cast<size_t>(session.pilot_identity(wingmates[i]).value()/3)).text;
   auto const parent{layout.bounds(0x4bc)};auto const rect{[&](size_t offset){return translate(layout.bounds(offset),parent.left,parent.top);}};
   bounds=rect(0x4cc);command_bounds=rect(0x4dc);list_bounds=rect(0x4ec);map_bounds=bounds;map_bounds.right=command_bounds.left-2;
+  subject_light_bounds=rect(0x4fc);
   direction_art=layout.words[0x62c/4];for(size_t i{};i<buttons.size();++i){buttons[i]=rect(0x50c+i*16);button_ids[i]=input.add_button(buttons[i]);}
   selection_style=layout.words[0x634/4];
   for(size_t i{};i<selection_lights.size();++i)selection_lights[i]=rect(0x5fc+i*16);
@@ -51,7 +52,9 @@ void cockpit_hdd::transmit(mission_session &session){
 }
 void cockpit_hdd::select_subject(int const direction,mission_session const &session){
   do{subject=(subject+direction+5)%5;}while(subject!=0 && subject!=4 && static_cast<size_t>(subject)>wingmates.size());
-  static_cast<void>(session);scroll=0;dirty=true;
+  // Original 3d620 changes the lamp only when cycling the damage subject.
+  subject_light=subject==0 || (subject==4 && session.target_selection()==session.player_id());
+  scroll=0;dirty=true;
 }
 void cockpit_hdd::pick(mission_session &session,int32_t const range){
   auto const [p,actor]{controller.pick(mouse_x,mouse_y,map_bounds,map_state.contacts)};
@@ -176,6 +179,8 @@ void cockpit_hdd::update(mission_session &session,pointer_controls &input,camera
 }
 void cockpit_hdd::draw(framebuffer &frame,pointer_controls const &input,int const x,int const y)const{
   if(!visible)return;
+  // GAU +4fc / original owner +ba; 3cc39 paints cached owner +4dc.
+  frame.fill(translate(subject_light_bounds,x,y),subject_light?59:57);
   for(int py{std::max(0,painted.top)};py<=std::min(199,painted.bottom);++py)for(int px{std::max(0,painted.left)};px<=std::min(319,painted.right);++px)frame.pixel(px,py,cache.pixels()[static_cast<size_t>(py*320+px)]);
   for(size_t i{};i<buttons.size();++i){auto const b{translate(buttons[i],x,y)};bool const pressed{input.at(button_ids[i]).face!=control_face::normal};
     if(i<8){auto const base{i<2?22+2*static_cast<int>(i):i<6?direction_art+2*static_cast<int>(i-2):51+2*static_cast<int>(i-6)};frame.image(button_art.at(static_cast<size_t>(base)+(pressed?1:0)),b.left,b.top,true);}

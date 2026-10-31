@@ -1,8 +1,8 @@
 #include "clock_instrument.h"
 
 namespace earthsiege {
-clock_instrument::clock_instrument(resource_store const &resources, cockpit_layout const &layout, uint32_t const now)
-  : bounds{layout.bounds(0x654)}, face{read_font(resources.read("simvol0", "dfn/CPBLUE.DFN"))}, deadline{now + 30} {}
+clock_instrument::clock_instrument(resource_store const &resources, cockpit_layout const &layout, uint32_t const now, bool const initial_colon)
+  : bounds{layout.bounds(0x654)}, face{read_font(resources.read("simvol0", "dfn/CPBLUE.DFN"))}, deadline{now + 30}, colon{initial_colon} {}
 
 void clock_instrument::refresh() {
   colon = !colon;

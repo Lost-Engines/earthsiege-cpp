@@ -72,7 +72,9 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     framebuffer artwork;artwork.clear(63);cockpit.draw(artwork,view);
     surface.store(artwork,x,cockpit.windows[static_cast<size_t>(view)].instrument_origin[1]);
   }
-  clock.refresh();
+  // Original data byte 94b56 starts lit; both initial VGA pages receive
+  // a full clock paint before the first timed update.
+  clock.refresh();clock.refresh();
   lamps.advance(0);
   instruments.add_slider(throttle.slider_layout(), 0);
   for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
@@ -247,9 +249,15 @@ void mission_view::present_view(){
   auto const state{transitions.snapshot()};
   if(state.prepared){
     for(auto const &position:cockpit_pan_path(state.pending,state.view,cockpit.windows)){
-      framebuffer image;surface.sample(image,state.draw_page*160+position.x,position.y);
+      auto const page{state.pending<2?state.other_page:state.draw_page};
+      framebuffer image;surface.sample(image,page*160+position.x,position.y);
       pan_frames.push_back(std::move(image));
     }
+  }
+  if(state.prepared&&state.pending==3){
+    surface.restore_from_external(state.other_page*160,state.draw_page*160);
+    auto const view{static_cast<size_t>(state.saved_view)};
+    surface.sample(frame,state.other_page*160,cockpit.windows[view].instrument_origin[1]);
   }
   auto before{state.view};transitions.present();
   auto const after_state{transitions.snapshot()};
@@ -261,6 +269,8 @@ void mission_view::present_view(){
     // Vertical pans reuse the existing pages. Only horizontal preparations
     // and a return from external view invoke the full shield painter.
     if(after_state.pending>=3){
+      auto const page{after_state.other_page};
+      surface.prepare_artwork(page*160);
       throttle.repaint_lamps();
       weapons.repaint();
       displayed_shields=painted_shields;
@@ -312,7 +322,7 @@ void mission_view::finish_startup_frame(uint32_t palette_clock,uint32_t end_cloc
       display_colours=startup->colours();display_device.changed(0,256);
     }
     display_device.present(display_colours);
-    startup_page=transitions.snapshot().draw_page*160;
+    startup_page=transitions.snapshot().other_page*160;
     transitions.present();
     startup->presented(end_clock);
     if(!startup->lifting()){audio.stop(33);audio.play(41);}
@@ -550,6 +560,9 @@ void mission_view::draw() {
   else if(!inside){view.bounds=external_view_artwork::bounds;view.projection.centre=external_view_artwork::centre;}
   if(inside) {
     cockpit.draw_composed(frame, painted,shift);
+    auto const presentation{transitions.snapshot()};
+    int const page{presentation.other_page};
+    surface.restore_artwork_edge(frame,page*160,window.instrument_origin[1]+shift);
     auto const centre{window.projection_centre()};
     view.projection.centre = {centre[0], centre[1]};
     view.bounds = window.bounds;
@@ -632,7 +645,9 @@ void mission_view::draw() {
   }
   if(!options_camera){
     auto const state{transitions.snapshot()};
-    int const page{state.prepared&&state.pending>=4?state.other_page:state.draw_page};
+    // The original +88/+8c pair is swapped after scanout; the actual
+    // driver draw selector (+3c) then targets the other page.
+    int const page{state.other_page};
     int const y{inside?cockpit.windows[static_cast<size_t>(painted)].instrument_origin[1]:0};
     surface.store(frame,page*160,y);
   }

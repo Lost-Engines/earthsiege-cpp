@@ -40,7 +40,7 @@ class cockpit_hdd {
   std::array<std::string,3> pilot_names;
   std::array<std::string,9> weapon_label_pool;
   std::array<std::optional<size_t>,9> weapon_label_refs;
-  rectangle bounds,map_bounds,command_bounds,list_bounds,painted;
+  rectangle bounds,map_bounds,command_bounds,list_bounds,painted,subject_light_bounds;
   std::array<rectangle,15> buttons;
   std::array<rectangle,3> selection_lights;
   std::array<rectangle,8> rows;
@@ -49,7 +49,7 @@ class cockpit_hdd {
   size_t map_id;
   int direction_art{},selection_style{},page{},mode{},scroll{},subject{};
   int mouse_x{},mouse_y{},origin_x{},origin_y{};
-  bool visible{},dirty{true},map_dirty{true};
+  bool visible{},dirty{true},map_dirty{true},subject_light{true};
   std::optional<size_t> pending_button;
   void execute_button(size_t,mission_session &,pointer_controls &);
   void select_page(int value,pointer_controls &input);
