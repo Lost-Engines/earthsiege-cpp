@@ -133,7 +133,9 @@ retain the original engine's quirks.
 
 Cockpit gauges preserve the original paint timing and incremental speed-bar updates.
 
-Some distant radar structures differ slightly from DOS because their original model
-refers past the end of its animation data. This build uses a deterministic repair
-for those invalid references. The remaining sampled-image differences have all
-been traced; see [the pixel comparison results](docs/VALIDATION.md#measured-full-frame-differences).
+The authentic build intentionally fixes a confirmed original bug in distant
+radar/listening-post models: invalid references make their drawing order depend
+on unrelated memory. The repair gives them stable drawing order, with small
+visual differences from DOS. This is a narrow exception to reserving bug fixes
+for Redux; reproducing the defect would require extra machinery to imitate the
+original memory layout. See [the evidence and pixel comparisons](docs/VALIDATION.md#measured-full-frame-differences).

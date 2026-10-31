@@ -10,8 +10,10 @@ namespace {
 void repair_radar_bsp(model_part &part) {
   // Both radar exports reference transforms 2..4 in three distant detail
   // branches, but their animation has only transforms 0 and 1. DOS reads the
-  // following allocation (animation-channel bytes) as matrices. These planes
-  // divide the stationary building; retain their local-space plane instead.
+  // following allocation header/pointer and animation bytes as matrices.
+  // These planes divide the stationary building; use their local-space plane.
+  // Deliberate authentic-build exception: do not emulate DOS heap history only
+  // to reproduce this confirmed bad read. See docs/VALIDATION.md.
   if(auto *bsp{std::get_if<bsp_part>(&part.content)}) for(auto &node : bsp->nodes) if(node.transform >= 2) node.transform = -1;
   for(auto &child : model_children(part)) repair_radar_bsp(child);
 }

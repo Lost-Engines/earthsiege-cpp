@@ -174,6 +174,12 @@ explicit repair in the original renderer and compare the resulting pixels. This
 is a defined repair of an out-of-bounds read, not a claim of matching its unstable
 allocator-dependent result.
 
+The repair is deliberately retained in the authentic build, as an explicit
+exception to reserving ordinary fixes for Redux. Reconstructing the relevant
+DOS heap layout solely to reproduce this confirmed bad read would add machinery
+without a useful compatibility benefit. The replacement remains documented as
+a deterministic choice, rather than a recovered statement of authorial intent.
+
 ## Gun turret tracking and fire control
 
 Gun-turret tracking matches 1,536 original updates, including local barrel-space

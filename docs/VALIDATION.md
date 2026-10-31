@@ -58,6 +58,14 @@ probe, applying only that same repair to the original renderer makes all six
 remaining scenes agree, at every affected pixel and with no other pixel changes.
 That modified probe is distinguished from the unchanged primary reference.
 
+This is a confirmed original out-of-bounds read, and the repair is intentionally
+retained in the authentic build. It is a narrow exception to the usual policy
+of leaving bug fixes to Redux: reproducing this defect would require additional
+machinery for the relevant DOS allocation layout and history. Local-space
+partition planes are the chosen deterministic repair; the evidence establishes
+the original defect, not the artists' intended replacement. The six affected
+images remain documented departures from untouched DOS output.
+
 The timing-controlled comparison supplies original clock/HMI elapsed inputs,
 drawing-page context and VGA copy operations to the native clock and TTM
 renderers. It asserts 7,024 clock states and pre-dispatch TTM states, rather than
