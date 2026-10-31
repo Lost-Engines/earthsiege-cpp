@@ -12,7 +12,7 @@ auto midi_gain::apply(midi_packet packet,uint8_t song_volume,bool muted)->midi_p
 }
 auto midi_gain::set_master(uint8_t value)->std::vector<midi_packet> {
   master_=value;std::vector<midi_packet> result;
-  for(size_t d{};d<devices.size();++d)for(uint8_t ch{};ch<16;++ch)result.push_back({devices[d],{static_cast<uint8_t>(0xb0|ch),7,static_cast<uint8_t>(volumes_[d][ch]*value>>7)},{}});
+  for(size_t d{};d<devices.size();++d)for(uint8_t ch{};ch<16;++ch)if(devices[d]!=0xa004 || ((0x02feu>>ch)&1u))result.push_back({devices[d],{static_cast<uint8_t>(0xb0|ch),7,static_cast<uint8_t>(volumes_[d][ch]*value>>7)},{}});
   return result;
 }
 auto midi_gain::set_song(uint8_t value,std::span<std::pair<size_t,uint8_t> const> tracks)const->std::vector<midi_packet> {

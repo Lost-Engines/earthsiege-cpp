@@ -2044,3 +2044,17 @@ retain 64-frame prefixes for all 75 sources, all ten 256-frame career runs, and
 all 121 campaign transactions, with hashes and repair provenance. The longer
 source captures remain in the analysis tree. See VALIDATION.md for measured
 scope and the distinction from manually played campaign branches.
+
+
+## Roland and SoundFont music checkpoint
+
+Added Munt MT-32/CM-32L, Nuked-SC55 SC-55/SCC-1A and TinySoundFont playback,
+sharing the original HMI scheduler and sampled-percussion driver with the FM
+paths. Ctrl+Shift+M selects and persists the device in the shell or a mission;
+ROM fetch helpers and automatic asset lookup follow Darker and TFX. The original
+MT-32 routing omission and the optional MPU-401 experiment are explained in
+[MUSIC.md](MUSIC.md), with original-module fixtures and hardware-test results in
+[VALIDATION.md](VALIDATION.md).
+
+The audio and documentation checkpoint is ready for the Earthsiege 2 analysis
+fork. Further Earthsiege 1 gameplay-coverage work waits until that fork is made.

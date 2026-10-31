@@ -15,6 +15,7 @@ using audio_event_sink=std::function<void(audio_event const &)>;
 
 class mission_audio {
   resource_store const &resources;
+  music_settings music_config;
   pcm_sound_bank bank;
   pcm_mixer mixer{bank};
   std::unique_ptr<music_audio> music;
@@ -37,7 +38,12 @@ class mission_audio {
   void update_gain(size_t id);
 public:
   audio_event_sink observe;
-  explicit mission_audio(resource_store const &resources);
+  explicit mission_audio(resource_store const &resources,music_settings const &settings={});
+  void configure_music(music_settings const &settings){
+    if(music)music->configure(settings);
+    else music=std::make_unique<music_audio>(resources,bank,settings);
+    music_config=settings;
+  }
   bool preferences(bool music,bool effects,bool speech);
   void dispatch(sound_request const &request, vec3<int32_t> const &listener);
   void engine(bool external_view);

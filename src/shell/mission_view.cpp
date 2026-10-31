@@ -28,17 +28,17 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources,inpu
 
 } // namespace
 
-mission_view::mission_view(resource_store const &resources, unsigned int const demo)
-  : mission_view{resources,demo_tape(resources,demo)} {}
-mission_view::mission_view(resource_store const &resources,input_tape const &tape)
-  :mission_view{resources,demo_start(resources,tape)} {
+mission_view::mission_view(resource_store const &resources, unsigned int const demo,music_settings const &music)
+  : mission_view{resources,demo_tape(resources,demo),music} {}
+mission_view::mission_view(resource_store const &resources,input_tape const &tape,music_settings const &music)
+  :mission_view{resources,demo_start(resources,tape),music} {
   // Playback restores files beside the TAP, while runtime controls still read
   // DATA/PREFS.CFG and DATA/KEYJOY.CFG. The caller supplies installed preferences.
 }
 
-mission_view::mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission)
+mission_view::mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission,music_settings const &music)
   : session{std::move(mission)}, ui_random{session->interface_random()},
-    audio{resources},
+    audio{resources,music},
     cockpit{read_cockpit(resources, read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")).at(static_cast<size_t>(session->player_chassis())))},
     reactor{resources, cockpit.layout},
     throttle{resources, cockpit.layout},

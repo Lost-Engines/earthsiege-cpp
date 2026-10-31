@@ -99,7 +99,8 @@ class game_shell {
   void begin();
   void draw_text(framebuffer &frame,std::string const &text,rectangle const &bounds,int scroll=0)const;
 public:
-  game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17);
+  game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17,music_settings const &music={});
+  void configure_music(music_settings const &settings){audio.configure_music(settings);}
   unsigned int screen()const{return cinematic?0:speech?speech_screen:controls?1320:menu->id();}
   bool presentation_active()const{return speech!=nullptr||cinematic!=nullptr||door_motion!=nullptr;}
   bool transition_active()const{return door_motion!=nullptr;}

@@ -6,6 +6,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 include(CTest)
 find_package(SDL2 REQUIRED CONFIG)
+include(cmake/music_dependencies.cmake)
 
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
 
@@ -57,6 +58,11 @@ add_library(earthsiege_core
   src/render/full_damage_display.cpp
   src/render/tactical_map.cpp
   src/render/briefing_map.cpp
+  src/audio/music_settings.cpp
+  src/audio/midi_synth_factory.cpp
+  src/audio/la_synth.cpp
+  src/audio/sc55_synth.cpp
+  src/audio/soundfont_synth.cpp
   src/audio/music_audio.cpp
   src/audio/combat_music.cpp
   src/audio/music_player.cpp
@@ -338,7 +344,7 @@ add_library(earthsiege_core
   src/resources/resource_store.cpp
   src/resources/resource_store.h
 )
-target_link_libraries(earthsiege_core PRIVATE nuked_opl3)
+target_link_libraries(earthsiege_core PRIVATE nuked_opl3 MT32Emu::mt32emu sc55_backend tinysoundfont)
 target_include_directories(earthsiege_core PUBLIC src "${PROJECT_SOURCE_DIR}")
 target_compile_definitions(earthsiege_core PUBLIC VECTORSTORM_NO_BOOST)
 target_compile_options(earthsiege_core PUBLIC
@@ -347,6 +353,7 @@ target_compile_options(earthsiege_core PUBLIC
 
 add_executable(earthsiege
   src/main.cpp
+  src/platform/music_setup.cpp
   src/platform/joystick_devices.cpp
   src/platform/audio_output.cpp
   src/platform/window.cpp
@@ -1370,4 +1377,21 @@ if(BUILD_TESTING)
  add_executable(clock_retained_test tests/clock_retained_test.cpp)
  target_link_libraries(clock_retained_test PRIVATE earthsiege_core)
  add_test(NAME clock_retained COMMAND clock_retained_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/clock_retained.bin")
+endif()
+
+if(BUILD_TESTING)
+  add_executable(midi_pipeline_test tests/midi_pipeline_test.cpp)
+  target_link_libraries(midi_pipeline_test PRIVATE earthsiege_core)
+  add_test(NAME midi_pipeline COMMAND midi_pipeline_test "${PROJECT_SOURCE_DIR}/tests/fixtures/midi_pipeline.bin")
+endif()
+
+if(BUILD_TESTING)
+  add_executable(music_devices_test tests/music_devices_test.cpp)
+  target_link_libraries(music_devices_test PRIVATE earthsiege_core)
+  add_test(NAME music_devices COMMAND music_devices_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_BINARY_DIR}")
+  set(EARTHSIEGE_TEST_ROM_DIR "" CACHE PATH "Optional matching Roland ROM sets for real hardware synthesis tests")
+  set(EARTHSIEGE_TEST_SOUNDFONT "" CACHE FILEPATH "Optional General MIDI SoundFont for synthesis tests")
+  if(EARTHSIEGE_TEST_ROM_DIR AND EARTHSIEGE_TEST_SOUNDFONT)
+    add_test(NAME music_hardware COMMAND music_devices_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_BINARY_DIR}" "${EARTHSIEGE_TEST_ROM_DIR}" "${EARTHSIEGE_TEST_SOUNDFONT}")
+  endif()
 endif()

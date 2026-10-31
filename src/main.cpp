@@ -12,6 +12,7 @@
 #include <string_view>
 #include <SDL.h>
 #include "platform/window.h"
+#include "platform/music_setup.h"
 #include "platform/audio_output.h"
 #include "platform/joystick_devices.h"
 #include "resources/resource_store.h"
@@ -109,6 +110,9 @@ auto main(int argc, char *argv[])->int try {
   bool list{};
   bool headless{};
   bool skip_intro{};
+  bool audio_setup{};
+  std::optional<earthsiege::music_device> requested_music;
+  std::optional<std::filesystem::path> requested_roms,requested_soundfont;
   unsigned int scale{};
   std::optional<unsigned int> inspect_demo;
   unsigned int frame_limit{};
@@ -119,6 +123,10 @@ auto main(int argc, char *argv[])->int try {
         "  --data-dir PATH       Original game data (default: bundled assets)\n"
         "  --save-dir PATH       Override the separate user save directory\n"
         "  --inspect-demo N     Inspect demo 1–4 terrain and player roster (not replay)\n"
+        "  --music NAME          opl2, opl3, sc55, scc1a, mt32, mt32-mpu, soundfont\n"
+        "  --rom-dir PATH        Override automatic Roland ROM discovery\n"
+        "  --soundfont PATH      SoundFont for the General MIDI music option\n"
+        "  --audio-setup         Open the saved music-device selector\n"
         "  --scale N             Integer window scale (default: largest fit)\n"
         "  --screenshot PATH     Save an unscaled PPM frame\n"
         "  --frames N            Exit after N frames\n"
@@ -131,6 +139,13 @@ auto main(int argc, char *argv[])->int try {
     else if(argument == "--save-dir" && index + 1 < argc) save_directory = argv[++index];
     else if(argument == "--screenshot" && index + 1 < argc) screenshot = argv[++index];
     else if(argument == "--inspect-demo" && index + 1 < argc) inspect_demo = integer_option(argv[++index]);
+    else if(argument == "--audio-setup") audio_setup=true;
+    else if(argument == "--music" && index+1<argc) requested_music=earthsiege::parse_music_device(argv[++index]);
+    else if(argument.starts_with("--music=")) requested_music=earthsiege::parse_music_device(argument.substr(8));
+    else if(argument == "--rom-dir" && index+1<argc) requested_roms=argv[++index];
+    else if(argument.starts_with("--rom-dir=")) requested_roms=argument.substr(10);
+    else if(argument == "--soundfont" && index+1<argc) requested_soundfont=argv[++index];
+    else if(argument.starts_with("--soundfont=")) requested_soundfont=argument.substr(12);
     else if(argument == "--scale" && index + 1 < argc) scale = integer_option(argv[++index]);
     else if(argument == "--frames" && index + 1 < argc) frame_limit = integer_option(argv[++index]);
     else if(argument == "--skip-intro") skip_intro=true;
@@ -152,7 +167,27 @@ auto main(int argc, char *argv[])->int try {
     if(!path)throw std::runtime_error{SDL_GetError()};
     save_directory=path;SDL_free(path);
   }
-  earthsiege::game_shell menu{resources,save_directory,static_cast<int>(std::time(nullptr)&127)};
+  std::unique_ptr<earthsiege::window> display;
+  if(!headless){display = std::make_unique<earthsiege::window>(scale);SDL_StartTextInput();}
+  else if(!frame_limit) frame_limit = 1;
+  auto const music_file{save_directory/"music.cfg"};
+  auto music_settings{earthsiege::read_music_settings(music_file)};
+  if(char *base{SDL_GetBasePath()}){
+    music_settings.program_directory=base;SDL_free(base);
+  }else music_settings.program_directory=std::filesystem::absolute(argv[0]).parent_path();
+  if(requested_music)music_settings.device=*requested_music;
+  if(requested_roms)music_settings.rom_directory=std::filesystem::absolute(*requested_roms);
+  if(requested_soundfont)music_settings.soundfont=std::filesystem::absolute(*requested_soundfont);
+  if(audio_setup){
+    if(headless)throw std::runtime_error{"--audio-setup needs a window"};
+    if(auto chosen{earthsiege::choose_music_device(music_settings.device)}){
+      auto candidate{music_settings};candidate.device=*chosen;
+      // Validate assets before persisting a choice that could prevent startup.
+      earthsiege::pcm_sound_bank probe_bank;earthsiege::music_audio probe{resources,probe_bank,candidate};
+      music_settings=candidate;earthsiege::write_music_settings(music_file,music_settings);
+    }
+  }
+  earthsiege::game_shell menu{resources,save_directory,static_cast<int>(std::time(nullptr)&127),music_settings};
   if(!inspect_demo)menu.startup(!skip_intro);
   std::unique_ptr<earthsiege::mission_alert> alert;
   std::unique_ptr<earthsiege::mission_options_dialog> options;
@@ -160,7 +195,7 @@ auto main(int argc, char *argv[])->int try {
   earthsiege::framebuffer menu_frame;
   std::unique_ptr<earthsiege::mission_view> scene;
   if(inspect_demo) {
-    scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo);
+    scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo,music_settings);
     scene->configure_input(menu.settings(),menu.device_calibrations());
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
@@ -171,9 +206,6 @@ auto main(int argc, char *argv[])->int try {
       "B changes weapon groups; Alt+1–9 edits a group; +/- adjusts charge; Z restores charge settings.\n"
       "This is a live mission inspection, not playback of the recorded demo.\n";
   }
-  std::unique_ptr<earthsiege::window> display;
-  if(!headless){display = std::make_unique<earthsiege::window>(scale);SDL_StartTextInput();}
-  else if(!frame_limit) frame_limit = 1;
   std::unique_ptr<earthsiege::audio_output> sound;
   if(display)try{sound=std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr<<"Audio unavailable: "<<e.what()<<'\n';}
   std::unique_ptr<earthsiege::joystick_devices> sticks;
@@ -234,6 +266,22 @@ auto main(int argc, char *argv[])->int try {
           if(scene) scene->clear_input();
         }
         if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED){focused = true;if(sound)sound->pause(false);}
+      }
+      if(focused&&event.type==SDL_KEYDOWN&&!event.key.repeat&&event.key.keysym.sym==SDLK_m
+        &&(event.key.keysym.mod&KMOD_CTRL)&&(event.key.keysym.mod&KMOD_SHIFT)){
+        if(sound){sound->pause(true);sound->clear();}
+        if(scene)scene->clear_input();
+        menu.cancel_press();
+        try{
+          if(auto chosen{earthsiege::choose_music_device(music_settings.device)}){
+            auto candidate{music_settings};candidate.device=*chosen;
+            menu.configure_music(candidate);if(scene)scene->configure_music(candidate);
+            earthsiege::write_music_settings(music_file,candidate);music_settings=candidate;
+          }
+        }catch(std::exception const &error){SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Music device unavailable",error.what(),nullptr);}
+        previous=SDL_GetTicks64();pending=0;
+        if(sound)sound->pause(false);
+        continue;
       }
       if(options) {
         if(focused&&event.type==SDL_KEYDOWN&&!event.key.repeat){
@@ -357,7 +405,7 @@ auto main(int argc, char *argv[])->int try {
     update_devices_and_dialogs();
     if(menu.quit_requested())running=false;
     if(menu.ready_to_launch()) {
-      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch());scene->configure_input(menu.settings(),menu.device_calibrations());scene->begin_startup();scene_dirty=!scene->starting();applied_preferences=menu.settings().current();pending=0;
+      inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch(),music_settings);scene->configure_input(menu.settings(),menu.device_calibrations());scene->begin_startup();scene_dirty=!scene->starting();applied_preferences=menu.settings().current();pending=0;
       if(sound)sound->clear();
     }
     auto const now{display ? SDL_GetTicks64() : previous + 25};

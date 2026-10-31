@@ -2,7 +2,7 @@
 
 A native C++26 reconstruction of **Metaltech: Earthsiege**, using the original 1994 version 1.0 resources. Single missions and careers are implemented from registration and briefing through combat, debrief, repair and progression, with the original cinematics, music, effects and speech.
 
-The build is ready for comparison playtesting. All 269 tests pass, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
+The build is ready for comparison playtesting. All 271 standard tests pass (272 with the optional ROM/SoundFont test enabled), including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -11,7 +11,7 @@ ctest --test-dir build --output-on-failure
 ./build/earthsiege
 ```
 
-Requires a C++26 compiler, CMake 3.30 or newer and SDL2 development files. Original freeware game resources are bundled in `assets`; `--data-dir PATH` selects another installation. The floating window uses square pixels and the largest integer scale that fits the desktop. No DOS executable or emulator is needed by the native program.
+Requires a C++26 compiler, CMake 3.30 or newer and SDL2 development files. CMake fetches pinned Munt, Nuked-SC55 and TinySoundFont sources on the first configure; see [third-party code](THIRD_PARTY.md). Original freeware game resources are bundled in `assets`; `--data-dir PATH` selects another installation. The floating window uses square pixels and the largest integer scale that fits the desktop. No DOS executable or emulator is needed by the native program.
 
 `--inspect-demo 1` (or 2–4) opens a recorded mission’s starting terrain and HERC roster. Use arrows/keypad to walk and turn, I/J/K/M or right mouse to aim, and Space to fire. W/Alt+W cycles weapons; Tab cycles targets; Enter confirms tactical-panel commands. F1–F6 select the six MFD pages. Ctrl+F1 shows the cockpit, Ctrl+F2 orbits and Ctrl+F3 detaches. F7/F8 select the lower tactical map/damage panel and F9/F10 the left/right panels. Ctrl + arrows controls the external camera; P pauses and Escape returns to the menu. The cockpit throttle and weapon charge sliders, shield allocation buttons, weapon groups, LINK and TRACK controls respond to the mouse. Click a numbered weapon to select it, right-click to change its group membership, or use 1–9. The HUD shows heading, torso and pitch indicators, target lock brackets and the next waypoint. The cockpit clock and animated lamps use the original presentation scripts.
 
@@ -38,11 +38,11 @@ buffered completion. The original positional-volume query divides by zero if
 queried while the master gain is zero; this reconstruction returns zero in that
 case. Unused, manually supplied sample-loop ranges are bounded to their data.
 
-Mission inspection now plays the original PCM effects and wingmate speech through SDL audio. Firing, explosions, radar switches, flyer engines and authored player footsteps use their original triggers and distance/pan rules. Aiming servos, target-lock tones and the cockpit engine loop are connected too. Music uses the original FM instruments and sampled percussion, with the original encounter-driven track selection and fades. OPL3 is currently the live default; both OPL2 and OPL3 driver paths have original-code comparisons.
+Mission inspection now plays the original PCM effects and wingmate speech through SDL audio. Firing, explosions, radar switches, flyer engines and authored player footsteps use their original triggers and distance/pan rules. Aiming servos, target-lock tones and the cockpit engine loop are connected too. Music retains the original encounter-driven selection and fades. Press **Ctrl+Shift+M** to choose OPL2, OPL3, SC-55, SCC-1A, MT-32/CM-32L or a General MIDI SoundFont; the choice is saved. OPL3 works immediately. `scripts/fetch-assets.sh` (or `.bat`) installs the optional Roland ROMs in the default location. See [music setup and the MT-32 routing finding](docs/MUSIC.md): this release has no melodic tracks assigned to its MT-32 driver, so the full MPU-401-to-MT-32 route is explicitly an experiment.
 
 FM synthesis uses the unmodified LGPL Nuked OPL3 core in `third_party/nuked-opl3`.
 The host stream runs at 44.1 kHz; original 11.025 kHz PCM values are held between
-DAC updates. FM and PCM receive equal mix headroom. This reproduces the software
+DAC updates. Synthesised music and PCM receive equal mix headroom. This reproduces the software
 protocol, not a particular Sound Blaster card’s analogue circuitry or balance.
 
 Damage now produces attached smoke and physically ejected weapons, with the original animation timing, attachment transforms and debris motion.

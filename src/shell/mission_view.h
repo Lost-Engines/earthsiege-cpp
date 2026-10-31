@@ -128,9 +128,10 @@ class mission_view {
   std::deque<uint16_t> commands;
 
 public:
-  mission_view(resource_store const &resources, unsigned int demo);
-  mission_view(resource_store const &resources, input_tape const &tape);
-  mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission);
+  mission_view(resource_store const &resources, unsigned int demo,music_settings const &music={});
+  mission_view(resource_store const &resources, input_tape const &tape,music_settings const &music={});
+  mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission,music_settings const &music={});
+  void configure_music(music_settings const &settings){audio.configure_music(settings);}
   mission_results results() const { return session->results(); }
   mission_counters const &mission_variables() const { return session->mission_variables(); }
   mission_status status(bool requested=false) const { return session->mission_state(requested); }

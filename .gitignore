@@ -1,3 +1,8 @@
 /build*/
 *.ppm
 *.wav
+
+# Optional local synthesis assets
+/roms/
+*.rom
+*.sf2

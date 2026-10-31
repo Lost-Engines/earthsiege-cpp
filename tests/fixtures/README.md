@@ -66,8 +66,8 @@ Regenerate with `python3 tools/export_raster_fixtures.py ../earthsiege-reverse/a
 `texture_raster.bin` contains a test bitmap and translation table plus 600
 complete original 0x534ac polygon framebuffer checksums. Both column (0x7394a)
 and row (0x735a4) writers execute through the VGA adapter, including clipping,
-Q16 rounding, transparent zero and translated zero. A single rectangle is used
-for row-mode clipping; arbitrary cockpit clip masks remain integration work.
+Q16 rounding, transparent zero and translated zero. This row-mode fixture uses a single rectangle. The separate cockpit/environment
+and complete-frame fixtures exercise the integrated masks.
 Regenerate with `python3 tools/export_texture_fixtures.py ../earthsiege-reverse/analysis`.
 
 `gouraud_raster.bin` contains 6,000 emitted-band traces from original 0x78ccc
@@ -818,3 +818,19 @@ The provenance file records full capture hashes, original handoff hashes and all
 repair events. Full 19,200-frame evidence remains under analysis/missions/
 authored-runtime-final in earthsiege-reverse. Source selection is one seed-17
 context per source, not every contextual launch or random variation.
+
+
+`midi_pipeline.bin` (ESMMPU01) records all twenty supplied HMPs through the
+original MPU-401 (`0xa001`) and MT-32 (`0xa004`) modules, with digital percussion
+(`0xa005`) installed alongside each. `tools/capture_midi_pipeline.py` in the
+analysis tree runs original HMI installation, song routing, gain, scheduling,
+module MPU writes and cleanup. The fixture contains the original banks, each
+song, routing-dependent output bytes and PCM start/stop/volume/pan events for
+722 steps per case. Master levels change through 127, 114, 0, 64, 100 and 127;
+stop and cleanup follow. There are 30,764 physical MIDI bytes and 3,092 PCM events.
+
+MPU-ready port reads, timer registration and explicit sample-completion inputs
+are host boundaries. The reference does not substitute tracks or convert patch
+numbers. The MT-32 cases retain unrouted melodies and its `0x02fe` master-gain
+channel mask. Emulated waveform checks use external local ROMs separately and
+are not golden audio from a physical card.

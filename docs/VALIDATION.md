@@ -10,11 +10,12 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The current complete test suite passes **269/269 tests**. Six new fixtures cover
-authored player controls, player-disable transitions, ramming and two explicitly
-corrected original defects. The earlier 263-test baseline passed ASan/UBSan.
-After the final gameplay fixes, all 19 affected movement/world suites pass both
-sanitizers, including the six new fixtures and leak checking.
+The current complete test suite passes **272/272 tests**: 271 standard tests
+and one optional test using local Roland ROMs and a SoundFont. The earlier
+263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
+affected movement/world suites passed both sanitizers. The six audio suites,
+including the new physical-MIDI captures and real synthesis backends, also pass
+ASan/UBSan with leak checking after this audio update.
 
 ## Independent original comparisons
 
@@ -253,3 +254,44 @@ EARTHSIEGE_REPLAY_DIAGNOSTICS=build/replay-demo1 build/audit_demo_replay assets 
 The reference-capture and image-comparison tools live in the sibling
 earthsiege-reverse/tools directory. Regenerating expected fixtures requires
 the original executable; running the C++ tests does not.
+
+## Music hardware update
+
+The new `midi_pipeline` fixture compares all twenty supplied HMP resources with
+both original HMI physical-MIDI drivers. Across 722 scheduler/control steps per
+case, all 30,764 output bytes and 3,092 sampled-percussion events match. The
+reference runs original driver installation, routing, gain, stop cleanup and
+MPU port writes; host inputs supply ready ports and explicit PCM completions.
+Existing FM, gain, looping, shell-audio and mission-audio fixtures still pass.
+
+The original MT-32 route does not select any supplied melodic track. This is
+preserved separately from the optional GM-to-MT-32 listening experiment. The
+original MT-32 master-gain mask is `0x02fe`; MPU-401 updates all sixteen channels.
+See [music hardware](MUSIC.md) for the source-data limitations and user controls.
+
+`music_devices` checks settings round trips, quoted paths, explicit-directory
+precedence, both FM modes and failed-device-change recovery, including choices
+made before the first song starts. `music_hardware`
+adds real CM-32L, SC-55 and SCC-1A ROMs plus a SoundFont, note output, the menu
+song with digital percussion, pause/resume and device changes. Configure the
+optional test using paths to your local assets:
+
+```sh
+cmake -S . -B build \
+  -DEARTHSIEGE_TEST_ROM_DIR=/path/to/roms \
+  -DEARTHSIEGE_TEST_SOUNDFONT=/path/to/bank.sf2
+ctest --test-dir build -R 'music_devices|music_hardware|midi_pipeline' --output-on-failure
+```
+
+The complete 272-test run passed. All six selected audio suites
+passed ASan/UBSan with leak checking. Firmware and SoundFonts
+are local test inputs, not checked-in fixtures. The captured original MIDI and
+PCM protocol is checked on builds without those optional assets as well.
+
+
+The private SDL/Xvfb check selected SC-55 through Ctrl+Shift+M, found ROMs without
+an explicit path, saved the choice, restored it after restarting and resumed the
+shell after Cancel without changing the configuration. Headless mission starts
+also passed with SC-55 and the Munt MPU-401 mode. The Linux fetch helper completed
+a fresh twelve-file download and verified every manifest hash. The Windows
+helper follows the same manifest; it has not had a native Windows run.

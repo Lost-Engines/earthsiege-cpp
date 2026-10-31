@@ -8,7 +8,8 @@ namespace earthsiege {
 // Complete HMI music protocol, with explicit chip and digital-output boundaries.
 class music_player {
   std::array<uint32_t,2> devices;
-  hmi_fm fm;
+  std::unique_ptr<hmi_fm> fm;
+  std::function<void(std::span<uint8_t const>)> midi_output;
   hmi_pcm pcm;
   midi_gain gain;
   std::optional<hmp_song> song;
@@ -19,6 +20,8 @@ class music_player {
   void cleanup();
 public:
   music_player(bool opl3,bytes melodic,bytes drums,bytes digital_bank,pcm_midi_backend &backend);
+  music_player(uint32_t device,bytes melodic,bytes drums,bytes digital_bank,pcm_midi_backend &backend,
+    std::function<void(std::span<uint8_t const>)> output);
   void load(bytes hmp);
   void set_loops(uint16_t count);
   void play();

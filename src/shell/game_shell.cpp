@@ -14,8 +14,8 @@ unsigned region(unsigned screen){
   return 1000;
 }
 }
-game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed)
- :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},calibrations{load_host_calibrations(saves)},audio{r},game{r,seed},
+game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed,music_settings const &music)
+ :resources{r},saves{std::move(root)},careers{saves.index()},preferences_{saves.load_preferences()},calibrations{load_host_calibrations(saves)},audio{r,music},game{r,seed},
  strings{read_packed_strings(r.read("shell0","eng/watext.bin"))},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r},statistics_view{r}{show(1000);}
 
 unsigned game_shell::visible_region()const{

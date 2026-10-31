@@ -9,7 +9,7 @@ constexpr std::array<char const *,20> songs{
 }
 void shell_audio::start_song(){
  if(wanted<0)return;
- if(!music)music=std::make_unique<music_audio>(resources,bank);
+ if(!music)music=std::make_unique<music_audio>(resources,bank,music_config);
  if(track>=0&&record)record->event(ticks,2,track);
  music->stop();track=wanted;gain=fade_next=100;
  if(record)record->event(ticks,1,track);

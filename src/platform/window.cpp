@@ -24,7 +24,7 @@ window::window(unsigned int scale) {
   scale = std::clamp(scale, 1u, 16u);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
   SDL_ShowCursor(SDL_DISABLE);
-  handle.reset(SDL_CreateWindow("Metaltech: Earthsiege C++", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, static_cast<int>(screen_width * scale), static_cast<int>(screen_height * scale), SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI));
+  handle.reset(SDL_CreateWindow("Metaltech: Earthsiege C++ - Ctrl+Shift+M: music hardware", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, static_cast<int>(screen_width * scale), static_cast<int>(screen_height * scale), SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI));
   if(!handle) throw std::runtime_error{SDL_GetError()};
   renderer.reset(SDL_CreateRenderer(handle.get(), -1, SDL_RENDERER_SOFTWARE));
   if(!renderer) throw std::runtime_error{SDL_GetError()};

@@ -4,7 +4,7 @@
 #include <utility>
 
 namespace earthsiege {
-mission_audio::mission_audio(resource_store const &source):resources{source}{
+mission_audio::mission_audio(resource_store const &source,music_settings const &settings):resources{source},music_config{settings}{
   auto const groups{read_interface_strings(source.read("simvol0","str/SOUNDS.STR"))};size_t id{};
   for(auto const &group:groups)for(auto const &item:group){
     if(item.text.empty())return;
@@ -55,7 +55,7 @@ bool mission_audio::preferences(bool const enable_music,bool const enable_effect
 }
 void mission_audio::update_music(music_contacts const &contacts,random_state &random){
   if(!music_enabled)return;
-  if(!music)music=std::make_unique<music_audio>(resources,bank);
+  if(!music)music=std::make_unique<music_audio>(resources,bank,music_config);
   if(music_state.track>=0)playback.playing[static_cast<size_t>(music_state.track)]=music->playing();
   for(auto const &event:advance_combat_music(music_state,playback,contacts.actors,contacts.flyers,static_cast<uint32_t>(ticks/2),true,true,random)){
     switch(event.action){

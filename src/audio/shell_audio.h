@@ -6,6 +6,7 @@ namespace earthsiege {
 /// GO music and TTM PCM objects sharing the original digital mixer.
 class shell_audio:public shell_animation_sound {
  resource_store const &resources;
+ music_settings music_config;
  pcm_sound_bank bank;
  pcm_mixer mixer{bank};
  std::unique_ptr<music_audio> music;
@@ -22,7 +23,12 @@ public:
   virtual void event(uint64_t tick,uint8_t kind,int value)=0;
  };
  observer *record{};
- explicit shell_audio(resource_store const &r):resources{r}{}
+ explicit shell_audio(resource_store const &r,music_settings const &settings={}):resources{r},music_config{settings}{}
+ void configure_music(music_settings const &settings){
+    if(music)music->configure(settings);
+    else music=std::make_unique<music_audio>(resources,bank,settings);
+    music_config=settings;
+  }
  void song(int id);
  void region(unsigned id);
  void enabled(bool music,bool effects);
