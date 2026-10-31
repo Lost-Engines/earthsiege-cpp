@@ -10,8 +10,8 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The current complete test suite passes **260/260 tests**. The figures below are
-from the validated build, including the retained clock pages, weapon/message overlaps and collapsed texture quads.
+The current complete test suite passes **263/263 tests**. The figures below are
+from the validated build: the existing 260 checks and all three new mission/campaign suites pass.
 
 ## Independent original comparisons
 
@@ -25,7 +25,7 @@ damage, objectives or random-generator results.
 | Mission return | Final RESULTS.DAT and MISSION.VAR agree byte for byte in all four recordings. |
 | Replay cockpit pictures | 584 weapon-label samples, 579 instrument regions/colour samples, twelve complete frames and six scene regions match. |
 | Replay sound requests | All 7,073 ordered non-engine starts and sound stops agree. Engine starts/retries have the timing boundary below. |
-| Campaign/shell | Original launch files and RNG for 670 GO launches, 396 campaign transitions, four new-career constructors, and eighteen consecutive launch/return/repair transactions across all three battle sets. Separate original comparisons cover grading, recovery, inventories, crew, repairs and construction. |
+| Campaign/shell | Original launch files and RNG for 670 GO launches, 396 campaign transitions, four new-career constructors, eighteen short-cycle transactions and 121 further consecutive returns through six victory/defeat journeys across all three battle sets. Separate original comparisons cover grading, recovery, inventories, crew, repairs and construction. |
 | Graphics | Original model hierarchies, equipment, animation, damage, lighting, culling, scenery ordering, textures, palette effects and all 24 environments have component comparisons. Recent additions include 66 ground-projection cases, 3,000 clipped-line rasters and 94 missile-camera scenes with ground attachments. |
 | Cockpit state | Original controls, view transitions, modal suspension, retained gauge pixels and separate map/damage timers are exercised. The timer fixture includes 274 sequential page-switch states. |
 | Host integration | Private SDL-window checks cover pause freezing, preferences, status, cancellation and return to the shell, using isolated saves. |
@@ -35,6 +35,69 @@ interface/radio clocks, installed preferences and original speech-driver
 acceptance results. Component tests separately exercise the corresponding
 native state machines. This isolates deterministic game logic from independent
 hardware interrupt and voice-allocation phases.
+
+## Authored missions and campaign journeys
+
+The authored-world comparison preserves the actual GO handoff files, group
+activation, side assignments and initial roster. It does not force every group
+active as the earlier controlled navigation/combat probes did. A fixed ratio
+of 256, neutral player input and simulator RNG warm-up 17 make the runs repeatable.
+
+All **75 supported mission sources** match for **256 consecutive frames** each
+(19,200 frames). A further **ten later-career launches** match for 256 frames each
+(2,560 frames), using actual next-launch files from the transaction journeys.
+This is 21,760 additional world-state comparisons. The source sweep chooses one
+seed-17 context per source, not every one of the 670 retained launch variations.
+The two incompatible legacy mission formats remain outside the supported set.
+
+For checked-in regression, mission_authored_frames.bin retains the first 64
+consecutive frames of every source (4,800 frames); mission_career_frames.bin
+retains all 2,560 career frames, including the effect-allocation check after
+frame 203. Full 256-frame source captures remain in the analysis tree. Keeping
+a prefix reduces fixture size; it does not omit intervening simulation steps.
+
+The comparison covers controllers, movement, damage, power, sensors, animation,
+target selection, ground objects, activation, route cursors, all 100 mission
+counters, outcomes and the complete shared random state. Native output is never
+used to generate the expected state.
+
+The full progression journeys use a fresh original GO image on every return,
+preserving only serialized state. Their six paths contain 40/15, 26/7 and 26/7
+success/failure returns in battle sets 0, 1 and 2, ending at nodes 99 and -1.
+All 121 transactions match career/hangar bytes, repair results, graph positions,
+return and launch RNG, terminal readiness and the next three handoff files.
+Grades, salvage, damage and statistics are controlled flight-result inputs.
+These establish persistence/progression, not completed combat playthroughs.
+
+Those journeys exposed a missing native selection step: campaign slots may name
+BST random-mission lists. The shell now resolves them before compiling the chosen
+mission, with the original one bounded RNG draw and duplicate-list weighting.
+Mission simulations separately exposed constructor damage/controller ordering,
+overbroad activation gating for ground objects, and uninstantiated source-target
+mapping. Those behaviors now follow the original instructions.
+
+Two reference boundaries are explicit:
+
+- Negative formation IDs make original follower calculations read before the
+  allocation. Live native sessions choose formation zero. Strict inspection
+  placement still represents the result as undefined. Reference probes record
+  the same argument repair without altering the supplied handoff bytes.
+- Original deferred effect queues store only 20 pointers before overwriting their
+  own count at +80. B0_C5_70 retires 40 explosions and 40 secondary flat objects
+  together. Native queues already support all objects within the original pool
+  limits. The original probe extends pending storage, then runs the original FIFO
+  destructor/free-list collector in batches at the same phase. Without that repair,
+  corruption changes later allocation and random-number consumption.
+
+Both are confirmed original memory defects. Formation zero is a chosen bounded
+fallback, not recovered authorial intent. Repaired-reference comparisons are
+not claims of byte-for-byte behavior after corruption in an untouched DOS run.
+
+The full evidence, original addresses, capture paths and reproduction commands
+are in [the analysis mission report](../../earthsiege-reverse/docs/MISSION_FIDELITY.md).
+Fixture provenance records handoff and reference hashes, retained frame ranges
+and each formation/queue repair. No audio waveform matching was added here;
+the existing frame-boundary limit remains below.
 
 ## Measured full-frame differences
 
@@ -89,8 +152,9 @@ pixel identity for every possible game state.
 
 ## Explicit limits
 
-- The four recordings and component/transaction sweeps do not constitute a
-  manually completed playthrough of every campaign branch.
+- The four recordings, authored startup simulations and controlled terminal
+  campaign journeys do not constitute a manually completed playthrough of every
+  campaign branch, random layout or late combat interaction.
 - Whole audio waveforms are not claimed identical. Engine samples 16/45 can
   retry on different frames as PCM completion and finite voice allocation cross
   a simulation-frame boundary. Engine stops and the other ordered requests are

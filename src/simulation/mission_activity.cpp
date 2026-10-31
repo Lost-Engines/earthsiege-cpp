@@ -7,7 +7,7 @@ namespace earthsiege {
 namespace {
 std::optional<size_t> reference(int16_t const value) { return value < 0 ? std::nullopt : std::optional<size_t>{static_cast<size_t>(value)}; }
 }
-mission_activity::mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial)
+mission_activity::mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial, bool const initialise_controllers)
   : settings{script.header}, counters{initial}, triggers{script} {
   counters[7] = 0;
   std::array<size_t,3> offsets{0,placement.actors[0].size(),placement.actors[0].size()+placement.actors[1].size()};
@@ -20,9 +20,9 @@ mission_activity::mission_activity(mission_script const &script, mission_placeme
     auto const events{[&](auto const &entry){ state.contact_trigger=reference(entry.trigger_a); state.hit_trigger=reference(entry.trigger_b); state.counter=entry.counter; state.counter_operation=entry.counter_operation; }};
     if(kind == 0) {
       if(!source.player_roster) { auto const &entry{script.hercs.at(source.source)}; events(entry); state.persistent_signature=entry.field_mask[0]!=0; }
-      enter_behavior(controllers[id].controller,behavior::herc_deciding,stagger);
+      if(initialise_controllers)enter_behavior(controllers[id].controller,behavior::herc_deciding,stagger);
     } else if(kind == 1) {
-      events(script.flyers.at(source.source)); enter_behavior(controllers[id].controller,behavior::flyer_deciding,stagger);
+      events(script.flyers.at(source.source)); if(initialise_controllers)enter_behavior(controllers[id].controller,behavior::flyer_deciding,stagger);
     } else events(script.bases.at(source.source));
     if(state.player) player=id;
     actors.push_back(std::move(state));
@@ -41,8 +41,11 @@ mission_activity::mission_activity(mission_script const &script, mission_placeme
     else {
       auto const kind{static_cast<size_t>(record.target_type)-1};
       auto const found{sources.at(kind).find(static_cast<size_t>(record.target))};
-      // The original pool lookup returns null for an unconstructed source slot.
+      // DBSIM 1d850 zeroes the source-to-pool maps before compacting members.
+      // Unconstructed source slots therefore resolve to the first actor of that
+      // kind, rather than null (observable in chapter-six escort/rescue missions).
       if(found != sources[kind].end()) entry.objectives.push_back(found->second);
+      else if(!placement.actors[kind].empty()) entry.objectives.push_back(offsets[kind]);
     }
     if(!entry.objectives.empty()) entry.representative=entry.objectives.front();
   }
@@ -63,8 +66,8 @@ bool mission_activity::waiting(size_t const index) const { return groups.at(acto
 mission_counters const &mission_activity::variables() const { return counters; }
 bool mission_activity::triggered(size_t const index) const { return triggers.latched(index); }
 void mission_activity::activate(size_t const index) { triggers.activate(index,counters); }
-void mission_activity::notify_destroyed(size_t const index, std::span<observed_actor const> const observations) {
-  if(observations.size() != actors.size()) throw std::invalid_argument{"mission observation count"};
+void mission_activity::notify_destroyed(size_t const index, std::span<observed_actor const> const observations, bool const group_assigned) {
+  if(group_assigned && observations.size() != actors.size()) throw std::invalid_argument{"mission observation count"};
   auto const apply{[&](int16_t slot, int16_t operation) {
     if(slot < 0) return;
     auto &value{counters.at(static_cast<size_t>(slot))};
@@ -73,12 +76,15 @@ void mission_activity::notify_destroyed(size_t const index, std::span<observed_a
     else if(operation >= 13 && operation <= 16) value = static_cast<int16_t>(operation - 12);
   }};
   auto const &actor{actors.at(index)};
-  auto const &group{groups.at(actor.group)};
-  bool defeated{true};
-  for(auto const member : group.members) if(member != index && !observations[member].dead && !observations[member].disabled) { defeated = false; break; }
-  // Group accounting precedes individual accounting. Unlike spatial triggers,
-  // these notifications are not latched; a repeated call repeats the operation.
-  if(defeated) apply(group.counter, group.counter_operation);
+  // Starting damage runs before group assignment (DBSIM 1eb99 vs 1f16e).
+  // Individual counter/trigger actions still happen during construction.
+  if(group_assigned) {
+    auto const &group{groups.at(actor.group)};
+    bool defeated{true};
+    for(auto const member : group.members) if(member != index && !observations[member].dead && !observations[member].disabled) { defeated = false; break; }
+    // Group accounting precedes individual accounting. Neither is latched.
+    if(defeated) apply(group.counter, group.counter_operation);
+  }
   apply(actor.counter, actor.counter_operation);
 }
 

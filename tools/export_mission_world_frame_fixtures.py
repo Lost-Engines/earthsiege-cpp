@@ -9,10 +9,12 @@ p.add_argument('capture',type=Path)
 p.add_argument('output',type=Path)
 a=p.parse_args()
 rows=json.loads(a.capture.read_text())['cases']
+authored='handoff' in rows[0]
 player='player' in rows[0]['steps'][0]
+if authored and player:raise ValueError('authored launch fixture expects autonomous input')
 interactive=player and 'target' in rows[0]['steps'][0]['input']
 extended='outcome' in rows[0]['steps'][0]
-out=bytearray(b'ESWFRM05' if interactive else b'ESWFRM04' if player else b'ESWFRM03' if extended else b'ESWFRM02')
+out=bytearray(b'ESWFRM06' if authored else b'ESWFRM05' if interactive else b'ESWFRM04' if player else b'ESWFRM03' if extended else b'ESWFRM02')
 def write(fmt,*v):out.extend(struct.pack('<'+fmt,*v))
 def random(v):write('56h2B',*v)
 def words(v):write('H',len(v));write('h'*len(v),*v)
@@ -20,6 +22,10 @@ write('HI',len(rows),sum(len(r['steps'])for r in rows))
 for row in rows:
  write('HBh',row['demo'],row.get('friendly',True),row['ratio']);random(row['initial_random'])
  if interactive:write('h',row.get('missile_type',-1))
+ if authored:
+  out.extend(row['label'].encode()+b'\0')
+  for name in ['script.dat','player.mec','mission.var']:
+   data=bytes.fromhex(row['handoff'][name]);write('I',len(data));out.extend(data)
  write('HHH',len(row['steps']),len(row['steps'][0]['hercs']),len(row['steps'][0]['flyers']))
  for frame in row['steps']:
   if player:
@@ -33,6 +39,14 @@ for row in rows:
    write('3i3H3h3hhhBHiB',*f['position'],*f['angles'],*f['velocity'],*f['rates'],f['strength'],f['timer'],f['obstacle'],f['controller'],f['clock'],f['detectable'])
   random(frame['random'])
   if extended:write('12i',*frame['outcome'])
+  if authored:
+   m=frame['mission'];write('100hH',*m['counters'],m['stagger']);words(m['triggers'])
+   write('H',len(m['groups']))
+   for g in m['groups']:write('hB',*g)
+   words(m['targets'])
+   write('H',len(m['bases']))
+   for b in m['bases']:
+    write('3ihB',*b['position'],b['damage'],b['dead']);words(b['cells'])
   if player:
    p=frame['player'];write('h5B2i5BB',p['selection'],p['group'],p['hold'],p['tracking'],p['manual_fired'],p['manual_active'],p['target'],p['displayed'],*p['locks'],p['locked'])
    write('H',len(p['slots']))

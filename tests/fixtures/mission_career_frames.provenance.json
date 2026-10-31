@@ -1,0 +1,161 @@
+{
+  "original_sha256": "e5fb35966f3c755106cbeff2cfc1f2aed496bed388edab8ea2c857779efec34a",
+  "scope": "Compare live original/native simulation for coherent authored mission launches.\n\nThis is an autonomous-input world comparison, not a completed campaign playthrough.\nCaptured GO handoffs retain authored activation, sides, objectives and roster. Each\nsimulation starts its original generator with an explicitly repeatable warm-up.\nOriginal output is captured before C++ runs and is never supplied as native state.\n",
+  "ratio": 256,
+  "simulation_seed": 17,
+  "fixture_sha256": "58f15633c22cda1d0e6a14bba5cb5c23f2041fe9c390f07bbdd463477bda95f2",
+  "cases": [
+    {
+      "label": "battle0-failure-return10/sm_ptl02",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "b58ba90b65f93b6c35cada8fddd03a492a3c696755cfbd1b6ae95f8ad2a95b93",
+      "handoff_sha256": {
+        "script.dat": "435c8896ba4da9f1688ae6a3b1c791b93c53cceb4e6ab30c674a375eeaca7f42",
+        "player.mec": "e1c55225f8c9525a7e05583ada6d228c039a43cc0f37a32fae7629024acdf29b",
+        "mission.var": "080310cf1765b16e11251f49705d6a3bf2389b5efe9e0a791c4a1ffa61439fee"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle0-failure-return13/b0_c2_70",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "c529927b013f5bb0d3b352bb9c2bcbba38bd8ca76ce20ac77a47b4ca236240ba",
+      "handoff_sha256": {
+        "script.dat": "501b9dbf158a4f272cbe56df9a0dcb35ff2d0232e217e5f73725742010cae7c2",
+        "player.mec": "fb22951d420df8555a2faaa3bf9d636542e26f98c8a5e7577e999e5715d6364f",
+        "mission.var": "6c5e18d87306815b42b46e37b2899e69bb7955e23facd5dcefac7e291d94f3fe"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle0-success-return10/b0_c1_40",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "ee2d1b526f78132ed1fc7bafee06f635e8b7ece4535cd7b3ddd8f32cda7fa91e",
+      "handoff_sha256": {
+        "script.dat": "133bb2e405a41274b9d787d9d857a8dd12e9785b150f7a4d834cf889fb164729",
+        "player.mec": "63d85ec5599aab3fa11781b8bc2c23ab4a944d1eb8caa97983c51b7bd06288c4",
+        "mission.var": "0b7f39c49f71c4671ccc4d7cc9e1eff9b8b0d679a3ddd60aeb88adc17d72e924"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle0-success-return38/b0_c7_7a",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "ac94745722afc212cd4e326ad1a3eee645a8489e2534cc39ae7b6435375a34cf",
+      "handoff_sha256": {
+        "script.dat": "db9ebde42331bc7cd58783221bbaa5a21eb04011898aa6658abdb1ed627be2de",
+        "player.mec": "61113b8a36275ee3b0960aa39cba8a6f59fdac4590bcd9b0a1972b9099879440",
+        "mission.var": "d4e589f20c7d254b39ac2a7b4035073f8ca28d4ad66d0986efd1079ebba20862"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle1-failure-return5/b0_c2_70",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "c66372963c6bfb389e583e52fe8a06c204c59798f1c027b6bf80fcfd6670fa6b",
+      "handoff_sha256": {
+        "script.dat": "870a57f3687df7ac935fc41820bf101558af7ab19cbb73f13b0ec08040768c68",
+        "player.mec": "b41a6fa510ebf3bcf441783df1279c129856c9744ec192de78a70bbdb47f3617",
+        "mission.var": "c781741c4af1f928d7b7922b2ff064e5714ee0b946f19613f1a3eef25025424f"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle1-success-return10/b0_c3_4a",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "39f041efe2607dc72d99a635139fa323831aab3138b14f2158811ce0c2ee7476",
+      "handoff_sha256": {
+        "script.dat": "58cf21296a92db1416c6c2abd3e027154a6ca2ecb05776a2512e167d376c680e",
+        "player.mec": "a73eb9515a44d2884a5d451b2af550bd25c5918bc16a8a7f075dfb3d478736fd",
+        "mission.var": "8af55491d3b69778c0492c205853c52fe22df9e3d98f1582220131dca6970a59"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle1-success-return24/b0_c5_70 (effect queues extended)",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "ea2fbfed76548f23b985cea745466b33f5e9bcb2078df0b20b5290f17c4e490f",
+      "handoff_sha256": {
+        "script.dat": "381c176d8b8bf9498bd37c19882cc3742487b1b292c82c9e178178372c7588ff",
+        "player.mec": "d0f43483222ddfaa827e4469d0c00b09b0db3782dbe6cbbf94cd1099fed87bdb",
+        "mission.var": "a01e1c2b02681737568a46e09011a35c2b784f248c6b8a25754e7513a00b2e76"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [
+        {
+          "step": 9,
+          "queue": "0xaee8c",
+          "pending": 40
+        },
+        {
+          "step": 9,
+          "queue": "0xaf048",
+          "pending": 40
+        }
+      ]
+    },
+    {
+      "label": "battle2-failure-return5/b0_c2_70",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "6f2aaf6c87fad90255f7fae3783c51d828642cc7b44db9f72b824b0a4b515a2a",
+      "handoff_sha256": {
+        "script.dat": "870a57f3687df7ac935fc41820bf101558af7ab19cbb73f13b0ec08040768c68",
+        "player.mec": "b41a6fa510ebf3bcf441783df1279c129856c9744ec192de78a70bbdb47f3617",
+        "mission.var": "c781741c4af1f928d7b7922b2ff064e5714ee0b946f19613f1a3eef25025424f"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle2-success-return10/b0_c3_4a",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "793c958fe82b31b78015f17215b8aa55aebb6f05feb275f8503fcb021a478148",
+      "handoff_sha256": {
+        "script.dat": "58cf21296a92db1416c6c2abd3e027154a6ca2ecb05776a2512e167d376c680e",
+        "player.mec": "527eef647aeec7f8652d86b519d58a4fadeda952a8b99ed680924d2d11eb2e62",
+        "mission.var": "8af55491d3b69778c0492c205853c52fe22df9e3d98f1582220131dca6970a59"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "battle2-success-return24/b0_c5_70 (effect queues extended)",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "dba88d8c8330b5e4b052118fecdbc1ca228384da8594206152f3dd3934596dcc",
+      "handoff_sha256": {
+        "script.dat": "381c176d8b8bf9498bd37c19882cc3742487b1b292c82c9e178178372c7588ff",
+        "player.mec": "ddd988d4340b790a151fcae5cee1fda33791903e48702105ac9cafbf71383265",
+        "mission.var": "a01e1c2b02681737568a46e09011a35c2b784f248c6b8a25754e7513a00b2e76"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [
+        {
+          "step": 9,
+          "queue": "0xaee8c",
+          "pending": 40
+        },
+        {
+          "step": 9,
+          "queue": "0xaf048",
+          "pending": 40
+        }
+      ]
+    }
+  ]
+}

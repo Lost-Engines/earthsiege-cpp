@@ -1,0 +1,50 @@
+{
+  "scope": "Consecutive original campaign transactions through terminal campaign nodes.\n\nEach simulated flight returns controlled RESULTS.DAT and MISSION.VAR inputs,\nthen starts a fresh GO image. Original loading, awards, repairs, technology,\nstatistics, graph advancement, launch compilation and saving run unchanged.\nThese are persistence/branch integration checks, not played combat victories.\n",
+  "capture_sha256": "3830bc6e436d518c574fa80f0ee9d941b69d0a948713820c431ed0fb7bdf0bee",
+  "original_sha256": "06200f42fd8a021927ac37422dace41a2aee10dacbca66defe33bf47d7202125",
+  "fixture_sha256": "455cfdfa7849805e1c1bcf4093c9eeb77f50283acf598ae97904873e51c206f9",
+  "cases": [
+    {
+      "battle": 0,
+      "failure": false,
+      "seed": 17,
+      "transactions": 40,
+      "terminal_node": 99
+    },
+    {
+      "battle": 0,
+      "failure": true,
+      "seed": 18,
+      "transactions": 15,
+      "terminal_node": -1
+    },
+    {
+      "battle": 1,
+      "failure": false,
+      "seed": 48,
+      "transactions": 26,
+      "terminal_node": 99
+    },
+    {
+      "battle": 1,
+      "failure": true,
+      "seed": 49,
+      "transactions": 7,
+      "terminal_node": -1
+    },
+    {
+      "battle": 2,
+      "failure": false,
+      "seed": 79,
+      "transactions": 26,
+      "terminal_node": 99
+    },
+    {
+      "battle": 2,
+      "failure": true,
+      "seed": 80,
+      "transactions": 7,
+      "terminal_node": -1
+    }
+  ]
+}

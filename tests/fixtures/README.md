@@ -786,3 +786,35 @@ complete original frames and three targeted scene regions. The cases and scope
 are recorded by export_replay_scene_frames.py and scene-regression.json beside
 each original capture. Full-frame coverage includes ground shadows, external
 view framing and scene lighting; regions cover sky and smoke-edge culling.
+
+
+campaign_journeys.bin (ESCYC002) contains six terminal original-GO journeys:
+success and failure for all three battle sets, 121 transactions in total.
+It extends ESCYC001 with a terminal byte, next node and next step after each
+transaction. Original GO restarts on every return; only saved files and the
+registry survive. Grades, damage, salvage, statistics and event counters are
+controlled inputs. The fixture asserts complete careers/hangars, subsequent
+SCRIPT.DAT/PLAYER.MEC/MISSION.VAR, RNG and graph state, including BST random-list
+selection. See campaign_journeys.provenance.json and analysis/tools/
+capture_campaign_journeys.py; tools/import_campaign_cycles.py packs the output.
+
+mission_career_frames.bin (ESWFRM06) contains ten later-career launches, 256
+consecutive original frames each. It embeds the three coherent launch files and
+adds original counters, controller stagger, trigger latches, group route/activation
+state, selected targets and ground actors after the ESWFRM03 fields. Authored
+groups keep their original activation and sides. Inputs are neutral, frame ratio
+256, simulator RNG warm-up 17. The .provenance.json records source/input hashes
+and the two C5_70 queue repairs. Expected simulation values are never assigned to
+the native session. Capture: analysis/tools/check_authored_mission_frames.py;
+packing: tools/bundle_authored_mission_frames.py.
+
+
+mission_authored_frames.bin (ESWFRM06) contains all 75 supported mission sources:
+the first 64 consecutive frames from each successful 256-frame original/native
+comparison (4,800 retained frames). It uses the same fields and input boundaries
+as mission_career_frames.bin. Seven source cases explicitly replace negative
+formation indices with zero; B0_C5_70 extends the two overflowing deletion queues.
+The provenance file records full capture hashes, original handoff hashes and all
+repair events. Full 19,200-frame evidence remains under analysis/missions/
+authored-runtime-final in earthsiege-reverse. Source selection is one seed-17
+context per source, not every contextual launch or random variation.

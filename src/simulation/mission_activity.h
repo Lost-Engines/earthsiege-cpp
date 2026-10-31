@@ -63,7 +63,7 @@ class mission_activity {
   std::vector<perception_actor> perception_views(std::span<observed_actor const> observations);
 
 public:
-  mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial = {});
+  mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial = {}, bool initialise_controllers = true);
   mission_actor_activity const &actor(size_t index) const;
   mission_actor_activity &actor(size_t index);
   mission_group_activity const &group(size_t index) const;
@@ -80,7 +80,7 @@ public:
   mission_counters const &variables() const;
   bool triggered(size_t index) const;
   void activate(size_t index);
-  void notify_destroyed(size_t index, std::span<observed_actor const> observations);
+  void notify_destroyed(size_t index, std::span<observed_actor const> observations, bool group_assigned = true);
   target_objective objective(size_t index) const;
   void dispatch_groups(std::function<void(size_t)> const &dispatch);
   void scan_areas(std::span<observed_actor const> observations);

@@ -2008,3 +2008,39 @@ pixels solely from the documented invalid radar references. Running the
 original renderer with only the same bounded repair explains every one of
 those pixels and changes no others. See VALIDATION.md and the analysis
 PIXEL_FIDELITY.md for raw results and the explicit comparison boundaries.
+
+
+## Authored missions and complete campaign progression
+
+A source sweep now compares 256 consecutive frames for all 75 supported mission
+sources with authored group activation, sides, roster and objectives intact.
+Ten later-career launches add another 2,560 frames using actual accumulated
+campaign saves, for 21,760 original/native world-state comparisons.
+
+This exposed three integration errors: initial controller entry must interleave
+with each HERC's starting damage; waiting ground actors still receive their
+phase-four updates; and unconstructed objective sources map through the original
+zero-initialized source-to-pool array. These are now corrected. Invalid negative
+formation IDs have a documented formation-zero fallback in live sessions;
+inspection placement retains its explicit undefined result by default.
+
+Six complete progression journeys execute 121 original return/repair/save/next
+transactions through victory and defeat in all three battle sets. Each return
+starts a fresh original GO image with serialized state. Native output matches
+all career/hangar bytes, subsequent launch files, RNG and terminal graph states.
+This found the missing BST random-mission-list selection path; it now consumes
+the original one bounded draw, preserving duplicate-entry weighting.
+
+C5_70 exposes a separate original queue overflow: 40 explosions and 40 flat
+secondary effects retire on frame 9, but the original fixed deferred queue
+overwrites its own count after 20 pointers. The native dynamic pending vector
+already avoids this. A labeled original probe extends only pending storage and
+uses the original FIFO collector, resolving the later frame-203 RNG discrepancy.
+The probe also restores the original smoke-emitter/puff cleanup omitted by the
+earlier isolated harness. No native audio timing changes were needed.
+
+The existing 260 tests and three new suites pass (263 total). Regression fixtures
+retain 64-frame prefixes for all 75 sources, all ten 256-frame career runs, and
+all 121 campaign transactions, with hashes and repair provenance. The longer
+source captures remain in the analysis tree. See VALIDATION.md for measured
+scope and the distinction from manually played campaign branches.

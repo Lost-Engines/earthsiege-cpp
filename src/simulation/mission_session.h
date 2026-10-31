@@ -165,7 +165,7 @@ class mission_session {
   void advance_herc(size_t index, frame_ratio ratio, bool ramming = false);
   void update_herc_sensors(size_t index, frame_ratio ratio);
   bool contact_herc(size_t index);
-  void damage_consequences_changed(size_t index, damage_consequences const &previous, damage_consequences const &current);
+  void damage_consequences_changed(size_t index, damage_consequences const &previous, damage_consequences const &current, bool during_construction = false);
   void movement_event_received(size_t index, movement_event event);
   std::vector<contact_actor> contact_bodies() const;
   herc_combat_position combat_position(size_t index) const;

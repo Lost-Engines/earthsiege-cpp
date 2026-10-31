@@ -32,7 +32,16 @@ void game_state::prepare_campaign(bool next,mission_options const &options){
   bool const branch{campaign_failure_branch(last_kind_,last_grade_)};
   if(next){c.active=0;s.current=0;if(table.advance(s.node,s.step,branch)){s.node_progress=0;s.counters.fill(0);}}
   if(s.node==-1||s.node==99){c.active=0;prepared_.reset();return;}
-  prepare(table.filename(s.node,s.step,branch),options);
+  auto name{table.filename(s.node,s.step,branch)};
+  if(!normalise_path(name).ends_with(".msn")) {
+    // GO 140a5/20289: a campaign slot can name a BST random-mission list.
+    // Resolve it before compilation, consuming exactly one bounded RNG draw.
+    binary_reader file{resources.read("zones","bst/"+name),"campaign mission choices"};
+    auto const choices{read_mission_choices(file)};file.require_end();
+    if(choices.empty())throw std::runtime_error{"empty campaign mission choices"};
+    name=choices.at(static_cast<size_t>(random.bounded(static_cast<int16_t>(choices.size()))));
+  }
+  prepare(std::move(name),options);
   // GO 0x15cbb: stable descending rank of the three wingmates. The player is
   // left in place; the mission's authored first group sets the active count.
   auto const &members{prepared_->compiled.script.groups.at(0).members};

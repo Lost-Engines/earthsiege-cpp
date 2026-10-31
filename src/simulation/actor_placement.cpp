@@ -43,11 +43,13 @@ placement_catalogue::placement_catalogue(resource_store const &resources) {
   }
 }
 
-vec3<int32_t> const &placement_catalogue::formation_offset(actor_kind const kind, size_t const formation, size_t const follower) const {
-  return formations.at(kind_index(kind)).at(formation).at(follower);
+vec3<int32_t> const &placement_catalogue::formation_offset(actor_kind const kind, int16_t const formation, size_t const follower) const {
+  // Negative formation IDs index before the original allocation (DBSIM 1a098).
+  // The live runtime uses the first authored formation as a bounded fallback.
+  return formations.at(kind_index(kind)).at(formation < 0 ? 0 : static_cast<size_t>(formation)).at(follower);
 }
 
-mission_placement placement_catalogue::place(mission_script const &script, player_roster const &player) const {
+mission_placement placement_catalogue::place(mission_script const &script, player_roster const &player, bool const repair_undefined_formations) const {
   if(script.groups.empty()) throw std::runtime_error{"mission has no player group"};
   mission_placement result;
   std::array<std::set<size_t>, 3> references;
@@ -128,12 +130,12 @@ mission_placement placement_catalogue::place(mission_script const &script, playe
       if(actor.angles.x == 32768) actor.angles = vec3<uint16_t>{0, 0, heading};
       if(actor.position && actor.position->z < 0) {
         if(!anchor) throw std::runtime_error{"unpositioned actor has no group anchor"};
-        if(ordinal != 0 && source.formation < 0) {
+        if(ordinal != 0 && source.formation < 0 && !repair_undefined_formations) {
           /// The original reads before its formation allocation; no stable authored position exists
           actor.position.reset();
         } else {
           vec3<int32_t> offset;
-          if(ordinal != 0) offset = formations[kind].at(static_cast<size_t>(source.formation)).at(ordinal - 1);
+          if(ordinal != 0) offset = formation_offset(source.kind, source.formation, ordinal - 1);
           auto const leader_angle{group.members.empty() ? actor.angles.z : result.actors[kind][group.members.front().slot].angles.z};
           auto const rotated{rotate_vector(offset, rotation_transform(vec3<uint16_t>{0, 0, leader_angle}))};
           actor.position = *anchor;

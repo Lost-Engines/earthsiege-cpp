@@ -71,7 +71,7 @@ void mission_session::navigate_herc(size_t const index, frame_ratio const ratio)
     if(group.route >= 0) request = follow_route(motion.position, motion.angles.z, member.requested_speed, routes.at(static_cast<size_t>(group.route)), points, group.route_cursor);
   } else {
     auto const &leader{crew.at(group.members.front()).actor->body().movement()};
-    auto const &offset{layout.formation_offset(actor_kind::herc, static_cast<size_t>(group.formation), activity->actor(index).member - 1)};
+    auto const &offset{layout.formation_offset(actor_kind::herc, group.formation, activity->actor(index).member - 1)};
     request = follow_formation(motion.position, motion.angles.z, leader.position, leader.angles.z, leader.gait_rate, offset);
   }
   move_herc(index, request, ratio);
@@ -119,15 +119,19 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
   if(index == player_index) for(auto const id:actor.footstep_sounds()) emit_sound(sample_sound_request{sound_action::positioned,id,actor.body().movement().position});
 }
 
-void mission_session::damage_consequences_changed(size_t const index, damage_consequences const &previous, damage_consequences const &current) {
+void mission_session::damage_consequences_changed(size_t const index, damage_consequences const &previous, damage_consequences const &current, bool const during_construction) {
   auto &state{activity->decisions()[index]}; state.dead = current.dead; state.disabled = current.disabled;
+  auto const notify{[&]{
+    if(during_construction)activity->notify_destroyed(index,{},false);
+    else activity->notify_destroyed(index,observe());
+  }};
   if(!previous.disabled && current.disabled && !previous.dead) {
-    activity->notify_destroyed(index, observe());
+    notify();
     if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);
     enter_herc(index, behavior::disabled);
   }
   if(!previous.dead && current.dead) {
-    if(!current.disabled) {activity->notify_destroyed(index, observe()); if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);}
+    if(!current.disabled) {notify(); if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);}
     if(crew[index].actor->profile().remove_when_destroyed) {
       auto const &motion{crew[index].actor->body().movement()};
       auto position{motion.position}; position.z = -100000;

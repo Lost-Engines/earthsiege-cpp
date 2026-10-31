@@ -37,7 +37,7 @@ void mission_session::navigate_flyer(size_t const index){
   }else{
     auto const &leader{*flyers.at(group.members.front()-flyer_id(0)).actor};
     auto const ordinal{activity->actor(id).member};
-    auto const &offset{layout.formation_offset(actor_kind::flyer,static_cast<size_t>(group.formation),ordinal-1)};
+    auto const &offset{layout.formation_offset(actor_kind::flyer,group.formation,ordinal-1)};
     follow_flyer_formation(actor.motion(),actor.profile(),leader.motion(),offset,member.attack.requested_speed);
   }
   actor.set_detectable(false);
@@ -48,7 +48,7 @@ void mission_session::dispatch_flyer(size_t const index,frame_ratio const ratio)
   emit_sound(sample_sound_request{actor.dead() ? sound_action::stop : sound_action::continuous,16,actor.motion().position});
   auto const formation{[&]{
     auto const &leader{*flyers.at(group.members.front()-flyer_id(0)).actor};
-    auto const &offset{layout.formation_offset(actor_kind::flyer,static_cast<size_t>(group.formation),activity->actor(id).member-1)};
+    auto const &offset{layout.formation_offset(actor_kind::flyer,group.formation,activity->actor(id).member-1)};
     follow_flyer_formation(actor.motion(),actor.profile(),leader.motion(),offset,member.attack.requested_speed);
   }};
   dispatch_controller(state.controller,member.skip_decision,ratio,{

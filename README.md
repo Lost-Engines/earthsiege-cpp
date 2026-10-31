@@ -2,7 +2,7 @@
 
 A native C++26 reconstruction of **Metaltech: Earthsiege**, using the original 1994 version 1.0 resources. Single missions and careers are implemented from registration and briefing through combat, debrief, repair and progression, with the original cinematics, music, effects and speech.
 
-The build is ready for comparison playtesting. All 260 tests pass, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
+The build is ready for comparison playtesting. All 263 tests pass, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -61,9 +61,10 @@ Launch preparation now matches all 670 retained original GO launches byte for by
 
 Mission result export now retains recovered weapons and crew damage for the shell. All 5,114 captured recovery/condition states and four complete starting-world handoffs match. The original writer reads beyond its nine equipment slots for a tenth unused condition; this implementation safely writes 100 for that unused word.
 
-The nineteen mission alerts match captured DOS pixels. Eighteen consecutive
-launch/reload/return/repair/next-mission transactions also match the original
-across all three battle sets. Each flight return restores the saved inventory
+The nineteen mission alerts match captured DOS pixels. Six complete campaign
+progression journeys now match all 121 launch/reload/return/repair/next-mission
+transactions across all three battle sets, including victory and defeat endings
+and the original random-mission lists. Each flight return restores the saved inventory
 and starts the shell's time-seeded RNG again, as the separate DOS executable
 did. Manual career backups remain explicit actions. These comparisons verify
 the handoff and persistence, not an entire interactively completed campaign.
@@ -139,3 +140,18 @@ on unrelated memory. The repair gives them stable drawing order, with small
 visual differences from DOS. This is a narrow exception to reserving bug fixes
 for Redux; reproducing the defect would require extra machinery to imitate the
 original memory layout. See [the evidence and pixel comparisons](docs/VALIDATION.md#measured-full-frame-differences).
+
+
+Authored mission starts now preserve the original order of controller entry,
+starting damage and group assignment. Fixed buildings and turrets keep updating
+while their group awaits activation; objective references use the original
+source-to-pool mapping. These details affect mission behavior beyond the demos.
+
+Two further original memory defects have bounded handling. Negative formation
+IDs use formation zero in live sessions, rather than reading before the formation
+table. Effect deletion queues can hold every object in their existing fixed
+pools, rather than overwriting their own counter after 20 retirements. The pool
+limits and cleanup order remain unchanged. These choices avoid reconstructing
+undefined DOS heap behavior; the formation fallback is not a claim about the
+author's intended layout. The independent comparisons record every affected
+reference case. See [mission fidelity and comparison boundaries](docs/VALIDATION.md#authored-missions-and-campaign-journeys).

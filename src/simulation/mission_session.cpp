@@ -21,8 +21,8 @@ mission_session::mission_session(resource_store const &resources, mission_script
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
     random{std::move(initial_random)}, effects{resources,[this](auto const &event){emit_sound(event);},terrain.environment().atmosphere_parameters[1]!=0}, projectiles{resources, weapon_definitions,[this](auto const &event){emit_sound(event);}} {
-  auto const placements{layout.place(script, roster)};
-  activity=std::make_unique<mission_activity>(script,placements,initial_counters);
+  auto const placements{layout.place(script, roster, true)};
+  activity=std::make_unique<mission_activity>(script,placements,initial_counters,false);
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
   std::optional<size_t> controlled;
   for(auto const &actor : placements.actors[static_cast<size_t>(actor_kind::herc)]) {
@@ -54,6 +54,13 @@ mission_session::mission_session(resource_store const &resources, mission_script
     for(auto const &part : member.actor->body().weapons().parts()) member.attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});
     if(actor.player_controlled) controlled = crew.size();
     crew.push_back(std::move(member));
+    auto const id{crew.size()-1};
+    // Interleave initial controller entry and damage transitions exactly as the
+    // original per-actor constructors do; each entry advances a shared stagger.
+    enter_behavior(activity->decisions()[id].controller,behavior::herc_deciding,activity->entry_stagger());
+    crew.back().actor->notify_damage_changes([this,id](auto const &before,auto const &after){
+      damage_consequences_changed(id,before,after,true);
+    });
     if(actor.player_roster) crew.back().actor->restore_condition(roster.hercs.at(actor.source - script.hercs.size()).condition);
     else crew.back().actor->apply_starting_condition(script.hercs.at(actor.source).initial_condition, random, damage_events(crew.size() - 1));
   }
@@ -70,6 +77,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     auto &definition{flyer_definitions[placement.definition]};
     if(!definition) definition = std::make_unique<flyer_definition>(read_flyer_definition(resources,flyer_names.at(static_cast<size_t>(placement.definition))));
     auto const side{placements.groups.at(placement.group).mode};
+    enter_behavior(activity->decisions()[flyer_id(flyers.size())].controller,behavior::flyer_deciding,activity->entry_stagger());
     flyers.push_back({std::make_unique<flyer_actor>(*definition,*placement.position,placement.angles),{},false,placement.source,placement.group,side,script.groups.at(placement.group).trigger >= 0});
   }
   for(auto const &placement : placements.actors[static_cast<size_t>(actor_kind::base)]) {
@@ -115,7 +123,9 @@ bool mission_session::advance_frame(player_input &player_controls, frame_ratio c
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
-  for(size_t index{0}; index != bases.size(); ++index) if(!bases[index].waiting) advance_base(index, time_ratio);
+  // Phase four updates every fixed ground actor (2df8/3364), even while its
+  // group waits for activation. Group gating applies to HERC/flyer dispatch.
+  for(size_t index{0}; index != bases.size(); ++index) advance_base(index, time_ratio);
   effects.advance(time_ratio);
   player_weapons->set_manual_guidance(false);
   projectiles.advance(time_ratio, [&](projectile_owner &owner){
