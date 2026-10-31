@@ -1,0 +1,160 @@
+{
+  "original_sha256": "e5fb35966f3c755106cbeff2cfc1f2aed496bed388edab8ea2c857779efec34a",
+  "scope": "Compare live original/native simulation for coherent authored mission launches.\n\nInputs are either neutral or a repeatable player-control sequence. The comparison\ncovers the specified simulation interval; campaign completion is checked separately.\nCaptured GO handoffs retain authored activation, sides, objectives and roster. Each\nsimulation starts its original generator with an explicitly repeatable warm-up.\nOriginal output is captured before C++ runs and is never supplied as native state.\n",
+  "ratio": 450,
+  "simulation_seed": 83,
+  "player_input": true,
+  "launch_seeds": [
+    42
+  ],
+  "fixture_sha256": "02789e53677786e42b75acc666f51c4d59e7c9bfc5865266e824c7f1ab048eab",
+  "cases": [
+    {
+      "label": "b0_c1_60/campaign-1-4-seed42 (aim initialized)",
+      "captured_frames": 512,
+      "retained_frames": 512,
+      "capture_sha256": "fb961860e498d13e2ca857cefc16cb72fd0a19133a00cfa1ca52228aa9e466a4",
+      "handoff_sha256": {
+        "script.dat": "b376a1f5d9b2213c944e49c8af80ea0b0b86995c5af63a2313e51be915236935",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "d1a85f39878da021d1ec7c29ef2b9293dc94d8cbd81df49d7c09ae5f280ffbca"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [],
+      "initial_aim_repairs": [
+        {
+          "pool_index": 0,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 1,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 2,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 3,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 4,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 5,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 6,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 7,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 8,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 9,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 10,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 11,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 12,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 13,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 14,
+          "original": 0,
+          "replacement": -1
+        }
+      ],
+      "offset_overflow_repair": null
+    },
+    {
+      "label": "b0_c4_00/campaign-4-0-seed42 (aim initialized)",
+      "captured_frames": 512,
+      "retained_frames": 512,
+      "capture_sha256": "069fd4d9abf51876f92b98c4de89742a2c23f9d82e78a0cb33f1ef6614ac118f",
+      "handoff_sha256": {
+        "script.dat": "e471c52838b8dd8defeae2370c0cbf277c140565256fd9a1b464feecec313187",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "53f74afaab5f1999580ec622a040e025720911e45d110b319e1ff0ddce6d49b3"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [],
+      "initial_aim_repairs": [
+        {
+          "pool_index": 0,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 1,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 2,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 3,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 4,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 5,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 6,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 7,
+          "original": 0,
+          "replacement": -1
+        }
+      ],
+      "offset_overflow_repair": null
+    }
+  ]
+}

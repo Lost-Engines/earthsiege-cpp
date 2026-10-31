@@ -71,6 +71,8 @@ void skirt_with_herc(herc_skirt_state &state, size_t const actor, vec3<int32_t> 
     }
   }
   auto const heading{static_cast<uint16_t>(radial + (state.turn_left ? -16384 : 16384))};
+  // Keep the wide product: original 63d8c/5e838 adds a spurious carry when
+  // a long detour overflows a signed 32-bit product (see VALIDATION.md).
   auto point{rotate_vector({0, state.distance, 0}, rotation_transform({0, 0, heading}))};
   for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(static_cast<int64_t>(point[axis]) + obstacle[axis]);
   callbacks.move({.speed{256}, .turn{static_cast<int16_t>(wrap_word(bearing_angle(own.position, point) - own.heading) >> 4)}});

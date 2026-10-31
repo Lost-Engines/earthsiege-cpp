@@ -32,7 +32,8 @@ for r in selected:
                       handoff_sha256={k:hashlib.sha256(bytes.fromhex(v)).hexdigest()for k,v in case['handoff'].items()},
                       formation_repairs=case.get('formation_repairs',[]),
                       effect_queue_repairs=case.get('effect_queue_repairs',[]),
-                      initial_aim_repairs=case.get('initial_aim_repairs',[])))
+                      initial_aim_repairs=case.get('initial_aim_repairs',[]),
+                      offset_overflow_repair=case.get('offset_overflow_repair')))
 with tempfile.TemporaryDirectory(prefix='earthsiege-world-fixture-')as directory:
  output_json=Path(directory)/'capture.json'
  output_json.write_text(json.dumps(dict(cases=rows),separators=(',',':'))+'\n')

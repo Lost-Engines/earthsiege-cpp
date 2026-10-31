@@ -10,8 +10,10 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The current complete test suite passes **264/264 tests**. The newest fixture combines
-authored mission launches with player input and weapon controls.
+The current complete test suite passes **267/267 tests**. Four new fixtures cover
+authored player controls, the player-disable transition and two explicitly
+corrected original defects. The earlier 263-test baseline passed ASan/UBSan;
+the four new fixtures pass both sanitizers too, including leak checking.
 
 ## Independent original comparisons
 
@@ -71,6 +73,16 @@ including subsequent formation movement and collision damage. Three complete
 cases (B0_C2_20, B0_C7_6A and SM_SCT02, 1,536 frames) are retained in
 mission_player_disabled_frames.bin with original capture hashes.
 
+An extended sweep covers every supported source for 512 player-controlled
+frames, with launch seed 42, simulator warm-up 83 and frame ratio 450: 38,400
+frames, 752,640 HERC/flyer observations and 353,280 ground-object observations.
+All cases agree after the native disable fix and the explicitly corrected
+original references described below. Seventy-two cases need neither of the new
+aim/arithmetic repairs; two need aim initialization and one needs the multiply
+repair. Raw failures and the consolidated reviewed report remain in the analysis
+tree. Three further neutral-input missions match for 2,048 frames each, adding
+6,144 longer-running world frames.
+
 The comparison covers controllers, movement, damage, power, sensors, animation,
 target selection, ground objects, activation, route cursors, all 100 mission
 counters, outcomes and the complete shared random state. Native output is never
@@ -91,7 +103,7 @@ Mission simulations separately exposed constructor damage/controller ordering,
 overbroad activation gating for ground objects, and uninstantiated source-target
 mapping. Those behaviors now follow the original instructions.
 
-Two reference boundaries are explicit:
+The following original defects have explicit handling:
 
 - Negative formation IDs make original follower calculations read before the
   allocation. Live native sessions choose formation zero. Strict inspection
@@ -104,15 +116,32 @@ Two reference boundaries are explicit:
   destructor/free-list collector in batches at the same phase. Without that repair,
   corruption changes later allocation and random-number consumption.
 
-Both are confirmed original memory defects. Formation zero is a chosen bounded
-fallback, not recovered authorial intent. Repaired-reference comparisons are
-not claims of byte-for-byte behavior after corruption in an untouched DOS run.
+- Original HERC construction leaves aimed-component word +0x238 unwritten.
+  A travelling actor can aim before strategy assigns it. Native state initializes
+  it to -1 for centre aiming. Two distinct sentinels survive original construction
+  unchanged, and a write trace confirms the field remains unwritten before its
+  first affected use. Initializing only that word makes the complete B0_C1_60 and
+  B0_C4_00 captures agree. Both 512-frame cases are retained with explicit repair
+  records in mission_initialized_aim_frames.bin.
+- Long obstacle detours expose a fixed-point multiply bug in original 63d8c/5e838.
+  IMUL's overflow carry changes the rounding constant through SBB ECX,ECX;
+  the following ADD/ADC adds a spurious carry. At B0_C5_70 frame 354 this adds
+  262,143 world units to the offset's X coordinate. Native arithmetic already
+  uses a wide product and keeps that correct result. Replacing just that SBB
+  with XOR in the reference emulator removes the divergence for all 512 frames.
+  mission_corrected_offset_frames.bin records the two-byte reference patch.
+
+Formation zero and centre aiming are chosen deterministic fallbacks. Original
+allocation memory does not establish an intended value for either. The detour
+calculation keeps correct Q14 rounding instead of reproducing the overflow bug.
+The installed DOS executable is unchanged; corrected references are labelled
+separately from captures of the untouched original.
 
 The full evidence, original addresses, capture paths and reproduction commands
 are in [the analysis mission report](../../earthsiege-reverse/docs/MISSION_FIDELITY.md).
 Fixture provenance records handoff and reference hashes, retained frame ranges
-and each formation/queue repair. No audio waveform matching was added here;
-the existing frame-boundary limit remains below.
+and each formation, queue, initialization or arithmetic repair. No audio waveform matching was added here;
+the existing frame-boundary limit remains below. The [extended analysis report](../../earthsiege-reverse/docs/AUTONOMOUS_VALIDATION.md) includes the instruction traces and arithmetic/constructor probes.
 
 ## Measured full-frame differences
 
@@ -175,9 +204,9 @@ pixel identity for every possible game state.
   a simulation-frame boundary. Engine stops and the other ordered requests are
   compared. The original drivers and synthesizer paths have separate tests.
 - Host output does not reproduce a particular sound card's analogue circuitry.
-- Original invalid reads/writes and uninitialized values have bounded handling
-  where preserving memory corruption would be unsafe. The visible departures
-  are listed in the [README](../README.md) and implementation record.
+- Original invalid reads/writes and uninitialized values have bounded handling.
+  The long-detour multiply also keeps correct wide arithmetic. These departures
+  are listed in the [README](../README.md) and explained above.
 - Legacy resource fields without an established consumer retain neutral names.
   The analysis completion audit records those endpoints rather than assigning
   speculative meanings.

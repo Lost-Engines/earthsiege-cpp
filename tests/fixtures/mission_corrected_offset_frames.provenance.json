@@ -1,0 +1,44 @@
+{
+  "original_sha256": "e5fb35966f3c755106cbeff2cfc1f2aed496bed388edab8ea2c857779efec34a",
+  "scope": "Compare live original/native simulation for coherent authored mission launches.\n\nInputs are either neutral or a repeatable player-control sequence. The comparison\ncovers the specified simulation interval; campaign completion is checked separately.\nCaptured GO handoffs retain authored activation, sides, objectives and roster. Each\nsimulation starts its original generator with an explicitly repeatable warm-up.\nOriginal output is captured before C++ runs and is never supplied as native state.\n",
+  "ratio": 450,
+  "simulation_seed": 83,
+  "player_input": true,
+  "launch_seeds": [
+    42
+  ],
+  "fixture_sha256": "4ffe4d218dc38d2ff327b346d13341f184943ceed6689eeeea15af2869eb8da6",
+  "cases": [
+    {
+      "label": "b0_c5_70/campaign-5-4-seed42 (Q14 rounding repaired) (effect queues extended)",
+      "captured_frames": 512,
+      "retained_frames": 512,
+      "capture_sha256": "d89706370cfd858e27c11e3743359021c8c8e217d9d60c0cd44e65f568943cd0",
+      "handoff_sha256": {
+        "script.dat": "eaaf4cace2b9c1ff9d2314b61f56c5845cdb52845cad74d16a311148dac852c7",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "4d7b254230913d439ed8cb307f7cdec929a42ae920c754d32489cb5df59d2ed5"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [
+        {
+          "step": 9,
+          "queue": "0xaee8c",
+          "pending": 40
+        },
+        {
+          "step": 9,
+          "queue": "0xaf048",
+          "pending": 40
+        }
+      ],
+      "initial_aim_repairs": [],
+      "offset_overflow_repair": {
+        "address": "0x5e845",
+        "original": "1bc9",
+        "replacement": "31c9",
+        "effect": "XOR ECX,ECX replaces SBB ECX,ECX before XOR ECX,8192; use +8192 for all products"
+      }
+    }
+  ]
+}

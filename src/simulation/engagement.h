@@ -17,6 +17,8 @@ enum class engagement_mode { herc_search, herc_patrol, flyer_search, flyer_patro
 struct engagement_state {
   controller_state controller;
   int16_t command{0};
+  // Original HERC constructor leaves +0x238 unwritten. Use its existing
+  // centre-target sentinel until strategy explicitly selects a component.
   int16_t aimed_component{-1};
   bool unavailable{false};
   bool disabled{false};
