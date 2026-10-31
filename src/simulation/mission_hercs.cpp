@@ -130,6 +130,7 @@ void mission_session::damage_consequences_changed(size_t const index, damage_con
     if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);
     enter_herc(index, behavior::disabled);
   }
+  if(!previous.disabled && current.disabled && !during_construction && index == player_index) crew[index].actor->align_disabled_player();
   if(!previous.dead && current.dead) {
     if(!current.disabled) {notify(); if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);}
     if(crew[index].actor->profile().remove_when_destroyed) {

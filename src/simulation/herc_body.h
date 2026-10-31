@@ -55,6 +55,8 @@ public:
   void prepare_player(herc_controls const &controls, frame_ratio ratio, movement_event_sink const &events = {});
   void prepare_player_movement(int16_t throttle, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {});
   void reset_aim_angles();
+  /// Original 13250: preserve the player cockpit heading when the legs fail.
+  void align_disabled_player();
   void stop_throttle();
   /// Keyboard/stop commands take precedence over the cockpit slider until exchanged.
   int16_t exchange_throttle(int16_t requested);

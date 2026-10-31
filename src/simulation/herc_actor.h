@@ -48,6 +48,7 @@ public:
   int16_t choose_aimed_component(herc_actor const &target, random_state &random) const;
   void notify_damage_changes(std::function<void(damage_consequences const &, damage_consequences const &)> callback);
   void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
+  void align_disabled_player();
   damage_state const &damage() const;
   herc_power const &power() const;
   herc_power &power();

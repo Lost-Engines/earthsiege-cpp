@@ -71,6 +71,14 @@ void herc_body::prepare_player_movement(int16_t const throttle, int16_t const st
   if(update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), throttle, steering, damage, ratio, notify)) throttle_command_pending = true;
 }
 void herc_body::reset_aim_angles() { torso_state.angle = 0; elevation_state.angle = 0; }
+void herc_body::align_disabled_player() {
+  // Use the evaluated camera transform, including fixed-point angle extraction.
+  // Adding the torso angle would miss animation offsets and quantisation.
+  movement_state.angles.z = transform_angles(compose_transforms(aiming_pivot(), placement())).z;
+  torso_state.angle = 0;
+  if(torso_channel) rig.channel(*torso_channel).set_phase(source.profile.torso.sequence, 0);
+  rig.update_pose();
+}
 void herc_body::stop_throttle() { movement_state.throttle = 0; throttle_command_pending = true; }
 int16_t herc_body::exchange_throttle(int16_t const requested) {
   if(!throttle_command_pending) movement_state.throttle = requested;

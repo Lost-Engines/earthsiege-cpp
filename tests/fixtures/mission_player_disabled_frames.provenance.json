@@ -1,0 +1,55 @@
+{
+  "original_sha256": "e5fb35966f3c755106cbeff2cfc1f2aed496bed388edab8ea2c857779efec34a",
+  "scope": "Compare live original/native simulation for coherent authored mission launches.\n\nInputs are either neutral or a repeatable player-control sequence. The comparison\ncovers the specified simulation interval; campaign completion is checked separately.\nCaptured GO handoffs retain authored activation, sides, objectives and roster. Each\nsimulation starts its original generator with an explicitly repeatable warm-up.\nOriginal output is captured before C++ runs and is never supplied as native state.\n",
+  "ratio": 450,
+  "simulation_seed": 83,
+  "player_input": true,
+  "launch_seeds": [
+    42
+  ],
+  "fixture_sha256": "08ceaff6d145cbe141fe235bf68b7937c1353e14825c15cc85a6478389000633",
+  "cases": [
+    {
+      "label": "b0_c2_20/campaign-2-2-seed42",
+      "captured_frames": 512,
+      "retained_frames": 512,
+      "capture_sha256": "6081da33e14bf284022de9db32d863e8a61df897de8c3db4860859e6776673cb",
+      "handoff_sha256": {
+        "script.dat": "2cd978ee28060a853937433557c8309ff765b5b27bec3858d588c002ee04a3b3",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "4fe6333cc8447ed16a006c30610903beac87fa89203628892503e3b125ffe551"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [],
+      "initial_aim_repairs": []
+    },
+    {
+      "label": "b0_c7_6a/campaign-7-6-seed42",
+      "captured_frames": 512,
+      "retained_frames": 512,
+      "capture_sha256": "29d004c1fee2f5163f2cae2addfe0b6029c33821b40e41361a9ad5ae59105679",
+      "handoff_sha256": {
+        "script.dat": "70740b158f0818d1a2efb1a6636d3e7196dcdf141d6b1872939b302942a19823",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "f08773242f539729580ebffcc4c87a9bf9f27f18259be113cef75dfd0cc690c1"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [],
+      "initial_aim_repairs": []
+    },
+    {
+      "label": "sm_sct02/campaign-1-2-seed42",
+      "captured_frames": 512,
+      "retained_frames": 512,
+      "capture_sha256": "90358c4abcda247e6b1b452a3ea6174a769da570d539e08d3b54c3072f5f39f7",
+      "handoff_sha256": {
+        "script.dat": "e1781059eb4ae90ffde0310511d22ea36cf4eafb136cad1f7013feddbe32485c",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "2c79599a9cbc93f4b14032c98337cab7f0d06bceba80f503e75979f041462ee0"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [],
+      "initial_aim_repairs": []
+    }
+  ]
+}

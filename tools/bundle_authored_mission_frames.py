@@ -12,12 +12,17 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('capture',type=Path)
 parser.add_argument('output',type=Path)
 parser.add_argument('--frames',type=int,default=64)
+parser.add_argument('--report',type=Path,help='Native recheck report for the same saved original captures')
+parser.add_argument('--case',action='append',help='Retain only this exact capture label; repeat to select several')
 args=parser.parse_args()
 if args.frames<1:parser.error("--frames must be positive")
 report=json.loads((args.capture/'checks.json').read_text())
-if not all(r['passed']for r in report['cases']):raise ValueError('capture sweep contains failed comparisons')
+checks=json.loads(args.report.read_text()) if args.report else report
+selected=[r for r in checks['cases'] if not args.case or r['label'] in args.case]
+if args.case and set(args.case)-{r['label']for r in selected}:raise ValueError('unknown capture label')
+if not selected or not all(r['passed']for r in selected):raise ValueError('selected captures contain failed comparisons')
 rows=[];manifest=[]
-for r in report['cases']:
+for r in selected:
  path=args.capture/'cases'/(r['label'].replace('/','__')+'.json')
  case=json.loads(path.read_text())['cases'][0]
  count=len(case['steps']);case['steps']=case['steps'][:args.frames]

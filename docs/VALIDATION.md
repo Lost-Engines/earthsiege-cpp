@@ -62,6 +62,15 @@ All 1,024 frames match at ratio 128 and simulation RNG warm-up 83, and are retai
 in mission_authored_player_frames.bin. ESWFRM07 carries both the three original
 launch files and the recorded player-control inputs.
 
+The longer player-controlled captures also cover loss of mobility. Original
+13250 composes the evaluated cockpit transform with actor placement, extracts
+its heading, recentres the torso and reevaluates the pose when the player's legs
+fail. The native session now performs that transition before the remaining
+frame work. Six previously differing 512-frame captures match after this fix,
+including subsequent formation movement and collision damage. Three complete
+cases (B0_C2_20, B0_C7_6A and SM_SCT02, 1,536 frames) are retained in
+mission_player_disabled_frames.bin with original capture hashes.
+
 The comparison covers controllers, movement, damage, power, sensors, animation,
 target selection, ground objects, activation, route cursors, all 100 mission
 counters, outcomes and the complete shared random state. Native output is never

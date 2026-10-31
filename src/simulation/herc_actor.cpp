@@ -338,6 +338,8 @@ bool herc_actor::step(herc_controls const &controls, frame_ratio const ratio, st
   return body_state.step(controls, ratio, contact, events);
 }
 
+void herc_actor::align_disabled_player() { body_state.align_disabled_player(); }
+
 void herc_actor::begin_frame() { body_state.begin_frame(); }
 void herc_actor::prepare_player(herc_controls const &controls, frame_ratio const ratio, movement_event_sink const &events) {
   body_state.prepare_player_movement(controls.throttle, controls.steering, ratio, events);
