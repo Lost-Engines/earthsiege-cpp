@@ -27,7 +27,7 @@ void label(framebuffer &target, font const &face, std::string_view text, rectang
 } // namespace
 
 weapon_instruments::weapon_instruments(resource_store const &resources, cockpit_layout const &source)
-  : charge_cache(source.weapon_count()), layout{source}, buttons{read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA"))},
+  : charge_cache(source.weapon_count()), header_cache(source.weapon_count()), expanded_label(source.weapon_count()), layout{source}, buttons{read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA"))},
     number_fonts{read_font(resources.read("simvol0", "dfn/CPON.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPPRESS.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPOFF.DFN"))},
@@ -76,7 +76,7 @@ slider_geometry weapon_instruments::charge_slider(unsigned int const slot) const
 
 void weapon_instruments::draw_row(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
                                   std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
-                                  int const offset_x, int const offset_y) const {
+                                  int const offset_x, int const offset_y, bool const expanded) const {
   scoped_framebuffer_clip clip{target, nullptr};
   auto const button{translate(child_bounds(slot, kind, 0x10), offset_x, offset_y)};
   if(state.disabled && kind != weapon_instrument_kind::ecm) button_face = 2;
@@ -92,12 +92,12 @@ void weapon_instruments::draw_row(framebuffer &target, unsigned int const slot, 
   }
   int const status_x{button.left + 11}, status_y{button.top};
   auto name_bounds{button}; name_bounds.left = status_x + 4;
-  if(state.disabled) {
+  if(state.disabled || expanded) {
     name_bounds = translate(layout.bounds(0x14 + slot * 16), offset_x, offset_y);
     name_bounds.left = button.left; name_bounds.top = button.top;
   }
   label(target, state.disabled || state.selected ? yellow : green, state.disabled ? offline : name,
-        name_bounds, state.disabled, 1, !state.disabled && state.selected ? 53 : 63);
+        name_bounds, state.disabled || expanded, 1, !state.disabled && state.selected ? 53 : 63);
   if(state.disabled || state.selected || state.included)
     target.image(buttons.at(state.disabled ? 57 : state.ready ? 55 : 56), status_x, status_y, true);
   else target.fill({status_x, status_y, status_x + 2, status_y + 7}, 63);
@@ -128,11 +128,47 @@ void weapon_instruments::draw(framebuffer &target, unsigned int const slot, weap
 
 void weapon_instruments::repaint() {
   for(auto &charge:charge_cache)charge.full=true;
+  for(auto &header:header_cache)header.reset();
 }
 void weapon_instruments::draw_retained(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
                                        std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
                                        std::optional<int> const charge_boundary, int const offset_x, int const offset_y) {
-  draw_row(target,slot,kind,name,state,button_face,offset_x,offset_y);
+  // 37194/376b4 mark the header only for enable/selection/group/ready
+  // or button-face changes; ammunition and charge have separate dirty flags.
+  std::array<unsigned int,5> const header{state.disabled,state.selected,state.included,state.ready,button_face};
+  auto &previous{header_cache.at(slot)};
+  bool header_changed{};
+  if(!previous || *previous!=header){
+    auto const shown=[&](rectangle const &b){return b.right+offset_x>=0 && b.left+offset_x<320 && b.bottom+offset_y>=0 && b.top+offset_y<200;};
+    auto const button{button_bounds(slot,kind)};
+    if(shown(button)){
+      header_changed=true;
+      // 384f0/38509 enlarge and centre the label for OFFLINE. The original
+      // never restores its old bounds when that weapon becomes operational.
+      if(state.disabled && kind!=weapon_instrument_kind::ecm)expanded_label[slot]=true;
+      if(painted_region){
+        painted_region(button);
+        if(expanded_label[slot]){
+          auto expanded{layout.bounds(0x14+slot*16)};
+          expanded.left=button.left;expanded.top=button.top;
+          painted_region(expanded);
+        }
+        if(kind==weapon_instrument_kind::ecm){
+          auto detail{child_bounds(slot,kind,0x20)};
+          if(state.disabled){detail.left=button.left;detail.top=button.top;}
+          if(shown(detail))painted_region(detail);
+        }else{
+          auto detail{child_bounds(slot,kind,0x10)};detail.left+=11;
+          auto status{detail};status.right=status.left+2;
+          if(shown(status))painted_region(status);
+          // The one-pixel gap after the three-pixel readiness lamp is retained.
+          detail.left+=4;if(shown(detail))painted_region(detail);
+        }
+      }
+      previous=header;
+    }
+  }
+  draw_row(target,slot,kind,name,state,button_face,offset_x,offset_y,expanded_label[slot]);
   if(kind!=weapon_instrument_kind::energy || state.disabled)return;
   scoped_framebuffer_clip clip{target,nullptr};
   auto const bounds{child_bounds(slot,kind,0x20)};
@@ -154,6 +190,17 @@ void weapon_instruments::draw_retained(framebuffer &target, unsigned int const s
     if(x>=0&&y>=0&&x<static_cast<int>(image.width)&&y<static_cast<int>(image.height))
       image.pixels[y*image.width+x]=colour;
   };
+  // A retained OFFLINE label overlaps the slider too. Its later repaint
+  // changes the live backing before the slider restores its saved thumb.
+  if(header_changed && expanded_label[slot] && !cache.full){
+    auto const label_bounds{translate(layout.bounds(0x14+slot*16),offset_x,offset_y)};
+    for(unsigned y{};y<image.height;++y)for(unsigned x{};x<image.width;++x){
+      int const sx{area.left+static_cast<int>(x)},sy{area.top+static_cast<int>(y)};
+      if(sx>=0 && sx<320 && sy>=0 && sy<200 && sx>=label_bounds.left &&
+         sx<=label_bounds.right && sy>=label_bounds.top && sy<=label_bounds.bottom)
+        image.pixels[y*image.width+x]=target.pixels()[sy*screen_width+sx];
+    }
+  }
   if(cache.full) {
     for(unsigned y{};y<image.height;++y)for(unsigned x{};x<image.width;++x) {
       int const sx{area.left+static_cast<int>(x)},sy{area.top+static_cast<int>(y)};
@@ -165,9 +212,11 @@ void weapon_instruments::draw_retained(framebuffer &target, unsigned int const s
   if(cache.full || cache.value!=state.value || cache.requested!=state.requested_charge || cache.thumb_boundary!=boundary) {
     // Full paint restores only a displaced thumb; incremental paint always
     // restores it, even when only the LED value changed.
-    if(!cache.full || cache.thumb_boundary!=boundary)
+    if(!cache.full || cache.thumb_boundary!=boundary){
+      if(painted_region)painted_region({cache.thumb_boundary,bounds.top-1,cache.thumb_boundary+1,bounds.top+static_cast<int>(thumb.height)-2});
       for(unsigned y{};y<thumb.height;++y)for(unsigned x{};x<2;++x)
         pixel(cache.thumb_boundary-bounds.left+static_cast<int>(x),static_cast<int>(y),cache.saved_thumb[y*2+x]);
+    }
     if(cache.full)cache.led_boundary=bounds.left;
     if(cache.full || cache.value!=state.value) {
       int const next{bounds.left+((static_cast<int16_t>(state.value)*((bounds.right-bounds.left)*65536/1024))>>16)};
@@ -175,9 +224,11 @@ void weapon_instruments::draw_retained(framebuffer &target, unsigned int const s
       // endpoint when discharging. Resetting the boundary does not clear pixels.
       int const first{next>cache.led_boundary?cache.led_boundary:next+1};
       int const last{next>cache.led_boundary?next:cache.led_boundary};
-      if(next!=cache.led_boundary)
+      if(next!=cache.led_boundary){
+        if(painted_region)painted_region({first,bounds.top,last,bounds.bottom});
         for(int x{first};x<=last;++x)for(int y{1};y<static_cast<int>(image.height)-1;++y)
           pixel(x-bounds.left,y,next>cache.led_boundary?(x&1?49:50):63);
+      }
       cache.led_boundary=next;
     }
     for(unsigned y{};y<thumb.height;++y)for(unsigned x{};x<2;++x) {
@@ -186,8 +237,11 @@ void weapon_instruments::draw_retained(framebuffer &target, unsigned int const s
         cache.saved_thumb[y*2+x]=image.pixels[y*image.width+ix];
     }
     for(unsigned y{};y<thumb.height;++y)for(unsigned x{};x<thumb.width;++x)
-      if(auto const colour{thumb.pixels[y*thumb.width+x]})
+      if(auto const colour{thumb.pixels[y*thumb.width+x]}){
         pixel(boundary-bounds.left+static_cast<int>(x),static_cast<int>(y),colour);
+        int const tx{boundary+static_cast<int>(x)},ty{bounds.top-1+static_cast<int>(y)};
+        if(painted_region)painted_region({tx,ty,tx,ty});
+      }
     cache.thumb_boundary=boundary;cache.value=state.value;cache.requested=state.requested_charge;cache.full=false;
   }
   target.image(image,area.left,area.top);

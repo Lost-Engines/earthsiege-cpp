@@ -54,6 +54,7 @@ class cockpit_hdd {
   void execute_button(size_t,mission_session &,pointer_controls &);
   void select_page(int value,pointer_controls &input);
   hdd_refresh_state refresh;
+  std::function<uint32_t(uint32_t)> map_clock;
   unsigned int prompt_refreshes{};
   std::optional<size_t> selected_actor;
   std::optional<size_t> prompt;
@@ -77,5 +78,6 @@ public:
   std::optional<vec2<int32_t>> take_warp();
   tactical_control_state const &state()const;
   hdd_refresh_state const &refresh_state()const { return refresh; }
+  void clock_input(std::function<uint32_t(uint32_t)> source){map_clock=std::move(source);}
 };
 } // namespace earthsiege

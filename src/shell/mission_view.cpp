@@ -74,7 +74,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   }
   // Original data byte 94b56 starts lit; both initial VGA pages receive
   // a full clock paint before the first timed update.
-  clock.refresh();clock.refresh();
+  clock.refresh();clock.refresh();clock.initialize_pages();
   lamps.advance(0);
   instruments.add_slider(throttle.slider_layout(), 0);
   for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
@@ -91,6 +91,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   auto const groups{weapons.group_bounds()};
   for(size_t i{}; i < groups.size(); ++i) weapon_groups[i] = instruments.add_button(groups[i]);
   radio=std::make_unique<cockpit_radio>(resources,cockpit.layout,*session,ui_random);
+  weapons.painted_region=[this](rectangle const &bounds){radio->overpaint(bounds);};
   session->sound_output([this](sound_request const &request){audio.dispatch(request,camera.position);});
   radio->sound_output([this](uint16_t id,bool idle_only){if(!idle_only||!audio.playing(id))audio.play(id);});
   radio->speech_output([this](std::string_view path){return audio.speech(path);});
@@ -229,7 +230,10 @@ void mission_view::change_cockpit_view(cockpit_view const view) {
   transitions.reset(static_cast<int>(view));apply_cockpit_view(view,true);
 }
 void mission_view::apply_cockpit_view(cockpit_view const view,bool reset_input) {
-  if(panel != view) clock.refresh();
+  if(panel != view){
+    auto const origin{cockpit.windows[static_cast<size_t>(view)].instrument_origin};
+    clock.refresh_retained(transitions.snapshot().other_page/2,clock.visible_at(origin[0],origin[1]));
+  }
   auto const previous{impact_view().mode};
   panel = view;
   if(reset_input)set_camera(camera_mode::attached,previous,true);
@@ -375,7 +379,9 @@ void mission_view::prepare_frame(uint32_t now){
   consume_pointer_events();
 }
 void mission_view::update_interface_clock(uint32_t now){
-  clock.update(now);
+  auto const origin{instrument_origin()};auto const pages{transitions.snapshot()};
+  clock.update_retained(now,pages.draw_page/2,pages.other_page/2,
+    clock.visible_at(origin[0],origin[1],camera.mode!=camera_mode::attached),pages.prepared);
   if(now!=interface_ticks)lamps.advance(static_cast<int16_t>(now-interface_ticks));
   interface_ticks=now;
 }
@@ -596,7 +602,7 @@ void mission_view::draw() {
     auto const origin{instrument_origin()};
     int const x{-origin[0]}, y{-origin[1]};
     lamps.draw(frame, x, y);
-    clock.draw(frame, x, y);
+    clock.draw_retained(frame,transitions.snapshot().other_page/2,x,y);
     reactor.draw(frame, painted_reactor, x, y);
     instruments.painted(0,painted_throttle_boundary);
     painted_throttle_boundary.reset();
@@ -618,7 +624,7 @@ void mission_view::draw() {
     std::array<unsigned int, 5> faces;
     for(size_t i{}; i < faces.size(); ++i) faces[i] = std::to_underlying(instruments.at(weapon_groups[i]).face);
     weapons.draw_groups(frame, session->player_weapon_controls().current_group(), faces, x, y);
-    navigation.draw(frame, x, y, session->player_weapon_controls().auto_tracking());
+    navigation.draw(frame, x, y);
     displays->draw(frame,instruments,x,y);
     hdd->draw(frame,instruments,x,y);
     if(auto const marker{session->target_marker()}) {
@@ -630,6 +636,8 @@ void mission_view::draw() {
       }
     }
     waypoints.draw(frame, player.body().movement().position, player.body().movement().angles.z, navigation.display_heading(), session->next_waypoint(), x, y);
+    // 35060 paints the ATT label after every HUD child, including waypoints.
+    if(session->player_weapon_controls().auto_tracking()) navigation.draw_tracking(frame, x, y);
   }
   if(!inside&&!options_camera)external_artwork.draw(frame,external_camera_control);
   radio->advance_queue(*session,interface_ticks);

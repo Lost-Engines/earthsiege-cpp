@@ -173,7 +173,10 @@ void cockpit_hdd::update(mission_session &session,pointer_controls &input,camera
   visible=shown;origin_x=x;origin_y=y;painted=b;
   if(camera.mode==camera_mode::attached){bool const was{failure.failed};if(advance_instrument_failure(failure,instrument_damage_band(session.player_actor().internal_damage_fraction(4)),ticks,random))sounds.push_back(28);if(was!=failure.failed){dirty=map_dirty=true;refresh.prepare();}}
   if(!visible)return;
-  if(refresh.advance(page==0,ticks)){if(page==0){map_dirty=true;if(prompt_refreshes && --prompt_refreshes==0)prompt.reset();}dirty=true;}
+  // 3f578 reads the timer when the partial MAP painter runs, separately
+  // from frame input and the other cockpit widgets.
+  auto const refresh_ticks{page==0 && refresh.restore_pages==0 && map_clock?map_clock(ticks):ticks};
+  if(refresh.advance(page==0,refresh_ticks)){if(page==0){map_dirty=true;if(prompt_refreshes && --prompt_refreshes==0)prompt.reset();}dirty=true;}
   map_state=session.tactical_state(ticks);map_state.blink_phase=refresh.blink_phase;auto const &p{session.player().movement().position};auto const &s{controller.state()};controller.camera({p.x+s.pan.x,p.y+s.pan.y,s.camera.z});
   if(dirty){paint(session);dirty=false;}enable(input);
 }

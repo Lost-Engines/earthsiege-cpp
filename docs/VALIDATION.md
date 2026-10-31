@@ -10,8 +10,8 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The current complete test suite passes **255/255 tests**. The figures below are
-from the validated build, including the clip-region line correction.
+The current complete test suite passes **260/260 tests**. The figures below are
+from the validated build, including the retained clock pages, weapon/message overlaps and collapsed texture quads.
 
 ## Independent original comparisons
 
@@ -38,24 +38,46 @@ hardware interrupt and voice-allocation phases.
 
 ## Measured full-frame differences
 
-The four unchanged original recordings also have 120 sampled complete-frame
-comparisons. Their reports are retained in the analysis tree under
-analysis/tapes/replays/demoN-camera-playback-v3/native-frame-comparison.json.
-These measurements include the original software cursor; native diagnostic
-frames are saved before the host draws its cursor.
+The four unchanged original recordings have 120 sampled complete-frame
+comparisons. After isolating presentation timing, **114 images are pixel
+identical**. The other six differ only at the malformed distant radar structures:
+**230 pixels total**, all explained by the existing bounded repair.
 
-| Recording | Sampled frames | Largest RGB pixel difference |
-|---|---:|---:|
-| DEMO1 | 33 | 86 / 64,000 |
-| DEMO2 | 31 | 90 / 64,000 |
-| DEMO3 | 29 | 35 / 64,000 |
-| DEMO4 | 27 | 76 / 64,000 |
+| Recording | Sampled frames | Exact images | Remaining differences |
+|---|---:|---:|---|
+| DEMO1 | 33 | 30 | 36, 33 and 30 pixels in frames 120, 1020 and 1440 |
+| DEMO2 | 31 | 29 | 46 and 54 pixels in frames 660 and 720 |
+| DEMO3 | 29 | 29 | None |
+| DEMO4 | 27 | 26 | 31 pixels in frame 0 |
 
-Exact scene fixtures and whole-frame difference counts are different kinds of
-evidence. A small difference count is not a claim of complete pixel identity.
-Clock displays, radio/portrait timing and retained tactical-map update phase
-can differ when the original polls its interrupt-driven clock at separate
-points within one rendered frame.
+The radar models refer to nonexistent pose matrices. Original execution reads
+the following allocation header and animation bytes as transforms; changing
+only an allocator pointer changes visible pixels. Native loading maps those
+seven invalid references to local partition planes. In a separate controlled
+probe, applying only that same repair to the original renderer makes all six
+remaining scenes agree, at every affected pixel and with no other pixel changes.
+That modified probe is distinguished from the unchanged primary reference.
+
+The timing-controlled comparison supplies original clock/HMI elapsed inputs,
+drawing-page context and VGA copy operations to the native clock and TTM
+renderers. It asserts 7,024 clock states and pre-dispatch TTM states, rather than
+assigning them. The native MAP refresh receives 975 actual timer polls, while
+its deadlines and blink state remain native calculations. A separate 1,024-case
+original-code fixture verifies the production clock's retained-page scheduling.
+The native simulation and renderers never receive expected image pixels.
+
+The original cursor is removed using its saved-under buffer. No rectangle is
+masked out of the comparison. Before timing alignment, maximum full-frame
+differences are 42/62/24/43 pixels for DEMO1/2/3/4; these raw reports are retained.
+Different host interrupt/audio phases are still not promised to synchronize
+naturally with a particular DOS run.
+
+The analysis tree contains the complete
+[pixel investigation](../../earthsiege-reverse/docs/PIXEL_FIDELITY.md),
+the unchanged captures under analysis/tapes/replays/demoN-clock-pages, raw and
+controlled reports under image-differences, and the six-scene repair probe.
+This closes the identified differences in these samples; it does not establish
+pixel identity for every possible game state.
 
 ## Explicit limits
 

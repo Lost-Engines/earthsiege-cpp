@@ -30,6 +30,7 @@ public:
   std::array<int16_t, 2> indicator_angles() const;
   uint16_t display_heading() const;
   void draw(framebuffer &target, int offset_x = 0, int offset_y = 0, bool tracking = false) const;
+  void draw_tracking(framebuffer &target, int offset_x = 0, int offset_y = 0) const;
 };
 
 } // namespace earthsiege

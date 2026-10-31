@@ -81,6 +81,19 @@ int main(int argc,char **argv)try{
   }
   if(view.starting())file.fail("startup did not finish");
  }
+ std::vector<std::pair<uint32_t,uint32_t>> map_clocks;size_t map_clock_index{};
+ if(auto const *path{std::getenv("EARTHSIEGE_MAP_CLOCKS")}){
+  auto bytes{read_file(path)};binary_reader clocks{bytes};auto header{clocks.take(8)};
+  if(std::string(header.begin(),header.end())!="ESMAPC01")clocks.fail("map clock format");
+  auto n{clocks.integer<uint32_t>()};
+  for(unsigned i{};i<n;++i){auto frame{clocks.integer<uint32_t>()};auto ticks{clocks.integer<uint32_t>()};map_clocks.emplace_back(frame,ticks);}
+  clocks.require_end();
+  view.map_clock_input([&](uint32_t){
+   if(map_clock_index>=map_clocks.size() || map_clocks[map_clock_index].first!=audio_frame)
+    throw std::runtime_error{"Unexpected MAP timer read at frame "+std::to_string(audio_frame)+", next "+(map_clock_index<map_clocks.size()?std::to_string(map_clocks[map_clock_index].first):"end")};
+   return map_clocks[map_clock_index++].second;
+  });
+ }
  save_store replay_saves{std::filesystem::path{argv[2]}.parent_path()/"replay-settings"};
  size_t next_packet{},modal_packets{},alert_count{};bool suppressed{},exited{};
  auto alert=[&](int message){
@@ -365,6 +378,7 @@ int main(int argc,char **argv)try{
   if(frame%100==0)std::cout<<frame<<" original states agree\n";
  }
  if(argc==3){
+  if(map_clock_index!=map_clocks.size())throw std::runtime_error{"Unconsumed MAP timer observations"};
   if(next_raster_frame!=raster_frames.size())throw std::runtime_error{"Unconsumed raster observations"};
   if(!raster_frames.empty())std::cout<<raster_frames.size()-scene_frames-instrument_frames<<" original weapon-name rectangles, "<<scene_frames<<" scene rasters and "<<instrument_frames<<" gauge samples agree\n";
   if(terminal){

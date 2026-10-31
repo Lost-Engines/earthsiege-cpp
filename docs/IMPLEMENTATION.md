@@ -1965,3 +1965,40 @@ deliberately clears this byte; its zero phase is now an explicit fixture input.
 The live constructor uses the original initialized phase and both page paints.
 A separate replay tool consumes original 43621 timer reads and 79a14 HMI elapsed
 inputs, asserting rather than assigning the original clock and TTM state.
+
+## Instruction-traced sampled-image corrections
+
+The collapsed-quad test at 534ac rejects either zero projected extent. The row
+texture path incorrectly checked only height; both extents now match, including
+432 independent narrow/degenerate original cases. HUD 35060 paints ATT after
+its children, so the native label now follows the waypoint triangle.
+
+Idle pilot labels retain their last transition paint (3e5ee), rather than being
+regenerated every idle frame. System-message clear/expiry (2fa00/2fb18) persists
+only until a later widget paint overwrites the same pixels. The native erasure
+mask receives the actual header/slider paint rectangles, including the untouched
+one-pixel gap after a readiness lamp. Original OFFLINE painting at 384f0/38509
+permanently enlarges/centres a weapon label, also overwriting slider backing;
+that retained state is now reproduced. All 192 original sequential overlap
+rasters agree, across energy/ammunition flags, charge changes and message clears.
+
+Clock 435dc copies its dirty rectangle from the previous page before polling
+the timer. The launch-shake loop draws repeatedly without swapping pages, so
+this can overwrite a newly painted time with older pixels while logical clock
+state continues forward. The live clock retains both small raster regions.
+All 1,024 original page-sequence cases agree across eight cockpits, stationary
+and swapping pages, full paints, hidden controls and pending transitions.
+
+MAP 3f578 reads its timer separately from frame entry. The optional audit input
+supplies only the observed timer value, asserting its exact consumption frame.
+The clock/TTM audit separately reconstructs layers from observed timer inputs
+and original page operations; original state is checked, never assigned.
+
+All 260 tests pass. The four complete original recordings still agree on all
+7,032 gameplay/exit states, both RNGs, camera values, 9,300 input packets,
+return files and 7,073 ordered non-engine sound starts/stops. With presentation
+timing isolated, 114/120 whole images agree exactly. The other six have 230
+pixels solely from the documented invalid radar references. Running the
+original renderer with only the same bounded repair explains every one of
+those pixels and changes no others. See VALIDATION.md and the analysis
+PIXEL_FIDELITY.md for raw results and the explicit comparison boundaries.

@@ -6,6 +6,7 @@
 namespace earthsiege {
 cockpit_radio::cockpit_radio(resource_store const &source,cockpit_layout const &layout,mission_session const &session,random_state &ui_random,bool const reduced_detail)
   :resources{source},random{ui_random},catalogue{source},system_bounds{layout.bounds(0x694)},banner{source},labels{source},parent{layout.bounds(0x4bc)}{
+  system_erased.resize(static_cast<size_t>((system_bounds.right-system_bounds.left+1)*(system_bounds.bottom-system_bounds.top+1)));
   for(size_t slot{};slot<portrait_bounds.size();++slot){
     auto b{layout.bounds(0x5ac+slot*16)};
     b.left+=parent.left+1;b.right+=parent.left-1;b.top+=parent.top+1;b.bottom+=parent.top-1;
@@ -61,8 +62,10 @@ void cockpit_radio::advance_portraits(mission_session &session,uint32_t const fa
       if(update.ready)controller.ready();
       if(update.cancel)controller.cancel();
       for(auto const &call:update.calls)paint(call[0],call[1]);
-      if(p.transmission->state().phase==0)paint(0,0);
-    }else paint(0,0);
+      // 3e5ee retains idle labels after the closing transition; changes to
+      // orders alone do not repaint them. Full page preparation still does.
+      if(p.transmission->state().phase==0 && !p.initialized)paint(0,0);
+    }else if(!p.initialized)paint(0,0);
   }
 }
 void cockpit_radio::prepare(mission_session &session,camera_state const &camera,uint32_t const ticks,int const origin_x,int const origin_y,bool const restoring_cockpit){
@@ -82,7 +85,7 @@ void cockpit_radio::prepare(mission_session &session,camera_state const &camera,
   system_controller.advance(system_ticks,true,{
     .start{[](radio_message const &){}},
     .show{[&](radio_message const &message){
-      system_painted=true;system_text=catalogue.at(message.text).text.substr(0,80);
+      system_repaint_pending=true;system_text=catalogue.at(message.text).text.substr(0,80);
       switch(message.event.id){
         case 6:case 14:play_sound(25);break;
         case 8:case 11:case 12:case 13:case 15:case 17:case 19:case 20:play_sound(24);break;
@@ -93,7 +96,7 @@ void cockpit_radio::prepare(mission_session &session,camera_state const &camera,
       }
       return true;
     }},
-    .finish{[&](radio_message const &){system_text.clear();return true;}}
+    .finish{[&](radio_message const &){system_text.clear();system_repaint_pending=true;return true;}}
   });
   if(system_controller.state().starting)system_controller.ready();
   }
@@ -122,7 +125,13 @@ void cockpit_radio::advance_queue(mission_session &session,uint32_t ticks){
   });
 
 }
-void cockpit_radio::draw(framebuffer &frame)const{
+void cockpit_radio::overpaint(rectangle const &b){
+  auto const stride{system_bounds.right-system_bounds.left+1};
+  for(int y{std::max(b.top,system_bounds.top)};y<=std::min(b.bottom,system_bounds.bottom);++y)
+    for(int x{std::max(b.left,system_bounds.left)};x<=std::min(b.right,system_bounds.right);++x)
+      system_erased[static_cast<size_t>((y-system_bounds.top)*stride+x-system_bounds.left)]=0;
+}
+void cockpit_radio::draw(framebuffer &frame){
   if(visible){
     auto bounds{portrait_bounds};
     for(auto &b:bounds){b.left-=system_origin_x;b.right-=system_origin_x;b.top-=system_origin_y;b.bottom-=system_origin_y;}
@@ -133,12 +142,19 @@ void cockpit_radio::draw(framebuffer &frame)const{
       frame.pixel(x,y,cache.pixels()[static_cast<size_t>(y*320+x)]);
   }
   if(controller.state().visible)banner.draw(frame,text,text_speaker);
-  // Original 2fb18 erases an expired system message to colour 63. The
-  // retained cockpit page keeps that blank region until its next full repaint.
-  if(system_enabled&&system_painted){
+  // 2fa00/2fb18 clear on a message paint/expiry/full prepare, not on
+  // every idle frame. Later dirty weapon headers can overwrite that clearing.
+  if(system_enabled){
     auto bounds{system_bounds};bounds.left-=system_origin_x;bounds.right-=system_origin_x;
     bounds.top-=system_origin_y;bounds.bottom-=system_origin_y;
-    banner.draw_system(frame,system_text,bounds,system_controller.state().visible&&(!system_blink||(system_ticks&32)));
+    if(system_repaint_pending || system_controller.state().visible){
+      banner.draw_system(frame,system_text,bounds,system_controller.state().visible&&(!system_blink||(system_ticks&32)));
+      std::ranges::fill(system_erased,uint8_t{1});system_repaint_pending=false;
+    }else{
+      scoped_framebuffer_clip clip{frame,nullptr};auto const stride{bounds.right-bounds.left+1};
+      for(int y{bounds.top};y<=bounds.bottom;++y)for(int x{bounds.left};x<=bounds.right;++x)
+        if(system_erased[static_cast<size_t>((y-bounds.top)*stride+x-bounds.left)])frame.pixel(x,y,63);
+    }
   }
 }
 radio_presentation_state const &cockpit_radio::state()const{return controller.state();}

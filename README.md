@@ -2,7 +2,7 @@
 
 A native C++26 reconstruction of **Metaltech: Earthsiege**, using the original 1994 version 1.0 resources. Single missions and careers are implemented from registration and briefing through combat, debrief, repair and progression, with the original cinematics, music, effects and speech.
 
-The build is ready for comparison playtesting. All 255 tests pass, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
+The build is ready for comparison playtesting. All 260 tests pass, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -132,3 +132,8 @@ and disappearing with destroyed parts. Scene lighting and smoke visibility also
 retain the original engine's quirks.
 
 Cockpit gauges preserve the original paint timing and incremental speed-bar updates.
+
+Some distant radar structures differ slightly from DOS because their original model
+refers past the end of its animation data. This build uses a deterministic repair
+for those invalid references. The remaining sampled-image differences have all
+been traced; see [the pixel comparison results](docs/VALIDATION.md#measured-full-frame-differences).

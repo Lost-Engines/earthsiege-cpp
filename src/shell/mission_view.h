@@ -150,6 +150,7 @@ public:
   auto cockpit_origin()const{return instrument_origin();}
   auto const &lamp_state()const{return lamps.state();}
   auto const &map_refresh()const{return hdd->refresh_state();}
+  void map_clock_input(std::function<uint32_t(uint32_t)> source){hdd->clock_input(std::move(source));}
   auto const &cloud_state()const{return environment.cloud_state();}
   auto active_lights()const{return session->visual_effects().lights().registered();}
   void observe_scene(scene_draw_observer callback){renderer.observe=std::move(callback);}

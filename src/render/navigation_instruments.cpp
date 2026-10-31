@@ -84,13 +84,16 @@ void navigation_instruments::draw(framebuffer &target, int const offset_x, int c
   int const x{cross[0] + offset_x}, y{cross[1] + offset_y};
   target.line(x + 3, y, x + 6, y, 56); target.line(x - 6, y, x - 3, y, 56);
   target.line(x, y - 6, x, y - 3, 56); target.line(x, y + 3, x, y + 6, 56);
-  if(tracking) {
+  if(tracking) draw_tracking(target, offset_x, offset_y);
+}
+
+void navigation_instruments::draw_tracking(framebuffer &target, int const offset_x, int const offset_y) const {
+    scoped_framebuffer_clip clip{target, nullptr};
     rectangle const label{heading_bounds.left - 3 + offset_x, heading_bounds.top + 10 + offset_y,
                           heading_bounds.left + 12 + offset_x, heading_bounds.top + 15 + offset_y};
     target.fill(label, 56);
     target.text(tracking_font, tracking_label, label.left + ((label.right - label.left) >> 1) - ((tracking_font.text_width(tracking_label) - 1) >> 1),
                 label.top + ((label.bottom - label.top + static_cast<int>(tracking_font.height)) >> 1));
-  }
 }
 
 } // namespace earthsiege

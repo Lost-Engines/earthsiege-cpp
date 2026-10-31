@@ -25,7 +25,8 @@ class cockpit_radio {
   void play_sound(uint16_t id,bool idle_only=false);
   uint32_t read_input(radio_input_point point,uint32_t fallback)const;
   uint32_t system_ticks{};
-  bool system_blink{},system_enabled{true},system_painted{};
+  bool system_blink{},system_enabled{true},system_repaint_pending{};
+  std::vector<uint8_t> system_erased;
   std::string system_text;
   rectangle system_bounds;
   int system_origin_x{},system_origin_y{};
@@ -63,8 +64,9 @@ public:
   void update(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);
   void prepare(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);
   void advance_queue(mission_session &session,uint32_t ticks);
-  void draw(framebuffer &frame)const;
-  void repaint(){system_painted=true;}
+  void draw(framebuffer &frame);
+  void repaint(){system_repaint_pending=true;}
+  void overpaint(rectangle const &bounds);
   radio_presentation_state const &state()const;
   std::vector<uint16_t> take_sounds();
   std::vector<std::string> take_speech();

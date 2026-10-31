@@ -135,7 +135,9 @@ void draw_textured_polygon(framebuffer &target, std::span<projected_vertex const
   auto const first{std::ranges::min_element(clipped, {}, [axis](auto const &p){return p.position[axis];})};
   auto const last{std::ranges::max_element(clipped, {}, [axis](auto const &p){return p.position[axis];})};
   auto const [top, bottom]{std::ranges::minmax_element(clipped, {}, [](auto const &p){return p.position.y;})};
-  if(first->position[axis] == last->position[axis] || top->position.y == bottom->position.y || top->position.y > bounds.bottom) return;
+  auto const [left, right]{std::ranges::minmax_element(clipped, {}, [](auto const &p){return p.position.x;})};
+  // Original 53610/53619 reject both collapsed extents in either scan mode.
+  if(left->position.x == right->position.x || top->position.y == bottom->position.y || top->position.y > bounds.bottom) return;
   auto const start{static_cast<size_t>(first - clipped.begin())};
   auto const end{static_cast<size_t>(last - clipped.begin())};
   texture_edge upper{clipped, start, end, axis ? -1 : 1, axis};
