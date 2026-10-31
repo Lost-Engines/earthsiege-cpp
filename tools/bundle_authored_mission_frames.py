@@ -26,11 +26,13 @@ for r in report['cases']:
                       capture_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                       handoff_sha256={k:hashlib.sha256(bytes.fromhex(v)).hexdigest()for k,v in case['handoff'].items()},
                       formation_repairs=case.get('formation_repairs',[]),
-                      effect_queue_repairs=case.get('effect_queue_repairs',[])))
+                      effect_queue_repairs=case.get('effect_queue_repairs',[]),
+                      initial_aim_repairs=case.get('initial_aim_repairs',[])))
 with tempfile.TemporaryDirectory(prefix='earthsiege-world-fixture-')as directory:
  output_json=Path(directory)/'capture.json'
  output_json.write_text(json.dumps(dict(cases=rows),separators=(',',':'))+'\n')
  subprocess.run([sys.executable,str(ROOT/'tools/export_mission_world_frame_fixtures.py'),str(output_json),str(args.output)],check=True)
 args.output.with_suffix('.provenance.json').write_text(json.dumps(dict(
  original_sha256=report['original_sha256'],scope=report['scope'],ratio=report['ratio'],simulation_seed=report['simulation_seed'],
+ player_input=report.get('player_input',False),launch_seeds=report.get('launch_seeds',[17]),
  fixture_sha256=hashlib.sha256(args.output.read_bytes()).hexdigest(),cases=manifest),indent=2)+'\n')

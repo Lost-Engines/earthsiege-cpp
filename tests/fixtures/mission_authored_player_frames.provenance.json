@@ -1,0 +1,76 @@
+{
+  "original_sha256": "e5fb35966f3c755106cbeff2cfc1f2aed496bed388edab8ea2c857779efec34a",
+  "scope": "Compare live original/native simulation for coherent authored mission launches.\n\nThis is an autonomous-input world comparison, not a completed campaign playthrough.\nCaptured GO handoffs retain authored activation, sides, objectives and roster. Each\nsimulation starts its original generator with an explicitly repeatable warm-up.\nOriginal output is captured before C++ runs and is never supplied as native state.\n",
+  "ratio": 128,
+  "simulation_seed": 83,
+  "player_input": true,
+  "launch_seeds": [
+    42
+  ],
+  "fixture_sha256": "94c42a64e1441ce8493db2c068b556394595bd563ca6f858cad179765a17af7e",
+  "cases": [
+    {
+      "label": "b0_c0_0a/campaign-0-0-seed42",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "500372c9eb71d69de197927ae4592b9ff63086a8068815a9ae5b62772f559158",
+      "handoff_sha256": {
+        "script.dat": "a2fa8f914717a0f4b42ddd0d9c65ff0e6c8b4f4ed988649ca120102da9d1bea1",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "1072294b7b68022df146fd0762f99ce8811a876c1eba35cf1f5cf793cb4a1b8c"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "b0_c3_2a/campaign-3-2-seed42",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "b579999ebe8c9f6eec55aa41cc26e01c2e9d6f10c8f921e24892e84212366a74",
+      "handoff_sha256": {
+        "script.dat": "425d0d0cd3138b7e5af5d4f4dfc5333c23dd90eb454673fb1aee4614bf9740aa",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "c8395e37a2ae40b57b97df5510f98bf0d0ef6eb1263ae61012a79aa9a38e8b2b"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    },
+    {
+      "label": "b0_c5_70/campaign-5-4-seed42 (effect queues extended)",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "ba50ff71c10cd0e3804a671cd83f90bd63613bc86ba6d9dfe8511bb419bb6899",
+      "handoff_sha256": {
+        "script.dat": "eaaf4cace2b9c1ff9d2314b61f56c5845cdb52845cad74d16a311148dac852c7",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "4d7b254230913d439ed8cb307f7cdec929a42ae920c754d32489cb5df59d2ed5"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [
+        {
+          "step": 19,
+          "queue": "0xaee8c",
+          "pending": 40
+        },
+        {
+          "step": 19,
+          "queue": "0xaf048",
+          "pending": 40
+        }
+      ]
+    },
+    {
+      "label": "sm_ptl01/campaign-1-2-seed42",
+      "captured_frames": 256,
+      "retained_frames": 256,
+      "capture_sha256": "5dba68a8d45d13fe509f37538058f087258fe0a6eedfb2c34dd07aa17452da6d",
+      "handoff_sha256": {
+        "script.dat": "5a50b91c5b0eeebd3f953bf4211905fa559a9496aaf57388210d9ab36397cdac",
+        "player.mec": "915966a22b3b84682a274f921f5955457e925c7828edc2833994a7182e509449",
+        "mission.var": "2c79599a9cbc93f4b14032c98337cab7f0d06bceba80f503e75979f041462ee0"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": []
+    }
+  ]
+}

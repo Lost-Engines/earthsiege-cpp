@@ -10,8 +10,8 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The current complete test suite passes **263/263 tests**. The figures below are
-from the validated build: the existing 260 checks and all three new mission/campaign suites pass.
+The current complete test suite passes **264/264 tests**. The newest fixture combines
+authored mission launches with player input and weapon controls.
 
 ## Independent original comparisons
 
@@ -55,6 +55,12 @@ consecutive frames of every source (4,800 frames); mission_career_frames.bin
 retains all 2,560 career frames, including the effect-allocation check after
 frame 203. Full 256-frame source captures remain in the analysis tree. Keeping
 a prefix reduces fixture size; it does not omit intervening simulation steps.
+
+Four additional seed-42 launches combine authored activation and factions with
+player movement, aiming, firing, weapon selection, linking and target exchange.
+All 1,024 frames match at ratio 128 and simulation RNG warm-up 83, and are retained
+in mission_authored_player_frames.bin. ESWFRM07 carries both the three original
+launch files and the recorded player-control inputs.
 
 The comparison covers controllers, movement, damage, power, sensors, animation,
 target selection, ground objects, activation, route cursors, all 100 mission

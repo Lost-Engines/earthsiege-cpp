@@ -17,8 +17,8 @@ int main(int argc,char **argv) try {
   using namespace earthsiege;if(argc!=3)return EXIT_FAILURE;
   resource_store resources{argv[1]};auto const bytes{read_file(argv[2])};binary_reader file{bytes};auto const magic{file.take(8)};
   auto const version{std::string(magic.begin(),magic.end())};
-  bool const authored{version=="ESWFRM06"};
-  bool const interactive{version=="ESWFRM05"};
+  bool const authored{version=="ESWFRM06" || version=="ESWFRM07"};
+  bool const interactive{version=="ESWFRM05" || version=="ESWFRM07"};
   bool const player_input_frames{version=="ESWFRM04" || interactive};
   bool const extended{version=="ESWFRM03" || player_input_frames || authored};
   if(!extended && version!="ESWFRM02")file.fail("fixture version");

@@ -11,21 +11,24 @@ a=p.parse_args()
 rows=json.loads(a.capture.read_text())['cases']
 authored='handoff' in rows[0]
 player='player' in rows[0]['steps'][0]
-if authored and player:raise ValueError('authored launch fixture expects autonomous input')
+if any(('handoff' in r)!=authored or ('player' in r['steps'][0])!=player for r in rows):
+ raise ValueError('world fixture cases must use the same authored/player-input format')
 interactive=player and 'target' in rows[0]['steps'][0]['input']
+if authored and player and not interactive:
+ raise ValueError('authored player fixture requires target/weapon input fields')
 extended='outcome' in rows[0]['steps'][0]
-out=bytearray(b'ESWFRM06' if authored else b'ESWFRM05' if interactive else b'ESWFRM04' if player else b'ESWFRM03' if extended else b'ESWFRM02')
+out=bytearray(b'ESWFRM07' if authored and player else b'ESWFRM06' if authored else b'ESWFRM05' if interactive else b'ESWFRM04' if player else b'ESWFRM03' if extended else b'ESWFRM02')
 def write(fmt,*v):out.extend(struct.pack('<'+fmt,*v))
 def random(v):write('56h2B',*v)
 def words(v):write('H',len(v));write('h'*len(v),*v)
 write('HI',len(rows),sum(len(r['steps'])for r in rows))
 for row in rows:
  write('HBh',row['demo'],row.get('friendly',True),row['ratio']);random(row['initial_random'])
- if interactive:write('h',row.get('missile_type',-1))
  if authored:
   out.extend(row['label'].encode()+b'\0')
   for name in ['script.dat','player.mec','mission.var']:
    data=bytes.fromhex(row['handoff'][name]);write('I',len(data));out.extend(data)
+ if interactive:write('h',row.get('missile_type',-1))
  write('HHH',len(row['steps']),len(row['steps'][0]['hercs']),len(row['steps'][0]['flyers']))
  for frame in row['steps']:
   if player:
