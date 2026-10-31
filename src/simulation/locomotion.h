@@ -35,6 +35,8 @@ using movement_adjustment = std::function<void(int16_t &, int16_t &)>;
 bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t throttle_input, int16_t steering_input, movement_damage const &damage = {}, frame_ratio ratio = frame_ratio_one, movement_event_sink const &events = {});
 /// Prepared AI speed/turn request; apply recovery, damage modifiers and gait transitions
 void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t speed, int16_t steering, movement_damage const &damage = {}, frame_ratio ratio = frame_ratio_one, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});
+/// Advance a pose using its cached channel rate and an unscaled animation time.
+void advance_root_animation(locomotion_state &state, animation_channel &channel, animation_time elapsed);
 void advance_root_movement(locomotion_state &state, animation_channel &channel, int16_t time_ratio);
 
 } // namespace earthsiege

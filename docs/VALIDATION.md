@@ -10,10 +10,11 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The current complete test suite passes **267/267 tests**. Four new fixtures cover
-authored player controls, the player-disable transition and two explicitly
-corrected original defects. The earlier 263-test baseline passed ASan/UBSan;
-the four new fixtures pass both sanitizers too, including leak checking.
+The current complete test suite passes **269/269 tests**. Six new fixtures cover
+authored player controls, player-disable transitions, ramming and two explicitly
+corrected original defects. The earlier 263-test baseline passed ASan/UBSan.
+After the final gameplay fixes, all 19 affected movement/world suites pass both
+sanitizers, including the six new fixtures and leak checking.
 
 ## Independent original comparisons
 
@@ -73,6 +74,19 @@ including subsequent formation movement and collision damage. Three complete
 cases (B0_C2_20, B0_C7_6A and SM_SCT02, 1,536 frames) are retained in
 mission_player_disabled_frames.bin with original capture hashes.
 
+A later-career reverse-playback case also exercises the one-unit animation
+advance inside that disable routine. At cached rate -155, signed Q8 scaling
+advances by -1; treating it as a pose-only refresh changed the final position
+by two units. mission_disabled_reverse_frames.bin retains all 1,024 frames of
+the corrected comparison.
+
+The second source sweep exposed a ramming-damage ordering detail. Original
+18278/1f75c pass the rammer's position by address. Self-damage can remove the
+rammer during the victim loop and move that same centre underground. Native
+code now retains the live reference, preventing damage at the copied old
+position. mission_ramming_frames.bin retains all 512 B0_C5_50 frames, including
+the affected armour sections and subsequent random state.
+
 An extended sweep covers every supported source for 512 player-controlled
 frames, with launch seed 42, simulator warm-up 83 and frame ratio 450: 38,400
 frames, 752,640 HERC/flyer observations and 353,280 ground-object observations.
@@ -82,6 +96,15 @@ aim/arithmetic repairs; two need aim initialization and one needs the multiply
 repair. Raw failures and the consolidated reviewed report remain in the analysis
 tree. Three further neutral-input missions match for 2,048 frames each, adding
 6,144 longer-running world frames.
+
+A second 75-source sweep uses launch seed 17, simulator warm-up 131 and ratio
+128, matching another 38,400 player-controlled frames. Ten actual later-career
+handoffs run for 1,024 frames each at ratio 256 and warm-up 151, matching all
+10,240 frames. Those runs include carried-over equipment, damage and mission
+flags. Their references explicitly initialize the unwritten aim component and
+repair the multiply helper. The original failure reports remain available;
+final rechecks agree on 75/75, 75/75 and 10/10 cases respectively. Together
+with the pilot and long runs, this pass adds 94,208 compared world frames.
 
 The comparison covers controllers, movement, damage, power, sensors, animation,
 target selection, ground objects, activation, route cursors, all 100 mission

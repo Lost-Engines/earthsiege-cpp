@@ -1,0 +1,57 @@
+{
+  "original_sha256": "e5fb35966f3c755106cbeff2cfc1f2aed496bed388edab8ea2c857779efec34a",
+  "scope": "Compare live original/native simulation for coherent authored mission launches.\n\nInputs are either neutral or a repeatable player-control sequence. The comparison\ncovers the specified simulation interval; campaign completion is checked separately.\nCaptured GO handoffs retain authored activation, sides, objectives and roster. Each\nsimulation starts its original generator with an explicitly repeatable warm-up.\nOriginal output is captured before C++ runs and is never supplied as native state.\n",
+  "ratio": 256,
+  "simulation_seed": 151,
+  "player_input": true,
+  "launch_seeds": null,
+  "fixture_sha256": "6ecdb2edf31e4b043daec5573cdcb05025cb86608a56a312de96a002a5bebd23",
+  "cases": [
+    {
+      "label": "battle0-failure-return13/b0_c2_70 (Q14 rounding repaired) (aim initialized)",
+      "captured_frames": 1024,
+      "retained_frames": 1024,
+      "capture_sha256": "3bf57a1d1b8675cae6cdd42bab2661c80d3b01ed39cb68730ec1502a92e16b36",
+      "handoff_sha256": {
+        "script.dat": "501b9dbf158a4f272cbe56df9a0dcb35ff2d0232e217e5f73725742010cae7c2",
+        "player.mec": "fb22951d420df8555a2faaa3bf9d636542e26f98c8a5e7577e999e5715d6364f",
+        "mission.var": "6c5e18d87306815b42b46e37b2899e69bb7955e23facd5dcefac7e291d94f3fe"
+      },
+      "formation_repairs": [],
+      "effect_queue_repairs": [],
+      "initial_aim_repairs": [
+        {
+          "pool_index": 0,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 1,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 2,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 3,
+          "original": 0,
+          "replacement": -1
+        },
+        {
+          "pool_index": 4,
+          "original": 0,
+          "replacement": -1
+        }
+      ],
+      "offset_overflow_repair": {
+        "address": "0x5e845",
+        "original": "1bc9",
+        "replacement": "31c9",
+        "effect": "XOR ECX,ECX replaces SBB ECX,ECX before XOR ECX,8192; use +8192 for all products"
+      }
+    }
+  ]
+}

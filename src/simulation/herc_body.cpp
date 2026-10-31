@@ -77,6 +77,9 @@ void herc_body::align_disabled_player() {
   movement_state.angles.z = transform_angles(compose_transforms(aiming_pivot(), placement())).z;
   torso_state.angle = 0;
   if(torso_channel) rig.channel(*torso_channel).set_phase(source.profile.torso.sequence, 0);
+  // 137c4 calls 215c(actor, 1): one unscaled time unit, not a redraw flag.
+  // A negative cached playback rate can advance by -1 after the Q8 shift.
+  advance_root_animation(movement_state, rig.channel(body_channel), 1);
   rig.update_pose();
 }
 void herc_body::stop_throttle() { movement_state.throttle = 0; throttle_command_pending = true; }

@@ -2,7 +2,7 @@
 
 A native C++26 reconstruction of **Metaltech: Earthsiege**, using the original 1994 version 1.0 resources. Single missions and careers are implemented from registration and briefing through combat, debrief, repair and progression, with the original cinematics, music, effects and speech.
 
-The build is ready for comparison playtesting. All 267 tests pass, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
+The build is ready for comparison playtesting. All 269 tests pass, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -164,3 +164,10 @@ an original overflow bug that can add 262,143 world units to a coordinate. Both
 behaviors already followed from the native implementation; they are retained
 and now documented with instruction traces and corrected-reference comparisons
 in [the validation report](docs/VALIDATION.md#authored-missions-and-campaign-journeys).
+
+
+Extended comparisons also verify player controls across every supported mission
+at two frame ratios and in ten later-career saves. They corrected cockpit/chassis
+alignment and the extra animation tick when the player loses mobility, plus the
+live blast-centre reference during ramming self-destruction. See [the extended
+comparison evidence](docs/VALIDATION.md#authored-missions-and-campaign-journeys).

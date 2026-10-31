@@ -159,8 +159,12 @@ void update_requested_movement(locomotion_state &state, movement_profile const &
 
 void advance_root_movement(locomotion_state &state, animation_channel &channel, int16_t const time_ratio) {
   channel.set_rate(state.playback_rate);
+  advance_root_animation(state, channel, scale_frame_time(nominal_frame_milliseconds, time_ratio));
+}
+
+void advance_root_animation(locomotion_state &state, animation_channel &channel, animation_time const elapsed) {
   channel.rebase_motion();
-  channel.advance(scale_frame_time(nominal_frame_milliseconds, time_ratio));
+  channel.advance(elapsed);
   auto const movement{channel.root_motion()};
   auto const rotation{rotation_transform(state.angles)};
   auto const displacement{rotate_vector(movement.translation, rotation)};

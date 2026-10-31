@@ -102,7 +102,9 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
     actor.advance(ratio);
     if(index == player_index) for(auto const id:actor.footstep_sounds()) emit_sound(sample_sound_request{sound_action::positioned,id,actor.body().movement().position});
     if(contact_herc(index) || member.contact_received) {
-      auto const centre{actor.body().movement().position};
+      // 18278 passes actor+20 into 1f75c by address. Self-damage can move
+      // a removed rammer underground before later victims are visited.
+      auto const &centre{actor.body().movement().position};
       for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && distance(centre, crew[i].actor->body().movement().position) < 3000)
         crew[i].actor->radial_damage(centre, 3000, 2000, random, damage_events(i), i == player_index && settings.player_is_invulnerable());
       if(index != player_index || !settings.player_is_invulnerable()) for(size_t section{0}; section != actor.damage().present.size(); ++section)
