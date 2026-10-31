@@ -17,6 +17,20 @@ affected movement/world suites passed both sanitizers. The six audio suites,
 including the new physical-MIDI captures and real synthesis backends, also pass
 ASan/UBSan with leak checking after this audio update.
 
+## Edition coverage
+
+All comparison results on this page concern the original October 1994 version
+1.0 build. The supplied 1996 base reissue contains all of its files unchanged.
+The expansion media were catalogued separately after the initial completion
+pass: 37 mission sources, additional units and weapons, battleset selection,
+career transfer and three distinct simulator binaries need further analysis.
+They are not covered by the tests below or implemented by selecting a different
+installation with `--data-dir`.
+
+The companion `earthsiege-reverse/docs/INSTALL_MEDIA.md` records hashes, decoded
+resources and separate original DOSBox installs. Expansion original-code
+fixtures and native support remain work to do.
+
 ## Independent original comparisons
 
 Expected outputs come from the original executable or unchanged DOSBox runs.
