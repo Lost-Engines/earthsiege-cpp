@@ -9,8 +9,9 @@ opt-in; CI does not download these assets.
 
 Each job installs the Runtime component, creates an archive, extracts it into a
 temporary directory and launches it there. The checks cover automatic data discovery,
-a headless mission frame, SDL startup with dummy video/audio drivers, and the ROM
-helper's help output. Windows checks run without MinGW on the executable search path.
+a headless mission frame and the ROM helper's help output. Linux also exercises
+a real GLFW window under Xvfb/Mesa, including framebuffer readback and input
+callbacks. Windows checks run without MinGW on the executable search path.
 Test reports and both configurations' packages are retained as workflow artifacts
 for seven days.
 
@@ -26,7 +27,7 @@ contains:
 
 Extract the whole archive and run `earthsiege` or `earthsiege.exe`. Keep the `assets`
 directory beside the executable. The original freeware game data is included.
-SDL2, the synthesiser backends and compiler runtimes are linked statically;
+GLFW, miniaudio, the synthesiser backends and compiler runtimes are linked statically;
 operating-system libraries and Linux display/audio drivers remain system dependencies.
 These archives are not signed or notarised.
 
@@ -54,13 +55,13 @@ are retained. A slower build of an older commit cannot replace a newer release.
 
 Use CMake 3.30 or newer, Ninja and a compiler supporting C++26. CI uses GCC 16 on
 Linux and macOS, and the UCRT64 GCC toolchain on Windows. macOS also uses Apple's
-Clang for C and SDL's Objective-C sources. The workflow lists the native development
-packages needed to build SDL on Linux.
+Clang for the Cocoa/CoreAudio sources; C and C++ use GCC. The workflow lists the native development
+packages needed to build GLFW on Linux.
 
 ```sh
 cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF \
-  -DEARTHSIEGE_BUNDLED_SDL=ON -DEARTHSIEGE_STATIC_RUNTIME=ON
+  -DCMAKE_DISABLE_FIND_PACKAGE_glfw3=ON -DEARTHSIEGE_STATIC_RUNTIME=ON
 cmake --build build-release --parallel 3
 ctest --test-dir build-release --output-on-failure --parallel 3 --timeout 600
 cmake --install build-release --prefix "$PWD/build-release/package/earthsiege-cpp" --component Runtime
@@ -71,6 +72,6 @@ python3 tools/check_package.py build-release/dist/earthsiege-cpp-linux-x86_64.ta
 
 Use `windows-x86_64` or `macos-arm64` when packaging for the corresponding host.
 The package checker requires Python 3.12 or newer. Ordinary development builds
-continue to use the system SDL2 unless `EARTHSIEGE_BUNDLED_SDL` is enabled.
+use a system GLFW 3.4 when available; otherwise CMake builds the pinned version.
 Dependencies are pinned and hash-checked; [THIRD_PARTY.md](../THIRD_PARTY.md)
 describes offline source overrides.

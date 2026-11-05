@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 include(CTest)
-# Portable packages include SDL and the compiler runtime.
+# Portable packages include the window/audio backends and compiler runtime.
 option(EARTHSIEGE_STATIC_RUNTIME "Link compiler runtimes statically" ${MINGW})
 if(EARTHSIEGE_STATIC_RUNTIME)
   if(MINGW)
@@ -14,7 +14,7 @@ if(EARTHSIEGE_STATIC_RUNTIME)
     add_link_options("$<$<LINK_LANG_AND_ID:CXX,GNU>:-static-libgcc;-static-libstdc++>")
   endif()
 endif()
-include(cmake/sdl.cmake)
+include(cmake/platform_dependencies.cmake)
 include(cmake/music_dependencies.cmake)
 
 add_library(nuked_opl3 STATIC third_party/nuked-opl3/opl3.c)
@@ -367,11 +367,9 @@ add_executable(earthsiege
   src/platform/audio_output.cpp
   src/platform/window.cpp
   src/platform/window.h
+  src/platform/paths.cpp
 )
-if(TARGET SDL2::SDL2main)
-  target_link_libraries(earthsiege PRIVATE SDL2::SDL2main)
-endif()
-target_link_libraries(earthsiege PRIVATE earthsiege_core SDL2::SDL2)
+target_link_libraries(earthsiege PRIVATE earthsiege_core glfw OpenGL::GL pcm_device)
 
 if(BUILD_TESTING)
   add_executable(mission_alert_test tests/mission_alert_test.cpp)
@@ -1248,10 +1246,7 @@ endif()
 
 if(BUILD_TESTING)
   add_executable(joystick_devices_test tests/joystick_devices_test.cpp src/platform/joystick_devices.cpp)
-  if(TARGET SDL2::SDL2main)
-    target_link_libraries(joystick_devices_test PRIVATE SDL2::SDL2main)
-  endif()
-  target_link_libraries(joystick_devices_test PRIVATE earthsiege_core SDL2::SDL2)
+  target_link_libraries(joystick_devices_test PRIVATE earthsiege_core glfw)
   add_test(NAME joystick_devices COMMAND joystick_devices_test)
 endif()
 
@@ -1408,6 +1403,18 @@ if(BUILD_TESTING)
   set(EARTHSIEGE_TEST_SOUNDFONT "" CACHE FILEPATH "Optional General MIDI SoundFont for synthesis tests")
   if(EARTHSIEGE_TEST_ROM_DIR AND EARTHSIEGE_TEST_SOUNDFONT)
     add_test(NAME music_hardware COMMAND music_devices_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_BINARY_DIR}" "${EARTHSIEGE_TEST_ROM_DIR}" "${EARTHSIEGE_TEST_SOUNDFONT}")
+  endif()
+endif()
+
+if(BUILD_TESTING)
+  add_executable(platform_transport_test tests/platform_transport_test.cpp)
+  target_link_libraries(platform_transport_test PRIVATE earthsiege_core Threads::Threads)
+  add_test(NAME platform_transport COMMAND platform_transport_test)
+  option(EARTHSIEGE_TEST_WINDOW "Test the real GLFW/OpenGL presenter (requires a display)" OFF)
+  if(EARTHSIEGE_TEST_WINDOW)
+    add_executable(platform_window_test tests/platform_window_test.cpp src/platform/window.cpp)
+    target_link_libraries(platform_window_test PRIVATE earthsiege_core glfw OpenGL::GL)
+    add_test(NAME platform_window COMMAND platform_window_test)
   endif()
 endif()
 

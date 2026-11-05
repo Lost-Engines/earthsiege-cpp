@@ -10,7 +10,10 @@
 #include <optional>
 #include <stdexcept>
 #include <string_view>
-#include <SDL.h>
+#include <chrono>
+#include <thread>
+#include <GLFW/glfw3.h>
+#include "platform/paths.h"
 #include "platform/window.h"
 #include "platform/music_setup.h"
 #include "platform/audio_output.h"
@@ -22,6 +25,14 @@
 
 namespace {
 
+auto ticks()->uint64_t {
+  return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+void sleep_milliseconds(uint64_t milliseconds) {
+  std::this_thread::sleep_for(std::chrono::milliseconds{milliseconds});
+}
+
 auto integer_option(std::string_view text)->unsigned int {
   unsigned int result{};
   auto const [end, error]{std::from_chars(text.data(), text.data() + text.size(), result)};
@@ -29,74 +40,74 @@ auto integer_option(std::string_view text)->unsigned int {
   return result;
 }
 
-auto held_key(SDL_Keycode const code)->std::optional<earthsiege::held_key> {
+auto held_key(int const code)->std::optional<earthsiege::held_key> {
   using enum earthsiege::held_key;
   switch(code) {
-    case SDLK_KP_7: return forward_left;
-    case SDLK_KP_8: case SDLK_UP: return forward;
-    case SDLK_KP_9: return forward_right;
-    case SDLK_KP_4: case SDLK_LEFT: return left;
-    case SDLK_KP_6: case SDLK_RIGHT: return right;
-    case SDLK_KP_1: return reverse_left;
-    case SDLK_KP_2: case SDLK_DOWN: return reverse;
-    case SDLK_KP_3: return reverse_right;
-    case SDLK_m: return aim_down;
-    case SDLK_j: return aim_left;
-    case SDLK_k: return aim_right;
-    case SDLK_i: return aim_up;
-    case SDLK_SPACE: return fire;
-    case SDLK_RETURN: return enter;
+    case GLFW_KEY_KP_7: return forward_left;
+    case GLFW_KEY_KP_8: case GLFW_KEY_UP: return forward;
+    case GLFW_KEY_KP_9: return forward_right;
+    case GLFW_KEY_KP_4: case GLFW_KEY_LEFT: return left;
+    case GLFW_KEY_KP_6: case GLFW_KEY_RIGHT: return right;
+    case GLFW_KEY_KP_1: return reverse_left;
+    case GLFW_KEY_KP_2: case GLFW_KEY_DOWN: return reverse;
+    case GLFW_KEY_KP_3: return reverse_right;
+    case GLFW_KEY_M: return aim_down;
+    case GLFW_KEY_J: return aim_left;
+    case GLFW_KEY_K: return aim_right;
+    case GLFW_KEY_I: return aim_up;
+    case GLFW_KEY_SPACE: return fire;
+    case GLFW_KEY_ENTER: return enter;
     default: return std::nullopt;
   }
 }
 
-auto command(SDL_Keycode const code, bool const alt, bool const control)->std::optional<uint16_t> {
+auto command(int const code, bool const alt, bool const control)->std::optional<uint16_t> {
   uint16_t scan;
   switch(code) {
-    case SDLK_ESCAPE: scan=1; break;
-    case SDLK_INSERT: scan=82; break;
-    case SDLK_F9: scan=67; break;
-    case SDLK_F10: scan=68; break;
-    case SDLK_SPACE: scan=57; break;
-    case SDLK_p: scan=25; break;
-    case SDLK_q: scan=16; break;
-    case SDLK_F12: scan=88; break;
-    case SDLK_d: scan=32; break;
-    case SDLK_t: scan=20; break;
-    case SDLK_x: scan=45; break;
-    case SDLK_s: scan=31; break;
-    case SDLK_i: scan=23; break;
-    case SDLK_COMMA: scan=51; break;
-    case SDLK_PERIOD: scan=52; break;
-    case SDLK_RETURN: scan=28; break;
-    case SDLK_KP_5: scan=76; break;
-    case SDLK_KP_8: case SDLK_UP: scan=72; break;
-    case SDLK_KP_2: case SDLK_DOWN: scan=80; break;
-    case SDLK_KP_4: case SDLK_LEFT: scan=75; break;
-    case SDLK_KP_6: case SDLK_RIGHT: scan=77; break;
-    case SDLK_PAGEUP: scan=73; break;
-    case SDLK_PAGEDOWN: scan=81; break;
-    case SDLK_a: scan=30; break;
-    case SDLK_g: scan=34; break;
-    case SDLK_h: scan=35; break;
-    case SDLK_o: scan=24; break;
-    case SDLK_c: scan=46; break;
-    case SDLK_e: scan=18; break;
-    case SDLK_f: scan=33; break;
-    case SDLK_w: scan=17; break;
-    case SDLK_v: scan=47; break;
-    case SDLK_b: scan=48; break;
-    case SDLK_z: scan=44; break;
-    case SDLK_r: scan=19; break;
-    case SDLK_TAB: scan=15; break;
-    case SDLK_BACKSPACE: scan=14; break;
-    case SDLK_MINUS: scan=12; break;
-    case SDLK_EQUALS: scan=13; break;
-    case SDLK_KP_MINUS: scan=74; break;
-    case SDLK_KP_PLUS: scan=78; break;
+    case GLFW_KEY_ESCAPE: scan=1; break;
+    case GLFW_KEY_INSERT: scan=82; break;
+    case GLFW_KEY_F9: scan=67; break;
+    case GLFW_KEY_F10: scan=68; break;
+    case GLFW_KEY_SPACE: scan=57; break;
+    case GLFW_KEY_P: scan=25; break;
+    case GLFW_KEY_Q: scan=16; break;
+    case GLFW_KEY_F12: scan=88; break;
+    case GLFW_KEY_D: scan=32; break;
+    case GLFW_KEY_T: scan=20; break;
+    case GLFW_KEY_X: scan=45; break;
+    case GLFW_KEY_S: scan=31; break;
+    case GLFW_KEY_I: scan=23; break;
+    case GLFW_KEY_COMMA: scan=51; break;
+    case GLFW_KEY_PERIOD: scan=52; break;
+    case GLFW_KEY_ENTER: scan=28; break;
+    case GLFW_KEY_KP_5: scan=76; break;
+    case GLFW_KEY_KP_8: case GLFW_KEY_UP: scan=72; break;
+    case GLFW_KEY_KP_2: case GLFW_KEY_DOWN: scan=80; break;
+    case GLFW_KEY_KP_4: case GLFW_KEY_LEFT: scan=75; break;
+    case GLFW_KEY_KP_6: case GLFW_KEY_RIGHT: scan=77; break;
+    case GLFW_KEY_PAGE_UP: scan=73; break;
+    case GLFW_KEY_PAGE_DOWN: scan=81; break;
+    case GLFW_KEY_A: scan=30; break;
+    case GLFW_KEY_G: scan=34; break;
+    case GLFW_KEY_H: scan=35; break;
+    case GLFW_KEY_O: scan=24; break;
+    case GLFW_KEY_C: scan=46; break;
+    case GLFW_KEY_E: scan=18; break;
+    case GLFW_KEY_F: scan=33; break;
+    case GLFW_KEY_W: scan=17; break;
+    case GLFW_KEY_V: scan=47; break;
+    case GLFW_KEY_B: scan=48; break;
+    case GLFW_KEY_Z: scan=44; break;
+    case GLFW_KEY_R: scan=19; break;
+    case GLFW_KEY_TAB: scan=15; break;
+    case GLFW_KEY_BACKSPACE: scan=14; break;
+    case GLFW_KEY_MINUS: scan=12; break;
+    case GLFW_KEY_EQUAL: scan=13; break;
+    case GLFW_KEY_KP_SUBTRACT: scan=74; break;
+    case GLFW_KEY_KP_ADD: scan=78; break;
     default:
-      if(code>=SDLK_F1 && code<=SDLK_F8) scan=static_cast<uint16_t>(59+code-SDLK_F1);
-      else if(code>=SDLK_1 && code<=SDLK_9) scan=static_cast<uint16_t>(2+code-SDLK_1);
+      if(code>=GLFW_KEY_F1 && code<=GLFW_KEY_F8) scan=static_cast<uint16_t>(59+code-GLFW_KEY_F1);
+      else if(code>=GLFW_KEY_1 && code<=GLFW_KEY_9) scan=static_cast<uint16_t>(2+code-GLFW_KEY_1);
       else return std::nullopt;
   }
   return static_cast<uint16_t>(scan | (alt ? 0x200 : 0) | (control ? 0x400 : 0));
@@ -105,7 +116,7 @@ auto command(SDL_Keycode const code, bool const alt, bool const control)->std::o
 } // namespace
 
 auto main(int argc, char *argv[])->int try {
-  std::filesystem::path data_dir{earthsiege::resource_store::locate(std::filesystem::absolute(argv[0]))};
+  std::filesystem::path data_dir{earthsiege::resource_store::locate(earthsiege::executable_path(argv[0]))};
   std::filesystem::path screenshot,save_directory;
   bool list{};
   bool headless{};
@@ -162,25 +173,19 @@ auto main(int argc, char *argv[])->int try {
     }
     return EXIT_SUCCESS;
   }
-  if(save_directory.empty()) {
-    char *path{SDL_GetPrefPath("lost-engines","earthsiege")};
-    if(!path)throw std::runtime_error{SDL_GetError()};
-    save_directory=path;SDL_free(path);
-  }
+  if(save_directory.empty()) save_directory = earthsiege::user_save_directory();
   std::unique_ptr<earthsiege::window> display;
-  if(!headless){display = std::make_unique<earthsiege::window>(scale);SDL_StartTextInput();}
+  if(!headless){display = std::make_unique<earthsiege::window>(scale);}
   else if(!frame_limit) frame_limit = 1;
   auto const music_file{save_directory/"music.cfg"};
   auto music_settings{earthsiege::read_music_settings(music_file)};
-  if(char *base{SDL_GetBasePath()}){
-    music_settings.program_directory=base;SDL_free(base);
-  }else music_settings.program_directory=std::filesystem::absolute(argv[0]).parent_path();
+  music_settings.program_directory = earthsiege::executable_path(argv[0]).parent_path();
   if(requested_music)music_settings.device=*requested_music;
   if(requested_roms)music_settings.rom_directory=std::filesystem::absolute(*requested_roms);
   if(requested_soundfont)music_settings.soundfont=std::filesystem::absolute(*requested_soundfont);
   if(audio_setup){
     if(headless)throw std::runtime_error{"--audio-setup needs a window"};
-    if(auto chosen{earthsiege::choose_music_device(music_settings.device)}){
+    if(auto chosen{earthsiege::choose_music_device(*display, resources, music_settings.device)}){
       auto candidate{music_settings};candidate.device=*chosen;
       // Validate assets before persisting a choice that could prevent startup.
       earthsiege::pcm_sound_bank probe_bank;earthsiege::music_audio probe{resources,probe_bank,candidate};
@@ -234,7 +239,7 @@ auto main(int argc, char *argv[])->int try {
   bool modal_command_pending{};
   bool focused{true};
   unsigned int frames{};
-  uint64_t previous{display ? SDL_GetTicks64() : 0};
+  uint64_t previous{display ? ticks() : 0};
   uint64_t pending{0};
   auto const open_alert{[&](int message){
     alert=std::make_unique<earthsiege::mission_alert>(resources,message);
@@ -253,11 +258,11 @@ auto main(int argc, char *argv[])->int try {
     // modal call site. A quick P/Escape pair must pause and resume, not let
     // Escape act on the underlying mission before Pause has opened.
     if(modal_command_pending&&!alert&&!options)return;
-    SDL_Event event{};
+    earthsiege::window_event event{};
     while(display && display->poll(event)) {
-      if(event.type == SDL_QUIT){running=false;return;}
-      if(event.type == SDL_WINDOWEVENT) {
-        if(event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+      if(event.type == earthsiege::event_type::close){running=false;return;}
+      if(event.type == earthsiege::event_type::focus) {
+        if(!event.focused) {
           focused = false;
           if(sound)sound->pause(true);
           menu.cancel_press();
@@ -265,75 +270,76 @@ auto main(int argc, char *argv[])->int try {
           if(alert)alert->cancel_press();
           if(scene) scene->clear_input();
         }
-        if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED){focused = true;if(sound)sound->pause(false);}
+        if(event.focused){focused = true;if(sound)sound->pause(false);}
       }
-      if(focused&&event.type==SDL_KEYDOWN&&!event.key.repeat&&event.key.keysym.sym==SDLK_m
-        &&(event.key.keysym.mod&KMOD_CTRL)&&(event.key.keysym.mod&KMOD_SHIFT)){
+      if(focused&&event.type==earthsiege::event_type::key_down&&!event.repeat&&event.key==GLFW_KEY_M
+        &&(event.modifiers&GLFW_MOD_CONTROL)&&(event.modifiers&GLFW_MOD_SHIFT)){
         if(sound){sound->pause(true);sound->clear();}
         if(scene)scene->clear_input();
         menu.cancel_press();
         try{
-          if(auto chosen{earthsiege::choose_music_device(music_settings.device)}){
+          if(auto chosen{earthsiege::choose_music_device(*display, resources, music_settings.device)}){
             auto candidate{music_settings};candidate.device=*chosen;
             menu.configure_music(candidate);if(scene)scene->configure_music(candidate);
             earthsiege::write_music_settings(music_file,candidate);music_settings=candidate;
           }
-        }catch(std::exception const &error){SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Music device unavailable",error.what(),nullptr);}
-        previous=SDL_GetTicks64();pending=0;
-        if(sound)sound->pause(false);
+        }catch(std::exception const &error){earthsiege::show_music_error(*display, resources, error.what());}
+        previous=ticks();pending=0;
+        focused = display->focused();
+        if(sound)sound->pause(!focused);
         continue;
       }
       if(options) {
-        if(focused&&event.type==SDL_KEYDOWN&&!event.key.repeat){
-          if(auto scan{command(event.key.keysym.sym,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})options->key(*scan);
-        }else if(focused&&(event.type==SDL_MOUSEBUTTONDOWN||event.type==SDL_MOUSEBUTTONUP)&&(event.button.button==SDL_BUTTON_LEFT||event.button.button==SDL_BUTTON_RIGHT)){
-          bool right{event.button.button==SDL_BUTTON_RIGHT};
-          if(event.type==SDL_MOUSEBUTTONDOWN)options->mouse_down(event.button.x,event.button.y,right);
-          else options->mouse_up(event.button.x,event.button.y,right);
+        if(focused&&event.type==earthsiege::event_type::key_down&&!event.repeat){
+          if(auto scan{command(event.key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})options->key(*scan);
+        }else if(focused&&(event.type==earthsiege::event_type::button_down||event.type==earthsiege::event_type::button_up)&&(event.button==GLFW_MOUSE_BUTTON_LEFT||event.button==GLFW_MOUSE_BUTTON_RIGHT)){
+          bool right{event.button==GLFW_MOUSE_BUTTON_RIGHT};
+          if(event.type==earthsiege::event_type::button_down)options->mouse_down(event.x,event.y,right);
+          else options->mouse_up(event.x,event.y,right);
         }
         if(options->done())return;
         continue;
       }
       if(alert) {
-        if(focused && event.type==SDL_KEYDOWN && !event.key.repeat) {
-          if(auto scan{command(event.key.keysym.sym,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})if(auto response{alert->input(*scan,event.key.keysym.sym==SDLK_SPACE,false,menu.settings().current()[10]!=0).response})respond(*response);
-        } else if(focused && event.type==SDL_MOUSEBUTTONDOWN && event.button.button==SDL_BUTTON_LEFT)alert->mouse_down(event.button.x,event.button.y);
-        else if(focused && event.type==SDL_MOUSEBUTTONUP && event.button.button==SDL_BUTTON_LEFT)if(auto response{alert->mouse_up(event.button.x,event.button.y)})respond(*response);
+        if(focused && event.type==earthsiege::event_type::key_down && !event.repeat) {
+          if(auto scan{command(event.key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})if(auto response{alert->input(*scan,event.key==GLFW_KEY_SPACE,false,menu.settings().current()[10]!=0).response})respond(*response);
+        } else if(focused && event.type==earthsiege::event_type::button_down && event.button==GLFW_MOUSE_BUTTON_LEFT)alert->mouse_down(event.x,event.y);
+        else if(focused && event.type==earthsiege::event_type::button_up && event.button==GLFW_MOUSE_BUTTON_LEFT)if(auto response{alert->mouse_up(event.x,event.y)})respond(*response);
         if(!alert)return;
         continue;
       }
       if(scene&&scene->starting())continue;
-      if(event.type==SDL_TEXTINPUT && !scene){menu.text_input(event.text.text);continue;}
-      if(event.type == SDL_KEYDOWN && !event.key.repeat) {
-        auto const key{event.key.keysym.sym};
-        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{command(key,(event.key.keysym.mod&KMOD_ALT)!=0,(event.key.keysym.mod&KMOD_CTRL)!=0)})menu.key(*scan);}
+      if(event.type==earthsiege::event_type::text && !scene){menu.text_input(event.text);continue;}
+      if(event.type == earthsiege::event_type::key_down && !event.repeat) {
+        auto const key{event.key};
+        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{command(key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})menu.key(*scan);}
         else if(focused) {
-          if(key==SDLK_ESCAPE && inspect_demo && !(event.key.keysym.mod&(KMOD_CTRL|KMOD_ALT))){scene.reset();if(sound)sound->clear();continue;}
-          if(key==SDLK_F1 && (event.key.keysym.mod&KMOD_CTRL))scene->change_cockpit_view(earthsiege::cockpit_view::forward);
-          if(key==SDLK_F2 && (event.key.keysym.mod&KMOD_CTRL))scene->change_camera(earthsiege::camera_mode::orbit);
-          if(key==SDLK_F3 && (event.key.keysym.mod&KMOD_CTRL))scene->change_camera(earthsiege::camera_mode::free);
+          if(key==GLFW_KEY_ESCAPE && inspect_demo && !(event.modifiers&(GLFW_MOD_CONTROL|GLFW_MOD_ALT))){scene.reset();if(sound)sound->clear();continue;}
+          if(key==GLFW_KEY_F1 && (event.modifiers&GLFW_MOD_CONTROL))scene->change_cockpit_view(earthsiege::cockpit_view::forward);
+          if(key==GLFW_KEY_F2 && (event.modifiers&GLFW_MOD_CONTROL))scene->change_camera(earthsiege::camera_mode::orbit);
+          if(key==GLFW_KEY_F3 && (event.modifiers&GLFW_MOD_CONTROL))scene->change_camera(earthsiege::camera_mode::free);
         }
       }
       if(scene) {
-        if(focused && (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat) {
-          bool const alt{(event.key.keysym.mod & KMOD_ALT)!=0};
-          if(auto const key{held_key(event.key.keysym.sym)}) scene->key(*key, event.type == SDL_KEYDOWN, alt);
-          if(event.type==SDL_KEYDOWN)if(auto const code{command(event.key.keysym.sym,alt,(event.key.keysym.mod & KMOD_CTRL)!=0)}){
+        if(focused && (event.type == earthsiege::event_type::key_down || event.type == earthsiege::event_type::key_up) && !event.repeat) {
+          bool const alt{(event.modifiers & GLFW_MOD_ALT)!=0};
+          if(auto const key{held_key(event.key)}) scene->key(*key, event.type == earthsiege::event_type::key_down, alt);
+          if(event.type==earthsiege::event_type::key_down)if(auto const code{command(event.key,alt,(event.modifiers & GLFW_MOD_CONTROL)!=0)}){
             scene->command(*code);
             if(*code==88||*code==0x219||*code==25||*code==0x401||*code==0x410||*code==16){
               modal_command_pending=true;return;
             }
           }
         }
-        if(focused && event.type==SDL_MOUSEMOTION) scene->mouse_position(event.motion.x,event.motion.y);
-        if(focused && (event.type==SDL_MOUSEBUTTONDOWN || event.type==SDL_MOUSEBUTTONUP)) {
-          scene->mouse_position(event.button.x,event.button.y);
-          if(event.button.button==SDL_BUTTON_LEFT || event.button.button==SDL_BUTTON_RIGHT)scene->mouse_button(event.button.button==SDL_BUTTON_RIGHT,event.type==SDL_MOUSEBUTTONDOWN);
+        if(focused && event.type==earthsiege::event_type::motion) scene->mouse_position(event.x,event.y);
+        if(focused && (event.type==earthsiege::event_type::button_down || event.type==earthsiege::event_type::button_up)) {
+          scene->mouse_position(event.x,event.y);
+          if(event.button==GLFW_MOUSE_BUTTON_LEFT || event.button==GLFW_MOUSE_BUTTON_RIGHT)scene->mouse_button(event.button==GLFW_MOUSE_BUTTON_RIGHT,event.type==earthsiege::event_type::button_down);
         }
       } else if(focused) {
-        if(event.type == SDL_MOUSEMOTION) menu.mouse_move(event.motion.x,event.motion.y);
-        if(event.type == SDL_MOUSEBUTTONDOWN && (event.button.button == SDL_BUTTON_LEFT||event.button.button == SDL_BUTTON_RIGHT)) menu.mouse_down(event.button.x,event.button.y,event.button.button==SDL_BUTTON_RIGHT);
-        if(event.type == SDL_MOUSEBUTTONUP && (event.button.button == SDL_BUTTON_LEFT||event.button.button == SDL_BUTTON_RIGHT)) menu.mouse_up(event.button.x,event.button.y,event.button.button==SDL_BUTTON_RIGHT);
+        if(event.type == earthsiege::event_type::motion) menu.mouse_move(event.x,event.y);
+        if(event.type == earthsiege::event_type::button_down && (event.button == GLFW_MOUSE_BUTTON_LEFT||event.button == GLFW_MOUSE_BUTTON_RIGHT)) menu.mouse_down(event.x,event.y,event.button==GLFW_MOUSE_BUTTON_RIGHT);
+        if(event.type == earthsiege::event_type::button_up && (event.button == GLFW_MOUSE_BUTTON_LEFT||event.button == GLFW_MOUSE_BUTTON_RIGHT)) menu.mouse_up(event.x,event.y,event.button==GLFW_MOUSE_BUTTON_RIGHT);
       }
     }
   }};
@@ -354,14 +360,14 @@ auto main(int argc, char *argv[])->int try {
       if(auto const warp{menu.take_pointer_warp()};warp&&display)display->warp_mouse(warp->x,warp->y);
     }
   }};
-  // Run a modal at the original simulation call site. SDL still receives
+  // Run a modal at the original simulation call site. GLFW still receives
   // events and the audio clock runs, but the suspended mission frame cannot
   // advance until its response is known.
   auto const run_modal{[&]{
     while(running&&(alert||options)){
       poll_events();
       update_devices_and_dialogs();
-      auto const now{SDL_GetTicks64()};
+      auto const now{ticks()};
       auto const elapsed{focused?now-previous:0};
       previous=now;pending=0;
       scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed,UINT32_MAX)));
@@ -376,7 +382,7 @@ auto main(int argc, char *argv[])->int try {
       display->present(alert_frame,scene->colours(),cursor_image());
       ++frames;
       if(frame_limit&&frames>=frame_limit)running=false;
-      SDL_Delay(8);
+      sleep_milliseconds(8);
     }
     return !running||leave_mission;
   }};
@@ -408,7 +414,7 @@ auto main(int argc, char *argv[])->int try {
       inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch(),music_settings);scene->configure_input(menu.settings(),menu.device_calibrations());scene->begin_startup();scene_dirty=!scene->starting();applied_preferences=menu.settings().current();pending=0;
       if(sound)sound->clear();
     }
-    auto const now{display ? SDL_GetTicks64() : previous + 25};
+    auto const now{display ? ticks() : previous + 25};
     auto const elapsed{focused?now-previous:0};
     pending += focused && !alert && !options ? std::min<uint64_t>(elapsed,100) : 0;
     previous = now;
@@ -417,10 +423,10 @@ auto main(int argc, char *argv[])->int try {
       scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed,UINT32_MAX)));
       if(focused&&options&&scene->step_options())scene_dirty=true;
       if(focused&&!alert&&!options){
-        auto const modifiers{display ? SDL_GetModState() : KMOD_NONE};
+        auto const modifiers{display ? display->modifiers() : 0};
         if(scene->starting()){
           if(scene->step_startup())scene_dirty=false;
-        }else if(scene->step((modifiers & KMOD_CTRL)!=0,(modifiers & KMOD_SHIFT)!=0,
+        }else if(scene->step((modifiers & GLFW_MOD_CONTROL)!=0,(modifiers & GLFW_MOD_SHIFT)!=0,
                             display?dialogs:earthsiege::mission_dialog_handlers{}))scene_dirty=true;
         if(!running)break;
         if(leave_mission){
@@ -438,17 +444,17 @@ auto main(int argc, char *argv[])->int try {
       if(scene_dirty){scene->draw();scene_dirty=false;}
       auto pans{scene->take_pan_frames()};
       if(display&&!pans.empty()){
-        uint64_t const start{SDL_GetTicks64()};
+        uint64_t const start{ticks()};
         for(size_t i{};i<pans.size();++i){
           display->present(pans[i],scene->colours());
           uint64_t const deadline{start+(i+1)*1000/70};
-          auto tick{SDL_GetTicks64()};
-          if(tick<deadline)SDL_Delay(static_cast<uint32_t>(deadline-tick));
-          tick=SDL_GetTicks64();
+          auto tick{ticks()};
+          if(tick<deadline)sleep_milliseconds(static_cast<uint32_t>(deadline-tick));
+          tick=ticks();
           scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(tick-previous,UINT32_MAX)));
           previous=tick;
           if(sound)sound->queue(scene->take_audio());
-          SDL_PumpEvents();
+          display->pump_events();
         }
       }
       pending=0;
@@ -463,7 +469,7 @@ auto main(int argc, char *argv[])->int try {
     if(display) display->present(frame,colours,cursor_image());
     ++frames;
     if(frame_limit && frames >= frame_limit) running = false;
-    if(display) SDL_Delay(8);
+    if(display) sleep_milliseconds(8);
   }
   if(!screenshot.empty()) {
     ((alert||options) ? alert_frame : scene ? scene->image() : menu_frame).save(screenshot, scene ? scene->colours() : menu.colours());

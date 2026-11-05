@@ -4,6 +4,8 @@ The native game is being built from the supplied Earthsiege 1.0 data and origina
 
 This is a chronological research and implementation record. Earlier descriptions
 of unfinished integration describe their milestone, not the current build.
+References below to SDL describe the former platform backend; the current
+[GLFW/miniaudio platform layer](PLATFORM.md) replaces it.
 See [current validation and fidelity limits](VALIDATION.md) for the implemented
 game loop, complete test results, original comparisons and remaining boundaries.
 
@@ -2058,3 +2060,14 @@ MT-32 routing omission and the optional MPU-401 experiment are explained in
 
 The audio and documentation checkpoint is ready for the Earthsiege 2 analysis
 fork. Further Earthsiege 1 gameplay-coverage work waits until that fork is made.
+
+
+## GLFW and miniaudio platform migration
+
+Replaced the SDL window, input, audio and native-message-box integration with
+GLFW and miniaudio, matching the sibling projects. Software rendering, game
+logic, synthesis and original scheduling remain independent of those backends.
+The new implementation preserves the existing save locations and calibration
+range, presents the same indexed framebuffer through OpenGL and provides an
+in-window music selector. See [PLATFORM.md](PLATFORM.md) for the architecture and
+regression checks, and [build-release.md](build-release.md) for CI and packaging.

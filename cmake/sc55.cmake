@@ -1,4 +1,4 @@
-# Build only the emulator backend: no SDL, MIDI device or standalone frontend.
+# Build only the emulator backend: no upstream window, MIDI device or standalone frontend.
 set(NUKED_ENABLE_DECODER2 ON)
 set(NUKED_SOURCE "Earthsiege pinned backend")
 configure_file("${nuked_sc55_SOURCE_DIR}/src/backend/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/sc55/config.h")

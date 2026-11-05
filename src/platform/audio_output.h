@@ -1,19 +1,24 @@
 #pragma once
+
 #include <cstdint>
+#include <memory>
 #include <span>
-#include <SDL.h>
 
 namespace earthsiege {
-/// Host transport for the combined 44100 Hz signed stereo stream.
+
+/// Miniaudio transport for the combined 44100 Hz signed stereo stream.
 class audio_output {
-  SDL_AudioDeviceID device{};
+  struct implementation;
+  std::unique_ptr<implementation> state;
+
 public:
   audio_output();
   ~audio_output();
-  audio_output(audio_output const &)=delete;
-  audio_output &operator=(audio_output const &)=delete;
+  audio_output(audio_output const &) = delete;
+  auto operator=(audio_output const &)->audio_output & = delete;
   void queue(std::span<int16_t const> samples);
   void pause(bool paused);
   void clear();
 };
+
 } // namespace earthsiege

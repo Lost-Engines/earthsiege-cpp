@@ -10,7 +10,7 @@ import tempfile
 import zipfile
 
 
-def check(archive):
+def check(archive, window=False):
     with tempfile.TemporaryDirectory(prefix="earthsiege-package-") as temporary:
         root = Path(temporary)
         if archive.suffix == ".zip":
@@ -23,7 +23,7 @@ def check(archive):
         required = [
             "README.md", "THIRD_PARTY.md", "docs/MUSIC.md", "docs/build-release.md",
             "assets/DATA/KEYJOY.CFG", "scripts/roms.txt",
-            "third_party/licenses/SDL2-zlib.txt", "third_party/nuked-opl3/LICENSE",
+            "third_party/licenses/GLFW-zlib.txt", "third_party/licenses/miniaudio.txt", "third_party/nuked-opl3/LICENSE",
             "third_party/licenses/Munt-LGPL-2.1.txt",
             "third_party/licenses/Munt-GPL-2.0.txt",
             "third_party/licenses/Nuked-SC55-GPL-2.0.txt",
@@ -38,7 +38,7 @@ def check(archive):
         for path in game.rglob("*"):
             if path.suffix.lower() in (".rom", ".sf2") or path.name == ".git":
                 raise RuntimeError(f"Unexpected local asset in package: {path}")
-        environment = dict(os.environ, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy")
+        environment = dict(os.environ)
         environment.pop("LD_LIBRARY_PATH", None)
         environment.pop("DYLD_LIBRARY_PATH", None)
         if os.name == "nt":
@@ -56,9 +56,10 @@ def check(archive):
             "--save-dir", str(root / "saves"), "--screenshot", str(root / "frame.ppm"))
         if not (root / "frame.ppm").read_bytes().startswith(b"P6\n320 200\n255\n"):
             raise RuntimeError("Packaged renderer did not produce a 320 x 200 frame")
-        # Exercise SDL startup and presentation without needing a physical display.
-        run("--skip-intro", "--frames", "2", "--music", "opl3",
-            "--save-dir", str(root / "saves"))
+        if window:
+            # Linux CI uses Xvfb and Mesa to exercise the actual GLFW/GL presenter.
+            run("--skip-intro", "--frames", "2", "--music", "opl3",
+                "--save-dir", str(root / "saves"))
         if os.name != "nt":
             subprocess.run([str(game / "scripts/fetch-assets.sh"), "--help"],
                            cwd=root, check=True, timeout=10)
@@ -66,6 +67,9 @@ def check(archive):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: check_package.py PACKAGE.tar.gz|PACKAGE.zip")
-    check(Path(sys.argv[1]).resolve())
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--window", action="store_true", help="Also open the GLFW window (requires a display)")
+    parser.add_argument("archive", type=Path)
+    arguments = parser.parse_args()
+    check(arguments.archive.resolve(), arguments.window)

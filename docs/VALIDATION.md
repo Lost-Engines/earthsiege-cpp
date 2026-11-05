@@ -10,9 +10,10 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The current complete test suite passes **272/272 tests**: 271 standard tests
-and one optional test using local Roland ROMs and a SoundFont. The earlier
-263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
+The GLFW/miniaudio migration passes **273/273 tests**: 272 standard tests
+and the additional real-window check. Firmware/SoundFont synthesis has a separate
+opt-in test. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
+The earlier 263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
 affected movement/world suites passed both sanitizers. The six audio suites,
 including the new physical-MIDI captures and real synthesis backends, also pass
 ASan/UBSan with leak checking after this audio update.
@@ -46,7 +47,7 @@ damage, objectives or random-generator results.
 | Campaign/shell | Original launch files and RNG for 670 GO launches, 396 campaign transitions, four new-career constructors, eighteen short-cycle transactions and 121 further consecutive returns through six victory/defeat journeys across all three battle sets. Separate original comparisons cover grading, recovery, inventories, crew, repairs and construction. |
 | Graphics | Original model hierarchies, equipment, animation, damage, lighting, culling, scenery ordering, textures, palette effects and all 24 environments have component comparisons. Recent additions include 66 ground-projection cases, 3,000 clipped-line rasters and 94 missile-camera scenes with ground attachments. |
 | Cockpit state | Original controls, view transitions, modal suspension, retained gauge pixels and separate map/damage timers are exercised. The timer fixture includes 274 sequential page-switch states. |
-| Host integration | Private SDL-window checks cover pause freezing, preferences, status, cancellation and return to the shell, using isolated saves. |
+| Host integration | Private GLFW-window checks cover pause freezing, preferences, status, cancellation and return to the shell, using isolated saves. |
 
 The replay harness supplies recorded external inputs: input packets, observed
 interface/radio clocks, installed preferences and original speech-driver
@@ -303,7 +304,7 @@ are local test inputs, not checked-in fixtures. The captured original MIDI and
 PCM protocol is checked on builds without those optional assets as well.
 
 
-The private SDL/Xvfb check selected SC-55 through Ctrl+Shift+M, found ROMs without
+Before the platform migration, a private SDL/Xvfb check selected SC-55 through Ctrl+Shift+M, found ROMs without
 an explicit path, saved the choice, restored it after restarting and resumed the
 shell after Cancel without changing the configuration. Headless mission starts
 also passed with SC-55 and the Munt MPU-401 mode. The Linux fetch helper completed
