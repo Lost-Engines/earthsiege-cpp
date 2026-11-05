@@ -6,3 +6,8 @@
 /roms/
 *.rom
 *.sf2
+
+# CI staging and caches
+/.cache/
+/package/
+/dist/

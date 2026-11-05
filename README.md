@@ -1,5 +1,14 @@
 # Earthsiege C++
 
+[![Build and release](https://github.com/Lost-Engines/earthsiege-cpp/actions/workflows/build.yml/badge.svg)](https://github.com/Lost-Engines/earthsiege-cpp/actions/workflows/build.yml)
+
+[Download the latest release](https://github.com/Lost-Engines/earthsiege-cpp/releases/latest)
+for Linux, Windows or macOS Apple Silicon. Extract the archive and run `earthsiege`
+(or `earthsiege.exe`); the original game data is included.
+See [builds and releases](docs/build-release.md) for platform requirements, CI checks
+and the publication process.
+
+
 A native C++26 reconstruction of **Metaltech: Earthsiege**, using the original 1994 version 1.0 resources. Single missions and careers are implemented from registration and briefing through combat, debrief, repair and progression, with the original cinematics, music, effects and speech.
 
 The expansion pack is not implemented yet. Its separate executables, Battleset 2, career transfer, new weapons and units are being analysed in the companion research tree. Selecting an expansion install with `--data-dir` does not enable those features. The 1996 base-game reissue has the same 1.0 game files and falls within the existing resource scope.

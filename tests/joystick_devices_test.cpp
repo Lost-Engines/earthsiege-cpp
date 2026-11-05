@@ -3,7 +3,7 @@
 #include <stdexcept>
 using namespace earthsiege;
 void require(bool ok,char const *why){if(!ok)throw std::runtime_error{why};}
-int main()try{
+int main(int, char **)try{
  SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
  joystick_devices devices{[](int i){return SDL_JoystickIsVirtual(i)==SDL_TRUE;}};
  int first{SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_FLIGHT_STICK,4,4,1)};
