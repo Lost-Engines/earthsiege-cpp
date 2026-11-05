@@ -54,7 +54,7 @@ are retained. A slower build of an older commit cannot replace a newer release.
 
 Use CMake 3.30 or newer, Ninja and a compiler supporting C++26. CI uses GCC 16 on
 Linux and macOS, and the UCRT64 GCC toolchain on Windows. macOS also uses Apple's
-Clang for SDL's Objective-C sources. The workflow lists the native development
+Clang for C and SDL's Objective-C sources. The workflow lists the native development
 packages needed to build SDL on Linux.
 
 ```sh
