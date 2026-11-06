@@ -204,11 +204,6 @@ jobs:
       group: publish-release
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-          lfs: false
       - uses: actions/download-artifact@v8
         with:
           pattern: earthsiege-cpp-*-Release
@@ -220,15 +215,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           tag="release-$GITHUB_SHA"
-          # A slower older build must not replace a newer published commit.
-          latest=$(gh api "repos/$GH_REPO/releases" --jq '[.[] | select(.draft == false and (.tag_name | test("^release-[0-9a-f]{40}$")))][0].tag_name // empty')
-          if [[ "$latest" == release-* && "$latest" != "$tag" ]]; then
-            previous="${latest#release-}"
-            if git merge-base --is-ancestor "$GITHUB_SHA" "$previous"; then
-              echo "A newer commit is already published; keeping $latest."
-              exit 0
-            fi
-          fi
           shopt -s nullglob
           packages=(dist/*.tar.gz dist/*.zip)
           test "${#packages[@]}" -eq 3
@@ -240,10 +226,10 @@ jobs:
           fi
           gh release upload "$tag" "${packages[@]}" dist/SHA256SUMS --clobber
           gh release edit "$tag" --draft=false --latest
-          # Only prune after publishing the complete replacement. Leave drafts and Git tags alone.
+          # Keep this release and delete every other release. Git tags are retained.
           keep=$(gh api "repos/$GH_REPO/releases/tags/$tag" --jq .id)
           gh api --paginate "repos/$GH_REPO/releases?per_page=100" \
-            --jq ".[] | select(.draft == false and .id != $keep) | .id" > old-releases.txt
+            --jq ".[] | select(.id != $keep) | .id" > old-releases.txt
           while read -r release_id; do
             gh api --method DELETE "repos/$GH_REPO/releases/$release_id"
           done < old-releases.txt

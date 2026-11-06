@@ -52,9 +52,8 @@ and tests pass**. Leaving that option off builds artifacts without publishing.
 Pull requests never publish releases.
 
 Release tags are `release-<full commit SHA>`. Packages are uploaded to a draft first;
-the completed release then becomes the latest download. Older published releases
-and their downloads are removed after publication, while Git tags and drafts are
-retained. A slower build of an older commit cannot replace a newer release.
+the completed release then becomes the latest download. Every other release and
+its downloads are then deleted, including old drafts. Git tags are retained.
 
 ## Reproduce a portable build
 
