@@ -16,6 +16,8 @@ enum class terrain_kind : int16_t {
   temperate,
   ice,
   urban,
+  wasteland,
+  ruins,
 };
 
 enum class actor_kind : int16_t {

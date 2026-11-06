@@ -5,6 +5,7 @@
 #include <string_view>
 #include <vector>
 #include "resources/mission_script.h"
+#include "resources/edition.h"
 
 namespace earthsiege {
 
@@ -38,6 +39,7 @@ struct background_style {
 struct world_environment {
   background_style background;
   std::array<int16_t, 4> atmosphere_parameters{};
+  std::array<int16_t, 2> expansion_parameters{};
   std::array<std::vector<int32_t>, 2> distance_bands;
   int16_t shade_levels{0};
   std::vector<palette_range> near_ranges;
@@ -60,7 +62,7 @@ struct world_selection {
 };
 
 zone_resource read_zone(bytes source);
-world_environment read_world_environment(bytes source);
+world_environment read_world_environment(bytes source, game_edition edition = game_edition::original);
 std::vector<terrain_metadata> read_terrain_metadata(bytes source);
 world_selection select_world(mission_header const &header);
 std::string_view terrain_name(terrain_kind terrain);

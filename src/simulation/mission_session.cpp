@@ -17,7 +17,7 @@ namespace earthsiege {
 
 mission_session::mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random, mission_counters initial_counters)
   : settings{script.header}, layout{resources}, routes{script.routes}, points{script.points}, terrain{resources, script.header}, ground_definitions{resources},
-    weapon_definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))},
+    weapon_definitions{read_weapon_catalogue(resources)},
     weapon_models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
     random{std::move(initial_random)}, effects{resources,[this](auto const &event){emit_sound(event);},terrain.environment().atmosphere_parameters[1]!=0}, projectiles{resources, weapon_definitions,[this](auto const &event){emit_sound(event);}} {

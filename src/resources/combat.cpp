@@ -1,4 +1,5 @@
 #include "combat.h"
+#include "resources/resource_store.h"
 #include <utility>
 
 namespace earthsiege {
@@ -61,10 +62,16 @@ std::vector<collision_part> read_collision_parts(binary_reader &file) {
   return result;
 }
 
-weapon_catalogue read_weapon_catalogue(bytes const source) {
+weapon_catalogue read_weapon_catalogue(bytes const source, bytes const separate_projectiles) {
   binary_reader file{source, "weapon catalogue"};
   weapon_catalogue result;
-  /// WEAPONS.DAT has fixed record counts; its first short belongs to weapon zero
+  // Original WEAPONS.DAT appends nineteen projectiles after seventeen weapons.
+  // Expansion WEAPONS and PROJ are separate counted tables.
+  if(!separate_projectiles.empty()) {
+    auto const count{file.integer<uint16_t>()};
+    if(count != 22) file.fail("unsupported expansion weapon count");
+    result.weapons.resize(count);
+  }
   for(auto &weapon : result.weapons) {
     weapon.damage = component(file);
     weapon.collision = collision(file);
@@ -84,6 +91,13 @@ weapon_catalogue read_weapon_catalogue(bytes const source) {
     weapon.combat_rating = file.integer<int16_t>();
     weapon.damage_icon = file.integer<int16_t>();
   }
+  if(!separate_projectiles.empty()) {
+    file.require_end();
+    file = binary_reader{separate_projectiles, "expansion projectiles"};
+    auto const count{file.integer<uint16_t>()};
+    if(count != 23) file.fail("unsupported expansion projectile count");
+    result.projectiles.resize(count);
+  }
   for(auto &projectile : result.projectiles) {
     projectile.kind = static_cast<projectile_kind>(file.integer<int16_t>());
     projectile.subtype = file.integer<int16_t>();
@@ -97,6 +111,11 @@ weapon_catalogue read_weapon_catalogue(bytes const source) {
   }
   file.require_end();
   return result;
+}
+
+weapon_catalogue read_weapon_catalogue(resource_store const &resources) {
+  return read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"),
+    resources.edition() == game_edition::expansion ? resources.read("simvol0", "dat/PROJ.DAT") : bytes{});
 }
 
 } // namespace earthsiege

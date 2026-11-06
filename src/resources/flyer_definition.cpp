@@ -7,6 +7,7 @@ flyer_definition read_flyer_definition(resource_store const &resources, std::str
   flyer_definition result;
   auto const source{resources.read("simvol0", "dat/" + std::string{name} + ".DAT")};
   binary_reader reader{source};
+  if(resources.edition() == game_edition::expansion) result.profile.source.resize(23);
   for(auto &value : result.profile.source) value = reader.integer<int16_t>();
   reader.require_end();
   result.profile.pitch_step = result.profile.source[0];

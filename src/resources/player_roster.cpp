@@ -4,9 +4,10 @@
 
 namespace earthsiege {
 
-player_roster read_player_roster(bytes const source) {
+player_roster read_player_roster(bytes const source, game_edition const edition) {
   binary_reader file{source, "player roster"};
   player_roster result;
+  result.edition = edition;
   result.selected = file.integer<int16_t>();
   auto const count{file.integer<int16_t>()};
   if(count < 0 || count > 50) file.fail("player roster exceeds original pool");
@@ -24,6 +25,11 @@ player_roster read_player_roster(bytes const source) {
     for(auto &value : herc.condition.internal) value = file.integer<int16_t>();
     for(auto &value : herc.condition.equipment) value = file.integer<int16_t>();
     result.hercs.push_back(std::move(herc));
+  }
+  if(edition == game_edition::expansion) {
+    auto const count_flags{file.integer<uint16_t>()};
+    if(count_flags > 256) file.fail("player availability table too large");
+    result.flags.resize(count_flags);
   }
   std::ranges::copy(file.take(result.flags.size()), result.flags.begin());
   file.require_end();

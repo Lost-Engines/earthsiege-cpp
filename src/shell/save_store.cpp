@@ -44,7 +44,7 @@ void save_store::erase(career_entry const &entry)const{
 preferences save_store::load_preferences()const{
   if(auto data{read("data/prefs.cfg")})return preferences{*data};
   // Standard sound-enabled initial setup, with original default high detail.
-  constexpr preferences::values defaults{1,1,2,1,255,255,255,0,0,0,0,1,0,0,2,0,0};
+  const preferences::values defaults{1,1,2,1,255,255,255,0,0,0,0,1,0,0,2,0,0};
   return preferences{defaults};
 }
 void save_store::save_preferences(preferences const &settings)const{write("data/prefs.cfg",settings.current());}

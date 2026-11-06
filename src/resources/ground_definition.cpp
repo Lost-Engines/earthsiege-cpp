@@ -30,7 +30,12 @@ ground_catalogue::ground_catalogue(resource_store const &resources)
   auto const count{file.integer<uint16_t>()};
   for(unsigned int index{0}; index != count; ++index) {
     ground_profile p;
-    for(auto &v : p.source) v = file.integer<int16_t>();
+    for(size_t field{}; field < p.source.size(); ++field) {
+      if(field == 5 && resources.edition() == game_edition::expansion)
+        for(auto &value : p.expansion_sections) value = file.integer<int16_t>();
+      p.source[field] = file.integer<int16_t>();
+    }
+    if(resources.edition() == game_edition::expansion) p.collision_enabled = file.integer<int16_t>() != 0;
     auto const &v{p.source};
     p.type = v[0]; p.model = v[1]; p.wreck_model = v[2]; p.channels = v[3]; p.damage_capacity = v[4];
     p.destruction_centre = vec3<int16_t>{v[6], v[7], v[8]};

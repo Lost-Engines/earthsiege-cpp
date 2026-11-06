@@ -2071,3 +2071,33 @@ The new implementation preserves the existing save locations and calibration
 range, presents the same indexed framebuffer through OpenGL and provides an
 in-window music selector. See [PLATFORM.md](PLATFORM.md) for the architecture and
 regression checks, and [build-release.md](build-release.md) for CI and packaging.
+
+
+### Expansion resource integration
+
+The expansion has a separate data directory under `assets/expansion`. The loader
+detects its patch volumes and follows their usage masks and unsigned priorities.
+The base game's volume-specific lookups remain unchanged.
+
+The expansion resource test checks 3,878 selected resource CRCs, 36 world
+settings, 22 weapon definitions, 23 projectile definitions, all 19 HERC resource
+sets, 11 building definitions, nine cockpit palettes, 11,421 original input
+packets and 74 original mission handoffs. Its compact fixture comes from
+`earthsiege-reverse/tools/export_expansion_cpp_fixtures.py`; the source captures
+were checked by executing the original expansion readers and launch routines.
+
+Changed formats include counted weapon availability, separate projectile tables,
+additional building and bullet fields, 23-word flyer profiles, 22 preferences,
+and the recordings' second button word and queued commands. Short preference
+files in the older recordings are zero-filled as in the original loader.
+Apocalypse uses runtime chassis 16 and cockpit palette bank 8. Expansion cockpit
+colours replace indices 32 through 47 and 64; the remaining world colours stay.
+
+This is the resource foundation. Expansion campaign progression, shell state,
+combat extensions and full recording playback are being integrated separately.
+Loading its assets alone does not establish gameplay equivalence.
+
+All 2,149 actors and 1,212 groups in the 74 expansion launch captures also
+match the existing C++ placement code: positions, rotations, formations,
+chassis, mounted weapons and controlled-player selection. The original game's
+273 regression tests and the two added expansion checks pass at this stage.

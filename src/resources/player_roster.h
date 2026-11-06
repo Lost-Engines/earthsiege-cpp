@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include "resources/binary_reader.h"
+#include "resources/edition.h"
 
 namespace earthsiege {
 
@@ -26,10 +27,11 @@ struct player_herc {
 struct player_roster {
   int16_t selected{0};
   std::vector<player_herc> hercs;
-  std::array<uint8_t, 17> flags{};
+  std::vector<uint8_t> flags = std::vector<uint8_t>(17);
+  game_edition edition{game_edition::original};
 };
 
-player_roster read_player_roster(bytes source);
+player_roster read_player_roster(bytes source, game_edition edition = game_edition::original);
 std::vector<uint8_t> write_player_roster(player_roster const &roster);
 
 } // namespace earthsiege

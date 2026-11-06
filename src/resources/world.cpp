@@ -19,7 +19,7 @@ zone_resource read_zone(bytes const source) {
   return result;
 }
 
-world_environment read_world_environment(bytes const source) {
+world_environment read_world_environment(bytes const source, game_edition const edition) {
   binary_reader file{source, "world environment"};
   world_environment result;
   result.background = background_style{
@@ -33,6 +33,7 @@ world_environment read_world_environment(bytes const source) {
     .horizon_offset{file.integer<int16_t>()},
   };
   for(auto &value : result.atmosphere_parameters) value = file.integer<int16_t>();
+  if(edition == game_edition::expansion) for(auto &value : result.expansion_parameters) value = file.integer<int16_t>();
   for(auto &band : result.distance_bands) {
     auto const count{file.integer<uint32_t>()};
     if(count > file.remaining() / sizeof(int32_t)) file.fail("distance band exceeds descriptor");
@@ -79,7 +80,7 @@ world_selection select_world(mission_header const &header) {
   int constexpr environments_per_palette{2};
   auto const palette{static_cast<int>(header.terrain) * variants_per_terrain + header.palette_variant * environments_per_palette};
   auto const environment{palette + header.world_variant};
-  if(palette < 0 || palette >= 24 || environment < 0 || environment >= 24) throw std::out_of_range{"mission world selection"};
+  if(palette < 0 || palette >= 36 || environment < 0 || environment >= 36) throw std::out_of_range{"mission world selection"};
   return world_selection{.palette{palette}, .environment{environment}};
 }
 
@@ -89,6 +90,8 @@ std::string_view terrain_name(terrain_kind const terrain) {
   case terrain_kind::temperate: return "TEMPER";
   case terrain_kind::ice: return "ICE";
   case terrain_kind::urban: return "URBAN";
+  case terrain_kind::wasteland: return "WASTE";
+  case terrain_kind::ruins: return "RUINS";
   }
   throw std::out_of_range{"unknown terrain kind"};
 }

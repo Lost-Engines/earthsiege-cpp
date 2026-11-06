@@ -28,6 +28,8 @@ struct ground_profile {
   int16_t target_height{0};
   bool can_retaliate{false};
   std::array<int16_t, 27> source{};                                          // remaining fields retained until their consumers are ported
+  std::array<int16_t, 7> expansion_sections{};
+  bool collision_enabled{true};
   std::vector<collision_part> collision;
 };
 

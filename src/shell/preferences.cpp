@@ -4,9 +4,10 @@
 #include <utility>
 
 namespace earthsiege {
-preferences::preferences(bytes source,bool live){
+preferences::preferences(bytes source,bool live,game_edition edition)
+  :current_(edition==game_edition::expansion?22:17){
   if(!source.empty()){
-    if(source.size()!=current_.size())throw std::runtime_error{"PREFS.CFG must contain 17 bytes"};
+    if(source.size()>current_.size()||(edition==game_edition::original&&source.size()!=17))throw std::runtime_error{"PREFS.CFG has an invalid size for this edition"};
     std::ranges::copy(source,current_.begin());
   }
   saved_=previous_=current_;
@@ -22,7 +23,7 @@ void preferences::commit(bool live){for(size_t i{};i<current_.size();++i)if(curr
 void preferences::cancel(bool live){for(size_t i{};i<current_.size();++i)if(current_[i]!=saved_[i]){current_[i]=saved_[i];changed(i,live);}}
 preferences::values preferences::save_selected(std::optional<bytes> existing,std::span<uint8_t const> indices)const{
   values result{current_};
-  if(existing){if(existing->size()!=result.size())throw std::runtime_error{"PREFS.CFG must contain 17 bytes"};std::ranges::copy(*existing,result.begin());}
+  if(existing){if(existing->size()>result.size()||(result.size()==17&&existing->size()!=17))throw std::runtime_error{"PREFS.CFG has an invalid size for this edition"};std::ranges::copy(*existing,result.begin());}
   for(auto i:indices)result.at(i)=current_.at(i);
   return result;
 }

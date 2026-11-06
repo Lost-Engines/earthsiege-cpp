@@ -1,5 +1,6 @@
 #include "resource_store.h"
 #include <array>
+#include <algorithm>
 #include <stdexcept>
 
 namespace earthsiege {
@@ -27,12 +28,34 @@ resource_store::resource_store(std::filesystem::path const &root) : root_path{ro
     auto const name{normalise_path(entry.path().stem().string())};
     if(!volumes.try_emplace(name, entry.path()).second) throw std::runtime_error{"duplicate game volume: " + name};
   }
+  if(volumes.contains("pshell2") && volumes.contains("simpatch") && volumes.contains("pzones1")) {
+    edition_ = game_edition::expansion;
+    // The original selects language volumes explicitly. Default to English;
+    // alphabetical directory order must not substitute French/German speech.
+    for(auto const &[name, volume] : volumes) {
+      if(name == "simvoicf" || name == "simvoicg" || name == "fspeech" || name == "gspeech" || name == "pfspeech" || name == "pgspeech") continue;
+      overrides.push_back(&volume);
+    }
+    std::stable_sort(overrides.begin(), overrides.end(), [](auto a, auto b){ return a->priority() > b->priority(); });
+  }
   for(auto const name : required) {
     if(!volumes.contains(name)) throw std::runtime_error{"missing game volume " + std::string{name} + " in " + directory.string()};
   }
 }
 
 auto resource_store::read(std::string_view volume, std::string_view name) const->bytes {
+  auto const found{volumes.find(normalise_path(volume))};
+  if(found == volumes.end()) throw std::runtime_error{"unknown game volume: " + std::string{volume}};
+  if(edition_ == game_edition::expansion) {
+    auto const usage{found->second.usage_mask()};
+    for(auto const *candidate : overrides) if(candidate->usage_mask() & usage) {
+      if(auto const *entry{candidate->find(name)}) return candidate->read(*entry);
+    }
+  }
+  return read_original(volume, name);
+}
+
+auto resource_store::read_original(std::string_view volume, std::string_view name) const->bytes {
   auto const found{volumes.find(normalise_path(volume))};
   if(found == volumes.end()) throw std::runtime_error{"unknown game volume: " + std::string{volume}};
   auto const *entry{found->second.find(name)};

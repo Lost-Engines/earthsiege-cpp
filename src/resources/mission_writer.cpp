@@ -32,6 +32,10 @@ std::vector<uint8_t> write_player_roster(player_roster const &roster) {
     f.integer(h.slot);f.integer(h.field);f.integer(h.chassis);f.integer<int16_t>(static_cast<int16_t>(h.weapons.size()));words(f,h.weapons);words(f,h.weapon_values);f.integer(h.extra);
     words(f,h.condition.armour);words(f,h.condition.internal);words(f,h.condition.equipment);
   }
+  if(roster.edition == game_edition::expansion) {
+    if(roster.flags.size()>256) throw std::runtime_error{"player availability table too large"};
+    f.integer<uint16_t>(static_cast<uint16_t>(roster.flags.size()));
+  } else if(roster.flags.size()!=17) throw std::runtime_error{"original roster needs 17 availability flags"};
   f.append(roster.flags);return std::move(f).finish();
 }
 std::vector<uint8_t> write_mission_counters(mission_counters const &counters){binary_writer f;words(f,counters);return std::move(f).finish();}

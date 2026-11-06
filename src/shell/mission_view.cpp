@@ -17,11 +17,11 @@ namespace {
 
 input_tape demo_tape(resource_store const &resources,unsigned demo){
   if(demo<1||demo>4)throw std::runtime_error{"demo must be between 1 and 4"};
-  return read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")));
+  return read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")), resources.edition());
 }
 std::unique_ptr<mission_session> demo_start(resource_store const &resources,input_tape const &tape) {
   auto const script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
-  auto const roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
+  auto const roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)],tape.edition)};
   auto const counters{read_mission_counters(tape.starting_files[std::to_underlying(tape_file::campaign_flags)])};
   return std::make_unique<mission_session>(resources, script, roster, random_state{}, counters);
 }
@@ -62,7 +62,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     if(options.invalid_token)throw std::runtime_error{"Unrecognized KEYJOY.CFG token in "+path.string()};
     routing.tilt_reverse=options.tilt_reverse;routing.backturn_reverse=options.backturn_reverse;routing.missile_reverse=options.missile_reverse;break;
   }
-  apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()));
+  apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()), resources.edition());
   update_camera(camera, session->view_target());
   environment.initialize_palette(display_colours,camera.angles.x);
   display_device.present(display_colours);

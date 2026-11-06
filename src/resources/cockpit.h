@@ -39,6 +39,6 @@ screen_mask read_screen_mask(bytes source, std::vector<uint8_t> *unused = nullpt
 cockpit_layout read_cockpit_layout(bytes source);
 std::array<cockpit_window, 4> read_cockpit_windows(bytes source);
 cockpit_artwork read_cockpit(resource_store const &resources, std::string const &name);
-void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int chassis);
+void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int chassis, game_edition edition = game_edition::original);
 
 } // namespace earthsiege

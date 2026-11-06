@@ -37,7 +37,7 @@ void label(framebuffer &target,font const &face,std::string_view text,rectangle 
 }
 full_damage_display::full_damage_display(resource_store const &r)
  :weapon_art{read_bitmaps(r.read("simvol0","dba/WEAPONS.DBA"))},weapon_sizes{read_weapon_icon_sizes(r.read("simvol0","pdg/WEAPONS.PDG"))},
- definitions{read_weapon_catalogue(r.read("simvol0","dat/WEAPONS.DAT"))},
+ definitions{read_weapon_catalogue(r)},
  health_fonts{read_font(r.read("simvol0","dfn/CPGREEN.DFN")),read_font(r.read("simvol0","dfn/CPYLW.DFN")),read_font(r.read("simvol0","dfn/CPORANGE.DFN")),read_font(r.read("simvol0","dfn/CPRED.DFN")),read_font(r.read("simvol0","dfn/CPGREY.DFN"))},
  yellow{health_fonts[1]},red{health_fonts[3]},strings{read_interface_strings(r.read("simvol0","str/STRINGS0.STR"))}{
   for(auto const &name:read_resource_names(r.read("simvol0","nam/MECHS.NAM")))chassis.push_back({read_paper_doll(r.read("simvol0","pdg/"+name+".PDG")),read_bitmaps(r.read("simvol0","dba/"+name+".DBA")),read_weapon_mounts(r.read("simvol0","gl/"+name+".GL"))});

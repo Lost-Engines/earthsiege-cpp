@@ -12,7 +12,9 @@ archive::archive(std::vector<uint8_t> input, std::string label) : data{std::move
   /// Decode VOLN's directory index and validate every uncompressed payload extent.
   binary_reader file{data, std::move(label)};
   if(file.integer<uint32_t>() != 0x4e4c4f56) file.fail("expected VOLN archive");
-  file.take(6);
+  usage_ = file.integer<uint32_t>();
+  priority_ = file.integer<uint8_t>();
+  file.take(1);
   auto const directory_size{file.integer<uint16_t>()};
   binary_reader names{file.take(directory_size), "VOLN directories"};
   std::vector<std::string> directories;

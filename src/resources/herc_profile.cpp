@@ -45,7 +45,7 @@ herc_profile read_herc_profile(bytes const source) {
   result.torso = {.sequence{word(26)}, .rate{word(28)}, .acceleration{word(30)}, .minimum{static_cast<int16_t>(-word(32))}, .maximum{word(32)}};
   result.elevation = {.sequence{word(34)}, .rate{word(36)}, .acceleration{word(38)}, .minimum{word(42)}, .maximum{word(40)}};
   auto const texture{word(148)};
-  if(texture < 0 || texture > 3) file.fail("unknown texture group");
+  if(texture < 0 || texture > 4) file.fail("unknown texture group");
   result.textures = static_cast<herc_texture_group>(texture);
   for(size_t offset{46}; offset != 96 && source[offset] < 128; ++offset) result.detail_part_ids.push_back(source[offset]);
   for(size_t offset{86}; offset != 98 && source[offset]; ++offset) result.name.push_back(static_cast<char>(source[offset]));

@@ -1,21 +1,22 @@
 #pragma once
 #include "resources/binary_reader.h"
+#include "resources/edition.h"
 #include <array>
 #include <optional>
 
 namespace earthsiege {
 struct preference_change {uint8_t index{},value{};bool operator==(preference_change const &)const=default;};
-/// GO/DBSIM share the same 17-byte transaction manager. Disk persistence is
+/// GO/DBSIM use 17 bytes originally and 22 in the expansion. Disk persistence is
 /// separate from accepting an edit: saving must not silently commit it.
 class preferences {
 public:
-  using values=std::array<uint8_t,17>;
+  using values=std::vector<uint8_t>;
 private:
-  values current_{},saved_{},previous_{};
+  values current_=values(17),saved_{},previous_{};
   std::vector<preference_change> changes_;
   void changed(size_t index,bool live);
 public:
-  explicit preferences(bytes source={},bool live=true);
+  explicit preferences(bytes source={},bool live=true,game_edition edition=game_edition::original);
   values const &current()const{return current_;}
   values const &saved()const{return saved_;}
   values const &previous()const{return previous_;}

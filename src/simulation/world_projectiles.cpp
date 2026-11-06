@@ -12,7 +12,7 @@ live_projectile::live_projectile(projectile_owner source, weapon_shot const &sho
 
 world_projectiles::world_projectiles(resource_store const &resources, weapon_catalogue const &catalogue, sound_sink sink)
   : sounds{std::move(sink)}, definitions{catalogue},
-    motions{read_bullet_motions(resources.read("simvol0", "dat/BULLETS.DAT")), read_rocket_motions(resources.read("simvol0", "dat/ROCKETS.DAT"))},
+    motions{read_bullet_motions(resources.read("simvol0", "dat/BULLETS.DAT"), resources.edition()), read_rocket_motions(resources.read("simvol0", "dat/ROCKETS.DAT"))},
     bullet_models{read_model(resources.read("simvol0", "dts/BULLETS.DTS"))},
     rocket_models{read_model(resources.read("simvol0", "dts/ROCKETS.DTS"))},
     bullet_textures{read_bitmaps(resources.read("simvol0", "dba/BULLETS.DBA"))} {}

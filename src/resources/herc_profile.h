@@ -37,6 +37,7 @@ enum class herc_texture_group : int16_t {
   medium,
   heavy,
   enemy,
+  apoco,
 };
 
 inline std::array<int32_t, 7> constexpr herc_detail_thresholds{75, 60, 45, 25, 18, 12, 6};

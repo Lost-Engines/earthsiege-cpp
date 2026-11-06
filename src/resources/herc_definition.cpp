@@ -16,7 +16,7 @@ herc_definition read_herc_definition(resource_store const &resources, std::strin
     .collision{read_collision_parts(resources.read("simvol0", "col/" + std::string{name} + ".COL"))},
   };
   bind_herc_detail_nodes(result.models, result.profile.detail_part_ids);
-  std::array<std::string_view, 4> constexpr texture_names{"LIGHT", "MEDIUM", "HEAVY", "ENEMY"};
+  std::array<std::string_view, 5> constexpr texture_names{"LIGHT", "MEDIUM", "HEAVY", "ENEMY", "APOCO"};
   auto const texture{texture_names.at(static_cast<size_t>(result.profile.textures))};
   result.textures = read_bitmaps(resources.read("simvol0", "dba/" + std::string{texture} + ".DBA"));
   auto &animation{std::get<shape_part>(result.models.roots.front().content).animation.value()};

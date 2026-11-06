@@ -141,14 +141,19 @@ void cockpit_artwork::draw_composed(framebuffer &target,cockpit_view view,int di
   }
 }
 
-void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int chassis) {
-  if(chassis >= 8) throw std::out_of_range{"cockpit chassis index"};
+void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int chassis, game_edition const edition) {
+  bool const expansion{edition == game_edition::expansion};
+  if(expansion && chassis == 16) chassis = 8;
+  if(chassis >= (expansion ? 9U : 8U)) throw std::out_of_range{"cockpit chassis index"};
   auto const copy{[&](unsigned int target, unsigned int source){
     world.colours[target] = cockpit.colours[source];
     world.dac_colours[target] = cockpit.dac_colours[source];
   }};
-  for(unsigned int i{}; i < 16; ++i) { copy(32 + i, chassis * 32 + i); copy(64 + i, chassis * 32 + 16 + i); }
-  constexpr std::array<unsigned int, 8> highlights{44, 37, 45, 39, 45, 45, 45, 40};
+  for(unsigned int i{}; i < 16; ++i) {
+    copy(32 + i, chassis * (expansion ? 16 : 32) + i);
+    if(!expansion) copy(64 + i, chassis * 32 + 16 + i);
+  }
+  constexpr std::array<unsigned int, 9> highlights{44, 37, 45, 39, 45, 45, 45, 40, 40};
   world.colours[64] = world.colours[highlights[chassis]];
   world.dac_colours[64] = world.dac_colours[highlights[chassis]];
 }

@@ -15,7 +15,7 @@ struct flyer_profile {
   int16_t bank_turn_shift{0};
   int16_t maximum_bank{0};
   int16_t forward_step{0};                                                 // local Y displacement per movement dispatch, not per elapsed millisecond
-  std::array<int16_t, 17> source{};                                        // retain fields whose steering consumers are not yet ported
+  std::vector<int16_t> source = std::vector<int16_t>(17);                                        // retain fields whose steering consumers are not yet ported
 };
 struct flyer_definition {
   flyer_profile profile;

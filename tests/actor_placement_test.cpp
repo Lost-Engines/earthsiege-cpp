@@ -6,7 +6,7 @@
 #include "simulation/actor_placement.h"
 
 int main(int const argc, char **argv) try {
-  if(argc != 3) return EXIT_FAILURE;
+  if(argc != 3 && argc != 4) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
   earthsiege::placement_catalogue catalogue{resources};
   auto const bytes{earthsiege::read_file(argv[2])};
@@ -21,7 +21,7 @@ int main(int const argc, char **argv) try {
       if(!pass) throw std::runtime_error{name + ": " + field + " differs"};
     }};
     auto const script{earthsiege::read_mission_script(file.take(file.integer<uint32_t>()))};
-    auto const player{earthsiege::read_player_roster(file.take(file.integer<uint32_t>()))};
+    auto const player{earthsiege::read_player_roster(file.take(file.integer<uint32_t>()), resources.edition())};
     auto const actual{catalogue.place(script, player)};
     for(auto const &pool : actual.actors) {
       require(pool.size() == file.integer<uint16_t>(), "actor count");
@@ -64,7 +64,7 @@ int main(int const argc, char **argv) try {
     require(actual.player.slot == file.integer<uint16_t>(), "player slot");
   }
   file.require_end();
-  if(count != 304 || actors != 8176 || groups != 4368 || undefined != 89) throw std::runtime_error{"placement fixture coverage differs"};
+  if(argc == 3 && (count != 304 || actors != 8176 || groups != 4368 || undefined != 89)) throw std::runtime_error{"placement fixture coverage differs"};
   std::cout << count << " original missions, " << actors << " actors and " << groups << " groups agree; " << undefined << " memory-dependent positions remain explicit" << std::endl;
   return EXIT_SUCCESS;
 } catch(std::exception const &error) {

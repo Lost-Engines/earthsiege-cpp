@@ -8,9 +8,9 @@ namespace earthsiege {
 
 scenery_world::scenery_world(resource_store const &resources, mission_header const &header) {
   auto const selection{select_world(header)};
-  environment_data = read_world_environment(resources.read("simvol0", "wld/WORLD" + std::to_string(selection.environment) + ".WLD"));
+  environment_data = read_world_environment(resources.read("simvol0", "wld/WORLD" + std::to_string(selection.environment) + ".WLD"), resources.edition());
   palette_data = read_palette(resources.read("simvol0", "dpl/WORLD" + std::to_string(selection.palette) + ".DPL"));
-  textures_data = read_bitmaps(resources.read("simvol0", "dba/BASETEX.DBA"));
+  textures_data = read_bitmaps(resources.read("simvol0", resources.edition() == game_edition::expansion ? "dba/TERRAIN.DBA" : "dba/BASETEX.DBA"));
   if(header.zone < 0) return;
   auto const terrain_file{std::string{terrain_name(header.terrain)}};
   terrain_data = read_model(resources.read("simvol0", "dgs/" + terrain_file + ".DGS"));

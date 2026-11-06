@@ -5,6 +5,7 @@
 #include <vector>
 #include "vectorstorm/vector/vector2.h"
 #include "resources/binary_reader.h"
+#include "resources/edition.h"
 
 namespace earthsiege {
 
@@ -32,14 +33,17 @@ struct tape_frame {
   uint16_t delta{};
   uint16_t buttons{};
   std::vector<tape_mouse_event> mouse;
+  uint16_t extended_buttons{};
+  std::vector<uint16_t> commands;
 };
 
 struct input_tape {
   std::array<std::vector<uint8_t>, std::to_underlying(tape_file::count)> starting_files;
   std::vector<tape_frame> frames;
   size_t stream_offset{};
+  game_edition edition{game_edition::original};
 };
 
-auto read_input_tape(bytes source)->input_tape;
+auto read_input_tape(bytes source, game_edition edition = game_edition::original)->input_tape;
 
 } // namespace earthsiege

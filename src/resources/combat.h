@@ -96,13 +96,15 @@ inline size_t constexpr original_weapon_count{17};
 inline size_t constexpr original_projectile_count{19};
 
 struct weapon_catalogue {
-  std::array<weapon_definition, original_weapon_count> weapons;
-  std::array<projectile_definition, original_projectile_count> projectiles;
+  std::vector<weapon_definition> weapons = std::vector<weapon_definition>(original_weapon_count);
+  std::vector<projectile_definition> projectiles = std::vector<projectile_definition>(original_projectile_count);
 };
 
 damage_definition read_damage_definition(bytes source);
 std::vector<collision_part> read_collision_parts(bytes source);
 std::vector<collision_part> read_collision_parts(binary_reader &source);
-weapon_catalogue read_weapon_catalogue(bytes source);
+weapon_catalogue read_weapon_catalogue(bytes source, bytes separate_projectiles = {});
+class resource_store;
+weapon_catalogue read_weapon_catalogue(resource_store const &resources);
 
 } // namespace earthsiege

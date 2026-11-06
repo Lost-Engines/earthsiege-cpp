@@ -2,7 +2,7 @@
 
 namespace earthsiege {
 
-std::vector<bullet_motion> read_bullet_motions(bytes const source) {
+std::vector<bullet_motion> read_bullet_motions(bytes const source, game_edition const edition) {
   binary_reader file{source, "bullet motions"};
   std::vector<bullet_motion> result(file.integer<uint16_t>());
   for(auto &motion : result) {
@@ -11,6 +11,10 @@ std::vector<bullet_motion> read_bullet_motions(bytes const source) {
     motion.collision_radius = file.integer<int16_t>();
     motion.animation_period = file.integer<int16_t>();
     motion.shot_noise = file.integer<int16_t>();
+    if(edition == game_edition::expansion) {
+      motion.spread = file.integer<int16_t>();
+      motion.damage_falloff = file.integer<int16_t>();
+    }
   }
   file.require_end();
   return result;
