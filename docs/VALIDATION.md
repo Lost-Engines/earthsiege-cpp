@@ -50,6 +50,15 @@ The GLFW window was checked locally against the original DOSBox preferences:
 Max displays correctly, all four presets cycle, a demo plays, and Escape returns
 to the main menu.
 
+## Weapon-link shortcut
+
+L now reaches the cockpit weapon-link handler. It toggles the selected matching
+pair before selection and firing, as in the original `0x380c4` branch, and plays
+the same interface click. The existing `weapon_groups` test now also checks
+linking and unlinking through a live mission, ignored Alt/Ctrl modifiers, and
+the lower-panel/external-view restrictions. It and the original player-armament
+comparisons pass locally.
+
 ## Edition coverage
 
 The comparisons below concern the original October 1994 version 1.0 build.

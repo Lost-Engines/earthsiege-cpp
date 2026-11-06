@@ -96,6 +96,7 @@ auto command(int const code, bool const alt, bool const control)->std::optional<
     case GLFW_KEY_E: scan=18; break;
     case GLFW_KEY_F: scan=33; break;
     case GLFW_KEY_W: scan=17; break;
+    case GLFW_KEY_L: scan=38; break;
     case GLFW_KEY_V: scan=47; break;
     case GLFW_KEY_B: scan=48; break;
     case GLFW_KEY_Z: scan=44; break;

@@ -424,6 +424,8 @@ bool mission_view::dispatch_command(player_input &input,mission_dialog_handlers 
   if(input.command) {
     if(input.command==47){external_view_requested=!external_view_active;transitions.request(external_view_requested?2:3);input.command=0;}
     if((input.command==15||input.command==28)&&camera.mode!=camera_mode::attached){external_camera_control=!external_camera_control;input.command=0;}
+    // 380c4 applies L immediately, before selection/firing, and plays the UI click.
+    if(input.command==38&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->toggle_weapon_pair();audio.play(17);input.command=0;}
     // 38034 routes TRACK through the widget. The bank reads the pending
     // flag during the later instrument exchange, after this frame's aiming.
     if(input.command==0x214&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->weapon_group_control(4);audio.play(17);input.command=0;}

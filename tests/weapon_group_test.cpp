@@ -2,6 +2,8 @@
 #include <iostream>
 #include <stdexcept>
 #include "render/weapon_instruments.h"
+#include "shell/mission_view.h"
+#include "resources/name_table.h"
 #include "simulation/player_armament.h"
 
 int main(int argc, char **argv) try {
@@ -45,6 +47,36 @@ int main(int argc, char **argv) try {
     if(controls.current_group() != (expected[0] + 1) % 3) file.fail("keyboard precedence persisted into the following update");
   }
   file.require_end();
+  // The original 38034/380c4 handler links immediately, unlike the mouse
+  // button's pending request. Exercise the cockpit dispatch, not just the bank.
+  auto const tape{read_input_tape(read_file(resources.root()/"TAPES"/"DEMO1.TAP"))};
+  auto const script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
+  auto roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
+  auto &herc{roster.hercs.at(static_cast<size_t>(roster.selected))};
+  std::fill(herc.weapons.begin(),herc.weapons.end(),6); // Matching lasers in paired mounts.
+  auto const names{read_resource_names(resources.read("simvol0","nam/MECHS.NAM"))};
+  auto const definition{read_herc_definition(resources,names.at(static_cast<size_t>(herc.chassis)))};
+  auto const partner{definition.mounts.at(0).paired_slot_offset};
+  if(partner<=0)throw std::runtime_error{"test HERC needs a paired first mount"};
+  auto session{std::make_unique<mission_session>(resources,script,roster)};
+  session->set_auto_tracking(false);session->select_weapon(0);
+  mission_view scene{resources,std::move(session)};
+  scene.draw();
+  auto const &controls{scene.simulation().player_weapon_controls()};
+  uint32_t clock{};
+  auto check_key=[&](uint16_t code,bool linked){
+    tape_frame input;input.command=code;input.delta=1;
+    if(!scene.step_recorded(input,++clock))throw std::runtime_error{"link command ended mission"};
+    if(controls.linked(0)!=linked||controls.linked(static_cast<size_t>(partner))!=linked)
+      throw std::runtime_error{"cockpit link command did not update both weapons"};
+  };
+  check_key(38,true);check_key(38,false);
+  check_key(0x226,false);check_key(0x426,false); // Alt/Ctrl+L are not L.
+  scene.change_cockpit_view(cockpit_view::lower);check_key(38,false);
+  scene.change_cockpit_view(cockpit_view::forward);check_key(38,true);
+  scene.change_camera(camera_mode::orbit);check_key(38,true);
+  scene.change_camera(camera_mode::attached);check_key(38,false);
+
   std::cout << count << " original group frames and " << inputs << " group exchanges match\n";
   return EXIT_SUCCESS;
 } catch(std::exception const &e) { std::cerr << e.what() << '\n'; return EXIT_FAILURE; }
