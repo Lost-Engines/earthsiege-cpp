@@ -141,7 +141,7 @@ bool mission_activity::eligible(std::span<observed_actor const> const observatio
   if(actors[group.members.front()].player && settings.objective_kind == 3 && group.representative == candidate && !observations[group.members.front()].objective_event) return false;
   return true;
 }
-std::optional<size_t> mission_activity::select(std::span<observed_actor const> const observations, size_t const observer, target_selection_flags const flags, std::optional<size_t> const hud_target, random_state &random) const {
+std::optional<size_t> mission_activity::select(std::span<observed_actor const> const observations, size_t const observer, target_selection_flags const flags, std::optional<size_t> const hud_target, random_state &random, int16_t const maximum_bearing) const {
   if(observations.size()!=actors.size()) throw std::invalid_argument{"mission observation count"};
   std::vector<target_candidate> candidates;
   for(size_t i{0}; i!=actors.size(); ++i) {
@@ -153,6 +153,6 @@ std::optional<size_t> mission_activity::select(std::span<observed_actor const> c
       .controller_attacking{controllers[i].controller.type ? std::optional<bool>{describe(*controllers[i].controller.type).attacking()} : std::nullopt},
       .compares_combat_strength{state.kind==actor_kind::herc}});
   }
-  return select_target(candidates,observer,flags,objective(observer),settings.objective_kind,hud_target,random);
+  return select_target(candidates,observer,flags,objective(observer),settings.objective_kind,hud_target,random,maximum_bearing);
 }
 } // namespace earthsiege

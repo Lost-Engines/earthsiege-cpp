@@ -29,7 +29,7 @@ ground_catalogue::ground_catalogue(resource_store const &resources)
   binary_reader collisions{resources.read("simvol0", "dat/BASECOL.DAT"), "base collision"};
   auto const count{file.integer<uint16_t>()};
   for(unsigned int index{0}; index != count; ++index) {
-    ground_profile p;
+    ground_profile p;p.edition=resources.edition();
     for(size_t field{}; field < p.source.size(); ++field) {
       if(field == 5 && resources.edition() == game_edition::expansion)
         for(auto &value : p.expansion_sections) value = file.integer<int16_t>();
@@ -48,6 +48,10 @@ ground_catalogue::ground_catalogue(resource_store const &resources)
     definitions.push_back(std::move(p));
   }
   file.require_end(); collisions.require_end();
+  if(resources.edition()==game_edition::expansion){binary_reader w{resources.read("simvol0","dat/lc_wpns.dat")};auto count{w.integer<uint16_t>()};
+    for(unsigned i{};i<count;++i)landing_weapons_.push_back({w.integer<int16_t>(),w.integer<int16_t>(),w.integer<int32_t>(),{w.integer<int32_t>(),w.integer<int32_t>(),w.integer<int32_t>()},w.integer<int16_t>()});w.require_end();
+    if(landing_weapons_.size()!=3)throw std::runtime_error{"landing craft requires three weapon definitions"};
+  }
   for(auto &bank : animated_models) repair_radar_bsp(bank.roots.at(0));
 }
 

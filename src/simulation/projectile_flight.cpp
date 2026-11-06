@@ -43,6 +43,20 @@ void guide(projectile_flight &state, projectile_guidance &input, frame_ratio con
   }
 }
 
+void guide_plasma(projectile_flight &state, projectile_guidance &input, frame_ratio ratio) {
+  vec3<int32_t> delta;
+  for(unsigned axis{};axis<3;++axis)delta[axis]=wrap_long(static_cast<int64_t>(input.target_position[axis])-state.position[axis]);
+  vec2<uint16_t> desired{direction_angle(fast_distance_2d({delta.x,delta.y}),delta.z),static_cast<uint16_t>(direction_angle(delta.x,delta.y)-angle_quarter_turn)};
+  int16_t yaw_error{};
+  for(unsigned i{};i<2;++i){auto axis{i?2U:0U};auto error{wrap_word(static_cast<int32_t>(desired[i])-state.angles[axis])};
+    if(i)yaw_error=error;
+    state.angles[axis]=static_cast<uint16_t>(state.angles[axis]+scale_frame_time(std::clamp<int16_t>(error,-640,640),ratio));
+  }
+  auto const &origin{input.target_origin?*input.target_origin:input.target_position};
+  for(unsigned axis{};axis<3;++axis)delta[axis]=wrap_long(static_cast<int64_t>(origin[axis])-state.position[axis]);
+  input.proximity_burst=std::abs(static_cast<int>(yaw_error))>16384&&fast_distance(delta)<2000;
+}
+
 } // namespace
 
 projectile_result advance_projectile(projectile_flight &state, projectile_motions const &motions, int16_t const speed_limit, std::span<uint16_t const> const cell_counts, frame_ratio const ratio, projectile_guidance &guidance, projectile_contact const &contact) {
@@ -74,6 +88,16 @@ projectile_result advance_projectile(projectile_flight &state, projectile_motion
     auto const accelerated{wrap_word(state.speed + scale_frame_time(acceleration, ratio))};
     state.speed = std::min(speed_limit, wrap_word((state.speed + accelerated) >> 1));
     guide(state, guidance, ratio);
+  }
+  guidance.proximity_burst=false;
+  state.impact_strength=1024;
+  if(state.kind==projectile_kind::bullet&&motions.edition==game_edition::expansion){
+    if(state.target_present)guide_plasma(state,guidance,ratio);
+    if(guidance.damage_falloff&&motions.bullets.at(state.subtype).damage_falloff){
+      if(state.strength<1)return projectile_result::expired;
+      state.impact_strength=state.strength;
+      state.strength=wrap_word(state.strength-scale_frame_time(state.falloff_step,ratio));
+    }
   }
   auto transform{rotation_transform(state.angles)};
   transform.translation = state.position;

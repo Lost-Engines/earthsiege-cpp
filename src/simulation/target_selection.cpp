@@ -38,7 +38,7 @@ bool recognizes(target_candidate const &observer, target_candidate const &target
   return observer.known[target_index] != 0 || (target.seen && distance_between(observer, target) < 1000000);
 }
 
-std::optional<size_t> select_target(std::span<target_candidate const> const actors, size_t const observer_index, target_selection_flags const flags, target_objective const &objective, int16_t const mission_kind, std::optional<size_t> const hud_target, random_state &random) {
+std::optional<size_t> select_target(std::span<target_candidate const> const actors, size_t const observer_index, target_selection_flags const flags, target_objective const &objective, int16_t const mission_kind, std::optional<size_t> const hud_target, random_state &random, int16_t const maximum_bearing) {
   if(observer_index >= actors.size() || objective.leader >= actors.size()) throw std::out_of_range{"target selection actor reference"};
   auto const &observer{actors[observer_index]};
   auto const &leader{actors[objective.leader]};
@@ -60,6 +60,7 @@ std::optional<size_t> select_target(std::span<target_candidate const> const acto
     if(priority < best_priority) continue;
     auto const distance{distance_between(observer, target)};
     auto const error{has(target_selection_flags::ignore_bearing) ? 0 : saturated_magnitude(wrap_word(static_cast<int32_t>(bearing_angle(observer.position, target.position)) - observer.heading))};
+    if(maximum_bearing!=0&&error>maximum_bearing)continue;
     auto const angular{static_cast<int16_t>(4096 - (error >> 3))};
     int32_t score{q10(100, angular)};
     if(distance < 25000) score = std::max(score, angular / std::max(1, distance >> 11));

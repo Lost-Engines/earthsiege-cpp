@@ -19,7 +19,7 @@ struct live_projectile {
   projectile_owner owner;
   std::variant<projectile_instance, beam_effect> state;
   live_projectile(projectile_owner owner, beam_effect beam);
-  live_projectile(projectile_owner owner, weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullets, model_resource const &rockets, int16_t initial_rocket_clock);
+  live_projectile(projectile_owner owner, weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullets, model_resource const &rockets, int16_t initial_rocket_clock, random_state &random);
 };
 
 using world_impact_query = std::function<std::optional<int32_t>(projectile_owner const &, impact_request const &)>;

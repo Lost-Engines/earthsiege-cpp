@@ -33,6 +33,18 @@ new expansion files and leaves the base game's saves unchanged.
   and Ruins work in the mission renderer and briefing map.
 - Weapon checks cover all expanded selectors, EMP-II's two partial-charge shots,
   the changed bullet lifetime clock, and 56 beam geometry/RNG/timer cases.
+  108 bullet traces compare 4,794 native updates, including spread, damage
+  falloff, plasma homing and proximity bursts. Recorded demos enable falloff
+  independently of preference 17, matching the original.
+- The landing craft has three weapon banks, each with a missile launcher and
+  two beam weapons. 3,240 controller frames and 506 launches match original
+  acquisition headings, timers, damaged-bank suppression, muzzle transforms
+  and RNG. Its six weapon sections can be destroyed separately from the hull.
+- Structure checks cover all eleven types, 2,112 collision rays and 1,628
+  lifecycle steps. Expansion structures use an explicit collision flag and
+  eight component slots. Ordinary expansion hits bypass the base edition's
+  difficulty multiplier; plasma radial damage applies its separate multiplier.
+  160 original radial shield cases cover front/rear absorption and integer limits.
 - The two CD films decode directly from their original DFL streams. All 731
   indexed frames and display palettes match the independently executed original
   decoder. Audio begins on the authored frame; the shell uses 67 ms per frame.
@@ -42,8 +54,7 @@ new expansion files and leaves the base game's saves unchanged.
 
 ## Work still in progress
 
-The landing craft's component damage and weapons, deployment effects, plasma
-homing and projectile falloff still require their own runtime comparisons.
+Deployment effects still require their own runtime comparisons.
 Expansion TAP packets are decoded and checked, but complete recorded-gameplay
 replay equivalence has not yet been established. An initial render or successful
 mission launch does not settle those behaviours.

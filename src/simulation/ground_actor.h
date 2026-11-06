@@ -35,6 +35,13 @@ struct turret_callbacks {
   std::function<void(weapon_shot const &)> fire;
 };
 
+struct landing_weapon_state {int16_t refire{},phase_timer{};bool phase{};};
+struct landing_bank_state {std::array<landing_weapon_state,3> weapons;int16_t target_timer{};std::optional<size_t> target;};
+struct landing_callbacks {
+  std::function<std::optional<size_t>(uint16_t)> select;
+  std::function<turret_target(size_t)> target;
+  std::function<void(weapon_shot const &,size_t)> fire;
+};
 struct ground_damage_events {
   std::function<void(int16_t, vec3<int32_t> const &, random_state &)> explosion;
   std::function<void(int16_t, vec3<int32_t> const &, random_state &)> debris;
@@ -51,7 +58,10 @@ class ground_actor {
   std::variant<model_instance, animation_rig> intact;
   model_instance wreck;
   model_transform transform;
+  vec3<uint16_t> original_angles;
   int16_t accumulated_damage{0};
+  std::array<int16_t,8> section_damage{},section_present{1,1,1,1,1,1,1,1};
+  std::array<landing_bank_state,3> landing_banks_;
   bool destroyed{false};
   bool wreck_ready{false};
   int16_t destruction_steps{0};
@@ -75,12 +85,18 @@ public:
   bool dead() const;
   bool is_detectable() const;
   bool is_turret() const;
+  bool is_landing_craft()const{return type==10;}
+  auto const &landing_banks()const{return landing_banks_;}
+  auto const &sections()const{return section_damage;}
+  auto const &present_sections()const{return section_present;}
   vec3<int32_t> target_position() const;
   bool is_wreck() const;
   int16_t remaining_bursts() const;
   int16_t burst_timer() const;
   int16_t cell_clock() const;
   void direct_damage(int16_t amount, random_state &random, ground_damage_events const &events);
+  void section_hit(size_t section,int16_t amount,random_state &random,ground_damage_events const &events);
+  void advance_landing_craft(frame_ratio ratio,weapon_catalogue const &weapons,random_state &random,landing_callbacks const &callbacks);
   std::optional<int32_t> receive_impact(impact_request const &request, impact_conditions const &conditions, random_state &random, ground_damage_events const &events);
   void advance(frame_ratio ratio, random_state &random, ground_damage_events const &events);
   turret_aim_state const &turret_aim() const;

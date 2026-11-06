@@ -76,6 +76,7 @@ public:
   void apply_starting_condition(int16_t condition, random_state &random, herc_damage_events const &events);
   void random_damage(int16_t chance, int16_t magnitude, random_state &random, herc_damage_events const &events);
   void radial_damage(vec3<int32_t> const &centre, int16_t radius, int16_t amount, random_state &random, herc_damage_events const &events, bool invulnerable = false);
+  void blast_damage(vec3<int32_t> const &centre, int16_t radius, int16_t amount, random_state &random, herc_damage_events const &events, bool invulnerable = false);
   void direct_damage(size_t section, int16_t amount, random_state &random, herc_damage_events const &events);
   /// Direct armour/component damage; projectile shielding and impact effects are separate stages
   std::vector<size_t> damage_section(size_t section, int16_t amount, component_choice const &choose, section_detachment const &detach = {});

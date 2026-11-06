@@ -77,7 +77,7 @@ std::optional<int32_t> flyer_actor::receive_impact(impact_request const &request
   if(!hit) return std::nullopt;
   auto effect{request.damage.armour_effects[static_cast<size_t>(random.next() & 3)]};
   auto const distance{wrap_long(static_cast<int64_t>(hit->distance) + 2)};       // component query and actor method each add one
-  bool const killed{direct_damage(adjust_impact_damage(request.damage.armour,conditions),random,events,player_locked_target)};
+  bool const killed{direct_damage(adjust_impact_damage(request.damage.armour,conditions,definition.profile.edition),random,events,player_locked_target)};
   if(killed) effect = 10;
   auto position{rotate_vector({0,distance,0},request.transform)};
   for(unsigned int axis{0}; axis != 3; ++axis) position[axis] = wrap_long(static_cast<int64_t>(position[axis]) + request.transform.translation[axis]);

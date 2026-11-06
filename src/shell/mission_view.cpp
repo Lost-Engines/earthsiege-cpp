@@ -32,6 +32,7 @@ mission_view::mission_view(resource_store const &resources, unsigned int const d
   : mission_view{resources,demo_tape(resources,demo),music} {}
 mission_view::mission_view(resource_store const &resources,input_tape const &tape,music_settings const &music)
   :mission_view{resources,demo_start(resources,tape),music} {
+  session->playback(true);
   // Playback restores files beside the TAP, while runtime controls still read
   // DATA/PREFS.CFG and DATA/KEYJOY.CFG. The caller supplies installed preferences.
 }
@@ -137,6 +138,7 @@ void mission_view::apply_preferences(preferences const &prefs){
   radio->captions(p[2]!=1);
   environment_detail(p[3]!=0,p[4],p[5]);
   renderer.shape_detail(p[6]);
+  session->bullet_falloff(p.size()>17&&p[17]!=0);
 }
 void mission_view::configure_input(preferences const &prefs,std::array<joystick_calibration,2> const &values){
   apply_preferences(prefs);

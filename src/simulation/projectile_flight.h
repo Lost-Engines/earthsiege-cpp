@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <optional>
 #include <span>
 #include <vector>
 #include "resources/combat.h"
@@ -25,11 +26,16 @@ struct projectile_flight {
   int16_t animation_remaining{0};
   std::vector<uint16_t> cells;
   bool target_present{false};
+  int16_t strength{1024}, falloff_step{}, impact_strength{1024};
 };
 
 /// Target location is resolved from the selected model node or actor origin by the owner
 struct projectile_guidance {
   vec3<int32_t> target_position;
+  std::optional<vec3<int32_t>> target_origin;
+  bool damage_falloff{};
+  bool proximity_burst{};
+  int16_t area_damage_multiplier{1024};
   bool player_owner{false};
   bool owner_tracks_target{false};
   bool target_detectable{false};

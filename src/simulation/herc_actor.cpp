@@ -34,8 +34,8 @@ std::optional<herc_interception> herc_actor::intercept(impact_request const &req
   for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(placement.translation[axis]) - request.transform.translation[axis]);
   auto const maximum{wrap_long(static_cast<int64_t>(request.radius) + request.reach + source.profile.shield_radius)};
   if(fast_distance(delta) > maximum) return std::nullopt;
-  auto shield_damage{adjust_impact_damage(request.damage.shield, conditions)};
-  auto armour_damage{adjust_impact_damage(request.damage.armour, conditions)};
+  auto shield_damage{adjust_impact_damage(request.damage.shield, conditions,weapon_definitions.edition)};
+  auto armour_damage{adjust_impact_damage(request.damage.armour, conditions,weapon_definitions.edition)};
   if(!conditions.player && request.damage.missile_subtype) {
     auto const signature{*request.damage.missile_subtype};
     if((signature == 0 || signature == 1) && impact_state.ecm_remaining == 0) impact_state.detectable = true;
@@ -146,6 +146,12 @@ void herc_actor::direct_damage(size_t const section, int16_t const amount, rando
   if(events.body_damage) events.body_damage(section, amount);
   bool large_explosion{false};
   damage_section(section, amount, [&](int16_t const bound){ return random.bounded(bound); }, [&](size_t const detached){ detach_section(detached, large_explosion, random, events); });
+}
+
+void herc_actor::blast_damage(vec3<int32_t> const &centre,int16_t radius,int16_t amount,random_state &random,herc_damage_events const &events,bool invulnerable){
+  auto const bearing{wrap_word(static_cast<int32_t>(bearing_angle(body_state.movement().position,centre))-body_state.movement().angles.z)};
+  auto const remaining{absorb_blast(power_state.shields,std::abs(static_cast<int>(bearing))<16384,amount)};
+  if(remaining>0)radial_damage(centre,radius,remaining,random,events,invulnerable);
 }
 
 void herc_actor::radial_damage(vec3<int32_t> const &centre, int16_t const radius, int16_t const amount, random_state &random, herc_damage_events const &events, bool const invulnerable) {

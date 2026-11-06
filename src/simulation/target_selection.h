@@ -54,6 +54,6 @@ combat_balance compare_herc_strength(int16_t own_strength, int16_t target_streng
 
 bool recognizes(target_candidate const &observer, target_candidate const &target, size_t target_index);
 /// Retains native candidate order, priority classes and all strength-assessment RNG draws.
-std::optional<size_t> select_target(std::span<target_candidate const> actors, size_t observer, target_selection_flags flags, target_objective const &objective, int16_t mission_kind, std::optional<size_t> hud_target, random_state &random);
+std::optional<size_t> select_target(std::span<target_candidate const> actors, size_t observer, target_selection_flags flags, target_objective const &objective, int16_t mission_kind, std::optional<size_t> hud_target, random_state &random, int16_t maximum_bearing = 0);
 
 } // namespace earthsiege

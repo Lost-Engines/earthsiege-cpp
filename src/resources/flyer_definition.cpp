@@ -4,7 +4,7 @@
 
 namespace earthsiege {
 flyer_definition read_flyer_definition(resource_store const &resources, std::string_view const name) {
-  flyer_definition result;
+  flyer_definition result;result.profile.edition=resources.edition();
   auto const source{resources.read("simvol0", "dat/" + std::string{name} + ".DAT")};
   binary_reader reader{source};
   if(resources.edition() == game_edition::expansion) result.profile.source.resize(23);

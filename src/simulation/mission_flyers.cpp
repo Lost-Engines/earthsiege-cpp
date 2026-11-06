@@ -86,6 +86,18 @@ void mission_session::dispatch_flyer(size_t const index,frame_ratio const ratio)
 
 void mission_session::advance_base(size_t const index, frame_ratio const ratio) {
   auto &actor{*bases.at(index).actor};
+  if(actor.is_landing_craft()&&!actor.dead()){
+    auto const id{base_id(index)};
+    actor.advance_landing_craft(ratio,weapon_definitions,random,{
+      .select{[&](uint16_t heading){auto observations{observe()};observations[id].heading=heading;return activity->select(observations,id,target_selection_flags::different_actor_kind,std::nullopt,random,0x3000);}},
+      .target{[&](size_t target){auto observations{observe()};vec3<int16_t> offset;
+        if(target<crew.size())offset=crew[target].definition->profile.camera_focus;
+        else if(target>=base_id(0))offset.z=bases.at(target-base_id(0)).actor->profile().target_height;
+        return turret_target{vec3<int32_t>{observations.at(target).position},vec3<int16_t>{offset},{0,0,observations.at(target).heading},actor_speed(target)};
+      }},
+      .fire{[&](weapon_shot const &shot,size_t target){if(shot.kind==shot_kind::rocket)assign_target(activity->targets(),id,target);launch(id,shot);if(shot.kind==shot_kind::rocket)assign_target(activity->targets(),id,std::nullopt);}},
+    });return;
+  }
   if(!actor.is_turret() || actor.dead()) { actor.advance(ratio, random, base_damage_events(index)); return; }
   auto const id{base_id(index)};
   actor.advance_turret(ratio, weapon_definitions, {

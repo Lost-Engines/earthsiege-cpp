@@ -9,6 +9,7 @@ namespace earthsiege {
 class resource_store;
 
 struct flyer_profile {
+  game_edition edition{game_edition::original};
   int16_t pitch_step{0};
   int16_t bank_rate{0};
   int16_t bank_acceleration{0};

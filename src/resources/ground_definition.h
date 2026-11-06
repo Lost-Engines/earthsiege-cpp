@@ -11,6 +11,7 @@ namespace earthsiege {
 class resource_store;
 
 struct ground_profile {
+  game_edition edition{game_edition::original};
   int16_t type{0};
   int16_t model{0};
   int16_t wreck_model{0};
@@ -33,6 +34,7 @@ struct ground_profile {
   std::vector<collision_part> collision;
 };
 
+struct landing_weapon {int16_t pitch_limit{},yaw_limit{};int32_t range{};vec3<int32_t> muzzle;int16_t refire{};};
 /// Side-specific static/animated bases share a texture bank and destroyed models.
 class ground_catalogue {
   std::vector<ground_profile> definitions;
@@ -40,6 +42,7 @@ class ground_catalogue {
   std::array<model_resource, 2> animated_models;
   model_resource wrecks;
   std::vector<bitmap> texture_bank;
+  std::vector<landing_weapon> landing_weapons_;
 
 public:
   explicit ground_catalogue(resource_store const &resources);
@@ -47,6 +50,7 @@ public:
   ground_profile const &profile(size_t type) const;
   model_part const &model(size_t type, uint8_t side, bool destroyed = false) const;
   std::span<bitmap const> textures() const;
+  auto const &landing_weapons()const{return landing_weapons_;}
 };
 
 } // namespace earthsiege

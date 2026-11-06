@@ -132,6 +132,7 @@ class mission_session {
     bool waiting{false};
   };
   mission_header settings;
+  bool falloff_preference{},recorded_playback{};
   placement_catalogue layout;
   std::unique_ptr<mission_activity> activity;
   std::vector<mission_route> routes;
@@ -239,6 +240,8 @@ public:
   bool camera_ready() const;
   bool eo_selected() const;
   player_rocket_launch const &latest_player_rocket() const;
+  void bullet_falloff(bool enabled){falloff_preference=enabled;}
+  void playback(bool enabled){recorded_playback=enabled;}
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);
   void cycle_weapon();

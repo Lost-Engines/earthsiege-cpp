@@ -4,6 +4,7 @@
 #include "simulation/model_instance.h"
 #include "simulation/projectile_flight.h"
 #include "simulation/weapon_firing.h"
+#include "simulation/random_state.h"
 
 namespace earthsiege {
 
@@ -15,6 +16,7 @@ struct impact_payload {
   std::array<int16_t, 4> ground_effects{};
   std::array<int16_t, 4> armour_effects{};
   std::optional<uint8_t> missile_subtype;
+  std::optional<int16_t> plasma_armour{}; // retained direct-hit damage for fixed structures
 };
 
 struct impact_request {
@@ -22,6 +24,7 @@ struct impact_request {
   int32_t reach{0};
   int16_t radius{0};
   impact_payload damage;
+  int16_t area_radius{}; // nonzero dispatches the original radial damage pass
 };
 
 /// Returns the retained world-hit distance; an empty result means no impact
@@ -47,7 +50,7 @@ class projectile_instance {
   int16_t damage_scale{0};
 
 public:
-  projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullet_models, model_resource const &rocket_models, bool target_present = false, int16_t initial_rocket_clock = 0);
+  projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullet_models, model_resource const &rocket_models, bool target_present = false, int16_t initial_rocket_clock = 0, random_state *random = nullptr);
   projectile_flight const &flight() const;
   model_instance const &model() const;
   model_part const &geometry() const;

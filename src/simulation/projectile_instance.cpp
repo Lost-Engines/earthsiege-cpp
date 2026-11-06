@@ -44,7 +44,7 @@ beam_path dispatch_beam(weapon_shot const &shot, weapon_catalogue const &definit
   return {vec3<int32_t>{shot.muzzle.transform.translation}, vec3<int32_t>{end}};
 }
 
-projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motion_data, model_resource const &bullet_models, model_resource const &rocket_models, bool const target_present, int16_t const initial_rocket_clock)
+projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motion_data, model_resource const &bullet_models, model_resource const &rocket_models, bool const target_present, int16_t const initial_rocket_clock, random_state *random)
   : source{definitions.projectiles.at(shot.projectile)}, motions{motion_data},
     geometry_source{projectile_shape(source, motions, bullet_models, rocket_models)}, shape{std::get<shape_part>(geometry_source.content)}, visual{shape}, damage_scale{shot.kind == shot_kind::scaled ? shot.charge : int16_t{0}} {
   flight_state.kind = source.kind;
@@ -55,7 +55,13 @@ projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalog
   flight_state.animation_remaining = source.kind == projectile_kind::rocket ? initial_rocket_clock : motions.bullets.at(flight_state.subtype).animation_period;
   flight_state.cells.resize(shape.cell_frame_counts.size(), 0);
   for(auto const count : shape.cell_frame_counts) cell_counts.push_back(static_cast<uint16_t>(count));
-  flight_state.target_present = source.kind == projectile_kind::rocket && target_present;
+  bool const expansion_bullet{source.kind==projectile_kind::bullet&&motions.edition==game_edition::expansion};
+  if(expansion_bullet){
+    auto const &motion{motions.bullets.at(flight_state.subtype)};
+    if(random)for(auto axis:{0,2})flight_state.angles[axis]=static_cast<uint16_t>(flight_state.angles[axis]+((random->next()&(motion.spread<<1))-motion.spread));
+    if(motion.damage_falloff){if(motion.lifetime==0)throw std::runtime_error{"bullet falloff has zero lifetime"};flight_state.falloff_step=static_cast<int16_t>(1024/motion.lifetime);}
+  }
+  flight_state.target_present = target_present&&(source.kind == projectile_kind::rocket||(expansion_bullet&&source.subtype==9&&shot.kind==shot_kind::scaled));
 }
 
 projectile_flight const &projectile_instance::flight() const { return flight_state; }
@@ -71,7 +77,15 @@ model_transform projectile_instance::placement() const {
 
 projectile_result projectile_instance::advance(frame_ratio const ratio, projectile_guidance &guidance, impact_query const &hit) {
   auto const result{advance_projectile(flight_state, motions, source.speed, cell_counts, ratio, guidance, [&](model_transform const &transform, int16_t const reach, int16_t const radius){
-    return hit && hit({transform, reach, radius, projectile_payload(source, damage_scale)}).has_value();
+    if(!hit)return false;
+    auto damage{projectile_payload(source,damage_scale)};
+    damage.armour=wrap_word((damage.armour*flight_state.impact_strength+512)>>10);
+    damage.shield=wrap_word((damage.shield*flight_state.impact_strength+512)>>10);
+    if(motions.edition!=game_edition::expansion||source.kind!=projectile_kind::bullet||source.subtype!=9)return hit({transform,reach,radius,damage}).has_value();
+    auto direct{damage};direct.plasma_armour=damage.armour;direct.armour=direct.shield=direct.splash_q10=0;
+    bool const struck{guidance.proximity_burst||hit({transform,reach,radius,direct}).has_value()};
+    if(struck){damage.armour=wrap_word((damage.armour*guidance.area_damage_multiplier+512)>>10);hit({transform,0,0,damage,4000});}
+    return struck;
   })};
   std::ranges::copy(flight_state.cells, visual.cell_frames().begin());
   return result;

@@ -87,6 +87,6 @@ public:
   void perceive(std::span<observed_actor const> observations, frame_ratio ratio, random_state &random, std::function<bool(size_t,size_t)> const &line_of_sight, std::function<void(size_t,size_t)> const &noticed = {});
   void share_contact(size_t observer, size_t target, std::span<observed_actor const> observations);
   bool eligible(std::span<observed_actor const> observations, size_t observer, size_t candidate) const;
-  std::optional<size_t> select(std::span<observed_actor const> observations, size_t observer, target_selection_flags flags, std::optional<size_t> hud_target, random_state &random) const;
+  std::optional<size_t> select(std::span<observed_actor const> observations, size_t observer, target_selection_flags flags, std::optional<size_t> hud_target, random_state &random, int16_t maximum_bearing = 0) const;
 };
 } // namespace earthsiege

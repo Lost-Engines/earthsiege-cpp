@@ -7,8 +7,8 @@ namespace earthsiege {
 live_projectile::live_projectile(projectile_owner source, beam_effect beam)
   : owner{source}, state{std::in_place_type<beam_effect>, std::move(beam)} {}
 
-live_projectile::live_projectile(projectile_owner source, weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullets, model_resource const &rockets, int16_t const initial_rocket_clock)
-  : owner{source}, state{std::in_place_type<projectile_instance>, shot, definitions, motions, bullets, rockets, source.target.has_value(), initial_rocket_clock} {}
+live_projectile::live_projectile(projectile_owner source, weapon_shot const &shot, weapon_catalogue const &definitions, projectile_motions const &motions, model_resource const &bullets, model_resource const &rockets, int16_t const initial_rocket_clock, random_state &random)
+  : owner{source}, state{std::in_place_type<projectile_instance>, shot, definitions, motions, bullets, rockets, source.target.has_value(), initial_rocket_clock, &random} {}
 
 world_projectiles::world_projectiles(resource_store const &resources, weapon_catalogue const &catalogue, sound_sink sink)
   : sounds{std::move(sink)}, definitions{catalogue},
@@ -32,7 +32,7 @@ std::optional<size_t> world_projectiles::launch(projectile_owner const owner, we
   // the shared limit, safely omitting the projectile when the pool is full.
   auto const slot{projectiles.next_free_slot()};
   if(!slot) return std::nullopt;
-  auto const created{projectiles.emplace(owner, shot, definitions, motions, bullet_models, rocket_models, retained_rocket_clocks[*slot])};
+  auto const created{projectiles.emplace(owner, shot, definitions, motions, bullet_models, rocket_models, retained_rocket_clocks[*slot], random)};
   auto const subtype{static_cast<size_t>(definitions.projectiles.at(shot.projectile).subtype)};
   auto const noise{shot.kind == shot_kind::rocket ? motions.rockets.at(subtype).shot_noise : motions.bullets.at(subtype).shot_noise};
   if(sounds) sounds(sample_sound_request{sound_action::positioned,static_cast<uint16_t>(noise+10),shot.muzzle.position});
