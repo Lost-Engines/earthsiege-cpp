@@ -7,7 +7,23 @@ namespace earthsiege {
 
 /// Inventory values are in linked-list traversal order, newest at the front.
 /// The original reader pushes to the head, so reading reverses the disk order.
-using armory=std::array<std::vector<int16_t>,17>;
+class armory {
+  std::vector<std::vector<int16_t>> types = std::vector<std::vector<int16_t>>(17);
+public:
+  armory() = default;
+  explicit armory(size_t count) : types(count) {}
+  auto size() const { return types.size(); }
+  void resize(size_t count) { types.resize(count); }
+  auto begin() { return types.begin(); }
+  auto end() { return types.end(); }
+  auto begin() const { return types.begin(); }
+  auto end() const { return types.end(); }
+  auto &operator[](size_t i) { return types[i]; }
+  auto const &operator[](size_t i) const { return types[i]; }
+  auto &at(size_t i) { return types.at(i); }
+  auto const &at(size_t i) const { return types.at(i); }
+  bool operator==(armory const &) const = default;
+};
 armory read_armory(binary_reader &file);
 std::vector<uint8_t> write_armory(armory const &inventory);
 
@@ -21,8 +37,8 @@ struct hangar {
   player_herc *find(int16_t slot);
   player_herc const *find(int16_t slot) const;
 };
-hangar read_hangar(binary_reader &file);
-hangar read_hangar(bytes source);
+hangar read_hangar(binary_reader &file, game_edition edition=game_edition::original);
+hangar read_hangar(bytes source, game_edition edition=game_edition::original);
 std::vector<uint8_t> write_hangar(hangar const &roster);
 
 struct crew_member {
@@ -36,7 +52,11 @@ struct crew_member {
 struct technology_entry { int16_t early{-1},late{-1};uint8_t available{}; };
 struct technology_state {
   int16_t last_type{},last_index{};
-  std::array<technology_entry,25> entries{};
+  std::vector<technology_entry> entries = std::vector<technology_entry>(25);
+  size_t chassis_slots{8}, chassis_count{8}, weapon_count{17};
+  game_edition edition{game_edition::original};
+  int16_t battle_set{};
+  bool weapon_available(size_t id) const { return entries.at(chassis_slots+id).available; }
 };
 struct career_state {
   uint8_t valid{},current{};
@@ -49,15 +69,16 @@ struct career_state {
   int16_t repair_policy{};
 };
 struct career_record {
+  game_edition edition{game_edition::original};
   uint8_t active{};
   int16_t mode{};
   std::array<int16_t,12> names{};
   std::array<career_state,41> states{};
   std::array<armory,41> inventories{};
 };
-career_state read_career_state(binary_reader &file);
+career_state read_career_state(binary_reader &file,game_edition edition=game_edition::original,int16_t battle_set=0);
 std::vector<uint8_t> write_career_state(career_state const &state);
-career_record read_career(bytes source);
+career_record read_career(bytes source,game_edition edition=game_edition::original);
 std::vector<uint8_t> write_career(career_record const &career);
 /// GO 0x168b0's working-state update and history copy, before serialization.
 void checkpoint_career(career_record &career,size_t history,int16_t node_progress,

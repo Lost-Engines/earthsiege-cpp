@@ -1,13 +1,14 @@
 #include "bay_animation_plan.h"
+#include <algorithm>
 namespace earthsiege {
 void bay_animation_plan::claim(int slot,size_t program){if(current.owners.at(program)==-99)current.owners[program]=static_cast<int16_t>(slot);}
 void bay_animation_plan::change(int16_t slot,int16_t role,hangar const &roster,service_prices const &prices,random_state &random){
- if(slot<0||slot>=8)return;
+ if(slot<0||static_cast<size_t>(slot)>=current.left.size())return;
  auto const i{static_cast<size_t>(slot)};
- if(role==0){claim(slot,6);current.left[i]=random.bounded(5);current.right[i]=2;}
+ if(role==0){claim(slot,6);current.left[i]=random.bounded(5);auto h{roster.find(slot)};current.right[i]=h&&h->chassis==16?0:2;}
  else if(role==2){
   claim(slot,i+9);current.left[i]=slot?random.bounded(5):static_cast<int16_t>(random.bounded(2)+3);
-  auto h{roster.find(slot)};current.right[i]=random.bounded(!h||h->chassis<5?5:3);
+  auto h{roster.find(slot)};current.right[i]=random.bounded(h&&h->chassis==16?2:!h||h->chassis<5?5:3);
  }else if(role==1){
   for(auto &owner:current.owners)if(owner==slot)owner=-99;
   auto const h{roster.find(roster.selected)};int progress{};
@@ -18,14 +19,14 @@ void bay_animation_plan::change(int16_t slot,int16_t role,hangar const &roster,s
   if(!progress){claim(slot,8);current.left[i]=static_cast<int16_t>(random.bounded(2)+3);}
   else{
    claim(slot,7);
-   if(progress<51&&h){constexpr std::array<size_t,8> weld{22,17,20,23,20,21,18,24};claim(slot,weld.at(static_cast<size_t>(h->chassis)));}
+   if(progress<51&&h){constexpr std::array<size_t,9> weld{22,17,20,23,20,21,18,24,0};auto const ch{human_herc_index(h->chassis)};claim(slot,weld.at(ch)+(current.owners.size()==26&&ch<8?1:0));}
    current.left[i]=random.bounded(3);
   }
   current.right[i]=random.bounded(5);
  }
 }
 void bay_animation_plan::reset(hangar &roster,career_state &crew,bool campaign,int16_t mission_kind,service_prices const &prices,random_state &random){
- current.owners.fill(-99);for(size_t i{};i<4;++i)claim(99,i);
+ std::ranges::fill(current.owners,-99);for(size_t i{};i<4;++i)claim(99,i);
  if(mission_kind==4&&(!campaign||crew.current))claim(99,4);
  auto const pilot{crew.selected_crew>=0&&crew.selected_crew<4?crew.crew[static_cast<size_t>(crew.selected_crew)].hangar_slot:int16_t{-1}};
  for(size_t i{};i<roster.hercs.size();++i){

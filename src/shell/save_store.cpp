@@ -25,13 +25,13 @@ void save_store::write(std::string_view name,bytes data)const{
   {std::ofstream file{temporary,std::ios::binary|std::ios::trunc};file.write(reinterpret_cast<char const *>(data.data()),static_cast<std::streamsize>(data.size()));file.close();if(!file)throw std::runtime_error{"cannot save "+target.string()};}
   std::filesystem::rename(temporary,target);
 }
-career_index save_store::index()const{auto data{read("car/names.log")};return data?read_career_index(*data):career_index{};}
-void save_store::save_index(career_index const &value)const{write("car/names.log",write_career_index(value));}
+career_index save_store::index()const{auto data{read(edition_==game_edition::expansion&&battle_set_?"bar/names.log":"car/names.log")};return data?read_career_index(*data):career_index{};}
+void save_store::save_index(career_index const &value)const{write(edition_==game_edition::expansion&&battle_set_?"bar/names.log":"car/names.log",write_career_index(value));}
 campaign_start save_store::load(career_entry const &entry)const{
   auto file{read(entry.career_file)},hangars{read(entry.hangar_file)};
   if(!file||!hangars)throw std::runtime_error{"career is missing its saved state or hangar: "+entry.name};
-  campaign_start out;out.career=read_career(*file);binary_reader h{*hangars,"career hangar history"};
-  for(auto &roster:out.hangars)roster=read_hangar(h);
+  campaign_start out;out.career=read_career(*file,edition_);binary_reader h{*hangars,"career hangar history"};
+  for(auto &roster:out.hangars)roster=read_hangar(h,edition_);
   h.require_end();return out;
 }
 void save_store::save(career_entry const &entry,campaign_start const &career)const{
@@ -42,10 +42,10 @@ void save_store::erase(career_entry const &entry)const{
   std::filesystem::remove(path(entry.career_file));std::filesystem::remove(path(entry.hangar_file));
 }
 preferences save_store::load_preferences()const{
-  if(auto data{read("data/prefs.cfg")})return preferences{*data};
+  if(auto data{read("data/prefs.cfg")})return preferences{*data,true,edition_};
   // Standard sound-enabled initial setup, with original default high detail.
   const preferences::values defaults{1,1,2,1,255,255,255,0,0,0,0,1,0,0,2,0,0};
-  return preferences{defaults};
+  return preferences{defaults,true,edition_};
 }
 void save_store::save_preferences(preferences const &settings)const{write("data/prefs.cfg",settings.current());}
 }

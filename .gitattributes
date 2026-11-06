@@ -4,6 +4,6 @@
 *.RAW binary
 *.TAP binary
 
-assets/DATA/KEYJOY.CFG -text whitespace=cr-at-eol
+assets/**/KEYJOY.CFG -text whitespace=cr-at-eol
 
 *.bat text eol=crlf

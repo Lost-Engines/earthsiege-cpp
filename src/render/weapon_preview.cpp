@@ -2,14 +2,15 @@
 #include <algorithm>
 namespace earthsiege {
 namespace {
-std::string name(int index){
+std::string name(resource_store const &r,int index){
+ if(r.edition()==game_edition::expansion){auto raw{r.read("shell0","cfg/animfile.dat")};binary_reader f{raw};auto n{f.integer<uint8_t>()};if(index<0||index>=n)f.fail("invalid weapon preview");for(int i{};i<index;++i)f.cstring();auto path{f.cstring()};if(path.empty())return {};return "res32/"+path;}
  if(index<0||index>17)throw std::runtime_error{"invalid weapon preview"};
  auto suffix{std::to_string(index<14?index:index-14)};if(suffix.size()<2)suffix.insert(0,"0");
  return "res32/w1800"+std::string{index<14?"w":"r"}+suffix+".ttm";
 }
 }
 weapon_preview::weapon_preview(resource_store const &r,int index,framebuffer const &base,random_state &random)
- :player{read_presentation(r.read("shell0",name(index)))},art{r},background{base},visible{base}{
+ :player{read_presentation(r.read("shell0",name(r,index)))},art{r},background{base},visible{base}{
  // GO 0x37996 preloads page zero; the control selects page one at 0x1f359.
  advance(0,random);player.select_page(1);advance(0,random);
 }

@@ -78,7 +78,13 @@ std::vector<weapon_shot> discharge_weapon(weapon_state &state, weapon_catalogue 
             emit(shot_kind::scaled, energy->charge, extra);
           }
         }
-        energy->charge = 0;
+        if(definitions.edition == game_edition::expansion && definition.projectile == 19 && !state.pending_second_shot) {
+          control.refire_remaining = static_cast<int16_t>(definition.refire_delay >> 2);
+          state.pending_second_shot = true;
+        } else {
+          state.pending_second_shot = false;
+          energy->charge = 0;
+        }
       } else {
         energy->charge = wrap_word(energy->charge - full);
         emit(shot_kind::bullet, -1, muzzle);

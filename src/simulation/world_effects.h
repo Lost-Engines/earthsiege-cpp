@@ -57,6 +57,7 @@ class world_effects {
   model_resource detached_weapon_models;
   std::vector<bitmap> smoke_textures;
   std::vector<bitmap> weapon_textures;
+  std::vector<bitmap> flat_textures;
   std::array<std::vector<bitmap>, 9> explosion_textures;
   effect_lighting lighting{std::array{default_world_light()}, 2000, 10};
   object_pool<size_t> light_owners{effect_light_capacity};

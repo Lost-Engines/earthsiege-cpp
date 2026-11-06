@@ -34,6 +34,7 @@ class world_projectiles {
   model_resource bullet_models;
   model_resource rocket_models;
   std::vector<bitmap> bullet_textures;
+  std::vector<beam_style> beam_styles;
   object_pool<live_projectile> projectiles{projectile_capacity};
   // The original missile constructor leaves its clock untouched. Bullets do not
   // overwrite those bytes; beams reset them. Preserve that slot reuse explicitly.

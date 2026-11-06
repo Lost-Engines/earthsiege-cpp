@@ -3,38 +3,33 @@
 namespace earthsiege {
 hangar_artwork::hangar_artwork(resource_store const &resources)
   :weapon_icons_{read_bitmaps(resources.read("shell0","res32/allweap.dba"))}{
-  constexpr std::array names{"road","guns","rapt","toma","patr","pnth","herc","coll"};
-  constexpr std::array damage_names{"road","gunn","rapt","toma","patr","pnth","herc","colo"};
-  for(size_t i{};i<names.size();++i){
-    auto read=[&](char const *suffix){return read_bitmaps(resources.read("shell0","res32/"+std::string{names[i]}+suffix+".dba"));};
-    weapons_[i]=read("wep1");damaged_[i]=read("wepd");outlines_[i]=read("outl");damage_images_[i]=read_bitmaps(resources.read("shell0","res32/"+std::string{damage_names[i]}+"dmg1.dba"));
-    auto data{resources.read("shell0","cfg/"+std::string{damage_names[i]}+"dmg1.dat")};binary_reader f{data};
-    for(auto &part:damage_layers_[i])for(auto &band:part){
-      auto count{f.integer<uint16_t>()};
-      for(unsigned j{};j<count;++j)band.push_back({f.integer<int16_t>(),f.integer<int32_t>(),f.integer<int32_t>()});
-    }
-    f.require_end();
-    if(i>=2)construction_[i]=read_bitmaps(resources.read("shell0","res32/"+std::string{i==7?"colo":names[i]}+"bild.dba"));
+  definitions_=read_shell_hercs(resources);auto const count{definitions_.size()};
+  weapons_.resize(count);damaged_.resize(count);outlines_.resize(count);construction_.resize(count);damage_images_.resize(count);damage_layers_.resize(count);
+  for(size_t i{};i<count;++i){auto const &h{definitions_[i]};
+    auto read=[&](size_t index){return read_bitmaps(resources.read("shell0",h.artwork[index]));};
+    weapons_[i]=read(0);damaged_[i]=read(1);outlines_[i]=read(2);damage_images_[i]=read(3);
+    auto data{resources.read("shell0",h.damage_diagram)};binary_reader f{data};
+    for(auto &part:damage_layers_[i])for(auto &band:part){auto layers{f.integer<uint16_t>()};for(unsigned j{};j<layers;++j)band.push_back({f.integer<int16_t>(),f.integer<int32_t>(),f.integer<int32_t>()});}
+    f.require_end();if(!h.artwork[4].empty())construction_[i]=read(4);
   }
 }
 void hangar_artwork::draw(framebuffer &frame,player_herc const &h,armament_catalog const &catalog,int selected_mount)const {
   body(frame,h);equipment(frame,h,catalog,selected_mount);
 }
 void hangar_artwork::body(framebuffer &frame,player_herc const &h,int remaining)const{
-  auto const ch{static_cast<size_t>(h.chassis)};
-  if(!remaining)frame.image(weapons_.at(ch).at(0),origin[ch][0],origin[ch][1],true);
+  auto const ch{human_herc_index(h.chassis)};
+  if(!remaining)frame.image(weapons_.at(ch).at(0),definitions_[ch].origin.x,definitions_[ch].origin.y,true);
   else if(ch>=2&&static_cast<size_t>(remaining)<=construction_[ch].size()){
-    constexpr std::array<std::array<int,4>,8> positions{{{0,0,0,0},{0,0,0,0},{84,97,0,0},{86,94,0,0},{84,92,0,0},{78,50,78,85},{78,51,78,91},{74,41,74,82}}};
-    auto const index{static_cast<size_t>(remaining-1)};
-    frame.image(construction_[ch][index],positions[ch][index*2],positions[ch][index*2+1],true);
+    auto const index{static_cast<size_t>(remaining-1)};auto const position{definitions_[ch].construction_positions.at(index)};
+    frame.image(construction_[ch][index],position.x,position.y,true);
   }
   damage(frame,h);
 }
 void hangar_artwork::equipment(framebuffer &frame,player_herc const &h,armament_catalog const &catalog,int selected_mount)const{
   // GO's point constructor at 0x25090 and painter order at 0x803d8.
-  auto const ch{static_cast<size_t>(h.chassis)};auto const &bank{weapons_.at(ch)};
+  auto const ch{human_herc_index(h.chassis)};auto const &bank{weapons_.at(ch)};
   for(size_t j{};j<h.weapons.size();++j){
-    auto const mount{order[ch].at(j)};auto const weapon{h.weapons.at(static_cast<size_t>(mount))};
+    auto const mount{definitions_[ch].painter_order.at(j)};auto const weapon{h.weapons.at(static_cast<size_t>(mount))};
     auto const record{catalog.find(h.chassis,mount,weapon)};
     if(record&&weapon!=17){
     bool const damaged{h.condition.equipment.at(static_cast<size_t>(mount))<51};
@@ -49,7 +44,7 @@ void hangar_artwork::equipment(framebuffer &frame,player_herc const &h,armament_
   }
 }
 void hangar_artwork::damage(framebuffer &frame,player_herc const &h)const{
-  auto const ch{static_cast<size_t>(h.chassis)};
+  auto const ch{human_herc_index(h.chassis)};
   for(int16_t part{};part<6;++part){
     auto const band{condition_tier(component_condition(h.condition,repair_group::armour,part))};
     if(band==0||band>=4)continue;

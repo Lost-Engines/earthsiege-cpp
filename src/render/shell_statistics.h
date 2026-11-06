@@ -1,4 +1,5 @@
 #pragma once
+#include "resources/packed_strings.h"
 #include "render/framebuffer.h"
 #include "resources/artwork.h"
 #include "resources/career.h"
@@ -8,7 +9,7 @@ struct return_presentation;
 /// GO's specialized career (1231) and mission-return (1522) panels.
 class shell_statistics {
  font values,labels;
- std::vector<std::string> strings;
+ shell_text strings;
 public:
  explicit shell_statistics(resource_store const &);
  void career(framebuffer &,rectangle const &,career_state const &,std::string const &name)const;

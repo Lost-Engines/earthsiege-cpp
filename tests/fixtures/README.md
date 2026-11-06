@@ -834,3 +834,17 @@ are host boundaries. The reference does not substitute tracks or convert patch
 numbers. The MT-32 cases retain unrouted melodies and its `0x02fe` master-gain
 channel mask. Emulated waveform checks use external local ROMs separately and
 are not golden audio from a physical card.
+
+
+Expansion references come from the March 1995 CD GO and DBSIM executables:
+`expansion.bin` covers resource consumers and TAP input packets;
+`expansion_placements.bin` covers 74 constructed worlds;
+`expansion_launches.bin` contains their full original GO handoffs;
+`expansion_careers.bin` includes 16 constructors and 2,200 technology cases;
+`expansion_transfer.bin` contains eight complete career transfers;
+`expansion_weapons.bin` and `expansion_beams.bin` cover the changed weapon paths;
+`expansion_films.bin` contains CRCs of 731 independently verified indexed frames
+and display palettes. Generators live in the companion research tree under
+`tools/capture_expansion_*` and `tools/export_expansion_*`. Career captures invoke
+the battleset inventory-count update at GO 0x26a78 before creating or transferring
+a Battleset 2 career.

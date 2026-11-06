@@ -4,9 +4,10 @@
 #include <string>
 #include "resources/resource_store.h"
 #include "simulation/actor_placement.h"
+#include "simulation/mission_session.h"
 
 int main(int const argc, char **argv) try {
-  if(argc != 3 && argc != 4) return EXIT_FAILURE;
+  if(argc < 3 || argc > 5) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
   earthsiege::placement_catalogue catalogue{resources};
   auto const bytes{earthsiege::read_file(argv[2])};
@@ -22,6 +23,14 @@ int main(int const argc, char **argv) try {
     }};
     auto const script{earthsiege::read_mission_script(file.take(file.integer<uint32_t>()))};
     auto const player{earthsiege::read_player_roster(file.take(file.integer<uint32_t>()), resources.edition())};
+    if(argc == 5) {
+      try {
+        earthsiege::mission_session session{resources, script, player};
+        session.initialise_weapon_instruments();
+        session.visible_objects();
+        for(int frame{};frame<3;++frame) session.step({},256);
+      } catch(std::exception const &error) { throw std::runtime_error{name + ": " + error.what()}; }
+    }
     auto const actual{catalogue.place(script, player)};
     for(auto const &pool : actual.actors) {
       require(pool.size() == file.integer<uint16_t>(), "actor count");

@@ -1,4 +1,5 @@
 #pragma once
+#include "edition.h"
 #include <cstdint>
 #include <span>
 #include <vector>
@@ -14,6 +15,6 @@ struct compiled_mission {
   std::vector<mission_condition> conditions;
 };
 
-auto compile_mission(bytes source, std::span<int16_t const> campaign_flags, random_state &random, int16_t campaign_mode)->compiled_mission;
+auto compile_mission(bytes source, std::span<int16_t const> campaign_flags, random_state &random, int16_t campaign_mode, game_edition edition = game_edition::original)->compiled_mission;
 
 } // namespace earthsiege

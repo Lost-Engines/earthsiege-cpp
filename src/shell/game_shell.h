@@ -1,4 +1,5 @@
 #pragma once
+#include "resources/packed_strings.h"
 #include "shell/dialog.h"
 #include "render/shell_cinematic.h"
 #include "render/shell_door.h"
@@ -24,6 +25,10 @@ class game_shell {
   resource_store const &resources;
   save_store saves;
   career_index careers;
+  career_index transfer_sources;
+  std::filesystem::path transfer_root;
+  int transfer_selection{};
+  void transfer_selected_career(bool keep);
   preferences preferences_;
   std::array<joystick_calibration,2> calibrations;
   std::unique_ptr<controls_dialog> controls;
@@ -55,7 +60,7 @@ class game_shell {
   void warn(unsigned id);
   void dismiss_warning();
   void next_mission();
-  std::vector<std::string> strings;
+  shell_text strings;
   font text_face;
   service_prices prices;
   std::optional<component_repair> repair_edit;
@@ -87,6 +92,8 @@ class game_shell {
   void refresh_armament(std::optional<int16_t> wanted={});
   void choose_armament();
   int single_kind{},battle_set{};
+ uint8_t career_difficulty{1};
+ bool expansion_battle()const{return resources.edition()==game_edition::expansion&&battle_set!=0;}
   unsigned int options_owner{1000},last_screen{1000};
   int text_scroll{};
   std::vector<size_t> history_slots;

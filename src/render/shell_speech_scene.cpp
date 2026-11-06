@@ -22,7 +22,7 @@ shell_speech_scene::shell_speech_scene(resource_store const &r,speech_selection 
   residents.emplace_back(r,stem+"_brd.ttm");residents.emplace_back(r,stem+"_brj.ttm");
  }else if(s.region==5000){
   auto stem{normalise_path(group(r,s).program).substr(0,2)};
-  stem[0]='c';residents.emplace_back(r,stem+"_blnk.ttm");
+  stem[0]='c';if(stem!="c4")residents.emplace_back(r,stem+"_blnk.ttm");
  }
  for(auto &resident:residents)run(resident,0,random);
  for(auto page:{uint16_t{0},uint16_t{25},uint16_t{1}}){portrait.player.select_page(page);run(portrait,0,random);}
@@ -40,7 +40,8 @@ void shell_speech_scene::advance(random_state &random){
  portrait.player.select_page(mouth.page());run(portrait,0,random);
 }
 void shell_speech_scene::stop(random_state &random){
- if(finished())return;mouth.stop();
+ if(finished())return;
+ mouth.stop();
  portrait.player.select_page(mouth.page());run(portrait,0,random);
 }
 void shell_speech_scene::draw(framebuffer &target,uint8_t preference)const{target=visible;caption.draw(target,preference);}

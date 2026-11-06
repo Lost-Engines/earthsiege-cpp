@@ -23,12 +23,12 @@ service_prices read_service_prices(bytes source) {
   std::array<int16_t,6> armour{};std::array<int16_t,10> internal{};
   for(auto &v:armour)v=file.integer<int16_t>();
   for(auto &v:internal)v=file.integer<int16_t>();
-  auto const weapon_scale{file.integer<int16_t>()};service_prices prices;
+  auto const weapon_scale{file.integer<int16_t>()};service_prices prices;bool const expansion{file.remaining()==44};prices.weapons.resize(expansion?22:18);prices.chassis.resize(expansion?17:8);
   for(auto &v:prices.weapons)v=wrap_word(q10(file.integer<int16_t>(),weapon_scale));
   file.require_end();
-  constexpr std::array<int32_t,8> purchase{50000,60000,80000,100000,120000,140000,170000,200000};
-  constexpr std::array<int16_t,8> duration{1,1,2,2,2,3,3,3};
-  for(size_t i{};i<purchase.size();++i){auto &c{prices.chassis[i]};c.purchase=purchase[i];c.construction_missions=duration[i];
+  constexpr std::array<int32_t,9> purchase{50000,60000,80000,100000,120000,140000,170000,200000,190000};
+  constexpr std::array<int16_t,9> duration{1,1,2,2,2,3,3,3,3};
+  for(size_t i{};i<(expansion?9U:8U);++i){auto &c{prices.chassis[human_herc_id(i)]};c.purchase=purchase[i];c.construction_missions=duration[i];
     for(size_t j{};j<armour.size();++j)c.armour[j]=wrap_word(q10(q10(c.purchase,armour[j]),scale));
     for(size_t j{};j<internal.size();++j)c.internal[j]=wrap_word(q10(q10(c.purchase,internal[j]),scale));
   }

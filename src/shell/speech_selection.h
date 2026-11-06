@@ -10,10 +10,10 @@ struct speech_selection {
  unsigned region{},destination{};
  int song{-1};
 };
-int chapter_commander(int chapter);
-std::vector<uint16_t> chapter_introduction(int chapter);
+int chapter_commander(int chapter,bool expansion=false);
+std::vector<uint16_t> chapter_introduction(int chapter,bool expansion=false);
 /// GO 0x37edd. For mode 2 entry is the introduction ordinal; for mode 7 it
 /// is the mechanic line selected by the return owner.
-speech_selection select_shell_speech(int mode,int chapter,int entry,int grade,int kind,bool experienced,random_state &);
+speech_selection select_shell_speech(int mode,int chapter,int entry,int grade,int kind,bool experienced,random_state &,bool expansion=false);
 std::array<int16_t,3> select_mechanic_return(int condition,bool technology,int32_t recovery,int deaths,random_state &random);
 }

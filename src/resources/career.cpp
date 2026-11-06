@@ -20,20 +20,22 @@ void read_condition(binary_reader &file,herc_condition &c) {
 }
 }
 armory read_armory(binary_reader &file) {
-  armory result;auto const count{file.integer<int16_t>()};
-  if(count<0||count>17)file.fail("invalid armory type count");
-  std::array<bool,17> seen{};
+  auto const count{file.integer<int16_t>()};
+  armory result(count>17?22:17);
+  if(count<0||count>22)file.fail("invalid armory type count");
+  std::array<bool,22> seen{};
   for(int i{};i<count;++i) {
     auto const type{file.integer<int16_t>()},amount{file.integer<int16_t>()};
-    if(type<0||type>=17||seen[type]||amount<0)file.fail("invalid armory stack");
+    if(type<0||type>=22||seen[type]||amount<0)file.fail("invalid armory stack");
+    if(static_cast<size_t>(type)>=result.size())result.resize(22);
     seen[type]=true;auto &values{result[type]};values.resize(static_cast<size_t>(amount));
     for(auto it{values.rbegin()};it!=values.rend();++it)*it=file.integer<int16_t>();
   }
   return result;
 }
 std::vector<uint8_t> write_armory(armory const &inventory) {
-  binary_writer file;file.integer<int16_t>(17);
-  for(int16_t i{};i<17;++i) {
+  binary_writer file;file.integer<int16_t>(static_cast<int16_t>(inventory.size()));
+  for(int16_t i{};static_cast<size_t>(i)<inventory.size();++i) {
     auto const &values{inventory[i]};
     if(values.size()>32767)throw std::runtime_error{"armory stack exceeds original short count"};
     file.integer(i);file.integer<int16_t>(static_cast<int16_t>(values.size()));
@@ -47,7 +49,7 @@ player_herc *hangar::find(int16_t slot) {
 player_herc const *hangar::find(int16_t slot) const {
   auto it{std::ranges::find(hercs,slot,&player_herc::slot)};return it==hercs.end()?nullptr:&*it;
 }
-hangar read_hangar(binary_reader &file) {
+hangar read_hangar(binary_reader &file,game_edition edition) {
   hangar out;
   out.capacity=file.integer<int16_t>();out.selected=file.integer<int16_t>();
   out.construction_slot=file.integer<int16_t>();out.construction_remaining=file.integer<int16_t>();
@@ -56,14 +58,14 @@ hangar read_hangar(binary_reader &file) {
   for(unsigned i{};i<count;++i) {
     player_herc h;h.slot=file.integer<int16_t>();h.chassis=file.integer<int16_t>();
     auto const n{file.integer<int16_t>()};
-    if(h.slot<0||h.slot>=out.capacity||out.find(h.slot)||h.chassis<0||h.chassis>=8||n<0||n>10)file.fail("invalid hangar chassis");
+    if(h.slot<0||h.slot>=out.capacity||out.find(h.slot)||h.chassis<0||(h.chassis>=8&&!(edition==game_edition::expansion&&h.chassis==16))||n<0||n>10)file.fail("invalid hangar chassis");
     for(int j{};j<n;++j)h.weapons.push_back(file.integer<int16_t>());
     for(int j{};j<n;++j)h.weapon_values.push_back(file.integer<int16_t>());
     h.extra=file.integer<int16_t>();read_condition(file,h.condition);out.hercs.push_back(std::move(h));
   }
   return out;
 }
-hangar read_hangar(bytes source) { binary_reader file{source,"hangar"};auto out{read_hangar(file)};file.require_end();return out; }
+hangar read_hangar(bytes source,game_edition edition) { binary_reader file{source,"hangar"};auto out{read_hangar(file,edition)};file.require_end();return out; }
 std::vector<uint8_t> write_hangar(hangar const &roster) {
   if(roster.capacity<0||roster.capacity>50||roster.hercs.size()>static_cast<size_t>(roster.capacity))throw std::runtime_error{"invalid hangar capacity"};
   binary_writer file;file.integer(roster.capacity);file.integer(roster.selected);file.integer(roster.construction_slot);
@@ -78,7 +80,7 @@ std::vector<uint8_t> write_hangar(hangar const &roster) {
   }
   return std::move(file).finish();
 }
-career_state read_career_state(binary_reader &file) {
+career_state read_career_state(binary_reader &file,game_edition edition,int16_t battle_set) {
   career_state s;s.valid=file.integer<uint8_t>();s.current=file.integer<uint8_t>();
   s.node_progress=file.integer<int16_t>();s.screen=file.integer<int16_t>();s.node=file.integer<int16_t>();s.step=file.integer<int16_t>();
   s.missions=file.integer<int16_t>();s.mission_kind=file.integer<int16_t>();s.selected_crew=file.integer<int16_t>();s.crew_count=file.integer<int16_t>();s.crew_cursor=file.integer<int16_t>();
@@ -88,7 +90,11 @@ career_state read_career_state(binary_reader &file) {
     read_words(file,c.current);read_words(file,c.total);c.prior_skill=file.integer<int16_t>();c.experience=file.integer<int16_t>();c.budget_share=file.integer<int32_t>();
   }
   s.technology.last_type=file.integer<int16_t>();s.technology.last_index=file.integer<int16_t>();
-  for(auto &t:s.technology.entries){t.early=file.integer<int16_t>();t.late=file.integer<int16_t>();t.available=file.integer<uint8_t>();}
+  auto &technology{s.technology};technology.edition=edition;technology.battle_set=battle_set;
+  if(edition==game_edition::expansion){technology.chassis_slots=9;technology.entries.resize(31);if(battle_set){technology.chassis_count=9;technology.weapon_count=22;}}
+  auto read=[&](technology_entry &t){t.early=file.integer<int16_t>();t.late=file.integer<int16_t>();t.available=file.integer<uint8_t>();};
+  for(size_t i{};i<technology.chassis_count;++i)read(technology.entries[i]);
+  for(size_t i{};i<technology.weapon_count;++i)read(technology.entries[technology.chassis_slots+i]);
   s.budget=file.integer<int32_t>();read_words(file,s.counters);s.repair_policy=file.integer<int16_t>();return s;
 }
 std::vector<uint8_t> write_career_state(career_state const &s) {
@@ -99,12 +105,15 @@ std::vector<uint8_t> write_career_state(career_state const &s) {
     file.integer(c.skill);file.integer(c.rank);file.integer(c.health);write_words(file,c.current);write_words(file,c.total);file.integer(c.prior_skill);file.integer(c.experience);file.integer(c.budget_share);
   }
   file.integer(s.technology.last_type);file.integer(s.technology.last_index);
-  for(auto const &t:s.technology.entries){file.integer(t.early);file.integer(t.late);file.integer(t.available);}
+  auto const &technology{s.technology};
+  auto write=[&](technology_entry const &t){file.integer(t.early);file.integer(t.late);file.integer(t.available);};
+  for(size_t i{};i<technology.chassis_count;++i)write(technology.entries.at(i));
+  for(size_t i{};i<technology.weapon_count;++i)write(technology.entries.at(technology.chassis_slots+i));
   file.integer(s.budget);write_words(file,s.counters);file.integer(s.repair_policy);return std::move(file).finish();
 }
-career_record read_career(bytes source) {
-  binary_reader file{source,"career"};career_record out;out.active=file.integer<uint8_t>();out.mode=file.integer<int16_t>();read_words(file,out.names);
-  for(size_t i{};i<out.states.size();++i){out.states[i]=read_career_state(file);out.inventories[i]=read_armory(file);}
+career_record read_career(bytes source,game_edition edition) {
+  binary_reader file{source,"career"};career_record out;out.edition=edition;out.active=file.integer<uint8_t>();out.mode=file.integer<int16_t>();read_words(file,out.names);
+  for(size_t i{};i<out.states.size();++i){out.states[i]=read_career_state(file,edition,edition==game_edition::expansion?out.mode:0);out.inventories[i]=read_armory(file);if(edition==game_edition::expansion&&out.mode)out.inventories[i].resize(22);}
   file.require_end();return out;
 }
 std::vector<uint8_t> write_career(career_record const &career) {

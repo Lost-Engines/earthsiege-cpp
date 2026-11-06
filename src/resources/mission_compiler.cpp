@@ -128,6 +128,7 @@ auto exported(std::vector<source_record<T>> const &records)->std::vector<T> {
 class mission_compiler {
   binary_reader file;
   random_state &random;
+  game_edition edition;
   std::vector<mission_condition> active;
   mission_header header;
   std::vector<source_record<source_point>> points;
@@ -181,7 +182,9 @@ class mission_compiler {
       };
       if(!condition_enabled(active, selector.condition)) continue;
       prepare(entry);
-      auto const duplicate{reference(records, selector.id, physical_index)};
+      // Expansion GO 0x2ef70 and related lookups distinguish physical
+      // template slots from exported indices. The base compiler does not.
+      auto const duplicate{reference(records, selector.id, physical_index || edition == game_edition::expansion)};
       if(duplicate == -1) records.push_back(std::move(entry));
       else combine(records.at(static_cast<unsigned int>(duplicate)), entry);
     }
@@ -222,8 +225,8 @@ class mission_compiler {
     }, [this](auto &entry){
       if(entry.selector.variant != -1) entry.value.position = variant(points, entry.selector.variant).position;
       if(entry.value.sum) {
-        auto const first{reference(points, static_cast<int16_t>(entry.value.position.x))};
-        auto const second{reference(points, static_cast<int16_t>(entry.value.position.y))};
+        auto const first{reference(points, static_cast<int16_t>(entry.value.position.x), edition == game_edition::expansion)};
+        auto const second{reference(points, static_cast<int16_t>(entry.value.position.y), edition == game_edition::expansion)};
         if(first < 0 || second < 0) file.fail("point sum refers to an unavailable point");
         auto const &a{points.at(static_cast<unsigned int>(first)).value.position};
         auto const &b{points.at(static_cast<unsigned int>(second)).value.position};
@@ -286,9 +289,9 @@ class mission_compiler {
   }
 
 public:
-  mission_compiler(bytes source, std::span<int16_t const> flags, random_state &generator, int16_t campaign_mode) :
+  mission_compiler(bytes source, std::span<int16_t const> flags, random_state &generator, int16_t campaign_mode, game_edition version) :
     file{source, "source mission"},
-    random{generator} {
+    random{generator}, edition{version} {
     if(file.integer<uint16_t>() != 5) file.fail("unsupported source mission revision");
     auto const conditions{read_conditions(file)};
     active = evaluate_conditions(conditions, flags, random);
@@ -323,8 +326,8 @@ public:
 
 } // namespace
 
-auto compile_mission(bytes source, std::span<int16_t const> campaign_flags, random_state &random, int16_t campaign_mode)->compiled_mission {
-  return mission_compiler{source, campaign_flags, random, campaign_mode}.compile();
+auto compile_mission(bytes source, std::span<int16_t const> campaign_flags, random_state &random, int16_t campaign_mode, game_edition edition)->compiled_mission {
+  return mission_compiler{source, campaign_flags, random, campaign_mode, edition}.compile();
 }
 
 } // namespace earthsiege

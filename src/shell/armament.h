@@ -8,13 +8,13 @@ struct mount_artwork {
 };
 /// Original shell CFG tables: compatibility, selection locations and equipment art.
 class armament_catalog {
-  std::array<std::vector<std::vector<mount_artwork>>,8> chassis_;
-  std::array<std::vector<rectangle>,8> hotspots_;
+  std::vector<std::vector<std::vector<mount_artwork>>> chassis_;
+  std::vector<std::vector<rectangle>> hotspots_;
 public:
   explicit armament_catalog(resource_store const &resources);
-  auto const &mounts(int16_t chassis)const{return chassis_.at(static_cast<size_t>(chassis));}
+  auto const &mounts(int16_t chassis)const{return chassis_.at(human_herc_index(chassis));}
   std::optional<int> hit(int16_t chassis,int x,int y)const;
-  auto const &hotspots(int16_t chassis)const{return hotspots_.at(static_cast<size_t>(chassis));}
+  auto const &hotspots(int16_t chassis)const{return hotspots_.at(human_herc_index(chassis));}
   mount_artwork const *find(int16_t chassis,int mount,int16_t weapon)const;
   std::vector<int16_t> choices(player_herc const &herc,int mount,
     technology_state const &technology,armory const &inventory)const;

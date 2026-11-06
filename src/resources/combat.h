@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include "resources/binary_reader.h"
+#include "resources/edition.h"
 #include "vectorstorm/vector/vector3.h"
 
 namespace earthsiege {
@@ -96,6 +97,7 @@ inline size_t constexpr original_weapon_count{17};
 inline size_t constexpr original_projectile_count{19};
 
 struct weapon_catalogue {
+  game_edition edition{game_edition::original};
   std::vector<weapon_definition> weapons = std::vector<weapon_definition>(original_weapon_count);
   std::vector<projectile_definition> projectiles = std::vector<projectile_definition>(original_projectile_count);
 };

@@ -40,7 +40,7 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
     flash.position.z = 0;
     auto placement{rotation_transform({0,0,flash.heading})};
     placement.translation = flash.position;
-    models.draw(flash.root, flash.instance, placement, view, {}, dynamic ? dynamic->current() : lights);
+    models.draw(flash.root, flash.instance, placement, view, flash.textures, dynamic ? dynamic->current() : lights);
   }
   std::vector<scene_order_entry> entries;
   std::vector<size_t> indices;

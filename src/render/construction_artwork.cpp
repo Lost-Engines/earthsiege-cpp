@@ -4,14 +4,14 @@ namespace earthsiege {
 construction_artwork::construction_artwork(resource_store const &r)
  :blueprints{read_bitmaps(r.read("shell0","res32/blueherx.dba"))},
  faces{read_font(r.read("shell0","dfn/nm_green.dfn")),read_font(r.read("shell0","dfn/nm_white.dfn")),read_font(r.read("shell0","dfn/nm_red1.dfn"))},
- text{read_packed_strings(r.read("shell0","eng/watext.bin"))}{}
+ text{r.read("shell0","eng/watext.bin"),r.edition()}{}
 void construction_artwork::draw(framebuffer &frame,construction_menu const &menu,hangar const &h,career_state const &c,service_prices const &prices)const{
  // GO 0x2845c: fixed positions relative to the MENU2000 root at (181,2).
- auto const ch{static_cast<size_t>(menu.chassis())};auto const &p{prices.chassis.at(ch)};
- constexpr std::array<int,8> mass{18,27,36,45,50,54,63,77},speed{84,80,76,71,64,56,52,46},capacity{3,3,4,5,6,7,8,9};
+ auto const ch{human_herc_index(menu.chassis())};auto const &p{prices.chassis.at(static_cast<size_t>(menu.chassis()))};
+ constexpr std::array<int,9> mass{18,27,36,45,50,54,63,77,70},speed{84,80,76,71,64,56,52,46,60},capacity{3,3,4,5,6,7,8,9,9};
  auto write=[&](size_t face,std::string const &value,int x,int y){frame.text(faces[face],value,181+x,2+y);};
  frame.fill({195,29,301,150},31);frame.image(blueprints.at(ch),196,30);
- std::array<std::string,4> values{text.at(27+ch),std::to_string(mass[ch])+" TONS",std::to_string(speed[ch])+" KPH",std::to_string(capacity[ch])+" WEAPONS"};
+ std::array<std::string,4> values{text.chassis(menu.chassis()),std::to_string(mass[ch])+" TONS",std::to_string(speed[ch])+" KPH",std::to_string(capacity[ch])+" WEAPONS"};
  for(size_t i{};i<4;++i){write(0,text.at(196+i),75,34+static_cast<int>(i)*18);write(1,values[i],79,43+static_cast<int>(i)*18);}
  bool const building{menu.building(h)};
  if(building){

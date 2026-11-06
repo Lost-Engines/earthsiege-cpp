@@ -13,9 +13,9 @@ weapon_instrument_kind instrument_kind(weapon_state const &weapon) {
 }
 std::string weapon_display_name(weapon_state const &weapon, weapon_catalogue const &definitions) {
   // Original executable tables 0x911fc (weapon names) and 0x910ac (seekers).
-  std::array<std::string_view, original_weapon_count> constexpr names{
+  std::array<std::string_view, 22> constexpr names{
     "ATC20", "ATC35", "ATC50", "ELF", "EMP", "GREN", "LAS100", "LAS200", "LAS300",
-    "6", "8", "10", "PBEAM", "ECM", "EMP", "PBEAM", "MISSL",
+    "6", "8", "10", "PBEAM", "ECM", "EMP", "PBEAM", "MISSL", "", "ELF2", "EMP2", "PBW2", "PLAS",
   };
   std::array<std::string_view, 4> constexpr seekers{"SARH", "ARH", "ARM", "EO"};
   std::string result;

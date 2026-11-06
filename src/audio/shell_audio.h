@@ -10,7 +10,9 @@ class shell_audio:public shell_animation_sound {
  pcm_sound_bank bank;
  pcm_mixer mixer{bank};
  std::unique_ptr<music_audio> music;
+ int16_t battle_set_{};
  int track{-1},wanted{-1},gain{100},fade_next{100};
+ bool film_playing{};
  bool music_enabled{true},effects_enabled{true},suspended{};
  uint64_t ticks{},pcm_frames{},output_frames{};
  std::array<uint8_t,2> held_pcm{128,128};
@@ -30,6 +32,9 @@ public:
     music_config=settings;
   }
  void song(int id);
+ void film(bool active);
+ void film_sample(std::string_view name);
+ void battle_set(int16_t value){if(battle_set_==value)return;battle_set_=value;if(wanted>=0)start_song();}
  void region(unsigned id);
  void enabled(bool music,bool effects);
  void suspend();

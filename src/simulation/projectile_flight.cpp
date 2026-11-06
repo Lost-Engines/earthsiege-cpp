@@ -64,8 +64,9 @@ projectile_result advance_projectile(projectile_flight &state, projectile_motion
       state.cells[cell] = static_cast<uint16_t>((state.cells[cell] + 1U) % cell_counts[cell]);
     }
   }
-  state.age = wrap_word(state.age + 1);
-  if(state.age > lifetime) {
+  bool const scaled_age{state.kind == projectile_kind::bullet && motions.edition == game_edition::expansion};
+  state.age = wrap_word(state.age + (scaled_age ? scale_frame_time(512, ratio) : 1));
+  if(state.age > (scaled_age ? lifetime * 512 : lifetime)) {
     if(state.kind == projectile_kind::rocket && state.subtype == rocket_manual_subtype) guidance.manual_held = false;
     return projectile_result::expired;
   }

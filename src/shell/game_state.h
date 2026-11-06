@@ -25,6 +25,7 @@ class game_state {
   std::string mission_name_;
   mission_text text_;
   bool campaign_{};
+  int16_t single_battle_set_{1};
   int16_t identity_{};
   int16_t last_grade_{},last_kind_{};
   void prepare(std::string name,mission_options const &options);
@@ -48,9 +49,9 @@ public:
   armory const &inventory()const;
   hangar &roster();
   hangar const &roster()const;
-  void new_campaign(int16_t battle_set=0,int16_t repair_policy=1,int16_t identity=0);
+  void new_campaign(int16_t battle_set=0,int16_t repair_policy=1,int16_t identity=0,uint8_t difficulty=1);
   void load_campaign(campaign_start saved,int16_t identity=0);
-  void prepare_single(int16_t category,mission_options const &options);
+  void prepare_single(int16_t category,mission_options const &options,int16_t battle_set=1);
   void prepare_campaign(bool next=false,mission_options const &options={});
   void restore_history(size_t history);
   void update_roster();

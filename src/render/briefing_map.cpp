@@ -122,7 +122,7 @@ briefing_map::briefing_map(resource_store const &resources,mission_script const 
  text_face{read_font(resources.read("shell0","dfn/MAP.DFN"))},objectives{std::move(text)},
  data_{make_briefing_map(resources,script,count)}{
  if(script.header.zone>=0){
-  terrain=read_model(resources.read("shell0","dgs/"+std::string{std::array{"TEMPER","ICE","DESERT","URBAN"}.at(static_cast<size_t>(script.header.terrain))}+".DGS"));
+  terrain=read_model(resources.read("shell0","dgs/"+std::string{std::array{"TEMPER","ICE","DESERT","URBAN","WASTE","RUINS"}.at(static_cast<size_t>(script.header.terrain))}+".DGS"));
   auto const path{"dat/ZONE"+std::to_string(script.header.zone)+".DAT"};
   auto const volume{resources.archives().at("zones").find(path)?"zones":"simvol0"};
   auto zone{read_zone(resources.read(volume,path))};

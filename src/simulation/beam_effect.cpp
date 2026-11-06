@@ -5,13 +5,14 @@
 
 namespace earthsiege {
 
-beam_effect make_beam_effect(int16_t const subtype, beam_path const &path, random_state &random) {
+beam_effect make_beam_effect(int16_t const subtype, beam_path const &path, random_state &random, std::span<beam_style const> styles, game_edition const edition) {
   std::array<int16_t, 6> constexpr widths{60, 30, 120, 20, 25, 30};
   std::array<uint8_t, 6> constexpr colours{10, 102, 10, 88, 88, 88};
   auto const index{static_cast<size_t>(subtype)};
-  auto const width{widths.at(index)};
-  beam_effect result{.position{vec3<int32_t>{path.start}}, .points{}, .faces{}, .colour{colours.at(index)}, .remaining{0}};
-  if(subtype == 1) {
+  if(!styles.empty() && index>=styles.size()) throw std::out_of_range{"beam style"};
+  auto const width{styles.empty() ? widths.at(index) : styles[index].width};
+  beam_effect result{.position{vec3<int32_t>{path.start}}, .points{}, .faces{}, .colour{styles.empty() ? colours.at(index) : styles[index].colour}, .remaining{static_cast<int16_t>(edition == game_edition::expansion ? 256 : 0)}};
+  if(subtype == 1 || (edition == game_edition::expansion && subtype == 7)) {
     vec3<int32_t> step;
     for(unsigned int axis{0}; axis != 3; ++axis) step[axis] = wrap_long(static_cast<int64_t>(path.end[axis]) - path.start[axis]);
     auto const distance{fast_distance(step)};

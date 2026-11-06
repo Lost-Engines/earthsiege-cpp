@@ -63,6 +63,21 @@ auto resource_store::read_original(std::string_view volume, std::string_view nam
   return found->second.read(*entry);
 }
 
+std::optional<std::filesystem::path> resource_store::external(std::string_view name) const {
+  auto relative{std::filesystem::path{normalise_path(name)}};
+  if(relative.is_absolute())throw std::runtime_error{"absolute game resource path"};
+  for(auto const &part:relative)if(part=="..")throw std::runtime_error{"parent in game resource path"};
+  auto directory{root_path};if(normalise_path(directory.filename().string())=="vol")directory=directory.parent_path();
+  for(auto const &part:relative){
+    if(!std::filesystem::is_directory(directory))return {};
+    bool found{};
+    for(auto const &entry:std::filesystem::directory_iterator{directory})if(normalise_path(entry.path().filename().string())==part.string()){directory=entry.path();found=true;break;}
+    if(!found)return {};
+  }
+  if(std::filesystem::is_regular_file(directory))return directory;
+  return {};
+}
+
 auto resource_store::archives() const->std::map<std::string, archive, std::less<>> const & { return volumes; }
 auto resource_store::root() const->std::filesystem::path const & { return root_path; }
 

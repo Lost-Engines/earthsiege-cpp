@@ -38,6 +38,7 @@ struct ground_flash {
   model_instance const &instance;
   vec3<int32_t> &position;
   uint16_t heading{};
+  std::span<bitmap const> textures;
 };
 
 /// Render owned scenery with the original distance ramps and whole-scene painter tree

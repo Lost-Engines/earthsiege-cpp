@@ -9,8 +9,8 @@ struct chassis_prices {
   std::array<int16_t,10> internal{};
 };
 struct service_prices {
-  std::array<chassis_prices,8> chassis;
-  std::array<int16_t,18> weapons;
+  std::vector<chassis_prices> chassis = std::vector<chassis_prices>(8);
+  std::vector<int16_t> weapons = std::vector<int16_t>(18);
 };
 service_prices read_service_prices(bytes damage_table);
 int16_t herc_average_condition(player_herc const &herc);

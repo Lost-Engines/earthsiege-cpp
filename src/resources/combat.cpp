@@ -71,6 +71,7 @@ weapon_catalogue read_weapon_catalogue(bytes const source, bytes const separate_
     auto const count{file.integer<uint16_t>()};
     if(count != 22) file.fail("unsupported expansion weapon count");
     result.weapons.resize(count);
+    result.edition = game_edition::expansion;
   }
   for(auto &weapon : result.weapons) {
     weapon.damage = component(file);

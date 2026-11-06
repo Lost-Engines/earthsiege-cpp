@@ -52,6 +52,8 @@ add_library(earthsiege_core
   src/shell/preferences.cpp
   src/resources/mission_writer.cpp
   src/shell/mission_launch.cpp
+  src/shell/career_transfer.cpp
+  src/shell/career_transfer.h
   src/shell/new_career.cpp
   src/resources/mission_results.cpp
   src/shell/campaign_return.cpp
@@ -61,6 +63,7 @@ add_library(earthsiege_core
   src/render/construction_artwork.cpp
   src/shell/component_repair.cpp
   src/shell/hangar_service.cpp
+  src/resources/shell_hercs.cpp
   src/resources/career.cpp
   src/resources/campaign.cpp
   src/shell/tactical_controller.cpp
@@ -329,6 +332,8 @@ add_library(earthsiege_core
   src/resources/model.h
   src/resources/mission_text.cpp
   src/resources/mission_text.h
+  src/resources/dfl_movie.cpp
+  src/resources/dfl_movie.h
   src/resources/mission_compiler.cpp
   src/resources/mission_compiler.h
   src/resources/mission_records.h
@@ -753,6 +758,25 @@ if(BUILD_TESTING)
   target_link_libraries(scene_order_test PRIVATE earthsiege_core)
   add_test(NAME scene_order COMMAND scene_order_test "${PROJECT_SOURCE_DIR}/tests/fixtures/scene_order.bin")
   add_test(NAME expansion_placements COMMAND actor_placement_test "${PROJECT_SOURCE_DIR}/assets/expansion" "${PROJECT_SOURCE_DIR}/tests/fixtures/expansion_placements.bin" expansion)
+  add_test(NAME expansion_startup COMMAND actor_placement_test "${PROJECT_SOURCE_DIR}/assets/expansion" "${PROJECT_SOURCE_DIR}/tests/fixtures/expansion_placements.bin" expansion startup)
+  add_executable(expansion_films_test tests/expansion_films_test.cpp)
+  target_link_libraries(expansion_films_test PRIVATE earthsiege_core)
+  add_test(NAME expansion_films COMMAND expansion_films_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_films.bin)
+  add_executable(expansion_transfer_test tests/expansion_transfer_test.cpp)
+  target_link_libraries(expansion_transfer_test PRIVATE earthsiege_core)
+  add_test(NAME expansion_transfer COMMAND expansion_transfer_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_transfer.bin)
+  add_executable(expansion_career_test tests/expansion_career_test.cpp)
+  target_link_libraries(expansion_career_test PRIVATE earthsiege_core)
+  add_test(NAME expansion_career COMMAND expansion_career_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_careers.bin)
+  add_executable(expansion_launch_test tests/expansion_launch_test.cpp)
+  target_link_libraries(expansion_launch_test PRIVATE earthsiege_core)
+  add_test(NAME expansion_launch COMMAND expansion_launch_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_launches.bin)
+  add_executable(expansion_shell_test tests/expansion_shell_test.cpp)
+  target_link_libraries(expansion_shell_test PRIVATE earthsiege_core)
+  add_test(NAME expansion_shell COMMAND expansion_shell_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_BINARY_DIR}/test-saves)
+  add_executable(expansion_weapons_test tests/expansion_weapons_test.cpp)
+  target_link_libraries(expansion_weapons_test PRIVATE earthsiege_core)
+  add_test(NAME expansion_weapons COMMAND expansion_weapons_test "${PROJECT_SOURCE_DIR}/assets/expansion" "${PROJECT_SOURCE_DIR}/tests/fixtures/expansion_weapons.bin" "${PROJECT_SOURCE_DIR}/tests/fixtures/expansion_beams.bin")
   add_executable(expansion_resources_test tests/expansion_resources_test.cpp)
   target_link_libraries(expansion_resources_test PRIVATE earthsiege_core)
   add_test(NAME expansion_resources COMMAND expansion_resources_test "${PROJECT_SOURCE_DIR}/assets/expansion" "${PROJECT_SOURCE_DIR}/tests/fixtures/expansion.bin")

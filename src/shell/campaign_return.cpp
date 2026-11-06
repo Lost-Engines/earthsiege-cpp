@@ -12,9 +12,17 @@ void advance_technology(technology_state &technology,int16_t missions,int16_t ki
   // GO's result classification tables: only classes 0/1 enable early awards.
   bool const route{kind==0||kind==1||kind==2||kind==6};
   bool const favorable{missions==0||(grade>=0&&grade<(route?5:4))};
-  for(size_t i{};i<technology.entries.size();++i){auto &t{technology.entries[i]};
-    bool const early{i<8?t.early<=missions:t.early==missions},late{i<8?t.late<=missions:t.late==missions};
-    if(!t.available&&t.early!=-1&&t.late!=-1&&((early&&favorable)||late)){t.available=1;technology.last_type=i>=8;technology.last_index=static_cast<int16_t>(i>=8?i-8:i);}
+  auto const expansion{technology.edition==game_edition::expansion&&technology.battle_set!=0};
+  for(size_t i{};i<technology.entries.size();++i){
+    bool const chassis{i<technology.chassis_slots};auto const id{chassis?i:i-technology.chassis_slots};
+    if(id>=(chassis?technology.chassis_count:technology.weapon_count))continue;
+    auto &t{technology.entries[i]};
+    bool const early{chassis&&!expansion?t.early<=missions:t.early==missions};
+    bool const late{chassis&&!expansion?t.late<=missions:t.late==missions};
+    if(!t.available&&t.early!=-1&&t.late!=-1&&((early&&favorable)||(late&&(!expansion||favorable)))){
+      t.available=1;technology.last_type=!chassis;
+      technology.last_index=static_cast<int16_t>(chassis&&id==8?16:id);
+    }
   }
 }
 namespace {
@@ -67,11 +75,11 @@ campaign_debrief return_from_mission(career_record &career,hangar &roster,missio
   }
   if(returned!=result.crew.size())throw std::runtime_error{"mission return has unexpected crew"};
   state.counters=counters;state.counters[0]=result.grade;
-  constexpr std::array<int16_t,7> awards{13,2,8,11,12,4,3};
-  for(size_t i{};i<awards.size();++i){for(int j{};j<state.counters[8+i];++j)push(inventory,awards[i],100);state.counters[8+i]=0;}
+  constexpr std::array<int16_t,11> awards{13,2,8,11,12,4,3,20,19,18,21};
+  for(size_t i{};i<(career.edition==game_edition::expansion&&career.mode?11U:7U);++i){for(int j{};j<state.counters[8+i];++j)push(inventory,awards[i],100);state.counters[8+i]=0;}
   state.budget=wrap_long(int64_t{state.budget}+result.recovery);
-  constexpr std::array<int16_t,13> restock{2,8,4,12,3,1,7,11,10,13,9,6,0};int added{};
-  for(auto weapon:restock){if(added==5)break;if(state.technology.entries[8+weapon].available&&inventory[weapon].size()<2){push(inventory,weapon,100);++added;}}
+  constexpr std::array<int16_t,17> restock{21,19,20,18,2,8,4,12,3,1,7,11,10,13,9,6,0};int added{};
+  for(auto weapon:restock){if(static_cast<size_t>(weapon)>=state.technology.weapon_count)continue;if(added==5)break;if(state.technology.weapon_available(weapon)&&inventory[weapon].size()<2){push(inventory,weapon,100);++added;}}
   // The native cursor visits assigned crew in cyclic order and updates the
   // selected hangar slot. Budget is shared before dead wingmates are scrapped.
   auto const assigned{std::ranges::count_if(state.crew,[](auto const &c){return c.active&&c.hangar_slot!=-1;})};

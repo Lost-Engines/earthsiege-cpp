@@ -25,9 +25,13 @@ struct rocket_motion {
   int16_t shot_noise{0};
 };
 
+struct beam_style { int16_t width{}; uint8_t colour{}; };
+std::vector<beam_style> read_beam_styles(bytes source);
+
 struct projectile_motions {
   std::vector<bullet_motion> bullets;
   std::vector<rocket_motion> rockets;
+  game_edition edition{game_edition::original};
 };
 
 std::vector<bullet_motion> read_bullet_motions(bytes source, game_edition edition = game_edition::original);

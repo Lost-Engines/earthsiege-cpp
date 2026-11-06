@@ -12,3 +12,27 @@ std::vector<std::string> read_packed_strings(bytes source) {
   return result;
 }
 }
+
+namespace earthsiege {
+std::string const &shell_text::at(size_t id)const{
+ if(edition==game_edition::expansion){
+  if(id>=184)id+=14;
+  else if(id>=161)id+=13;
+  else if(id>=85)id+=9;
+  else if(id>=63)id+=5;
+  else if(id>=35)id+=1;
+ }
+ return entries.at(id);
+}
+std::string const &shell_text::chassis(int16_t id)const{return entries.at(27+human_herc_index(id));}
+std::string const &shell_text::weapon(int16_t id,bool campaign)const{
+ if(edition==game_edition::expansion){
+  if(id==17)return entries.at(46);
+  if(id>=18)return entries.at((campaign?46:72)+id);
+  return entries.at((campaign||id>=14?47:76)+id);
+ }
+ return entries.at(id==17?45:static_cast<size_t>((campaign||id>=14?46:71)+id));
+}
+std::string const &shell_text::weapon_condition(int16_t id)const{return entries.at((edition==game_edition::expansion?152:143)+id);}
+std::string const &shell_text::weapon_full(int16_t id)const{return entries.at((edition==game_edition::expansion?227:213)+id);}
+}

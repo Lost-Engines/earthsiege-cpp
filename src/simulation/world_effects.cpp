@@ -31,6 +31,7 @@ world_effects::world_effects(resource_store const &resources, sound_sink sink, b
     detached_weapon_models{read_model(resources.read("simvol0", "dts/MECHWPN2.DTS"))},
     smoke_textures{read_bitmaps(resources.read("simvol0", "dba/SMOKE.DBA"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))} {
+  if(resources.edition()==game_edition::expansion)flat_textures=read_bitmaps(resources.read("simvol0",alternate_ground_models?"dba/FLAT2.DBA":"dba/FLAT.DBA"));
   for(auto const &root:flat_models.roots)flat_instances.emplace_back(std::get<shape_part>(root.content));
   for(size_t bank{0}; bank != explosion_textures.size(); ++bank) explosion_textures[bank] = read_bitmaps(resources.read("simvol0", "dba/EXPLO" + std::to_string(bank) + ".DBA"));
 }
@@ -147,12 +148,12 @@ void world_effects::append_models(std::vector<scene_model> &models) {
   });
 }
 ground_flash world_effects::ground_attachment(size_t const shape,vec3<int32_t> &position,uint16_t const heading) {
-  return {flat_models.roots.at(shape),flat_instances.at(shape),position,heading};
+  return {flat_models.roots.at(shape),flat_instances.at(shape),position,heading,flat_textures};
 }
 std::vector<ground_flash> world_effects::ground_flashes() {
   std::vector<ground_flash> result;
   explosions.for_each_oldest([&](size_t, live_explosion &effect){
-    if(effect.secondary) result.push_back({flat_models.roots.at(1), *effect.secondary, effect.secondary_position});
+    if(effect.secondary) result.push_back({flat_models.roots.at(1), *effect.secondary, effect.secondary_position,0,flat_textures});
   });
   return result;
 }

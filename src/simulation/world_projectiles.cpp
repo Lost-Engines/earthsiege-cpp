@@ -12,17 +12,18 @@ live_projectile::live_projectile(projectile_owner source, weapon_shot const &sho
 
 world_projectiles::world_projectiles(resource_store const &resources, weapon_catalogue const &catalogue, sound_sink sink)
   : sounds{std::move(sink)}, definitions{catalogue},
-    motions{read_bullet_motions(resources.read("simvol0", "dat/BULLETS.DAT"), resources.edition()), read_rocket_motions(resources.read("simvol0", "dat/ROCKETS.DAT"))},
+    motions{read_bullet_motions(resources.read("simvol0", "dat/BULLETS.DAT"), resources.edition()), read_rocket_motions(resources.read("simvol0", "dat/ROCKETS.DAT")), resources.edition()},
     bullet_models{read_model(resources.read("simvol0", "dts/BULLETS.DTS"))},
     rocket_models{read_model(resources.read("simvol0", "dts/ROCKETS.DTS"))},
-    bullet_textures{read_bitmaps(resources.read("simvol0", "dba/BULLETS.DBA"))} {}
+    bullet_textures{read_bitmaps(resources.read("simvol0", "dba/BULLETS.DBA"))},
+    beam_styles{resources.edition()==game_edition::expansion ? read_beam_styles(resources.read("simvol0","dat/BEAM.DAT")) : std::vector<beam_style>{}} {}
 
 std::optional<size_t> world_projectiles::launch(projectile_owner const owner, weapon_shot const &shot, random_state &random, world_impact_query const &hit) {
   if(shot.kind == shot_kind::beam) {
     // A beam applies its impact before trying to allocate its visible ribbon.
     auto const path{dispatch_beam(shot, definitions, [&](impact_request const &request){ return hit ? hit(owner, request) : std::nullopt; })};
     if(projectiles.available() == 0) { if(sounds) sounds(sample_sound_request{sound_action::positioned,11,shot.muzzle.position}); return std::nullopt; }
-    auto const slot{projectiles.emplace(owner, make_beam_effect(definitions.projectiles.at(shot.projectile).subtype, path, random))};
+    auto const slot{projectiles.emplace(owner, make_beam_effect(definitions.projectiles.at(shot.projectile).subtype, path, random, beam_styles, definitions.edition))};
     retained_rocket_clocks[*slot] = 0;
     if(sounds) sounds(sample_sound_request{sound_action::positioned,11,shot.muzzle.position});
     return slot;

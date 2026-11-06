@@ -33,6 +33,30 @@ constexpr std::array labels{"AdLib / Sound Blaster (OPL2)", "Sound Blaster Pro /
   "MT-32 / CM-32L: MPU-401 experiment", "General MIDI SoundFont"};
 } // namespace
 
+auto choose_game_edition(window &display, resource_store const &resources)->std::optional<game_edition> {
+  panel ui{resources};int selected{};
+  while(!glfwWindowShouldClose(display.get())){
+    window_event event;
+    while(display.poll(event)){
+      if(event.type==event_type::close)return {};
+      if(event.type==event_type::key_down&&!event.repeat){
+        if(event.key==GLFW_KEY_ESCAPE)return {};
+        if(event.key==GLFW_KEY_UP||event.key==GLFW_KEY_DOWN)selected=1-selected;
+        if(event.key==GLFW_KEY_ENTER||event.key==GLFW_KEY_KP_ENTER)return selected?game_edition::expansion:game_edition::original;
+        if(event.key==GLFW_KEY_1)return game_edition::original;
+        if(event.key==GLFW_KEY_2)return game_edition::expansion;
+      }
+      bool const inside{event.x>=10&&event.x<310&&event.y>=66&&event.y<110};
+      if(event.type==event_type::motion&&inside)selected=(event.y-66)/22;
+      if(event.type==event_type::button_down&&event.button==GLFW_MOUSE_BUTTON_LEFT&&inside)return (event.y-66)/22?game_edition::expansion:game_edition::original;
+    }
+    ui.frame.clear();ui.text("EARTHSIEGE",10,15);ui.text("Choose a game",10,37);
+    for(int i{};i<2;++i){int y{66+i*22};if(selected==i)ui.frame.fill({10,y,309,y+19},2);ui.text(i?"2. Earthsiege Expansion":"1. Earthsiege",16,y+6);}
+    ui.text("Each edition keeps separate saved games.",10,139);
+    ui.text("Click or 1-2: choose   Esc: quit",10,176);ui.present(display);glfwWaitEventsTimeout(.01);
+  }
+  return {};
+}
 auto choose_music_device(window &display, resource_store const &resources, music_device current)->std::optional<music_device> {
   panel ui{resources};
   auto const found{std::ranges::find(choices, current)};

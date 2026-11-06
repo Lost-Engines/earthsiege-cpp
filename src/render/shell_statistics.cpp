@@ -4,7 +4,7 @@
 namespace earthsiege {
 shell_statistics::shell_statistics(resource_store const &r)
  :values{read_font(r.read("shell0","dfn/cstats_1.dfn"))},labels{read_font(r.read("shell0","dfn/cstats_2.dfn"))},
- strings{read_packed_strings(r.read("shell0","eng/watext.bin"))}{}
+ strings{r.read("shell0","eng/watext.bin"),r.edition()}{}
 void shell_statistics::career(framebuffer &f,rectangle const &b,career_state const &s,std::string const &name)const{
  f.fill(b,31);
  auto label{[&](size_t id,int x,int y){f.text(labels,strings.at(id),b.left+x,b.top+y);}};
@@ -32,7 +32,7 @@ void shell_statistics::debrief(framebuffer &f,rectangle const &b,career_state co
   value(s.crew[0].current[order[i]],94,y);value(r.statistics[order[i]],127,y);
  }
  value(r.deaths,94,53);value(r.recovered_weapons,127,62);
- auto const technology{r.technology?strings.at(static_cast<size_t>((s.technology.last_type?213:27)+s.technology.last_index)):std::string{"NONE"}};
+ auto const technology{r.technology?(s.technology.last_type?strings.weapon_full(s.technology.last_index):strings.chassis(s.technology.last_index)):std::string{"NONE"}};
  f.text(values,technology,b.left+(b.right-b.left-values.text_width(technology))/2,b.top+81);
 }
 }

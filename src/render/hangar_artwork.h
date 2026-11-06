@@ -2,14 +2,16 @@
 #include "render/framebuffer.h"
 #include "resources/artwork.h"
 #include "shell/armament.h"
+#include "resources/shell_hercs.h"
 namespace earthsiege {
 /// Original bay bitmap layers. Resident TTM programs are composed separately.
 class hangar_artwork {
-  std::array<std::vector<bitmap>,8> weapons_,damaged_,outlines_,construction_;
+  std::vector<std::vector<bitmap>> weapons_,damaged_,outlines_,construction_;
   std::vector<bitmap> weapon_icons_;
   struct damage_layer {int16_t image;int32_t x,y;};
-  std::array<std::vector<bitmap>,8> damage_images_;
-  std::array<std::array<std::array<std::vector<damage_layer>,3>,6>,8> damage_layers_;
+  std::vector<std::vector<bitmap>> damage_images_;
+  std::vector<std::array<std::array<std::vector<damage_layer>,3>,6>> damage_layers_;
+  std::vector<shell_herc> definitions_;
 public:
   static constexpr std::array<std::array<int,2>,8> origin{{{77,99},{77,89},{83,64},{86,53},{75,57},{73,37},{72,37},{58,26}}};
   static constexpr std::array<std::array<int,9>,8> order{{{1,2,0},{1,2,0},{3,2,1,0},{4,3,2,1,0},{5,2,4,1,3,0},{1,6,4,3,5,2,0},{1,6,4,3,7,5,2,0},{1,8,3,6,4,2,5,7,0}}};

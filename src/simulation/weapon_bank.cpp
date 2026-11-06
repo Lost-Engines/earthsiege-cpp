@@ -13,8 +13,8 @@ std::variant<capacitor, elf_capacitor, ammunition_weapon, grenade_weapon, ecm_we
   ammunition_weapon rounds{.controls{}, .rounds{magazine}, .displayed_rounds{static_cast<int32_t>(magazine) * 256}};
   switch(weapon) {
     case 0: case 1: case 2: case 9: case 10: case 11: case 16: return rounds;
-    case 3: return elf_capacitor{energy, {}};
-    case 4: case 6: case 7: case 8: case 12: case 14: case 15: return energy;
+    case 3: case 18: return elf_capacitor{energy, {}};
+    case 4: case 6: case 7: case 8: case 12: case 14: case 15: case 19: case 20: case 21: return energy;
     case 5: return grenade_weapon{rounds, false, 0};
     case 13: return ecm_weapon{};
     default: throw std::out_of_range{"weapon mechanism"};
@@ -66,12 +66,13 @@ weapon_bank::weapon_bank(weapon_catalogue const &definitions, model_resource con
     if(selected < 0 || selected == empty_weapon_slot) { weapons.emplace_back(std::nullopt); continue; }
     auto const &definition{source.weapons.at(static_cast<size_t>(selected))};
     weapon_state state{.definition{selected}, .equipment_slot{mount.equipment_slot}, .projectile{std::nullopt}, .mechanism{make_mechanism(selected, definition.magazine)}, .convergence{}};
-    if(definition.projectile == 21) {
+    bool const expansion{source.edition == game_edition::expansion};
+    if(definition.projectile == (expansion ? 34 : 21)) {
       if(!values.empty() && slot >= values.size()) throw std::out_of_range{"weapon ammunition selection"};
       auto const subtype{values.empty() || values[slot] == 5 ? 0 : values[slot]};
       for(size_t i{0}; i != source.projectiles.size(); ++i) if(source.projectiles[i].kind == projectile_kind::rocket && source.projectiles[i].subtype == subtype) { state.projectile = i; break; }
       if(!state.projectile) throw std::out_of_range{"missile ammunition subtype"};
-    } else if(definition.projectile != 20 && definition.projectile != 22) {
+    } else if(definition.projectile != (expansion ? 33 : 20) && definition.projectile != (expansion ? 35 : 22)) {
       if(definition.projectile < 0 || static_cast<size_t>(definition.projectile) >= source.projectiles.size()) throw std::out_of_range{"weapon projectile"};
       state.projectile = static_cast<size_t>(definition.projectile);
     }

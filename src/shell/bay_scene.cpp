@@ -1,7 +1,7 @@
 #include "bay_scene.h"
 #include <stdexcept>
 namespace earthsiege {
-bay_scene::bay_scene(resource_store const &r){
+bay_scene::bay_scene(resource_store const &r):plan{r.edition()}{
  auto data{r.read("shell0","cfg/tm_files.dat")};binary_reader f{data};
  auto groups{f.integer<uint8_t>()};
  for(unsigned group{};group<groups;++group){
@@ -9,7 +9,7 @@ bay_scene::bay_scene(resource_store const &r){
   if(!count){if(!f.cstring().empty())f.fail("invalid empty animation group");continue;}
   for(unsigned i{};i<count;++i){auto path{f.cstring()};if(group==3)programs.emplace_back(r,path);}
  }
- f.require_end();if(programs.size()!=25)throw std::runtime_error{"invalid service bay animation group"};
+ f.require_end();if(programs.size()!=plan.state().owners.size())throw std::runtime_error{"invalid service bay animation group"};
 }
 void bay_scene::run(size_t i,int16_t elapsed,random_state &random,shell_animation_sound *sound){
  auto &p{programs.at(i)};p.player.advance(elapsed,random,sound);p.art.apply(p.player.commands(),visible,background);
@@ -22,7 +22,7 @@ void bay_scene::reset(hangar &h,career_state &c,bool campaign,int16_t kind,servi
 }
 void bay_scene::redraw(hangar const &h,hangar_artwork const &art,armament_catalog const &catalog,int mount,framebuffer const &base,random_state &random,shell_animation_sound *sound){
  background=visible=base;
- if(h.selected>=0&&h.selected<8){
+ if(h.selected>=0&&static_cast<size_t>(h.selected)<plan.state().left.size()){
   auto slot{static_cast<size_t>(h.selected)};
   programs[0].player.select_page(static_cast<uint16_t>(plan.state().left[slot]+1));
   programs[1].player.select_page(static_cast<uint16_t>(plan.state().right[slot]+1));

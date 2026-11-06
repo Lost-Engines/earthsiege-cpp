@@ -8,9 +8,10 @@ construction_menu::construction_menu(hangar &h,career_state const &c,service_pri
 }
 void construction_menu::cycle(career_state const &c,int direction){
  if(!cycling_)return;
- for(int i{};i<8;++i){
-  chassis_=static_cast<int16_t>((chassis_+(direction>0?1:7))%8);
-  if(c.technology.entries.at(static_cast<size_t>(chassis_)).available)break;
+ auto const count{c.technology.chassis_count};
+ for(size_t i{};i<count;++i){
+  auto index{(human_herc_index(chassis_)+(direction>0?1:count-1))%count};chassis_=human_herc_id(index);
+  if(c.technology.entries.at(index).available)break;
  }
  enabled_=static_cast<uint32_t>(c.budget)>=static_cast<uint32_t>(prices->chassis.at(static_cast<size_t>(chassis_)).purchase);
 }

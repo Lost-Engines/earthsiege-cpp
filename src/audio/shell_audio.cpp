@@ -3,9 +3,9 @@
 namespace earthsiege {
 namespace {
 // GO 0x828c0: retain IDs, including registered but normally unselected songs.
-constexpr std::array<char const *,20> songs{
+constexpr std::array<char const *,22> songs{
  nullptr,"menu","menu","shella","shellb","shellc","shella","death","win2",
- nullptr,nullptr,nullptr,"intro1","intro2",nullptr,"rubble","ice","desert","volcano","losing"};
+ nullptr,nullptr,nullptr,"intro1","intro2",nullptr,"rubble","ice","desert","volcano","losing","echo","tau"};
 }
 void shell_audio::start_song(){
  if(wanted<0)return;
@@ -13,9 +13,19 @@ void shell_audio::start_song(){
  if(track>=0&&record)record->event(ticks,2,track);
  music->stop();track=wanted;gain=fade_next=100;
  if(record)record->event(ticks,1,track);
- music->load(resources.read("shell0","res32/"+std::string{songs.at(static_cast<size_t>(track))}+".hmp"),65535);
+ auto name{std::string{songs.at(static_cast<size_t>(track))}};
+ if(resources.edition()==game_edition::expansion&&battle_set_){if(track>=3&&track<=6)name="b"+name;else if(track==8)name="victory2";}
+ music->load(resources.read("shell0","res32/"+name+".hmp"),65535);
  if(record)record->event(ticks,5,65535);
- music->set_volume(100);if(music_enabled&&!suspended){music->play();if(record)record->event(ticks,3,track);}
+ music->set_volume(100);if(music_enabled&&!suspended&&!film_playing){music->play();if(record)record->event(ticks,3,track);}
+}
+void shell_audio::film(bool active){
+ if(film_playing==active)return;
+ film_playing=active;clear_sample();if(music){if(active)music->stop();else if(music_enabled&&!suspended)music->play();}
+}
+void shell_audio::film_sample(std::string_view name){
+ auto path{resources.external("flic/"+std::string{name})};if(!path)throw std::runtime_error{"film audio missing: "+std::string{name}};
+ bank.stop(0);auto data{read_file(*path)};bank.bind(0,data);bank.set_volume(0,100);play();
 }
 void shell_audio::song(int id){
  if(id<0||static_cast<size_t>(id)>=songs.size()||!songs[static_cast<size_t>(id)])throw std::runtime_error{"invalid shell music ID"};
@@ -32,14 +42,16 @@ void shell_audio::region(unsigned id){
 void shell_audio::enabled(bool song_enabled,bool sample_enabled){
  if(music_enabled!=song_enabled){
   music_enabled=song_enabled;
-  if(music){if(music_enabled&&!suspended)music->play();else music->stop();}
+  if(music){if(music_enabled&&!suspended&&!film_playing)music->play();else music->stop();}
  }
  effects_enabled=sample_enabled;
 }
 bool shell_audio::load(std::string_view name){
  clear_sample();auto path{normalise_path(name)};if(path.find('/')==std::string::npos)path="res32/"+path;
- auto const *entry{resources.archives().at("shell0").find(path)};if(!entry)return false;
- bank.bind(0,resources.read("shell0",path));return true;
+ bool found{};for(auto const &[archive_name,volume]:resources.archives())if((archive_name=="shell0"||(resources.edition()==game_edition::expansion&&(volume.usage_mask()&256)))&&volume.find(path))found=true;
+ if(!found)return false;
+ auto data{resources.read("shell0",path)};
+ bank.bind(0,data);return true;
 }
 void shell_audio::volume(uint8_t value){bank.set_volume(0,static_cast<int8_t>(value));}
 void shell_audio::play(){if(effects_enabled&&!suspended)bank.play(0);}

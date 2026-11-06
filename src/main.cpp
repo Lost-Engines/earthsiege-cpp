@@ -121,7 +121,8 @@ auto main(int argc, char *argv[])->int try {
   bool list{};
   bool headless{};
   bool skip_intro{};
-  bool audio_setup{};
+  bool audio_setup{},explicit_data{};
+  std::optional<earthsiege::game_edition> requested_edition;
   std::optional<earthsiege::music_device> requested_music;
   std::optional<std::filesystem::path> requested_roms,requested_soundfont;
   unsigned int scale{};
@@ -132,6 +133,8 @@ auto main(int argc, char *argv[])->int try {
     if(argument == "--help") {
       std::cout << "Earthsiege C++\nUsage: earthsiege [options]\n"
         "  --data-dir PATH       Original game data (default: bundled assets)\n"
+        "  --original            Start the original game directly\n"
+        "  --expansion           Start the expansion directly\n"
         "  --save-dir PATH       Override the separate user save directory\n"
         "  --inspect-demo N     Inspect demo 1–4 terrain and player roster (not replay)\n"
         "  --music NAME          opl2, opl3, sc55, scc1a, mt32, mt32-mpu, soundfont\n"
@@ -146,7 +149,9 @@ auto main(int argc, char *argv[])->int try {
         "  --list-resources      Print all original resource sizes and CRCs\n";
       return EXIT_SUCCESS;
     }
-    if(argument == "--data-dir" && index + 1 < argc) data_dir = argv[++index];
+    if(argument == "--data-dir" && index + 1 < argc) {data_dir = argv[++index];explicit_data=true;}
+    else if(argument == "--original")requested_edition=earthsiege::game_edition::original;
+    else if(argument == "--expansion")requested_edition=earthsiege::game_edition::expansion;
     else if(argument == "--save-dir" && index + 1 < argc) save_directory = argv[++index];
     else if(argument == "--screenshot" && index + 1 < argc) screenshot = argv[++index];
     else if(argument == "--inspect-demo" && index + 1 < argc) inspect_demo = integer_option(argv[++index]);
@@ -164,7 +169,16 @@ auto main(int argc, char *argv[])->int try {
     else if(argument == "--list-resources") list = true;
     else throw std::runtime_error{"unknown or incomplete option: " + std::string{argument}};
   }
+  std::unique_ptr<earthsiege::window> display;
+  if(!headless&&!list)display=std::make_unique<earthsiege::window>(scale);
+  if(display&&!explicit_data&&!requested_edition&&!inspect_demo&&std::filesystem::is_directory(data_dir/"expansion")){
+    earthsiege::resource_store original{data_dir};requested_edition=earthsiege::choose_game_edition(*display,original);
+    if(!requested_edition)return EXIT_SUCCESS;
+  }
+  if(requested_edition==earthsiege::game_edition::expansion&&std::filesystem::is_directory(data_dir/"expansion"))data_dir/="expansion";
   earthsiege::resource_store const resources{data_dir};
+  if(requested_edition&&resources.edition()!=*requested_edition)throw std::runtime_error{"selected game edition is unavailable in "+data_dir.string()};
+  if(display&&resources.edition()==earthsiege::game_edition::expansion)glfwSetWindowTitle(display->get(),"Earthsiege Expansion C++");
   if(list) {
     for(auto const &[volume, archive] : resources.archives()) {
       for(auto const &[name, entry] : archive.entries()) {
@@ -173,10 +187,11 @@ auto main(int argc, char *argv[])->int try {
     }
     return EXIT_SUCCESS;
   }
-  if(save_directory.empty()) save_directory = earthsiege::user_save_directory();
-  std::unique_ptr<earthsiege::window> display;
-  if(!headless){display = std::make_unique<earthsiege::window>(scale);}
-  else if(!frame_limit) frame_limit = 1;
+  if(save_directory.empty()){
+    save_directory=earthsiege::user_save_directory();
+    if(resources.edition()==earthsiege::game_edition::expansion)save_directory/="expansion";
+  }
+  if(headless&&!frame_limit)frame_limit=1;
   auto const music_file{save_directory/"music.cfg"};
   auto music_settings{earthsiege::read_music_settings(music_file)};
   music_settings.program_directory = earthsiege::executable_path(argv[0]).parent_path();

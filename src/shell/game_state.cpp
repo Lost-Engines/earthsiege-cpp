@@ -9,8 +9,8 @@ armory &game_state::inventory(){return campaign_?career_->career.inventories[0]:
 armory const &game_state::inventory()const{return campaign_?career_->career.inventories[0]:single_.inventory;}
 hangar &game_state::roster(){return campaign_?career_->hangars[0]:single_.roster;}
 hangar const &game_state::roster()const{return campaign_?career_->hangars[0]:single_.roster;}
-void game_state::new_campaign(int16_t battle,int16_t policy,int16_t identity){
-  career_=create_career(resources,battle,policy,random);prepared_.reset();identity_=identity;campaign_=true;last_grade_=last_kind_=0;
+void game_state::new_campaign(int16_t battle,int16_t policy,int16_t identity,uint8_t difficulty){
+  career_=create_career(resources,battle,policy,random,difficulty);prepared_.reset();identity_=identity;campaign_=true;last_grade_=last_kind_=0;
   prepare_campaign();
 }
 void game_state::load_campaign(campaign_start saved,int16_t identity){
@@ -18,8 +18,9 @@ void game_state::load_campaign(campaign_start saved,int16_t identity){
   auto const &s{crew()};last_grade_=s.counters[0];last_kind_=s.mission_kind;
   for(auto &h:roster().hercs)normalize_hangar_equipment(h);
 }
-void game_state::prepare_single(int16_t category,mission_options const &options){
-  campaign_=false;auto const groups{read_single_missions(resources.read("zones","msn/sing_msn.dat"))};
+void game_state::prepare_single(int16_t category,mission_options const &options,int16_t battle_set){
+  single_battle_set_=battle_set;
+  campaign_=false;auto const groups{read_single_missions(resources.read("zones",resources.edition()==game_edition::expansion&&battle_set?"msn/bing_msn.dat":"msn/sing_msn.dat"))};
   if(category==-1)category=random.bounded(static_cast<int16_t>(groups.size()));
   auto const &choices{groups.at(static_cast<size_t>(category))};
   prepare(choices.at(static_cast<size_t>(random.bounded(static_cast<int16_t>(choices.size())))),options);
@@ -28,10 +29,10 @@ void game_state::prepare_campaign(bool next,mission_options const &options){
   if(!career_)throw std::runtime_error{"no selected career"};
   campaign_=true;
   auto &c{career_->career};auto &s{c.states[0]};
-  auto const table{read_campaign_table(resources.read("zones","bst/btlset_"+std::to_string(c.mode)+".dat"))};
+  auto const table{read_campaign_table(resources.read("zones","bst/btlset_"+std::to_string(c.mode)+".dat"),resources.edition()==game_edition::expansion&&c.mode!=0)};
   bool const branch{campaign_failure_branch(last_kind_,last_grade_)};
-  if(next){c.active=0;s.current=0;if(table.advance(s.node,s.step,branch)){s.node_progress=0;s.counters.fill(0);}}
-  if(s.node==-1||s.node==99){c.active=0;prepared_.reset();return;}
+  if(next){if(c.edition==game_edition::original)c.active=0;s.current=0;if(table.advance(s.node,s.step,branch)){s.node_progress=0;s.counters.fill(0);}}
+  if(s.node==-1||s.node==99){if(c.edition==game_edition::original)c.active=0;prepared_.reset();return;}
   auto name{table.filename(s.node,s.step,branch)};
   if(!normalise_path(name).ends_with(".msn")) {
     // GO 140a5/20289: a campaign slot can name a BST random-mission list.
@@ -55,9 +56,9 @@ void game_state::prepare(std::string name,mission_options const &options){
   mission_name_=std::move(name);if(mission_name_.ends_with(".MSN")||mission_name_.ends_with(".msn"))mission_name_.resize(mission_name_.size()-4);
   auto const &s{crew()};
   auto const history{campaign_ && prepared_ ? prepared_->counters : s.counters};
-  prepared_=prepare_mission(resources.read("zones","msn/"+mission_name_+".msn"),campaign_?1:0,s.node,s.step,options,history,random);
+  prepared_=prepare_mission(resources.read("zones","msn/"+mission_name_+".msn"),campaign_?1:0,s.node,s.step,options,history,random,resources.edition(),campaign_?career_->career.mode:single_battle_set_,campaign_?career_->career.active:1);
   text_=read_mission_text(resources.read("zones","msn/"+mission_name_+".eng"));
-  if(!campaign_)single_=generate_single_crew(resources,prepared_->compiled.script,random);
+  if(!campaign_)single_=generate_single_crew(resources,prepared_->compiled.script,random,single_battle_set_);
   // A saved career may temporarily have no player HERC. The service bay must
   // remain usable so its original warning and crew screen can resolve this.
   auto const pilot{crew().selected_crew};
@@ -111,7 +112,7 @@ void game_state::complete(mission_results const &result,mission_counters const &
   returned_.alive=s.crew.at(static_cast<size_t>(s.selected_crew)).health>0;
   if(auto player{h.find(s.crew[0].hangar_slot)})returned_.condition=herc_average_condition(*player);
   for(size_t i{};i<old_technology.size();++i)returned_.technology|=!old_technology[i].available&&s.technology.entries[i].available;
-  auto const table{read_campaign_table(resources.read("zones","bst/btlset_"+std::to_string(c.mode)+".dat"))};
+  auto const table{read_campaign_table(resources.read("zones","bst/btlset_"+std::to_string(c.mode)+".dat"),resources.edition()==game_edition::expansion&&c.mode!=0)};
   auto next_node{s.node},next_step{s.step};
   if(table.advance(next_node,next_step,campaign_failure_branch(last_kind_,last_grade_)))returned_.continuation=next_node;
 

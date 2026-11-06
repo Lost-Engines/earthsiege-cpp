@@ -1,19 +1,20 @@
 #include "armament.h"
+#include "resources/shell_hercs.h"
 #include <algorithm>
 namespace earthsiege {
 armament_catalog::armament_catalog(resource_store const &resources) {
-  constexpr std::array names{"road","guns","rapt","toma","patr","pant","herc","colo"};
-  for(size_t i{};i<names.size();++i){
-    auto const data{resources.read("shell0","cfg/"+std::string{names[i]}+".dat")};
+  auto const hercs{read_shell_hercs(resources)};chassis_.resize(hercs.size());hotspots_.resize(hercs.size());
+  for(size_t i{};i<hercs.size();++i){
+    auto const data{resources.read("shell0",hercs[i].loadout_diagram)};
     binary_reader file{data,"shell weapon mounts"};auto const n{file.integer<uint16_t>()};
     if(n>10)file.fail("invalid mount count");
     for(unsigned mount{};mount<n;++mount){
-      auto const count{file.integer<uint16_t>()};if(count==0||count>18)file.fail("invalid mount choices");
+      auto const count{file.integer<uint16_t>()};if(count==0||count>22)file.fail("invalid mount choices");
       std::vector<mount_artwork> choices;
       for(unsigned j{};j<count;++j){
         mount_artwork a;a.image=file.integer<int16_t>();a.weapon=file.integer<int16_t>();
         a.hit_x=file.integer<int16_t>();a.hit_y=file.integer<int16_t>();a.draw_x=file.integer<int16_t>();a.draw_y=file.integer<int16_t>();
-        if(a.weapon<0||a.weapon>17||a.image<0)file.fail("invalid equipment reference");
+        if(a.weapon<0||static_cast<size_t>(a.weapon)>=std::max<size_t>(18,weapon_count(resources.edition()))||a.image<0)file.fail("invalid equipment reference");
         choices.push_back(a);
       }
       if(choices.front().weapon!=17)file.fail("mount must start with empty equipment");
@@ -22,7 +23,7 @@ armament_catalog::armament_catalog(resource_store const &resources) {
     file.require_end();
   }
   auto const data{resources.read("shell0","cfg/hotspot.dat")};binary_reader file{data,"hangar selection regions"};
-  if(file.integer<uint16_t>()!=8)file.fail("invalid hotspot chassis count");
+  if(file.integer<uint16_t>()!=hercs.size())file.fail("invalid hotspot chassis count");
   for(auto &list:hotspots_){
     auto const count{file.integer<uint16_t>()};if(count>10)file.fail("invalid hotspot count");
     for(unsigned j{};j<count;++j){
@@ -44,9 +45,9 @@ mount_artwork const *armament_catalog::find(int16_t chassis,int mount,int16_t we
 }
 std::vector<int16_t> armament_catalog::choices(player_herc const &herc,int mount,
   technology_state const &technology,armory const &inventory)const {
-  auto available{[&](int16_t w){return technology.entries.at(static_cast<size_t>(8+w)).available||!inventory.at(static_cast<size_t>(w)).empty();}};
+  auto available{[&](int16_t w){return static_cast<size_t>(w)<inventory.size()&&(technology.weapon_available(static_cast<size_t>(w))||!inventory.at(static_cast<size_t>(w)).empty());}};
   std::vector<int16_t> result;
-  if(mount<0){for(int16_t w{};w<17;++w)if(available(w))result.push_back(w);return result;}
+  if(mount<0){for(int16_t w{};static_cast<size_t>(w)<inventory.size();++w)if(w!=17&&available(w))result.push_back(w);return result;}
   result.push_back(17);auto const &list{mounts(herc.chassis).at(static_cast<size_t>(mount))};
   for(auto const &item:list)if(item.weapon!=17&&(available(item.weapon)||herc.weapons.at(static_cast<size_t>(mount))==item.weapon))result.push_back(item.weapon);
   return result;
