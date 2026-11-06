@@ -1,3 +1,4 @@
+#include "shell/demo_playback.h"
 #include "render/software_cursor.h"
 #include <algorithm>
 #include <charconv>
@@ -425,6 +426,35 @@ auto main(int argc, char *argv[])->int try {
     if(!running)break;
     update_devices_and_dialogs();
     if(menu.quit_requested())running=false;
+    if(menu.take_demo_request()) {
+      if(sound)sound->clear();
+      earthsiege::demo_playback playback{resources,1+static_cast<unsigned>(std::time(nullptr)%4),menu.settings(),save_directory,music_settings};
+      auto const present_demo{[&](unsigned milliseconds,earthsiege::framebuffer const &frame){
+        auto samples{playback.view().take_audio()};if(sound)sound->queue(samples);
+        // Retained pan frames belong to the same recorded update.
+        auto pans{playback.view().take_pan_frames()};
+        if(display){for(auto const &pan:pans)display->present(pan,playback.view().colours());display->present(frame,playback.view().colours());}
+        if(!display)return running;
+        auto last{ticks()};uint64_t remaining{milliseconds};
+        do {
+          earthsiege::window_event event{};
+          while(display->poll(event)){
+            if(event.type==earthsiege::event_type::close){running=false;return false;}
+            if(event.type==earthsiege::event_type::focus){focused=event.focused;if(sound)sound->pause(!focused);}
+            if(focused&&((event.type==earthsiege::event_type::key_down&&!event.repeat)||event.type==earthsiege::event_type::button_down))return false;
+          }
+          auto const now{ticks()};
+          if(focused)remaining-=std::min(remaining,now-last);
+          last=now;
+          if(remaining||!focused)sleep_milliseconds(8);
+        }while(remaining||!focused);
+        return true;
+      }};
+      while(running&&!playback.done())playback.step(present_demo);
+      if(sound){sound->clear();sound->pause(!focused);}
+      menu.demo_return();menu.cancel_press();previous=display?ticks():previous;pending=0;
+      if(!running)break;
+    }
     if(menu.ready_to_launch()) {
       inspect_demo.reset();scene=std::make_unique<earthsiege::mission_view>(resources,menu.launch(),music_settings);scene->configure_input(menu.settings(),menu.device_calibrations());scene->begin_startup();scene_dirty=!scene->starting();applied_preferences=menu.settings().current();pending=0;
       if(sound)sound->clear();

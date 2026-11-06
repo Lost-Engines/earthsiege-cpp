@@ -1470,4 +1470,12 @@ if(BUILD_TESTING)
   endif()
 endif()
 
+target_sources(earthsiege_core PRIVATE src/shell/demo_playback.cpp)
+if(BUILD_TESTING)
+  add_executable(options_demo_test tests/options_demo_test.cpp)
+  target_link_libraries(options_demo_test PRIVATE earthsiege_core)
+  add_test(NAME options_demo COMMAND options_demo_test ${PROJECT_SOURCE_DIR}/assets ${PROJECT_BINARY_DIR})
+  add_test(NAME expansion_options_demo COMMAND options_demo_test ${PROJECT_SOURCE_DIR}/assets/expansion ${PROJECT_BINARY_DIR})
+endif()
+
 include(cmake/install.cmake)

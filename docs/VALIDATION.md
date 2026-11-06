@@ -10,7 +10,7 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The expansion integration passes **294/294 tests**, including the original-game
+The last full expansion integration run passed **294/294 tests**, including the original-game
 regressions, GLFW window check and the locally enabled firmware/SoundFont test.
 Without optional hardware assets the suite has 293 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
 The earlier 263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
@@ -19,6 +19,36 @@ including the new physical-MIDI captures and real synthesis backends, also pass
 ASan/UBSan with leak checking after this audio update. The expansion adds eleven
 ASan/UBSan suites with leak checking: all four demos, shell, mission returns,
 deployment, landing craft, bullets, environments and input parsing. All pass.
+
+## Options menu playtesting
+
+The detail selector now follows GO's separate four-state preset. Initialization
+uses a horizon contribution of 63 or 191, rather than adding the Boolean horizon
+flag directly. Each click advances the retained preset and writes the original
+63/127/191/255 detail values. Cancel restores both the label and the values.
+
+View Demo now launches the recorded-input simulator from the shell. Playback
+owns recorded modal input as well as ordinary frames, and returns to the main
+menu without importing a demo result into a career. The expansion passes its
+selected battleset to the simulator. Live keypresses or clicks end playback.
+
+Two short `options_demo` regression tests cover both editions, the actual mouse
+button handlers, all presets, Cancel, persistence, demo startup and interruption.
+Full recording runs use `options_demo_test assets build full` and the equivalent
+`assets/expansion` command locally. The ordinary shell-flow test also passes.
+All four base recordings completed through this owner. Expansion demos 1-3
+also reached their recorded endings. Expansion demo 4 remains a known gameplay
+mismatch: with the same maximum-detail preferences, the unmodified DOS executable
+opens alert 13 at input poll 3836 and exits after poll 3954. The native simulation
+instead raises alert 6 after packet 1914; the new owner subsequently reaches a
+death alert and stops after packet 3815. The older replay harness also raises
+that unexpected alert 6, including when drawing every frame. This predates the
+menu wiring and is not evidence of a fully faithful expansion campaign. The
+optional full expansion run deliberately reports the incomplete recording.
+
+The GLFW window was checked locally against the original DOSBox preferences:
+Max displays correctly, all four presets cycle, a demo plays, and Escape returns
+to the main menu.
 
 ## Edition coverage
 

@@ -97,7 +97,8 @@ class game_shell {
   unsigned int options_owner{1000},last_screen{1000};
   int text_scroll{};
   std::vector<size_t> history_slots;
-  bool quitting{},launch_requested{};
+  bool quitting{},launch_requested{},demo_requested{};
+  int detail_level{},saved_detail_level{};
   void show(unsigned int id);
   void refresh_values();
   void save_career();
@@ -113,6 +114,8 @@ public:
   bool transition_active()const{return door_motion!=nullptr;}
   bool quit_requested()const{return quitting;}
   bool ready_to_launch()const{return launch_requested;}
+  bool take_demo_request();
+  void demo_return();
   preferences const &settings()const{return preferences_;}
   dialog const &current_dialog()const{return *menu;}
   game_state const &state()const{return game;}

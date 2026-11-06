@@ -8,6 +8,10 @@
 namespace earthsiege {
 namespace {
 mission_options options(preferences const &p){auto const &v{p.current()};return {v[12],v[13],v[14],v[15],v[16]};}
+int shell_detail(preferences const &p){
+ auto const &v{p.current()};
+ return ((v[3]?191:63)+v[4]+v[5]+v[6])/256; // GO 0x20630
+}
 unsigned region(unsigned screen){
   if(screen==1500||screen==1501)return 6000;
   if(screen==1510||screen==1520)return 5000;
@@ -17,7 +21,7 @@ unsigned region(unsigned screen){
 }
 game_shell::game_shell(resource_store const &r,std::filesystem::path root,int seed,music_settings const &music)
  :resources{r},saves{std::move(root),r.edition()},careers{saves.index()},preferences_{saves.load_preferences()},calibrations{load_host_calibrations(saves)},audio{r,music},game{r,seed},
- strings{r.read("shell0","eng/watext.bin"),r.edition()},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r},statistics_view{r}{if(r.edition()==game_edition::expansion){battle_set=1;saves.battle_set(1);careers=saves.index();audio.battle_set(1);}show(1000);}
+ strings{r.read("shell0","eng/watext.bin"),r.edition()},text_face{read_font(r.read("shell0","dfn/nm_green.dfn"))},prices{read_service_prices(r.read("shell0","cfg/damage.dat"))},build_view{r},armament{r},bay{r},crew_view{r},statistics_view{r}{if(r.edition()==game_edition::expansion){battle_set=1;saves.battle_set(1);careers=saves.index();audio.battle_set(1);}detail_level=shell_detail(preferences_);show(1000);}
 
 unsigned game_shell::visible_region()const{
  if(cinematic)return 0;
@@ -118,6 +122,7 @@ void game_shell::show(unsigned id){
   }else if((id==1500||id==1501)&&briefing)briefing->restore_view();
   if(id==1000){menu->enable(1700,!careers.entries.empty());std::vector<std::string> names;for(auto const &entry:careers.entries)names.push_back(entry.name);menu->items(1002,std::move(names),std::max(0,int(careers.selected)));}
   if(id==1100){std::vector<std::string> labels;for(size_t i{35};i<=41;++i)labels.push_back(strings.at(i));menu->items(1101,std::move(labels),single_kind);}
+  if(id==1310)saved_detail_level=detail_level;
   if(id==1110||id==1310){preferences_.commit(false);refresh_values();}
   if(id==1200){std::vector<std::string> names;for(auto const &e:careers.entries)names.push_back(e.name);menu->items(1202,std::move(names),std::max(0,int(careers.selected)));
     for(int action: {1201,1220,1230,1700})menu->enable(static_cast<uint16_t>(action),!careers.entries.empty());}
@@ -271,7 +276,7 @@ void game_shell::refresh_values(){
   auto const list{[&](uint16_t action,std::initializer_list<size_t> indices,int selected){std::vector<std::string> labels;for(auto i:indices)labels.push_back(strings.at(i));menu->items(action,std::move(labels),selected);}};
   auto const &v{preferences_.current()};
   if(screen()==1110){list(1116,{8,9},v[12]);list(1117,{10,11},v[13]);list(1118,{23,24,25,26},v[14]);list(1119,{12,4},v[15]);list(1120,{13,14,15},v[16]);}
-  if(screen()==1310){list(1314,{2,3},v[0]);list(1315,{2,3},v[1]);list(1318,{16,17,18},v[2]);list(1316,{4,5,6,7},(v[3]+v[4]+v[5]+v[6])/256);}
+  if(screen()==1310){list(1314,{2,3},v[0]);list(1315,{2,3},v[1]);list(1318,{16,17,18},v[2]);list(1316,{4,5,6,7},detail_level);}
 }
 void game_shell::save_career(){
   if(!game.campaign()||!game.has_career()||careers.selected<0)return;
@@ -320,12 +325,22 @@ void game_shell::next_mission(){
   start_speech(game.crew().step==0?5:1);
 }
 void game_shell::begin(){start_speech(6);save_career();}
+bool game_shell::take_demo_request(){
+ if(!demo_requested)return false;
+ if(resources.edition()==game_edition::expansion){preferences_.set(17,static_cast<uint8_t>(battle_set));preferences_.commit();saves.save_preferences(preferences_);}
+ demo_requested=false;audio.suspend();return true;
+}
+void game_shell::demo_return(){
+ preferences_=saves.load_preferences();detail_level=shell_detail(preferences_);
+ audio.resume();show(1000);
+}
 std::unique_ptr<mission_session> game_shell::launch(){
   if(!launch_requested)throw std::runtime_error{"no requested launch"};
   if(resources.edition()==game_edition::expansion){preferences_.set(17,static_cast<uint8_t>(battle_set));preferences_.commit();saves.save_preferences(preferences_);}
   launch_requested=false;audio.suspend();auto result{game.launch()};save_career();return result;
 }
 void game_shell::mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed){
+  detail_level=shell_detail(preferences_);
   game.resume_shell(return_seed,game.campaign()?std::optional{saves.load(careers.entries.at(static_cast<size_t>(careers.selected)))}:std::nullopt);
   briefing.reset();audio.resume();audio.clear_sample();bay_motion.reset();weapon_motion.reset();displayed_hangar.clear();preview_index=-2;
   game.complete(result,counters,[&]{
@@ -384,6 +399,7 @@ void game_shell::action_impl(uint16_t id){
       if(id==99||id==100){if(id==100){preferences_.commit(false);saves.save_preferences(preferences_);}else preferences_.cancel(false);show(1100);return;}
       return;
     case 1300:
+      if(id==1301){demo_requested=true;return;}
       if(id==1320){controls=std::make_unique<controls_dialog>(resources,preferences_,saves,calibrations);return;}
       if(id==1302){std::vector<std::pair<std::string,int>> credits{{"intro/credit_a.ttm",-1},{"intro/credit_b.ttm",-1}};if(resources.edition()==game_edition::expansion)credits.emplace_back("intro/credit_c.ttm",-1);start_movies(std::move(credits),1300);return;}
       if(id==100){show(options_owner);return;}
@@ -391,8 +407,8 @@ void game_shell::action_impl(uint16_t id){
     case 1310:
       if(id==1311||id==1312)preferences_.toggle(id==1311?0:1);
       else if(id==1317)preferences_.set(2,static_cast<uint8_t>((preferences_.current()[2]+1)%3));
-      else if(id==1313){auto const &v{preferences_.current()};int const detail{((v[3]+v[4]+v[5]+v[6])/256+1)%4};preferences_.set(3,detail?1:0);for(size_t i{4};i<=6;++i)preferences_.set(i,static_cast<uint8_t>(detail*64+63));}
-      else if(id==99||id==100){if(id==100){preferences_.commit();saves.save_preferences(preferences_);}else preferences_.cancel();show(1300);return;}
+      else if(id==1313){int const detail{detail_level=(detail_level+1)%4};preferences_.set(3,detail?1:0);for(size_t i{4};i<=6;++i)preferences_.set(i,static_cast<uint8_t>(detail*64+63));}
+      else if(id==99||id==100){if(id==100){preferences_.commit();saves.save_preferences(preferences_);}else{preferences_.cancel();detail_level=saved_detail_level;}show(1300);return;}
       refresh_values();return;
     case 1330:
       if(id==101||id==102){menu->select(1331,menu->selection(1331)+(id==101?-1:1));return;}
