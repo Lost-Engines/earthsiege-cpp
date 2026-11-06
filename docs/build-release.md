@@ -2,8 +2,11 @@
 
 The [Build and release workflow](https://github.com/Lost-Engines/earthsiege-cpp/actions/workflows/build.yml)
 builds Debug and Release configurations for Linux x86-64, Windows x86-64 and
-macOS Apple Silicon. All six jobs run the CTest suite against the bundled game
-resources and original-executable captures. No sibling research checkout or DOSBox
+macOS Apple Silicon. Debug jobs build and run the CTest suite against the bundled
+game resources and original-executable captures. Release jobs use
+`BUILD_TESTING=OFF` and build only the game and its runtime dependencies; test
+executables are neither compiled nor run. Publishing waits for all three Debug
+test jobs and all three Release builds. No sibling research checkout or DOSBox
 installation is needed. Tests requiring optional Roland ROMs and a SoundFont remain
 opt-in; CI does not download these assets.
 
@@ -13,7 +16,7 @@ assets, the executable, helper scripts, documentation and third-party notices.
 The checker also rejects bundled ROMs, SoundFonts and Git metadata. CI does not
 launch the packaged game or create a virtual display. Real-window tests are disabled
 in CI and remain available for local use.
-Test reports and both configurations' packages are retained as workflow artifacts
+Debug test reports and both configurations' packages are retained as workflow artifacts
 for seven days.
 
 ## Downloads
@@ -39,8 +42,9 @@ from the downloads. Third-party notices are included under `third_party`.
 ## Publication
 
 Code, dependency or bundled-data changes pushed to `master` publish a release only
-after all six build, test and package jobs succeed. Changes limited to documentation,
-tests, tools or the workflow still run CI, but do not automatically publish.
+after all six jobs succeed, including the Debug tests and package-content checks.
+Changes limited to documentation, tests, tools or the workflow still run CI, but
+do not automatically publish.
 
 To publish a tested packaging-only change, use **Actions > Build and release > Run
 workflow**, select `master` and enable **Publish release packages after all builds
@@ -61,10 +65,9 @@ packages needed to build GLFW on Linux.
 
 ```sh
 cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF \
+  -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF \
   -DCMAKE_DISABLE_FIND_PACKAGE_glfw3=ON -DEARTHSIEGE_STATIC_RUNTIME=ON
-cmake --build build-release --parallel 3
-ctest --test-dir build-release --output-on-failure --parallel 3 --timeout 600
+cmake --build build-release --target earthsiege --parallel 3
 cmake --install build-release --prefix "$PWD/build-release/package/earthsiege-cpp" --component Runtime
 cmake -DPACKAGE_ROOT="$PWD/build-release/package" -DOUTPUT_DIR="$PWD/build-release/dist" \
   -DPLATFORM=linux-x86_64 -P cmake/package.cmake

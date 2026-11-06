@@ -149,17 +149,27 @@ jobs:
       - name: Configure
         run: |
           extra=()
+          if [[ "${{ matrix.configuration }}" == Debug ]]; then
+            extra+=(-DEARTHSIEGE_TEST_WINDOW=OFF)
+          fi
           if [[ "$RUNNER_OS" == macOS ]]; then
             extra+=(-DCMAKE_OSX_ARCHITECTURES=arm64 "-DCMAKE_OBJC_COMPILER=$OBJC")
           fi
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} \
-            -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF -DEARTHSIEGE_STATIC_RUNTIME=ON \
-            -DCMAKE_DISABLE_FIND_PACKAGE_glfw3=ON -DEARTHSIEGE_TEST_WINDOW=OFF \
+            -DBUILD_TESTING=${{ matrix.configuration == 'Debug' && 'ON' || 'OFF' }} \
+            -DBUILD_SHARED_LIBS=OFF -DEARTHSIEGE_STATIC_RUNTIME=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_glfw3=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             "${extra[@]}"
       - name: Build
-        run: cmake --build build
+        run: |
+          if [[ "${{ matrix.configuration }}" == Release ]]; then
+            cmake --build build --target earthsiege
+          else
+            cmake --build build
+          fi
       - name: Test
+        if: matrix.configuration == 'Debug'
         run: ctest --test-dir build --output-on-failure --parallel 3 --timeout 600 --output-junit tests.xml
       - name: Package and check archive contents
         run: |
@@ -176,7 +186,7 @@ jobs:
           compression-level: 0
           retention-days: 7
       - name: Upload test report
-        if: always()
+        if: always() && matrix.configuration == 'Debug'
         uses: actions/upload-artifact@v7
         with:
           name: tests-${{ matrix.platform }}-${{ matrix.configuration }}
@@ -226,7 +236,7 @@ jobs:
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --draft --target "$GITHUB_SHA" \
               --title "Earthsiege C++ ${GITHUB_SHA:0:7}" \
-              --notes 'Automated Release builds for Linux x86-64, Windows x86-64 and macOS Apple Silicon. All six builds passed the original-game comparison tests and package-content checks. Original freeware game data is included; optional synthesiser ROMs and SoundFonts are supplied separately. See the repository README for setup.'
+              --notes 'Automated Release builds for Linux x86-64, Windows x86-64 and macOS Apple Silicon. Debug builds passed the regression tests on all three platforms; Release builds contain only the game and runtime dependencies. All packages passed file-content checks. Original freeware game data is included; optional synthesiser ROMs and SoundFonts are supplied separately. See the repository README for setup.'
           fi
           gh release upload "$tag" "${packages[@]}" dist/SHA256SUMS --clobber
           gh release edit "$tag" --draft=false --latest

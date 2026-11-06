@@ -55,8 +55,9 @@ covers host-device selection and the original axis/button/hat mappings.
 Configure with `-DEARTHSIEGE_TEST_WINDOW=ON` to add `platform_window`, which needs
 a desktop display. It exercises the actual GLFW callbacks, event ordering,
 Unicode text, focus, mouse coordinates and close events, then reads back the
-OpenGL presentation to check orientation and colour channels. Linux CI runs it
-under Xvfb/Mesa. The extracted-package checks also launch a real window there.
+OpenGL presentation to check orientation and colour channels. It is an opt-in
+local test; CI disables real-window checks. Package execution checks are also
+local-only, selected explicitly with `--run` or `--window`.
 
 The migration passed all 272 standard tests and the additional window check.
 A separate X11 keyboard check exercised music selection, saved preferences,
