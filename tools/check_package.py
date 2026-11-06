@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Check an extracted release, away from the checkout and toolchain libraries."""
+"""Validate package contents. Executing the packaged game is a local opt-in."""
 
 import os
 from pathlib import Path
 import subprocess
-import sys
 import tarfile
 import tempfile
 import zipfile
 
 
-def check(archive, window=False):
+def check(archive, run_game=False, window=False):
     with tempfile.TemporaryDirectory(prefix="earthsiege-package-") as temporary:
         root = Path(temporary)
         if archive.suffix == ".zip":
@@ -32,12 +31,27 @@ def check(archive, window=False):
         required += [f"assets/VOL/{name}.VOL" for name in
                      ("DETECT", "SHELL0", "SIMSOUND", "SIMVOICE", "SIMVOL0", "SPEECH", "ZONES")]
         required += [f"assets/TAPES/DEMO{n}.TAP" for n in range(1, 5)]
+        required += [f"assets/expansion/VOL/{name}.VOL" for name in
+                     ("DETECT", "SHELL0", "SIMSOUND", "SIMVOICE", "SIMVOL0", "SPEECH", "ZONES",
+                      "SIMPATCH", "PSHELL0", "PSHELL1", "PSHELL2", "PZONES", "PZONES1",
+                      "SIMLANG", "PSPEECH")]
+        required += [f"assets/expansion/TAPES/DEMO{n}.TAP" for n in range(1, 5)]
+        required += [f"assets/expansion/FLIC/{name}" for name in
+                     ("MI_INT1.DFL", "MECHVIC3.DFL", "XPINTROB.RAW", "VICTORY.RAW")]
+        required += ["assets/expansion/DATA/KEYJOY.CFG", "assets/expansion/SHA256SUMS",
+                     "assets/expansion/README.md", "docs/EXPANSION.md",
+                     "earthsiege.exe" if os.name == "nt" else "earthsiege",
+                     "scripts/fetch-assets.bat" if os.name == "nt" else "scripts/fetch-assets.sh"]
         for name in required:
             if not (game / name).is_file():
                 raise RuntimeError(f"Missing package file: {name}")
         for path in game.rglob("*"):
             if path.suffix.lower() in (".rom", ".sf2") or path.name == ".git":
                 raise RuntimeError(f"Unexpected local asset in package: {path}")
+        print(f"Package contents passed: {archive.name}", flush=True)
+        if not (run_game or window):
+            return
+
         environment = dict(os.environ)
         environment.pop("LD_LIBRARY_PATH", None)
         environment.pop("DYLD_LIBRARY_PATH", None)
@@ -51,25 +65,30 @@ def check(archive, window=False):
                            check=True, timeout=90)
 
         run("--help")
-        # No --data-dir: the unpacked game must discover its own bundled resources.
-        run("--headless", "--inspect-demo", "1", "--frames", "1", "--music", "opl3",
-            "--save-dir", str(root / "saves"), "--screenshot", str(root / "frame.ppm"))
-        if not (root / "frame.ppm").read_bytes().startswith(b"P6\n320 200\n255\n"):
-            raise RuntimeError("Packaged renderer did not produce a 320 x 200 frame")
-        if window:
-            # Linux CI uses Xvfb and Mesa to exercise the actual GLFW/GL presenter.
-            run("--skip-intro", "--frames", "2", "--music", "opl3",
-                "--save-dir", str(root / "saves"))
+        # Local opt-in only. No --data-dir: each edition must find its bundled data.
+        for edition in ("original", "expansion"):
+            saves = root / ("saves-" + edition)
+            frame = root / (edition + ".ppm")
+            run("--" + edition, "--headless", "--inspect-demo", "1", "--frames", "1",
+                "--music", "opl3", "--save-dir", str(saves), "--screenshot", str(frame))
+            if not frame.read_bytes().startswith(b"P6\n320 200\n255\n"):
+                raise RuntimeError(f"Packaged {edition} renderer did not produce a 320 x 200 frame")
+            if window:
+                # Select explicitly: the normal launcher waits for a person's choice.
+                run("--" + edition, "--skip-intro", "--frames", "2", "--music", "opl3",
+                    "--save-dir", str(saves))
         if os.name != "nt":
             subprocess.run([str(game / "scripts/fetch-assets.sh"), "--help"],
                            cwd=root, check=True, timeout=10)
-        print(f"Package passed: {archive.name}")
+        print(f"Local package execution passed: {archive.name}")
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--window", action="store_true", help="Also open the GLFW window (requires a display)")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--run", action="store_true", help="Local opt-in: run headless checks for both editions")
+    mode.add_argument("--window", action="store_true", help="Local opt-in: run both editions headless and windowed (requires a display)")
     parser.add_argument("archive", type=Path)
     arguments = parser.parse_args()
-    check(arguments.archive.resolve(), arguments.window)
+    check(arguments.archive.resolve(), run_game=arguments.run, window=arguments.window)

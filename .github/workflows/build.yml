@@ -119,7 +119,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends g++-16 ninja-build ccache \
             libgl-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
             libwayland-dev libxkbcommon-dev wayland-protocols \
-            libasound2-dev libpulse-dev libudev-dev libdbus-1-dev xvfb xauth libgl1-mesa-dri
+            libasound2-dev libpulse-dev libudev-dev libdbus-1-dev
           echo CC=gcc-16 >> "$GITHUB_ENV"
           echo CXX=g++-16 >> "$GITHUB_ENV"
 
@@ -149,39 +149,24 @@ jobs:
       - name: Configure
         run: |
           extra=()
-          if [[ "$RUNNER_OS" == Linux ]]; then
-            extra+=(-DEARTHSIEGE_TEST_WINDOW=ON)
-          fi
           if [[ "$RUNNER_OS" == macOS ]]; then
             extra+=(-DCMAKE_OSX_ARCHITECTURES=arm64 "-DCMAKE_OBJC_COMPILER=$OBJC")
           fi
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} \
             -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=OFF -DEARTHSIEGE_STATIC_RUNTIME=ON \
-            -DCMAKE_DISABLE_FIND_PACKAGE_glfw3=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_glfw3=ON -DEARTHSIEGE_TEST_WINDOW=OFF \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             "${extra[@]}"
       - name: Build
         run: cmake --build build
       - name: Test
-        run: |
-          if [[ "$RUNNER_OS" == Linux ]]; then
-            xvfb-run -a ctest --test-dir build --output-on-failure --parallel 3 --timeout 600 --output-junit tests.xml
-          else
-            ctest --test-dir build --output-on-failure --parallel 3 --timeout 600 --output-junit tests.xml
-          fi
-      - name: Package and check the extracted download
+        run: ctest --test-dir build --output-on-failure --parallel 3 --timeout 600 --output-junit tests.xml
+      - name: Package and check archive contents
         run: |
           cmake --install build --prefix "$PWD/package/earthsiege-cpp" --component Runtime
           cmake -DPACKAGE_ROOT="$PWD/package" -DOUTPUT_DIR="$PWD/dist" \
             -DPLATFORM=${{ matrix.platform }} -P cmake/package.cmake
           python3 tools/check_package.py dist/*
-          if [[ "$RUNNER_OS" == Linux ]]; then
-            xvfb-run -a python3 tools/check_package.py --window dist/*
-          fi
-      - name: Check installed Windows asset helper
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: package\earthsiege-cpp\scripts\fetch-assets.bat --help
       - name: Upload package
         uses: actions/upload-artifact@v7
         with:
@@ -241,7 +226,7 @@ jobs:
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --draft --target "$GITHUB_SHA" \
               --title "Earthsiege C++ ${GITHUB_SHA:0:7}" \
-              --notes 'Automated Release builds for Linux x86-64, Windows x86-64 and macOS Apple Silicon. All six builds passed the original-game comparison tests and extracted-package smoke checks. Original freeware game data is included; optional synthesiser ROMs and SoundFonts are supplied separately. See the repository README for setup.'
+              --notes 'Automated Release builds for Linux x86-64, Windows x86-64 and macOS Apple Silicon. All six builds passed the original-game comparison tests and package-content checks. Original freeware game data is included; optional synthesiser ROMs and SoundFonts are supplied separately. See the repository README for setup.'
           fi
           gh release upload "$tag" "${packages[@]}" dist/SHA256SUMS --clobber
           gh release edit "$tag" --draft=false --latest

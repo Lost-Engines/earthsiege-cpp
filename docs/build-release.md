@@ -8,10 +8,11 @@ installation is needed. Tests requiring optional Roland ROMs and a SoundFont rem
 opt-in; CI does not download these assets.
 
 Each job installs the Runtime component, creates an archive, extracts it into a
-temporary directory and launches it there. The checks cover automatic data discovery,
-a headless mission frame and the ROM helper's help output. Linux also exercises
-a real GLFW window under Xvfb/Mesa, including framebuffer readback and input
-callbacks. Windows checks run without MinGW on the executable search path.
+temporary directory and checks its contents. Required files include both editions'
+assets, the executable, helper scripts, documentation and third-party notices.
+The checker also rejects bundled ROMs, SoundFonts and Git metadata. CI does not
+launch the packaged game or create a virtual display. Real-window tests are disabled
+in CI and remain available for local use.
 Test reports and both configurations' packages are retained as workflow artifacts
 for seven days.
 
@@ -75,3 +76,21 @@ The package checker requires Python 3.12 or newer. Ordinary development builds
 use a system GLFW 3.4 when available; otherwise CMake builds the pinned version.
 Dependencies are pinned and hash-checked; [THIRD_PARTY.md](../THIRD_PARTY.md)
 describes offline source overrides.
+
+
+## Optional local package execution
+
+The default package check only inspects files. On a local machine, `--run` also
+launches headless checks for both editions, and `--window` additionally opens each
+edition's shell. Both select the edition explicitly so the launcher cannot wait
+for a game selection. These options are not used in Actions.
+
+```sh
+python3 tools/check_package.py --run build-release/dist/earthsiege-cpp-linux-x86_64.tar.gz
+python3 tools/check_package.py --window build-release/dist/earthsiege-cpp-linux-x86_64.tar.gz
+```
+
+Local execution checks use temporary saves and discover data beside the extracted
+executable. They remove toolchain library search overrides; Windows also excludes
+MinGW from PATH. The separate GLFW input/framebuffer test can be enabled locally
+with `-DEARTHSIEGE_TEST_WINDOW=ON` and run with `ctest -R '^platform_window$'`.
