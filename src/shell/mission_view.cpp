@@ -59,9 +59,9 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   // The shipped file is an external input policy, separate from PREFS.CFG.
   for(auto const &path:{resources.root()/"DATA"/"KEYJOY.CFG",resources.root()/"data"/"keyjoy.cfg"}){
     if(!std::filesystem::exists(path))continue;
-    auto raw{read_file(path)};auto options{read_keyjoy(std::string_view{reinterpret_cast<char const *>(raw.data()),raw.size()})};
+    auto raw{read_file(path)};auto options{read_keyjoy(std::string_view{reinterpret_cast<char const *>(raw.data()),raw.size()},resources.edition())};
     if(options.invalid_token)throw std::runtime_error{"Unrecognized KEYJOY.CFG token in "+path.string()};
-    routing.tilt_reverse=options.tilt_reverse;routing.backturn_reverse=options.backturn_reverse;routing.missile_reverse=options.missile_reverse;break;
+    routing.tilt_reverse=options.tilt_reverse;routing.backturn_reverse=options.backturn_reverse;routing.missile_reverse=options.missile_reverse;routing.pedals_reverse=options.pedals_reverse;break;
   }
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()), resources.edition());
   update_camera(camera, session->view_target());
@@ -134,6 +134,7 @@ std::array<int32_t,2> mission_view::instrument_origin()const{
 
 void mission_view::apply_preferences(preferences const &prefs){
   auto const &p{prefs.current()};
+  audio.battle_set(p.size()>17&&p[17]!=0);
   if(audio.preferences(p[0]!=0,p[1]!=0,p[2]!=0))audio.update_music(session->music_observations(),ui_random);
   radio->captions(p[2]!=1);
   environment_detail(p[3]!=0,p[4],p[5]);
@@ -388,6 +389,14 @@ void mission_view::update_interface_clock(uint32_t now){
   interface_ticks=now;
 }
 bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bool suppress_camera,mission_dialog_handlers const &dialogs){
+  // Expansion 51f84 executes the secondary command queue before simulation.
+  // The primary packet command is handled later by 60450, after actor updates.
+  for(auto code:record.commands){
+    player_input queued;queued.command=code;
+    if(!dispatch_command(queued,dialogs))return false;
+    if(queued.command)session->player_command(queued.command);
+  }
+
   for(auto const &event:record.mouse){
     player_input mouse;mouse.mouse=event.position;mouse.left=(event.kind&1)!=0;mouse.right=(event.kind&2)!=0;
     pointer_events.push_back({mouse,event.timestamp});
@@ -397,14 +406,14 @@ bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bo
   auto const packet{route_tape_frame(routing,record,suppress_camera,device_throttle)};
   player_input input;
   input.command=record.command;
+  input.cycle_weapon=bool(record.extended_buttons&1);input.toggle_radar=bool(record.extended_buttons&2);
   input.movement={packet.axes[0],packet.axes[1]};input.aiming={packet.axes[2],packet.axes[3]};
   input.camera_source=packet.aiming_camera?player_axis_pair::aiming:player_axis_pair::movement;
   input.fire=packet.buttons[0];input.enter=packet.buttons[2];input.released=packet.buttons[3];
   input.release_action=static_cast<control_release_action>(routing.mode);
   return step_input(input,packet.hat,static_cast<frame_ratio>(record.delta),routing.external,dialogs);
 }
-bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,mission_dialog_handlers const &dialogs){
-  auto dispatch=[&](player_input &input){
+bool mission_view::dispatch_command(player_input &input,mission_dialog_handlers const &dialogs){
   if(input.command && dialogs.command){
     switch(dialogs.command(input.command)){
       case mission_command_result::exit_mission:return false;
@@ -429,9 +438,12 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
     else if(displays->command(input.command,*session,instruments))input.command=0;
   }
   flush_interface_audio();
-  hat_view(hat);
-  input.release_action=static_cast<control_release_action>(routing.mode);
   return true;
+}
+bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,mission_dialog_handlers const &dialogs){
+  auto dispatch=[&](player_input &input){
+    if(!dispatch_command(input,dialogs))return false;
+    hat_view(hat);input.release_action=static_cast<control_release_action>(routing.mode);return true;
   };
   auto const result{session->step_player(initial_input, ratio, control, cockpit.layout.bounds(0x450),dispatch,[&](auto const &actions){
     steer_camera(camera,actions.zoom,actions.camera.y,actions.camera.x);

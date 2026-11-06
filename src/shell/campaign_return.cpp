@@ -63,7 +63,11 @@ campaign_debrief return_from_single_mission(career_state &state,hangar &roster,m
 campaign_debrief return_from_mission(career_record &career,hangar &roster,mission_results const &result,
   std::array<int16_t,100> const &counters,service_prices const &prices,random_state &random) {
   auto &state{career.states[0]};auto &inventory{career.inventories[0]};campaign_debrief debrief;
-  for(auto [weapon,condition]:result.salvage)push(inventory,weapon,condition);
+  for(auto [weapon,condition]:result.salvage){
+    // Expansion GO 27138 excludes the three Cybrid-only weapon types.
+    if(career.edition==game_edition::expansion&&weapon>=14&&weapon<=16)continue;
+    push(inventory,weapon,career.edition==game_edition::expansion?100:condition);
+  }
   size_t returned{};
   for(auto &c:state.crew)if(c.active&&c.hangar_slot!=-1){
     if(returned>=result.crew.size())throw std::runtime_error{"mission return lacks an active crew member"};

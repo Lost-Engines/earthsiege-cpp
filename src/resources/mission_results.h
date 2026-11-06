@@ -1,4 +1,5 @@
 #pragma once
+#include "resources/edition.h"
 #include "resources/player_roster.h"
 #include <utility>
 namespace earthsiege {
@@ -9,6 +10,6 @@ struct mission_results {
   std::vector<std::pair<int16_t,int16_t>> salvage;
   std::vector<returned_herc> crew;
 };
-mission_results read_mission_results(bytes source);
+mission_results read_mission_results(bytes source,game_edition edition=game_edition::original);
 std::vector<uint8_t> write_mission_results(mission_results const &results);
 } // namespace earthsiege

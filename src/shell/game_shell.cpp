@@ -322,6 +322,7 @@ void game_shell::next_mission(){
 void game_shell::begin(){start_speech(6);save_career();}
 std::unique_ptr<mission_session> game_shell::launch(){
   if(!launch_requested)throw std::runtime_error{"no requested launch"};
+  if(resources.edition()==game_edition::expansion){preferences_.set(17,static_cast<uint8_t>(battle_set));preferences_.commit();saves.save_preferences(preferences_);}
   launch_requested=false;audio.suspend();auto result{game.launch()};save_career();return result;
 }
 void game_shell::mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed){

@@ -10,21 +10,25 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The GLFW/miniaudio migration passes **273/273 tests**: 272 standard tests
-and the additional real-window check. Firmware/SoundFont synthesis has a separate
-opt-in test. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
+The expansion integration passes **294/294 tests**, including the original-game
+regressions, GLFW window check and the locally enabled firmware/SoundFont test.
+Without optional hardware assets the suite has 293 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
 The earlier 263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
 affected movement/world suites passed both sanitizers. The six audio suites,
 including the new physical-MIDI captures and real synthesis backends, also pass
-ASan/UBSan with leak checking after this audio update.
+ASan/UBSan with leak checking after this audio update. The expansion adds eleven
+ASan/UBSan suites with leak checking: all four demos, shell, mission returns,
+deployment, landing craft, bullets, environments and input parsing. All pass.
 
 ## Edition coverage
 
 The comparisons below concern the original October 1994 version 1.0 build.
 The supplied 1996 base reissue contains the same game files. The March 1995
 expansion has separate [integration checks](EXPANSION.md), including original
-mission launches, technology, careers, transfer, weapons and CD films. Its new
-combat behaviours and complete demo replays remain under validation.
+mission launches, technology, careers, transfer, returns, weapons, landing craft,
+deployment, input, 432 complete environment frames and CD films. All four
+expansion demos run through. Full original replay-state comparisons and complete
+expansion campaign playthroughs remain follow-up validation.
 
 ## Independent original comparisons
 

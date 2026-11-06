@@ -9,6 +9,8 @@
 #include "simulation/model_math.h"
 
 namespace earthsiege {
+void ground_actor::deploy(vec3<int32_t> const &position,vec3<uint16_t> const &angles){original_angles=angles;transform=rotation_transform(angles);transform.translation=position;}
+
 namespace {
 
 std::variant<model_instance, animation_rig> make_body(ground_catalogue const &catalogue, size_t const type, uint8_t const side) {

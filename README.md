@@ -11,7 +11,7 @@ and the publication process.
 
 A native C++26 reconstruction of **Metaltech: Earthsiege**, using the original 1994 version 1.0 resources. Single missions and careers are implemented from registration and briefing through combat, debrief, repair and progression, with the original cinematics, music, effects and speech.
 
-The March 1995 expansion is being integrated alongside the original game. The launcher offers a choice of editions; `--original` and `--expansion` start either directly. Expansion menus, Battleset 2 launches, careers, transfer, equipment and CD cinematics are connected. New-unit combat and complete expansion demo replay validation are still in progress. See [expansion integration](docs/EXPANSION.md) for the current evidence and remaining work. The 1996 base-game reissue has unchanged 1.0 game files.
+The March 1995 CD expansion is included alongside the original game. The launcher offers a choice of editions; `--original` and `--expansion` start either directly. Both battlesets, career transfer, Apocalypse, the new enemies and weapons, deployment pods, environments, music and CD cinematics are connected. All four expansion demos run through. [Expansion integration](docs/EXPANSION.md) describes the original-code comparisons and the limits of that coverage. The 1996 base-game reissue has unchanged 1.0 game files.
 
 The build is ready for comparison playtesting. All 272 standard tests pass, along with the optional Linux window check, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
 

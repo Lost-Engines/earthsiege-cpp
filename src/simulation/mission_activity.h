@@ -82,7 +82,7 @@ public:
   void activate(size_t index);
   void notify_destroyed(size_t index, std::span<observed_actor const> observations, bool group_assigned = true);
   target_objective objective(size_t index) const;
-  void dispatch_groups(std::function<void(size_t)> const &dispatch);
+  void dispatch_groups(std::function<void(size_t)> const &dispatch,std::function<bool(size_t)> const &activate_group = {});
   void scan_areas(std::span<observed_actor const> observations);
   void perceive(std::span<observed_actor const> observations, frame_ratio ratio, random_state &random, std::function<bool(size_t,size_t)> const &line_of_sight, std::function<void(size_t,size_t)> const &noticed = {});
   void share_contact(size_t observer, size_t target, std::span<observed_actor const> observations);

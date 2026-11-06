@@ -124,7 +124,7 @@ briefing_map::briefing_map(resource_store const &resources,mission_script const 
  if(script.header.zone>=0){
   terrain=read_model(resources.read("shell0","dgs/"+std::string{std::array{"TEMPER","ICE","DESERT","URBAN","WASTE","RUINS"}.at(static_cast<size_t>(script.header.terrain))}+".DGS"));
   auto const path{"dat/ZONE"+std::to_string(script.header.zone)+".DAT"};
-  auto const volume{resources.archives().at("zones").find(path)?"zones":"simvol0"};
+  auto const volume{resources.contains("zones",path)?"zones":"simvol0"};
   auto zone{read_zone(resources.read(volume,path))};
   for(auto const &object:zone.placements){
    auto const &shape{std::get<shape_part>(terrain.roots.at(object.shape).content)};

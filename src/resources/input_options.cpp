@@ -2,7 +2,7 @@
 #include <cctype>
 #include <string>
 namespace earthsiege {
-keyjoy_options read_keyjoy(std::string_view text){
+keyjoy_options read_keyjoy(std::string_view text,game_edition edition){
  keyjoy_options result;int selected{};bool assignment{};size_t cursor{};
  while(cursor<text.size()){
   while(cursor<text.size()&&std::isspace(static_cast<unsigned char>(text[cursor])))++cursor;
@@ -15,12 +15,14 @@ keyjoy_options read_keyjoy(std::string_view text){
   else if(token=="TILT")selected=1;
   else if(token=="BACKTURN")selected=2;
   else if(token=="MISSILE")selected=3;
+  else if(token=="PEDALS"&&edition==game_edition::expansion)selected=4;
   else if(token=="DEFAULT"||token=="REVERSE"){
    if(!assignment)break;
    if(token=="REVERSE"){
     if(selected==1)result.tilt_reverse=true;
     else if(selected==2)result.backturn_reverse=true;
     else if(selected==3)result.missile_reverse=true;
+    else if(selected==4)result.pedals_reverse=true;
     else break;
    }
    assignment=false;

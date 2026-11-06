@@ -111,7 +111,7 @@ void cockpit_radio::advance_queue(mission_session &session,uint32_t ticks){
       auto const index{speaker_index(message.event.speaker)};
       if(!index){controller.ready();return;}
       auto &p{members[*index]};auto const filename{std::format("snc/P{}_{:02}{:03}.SNC",static_cast<char>('A'+p.pilot),message.event.id,message.flags)};
-      if(!resources.archives().at("simvol0").find(filename)){controller.ready();controller.cancel();return;}
+      if(!resources.contains("simvol0",filename)){controller.ready();controller.cancel();return;}
       auto timeline{read_portrait_sync(resources.read("simvol0",filename))};
       auto const begin{read_input(radio_input_point::transmission,ticks)};
       if(p.transmission)p.transmission->begin(static_cast<uint8_t>(message.event.id),std::move(timeline),begin);

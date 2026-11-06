@@ -18,6 +18,8 @@ class resource_store {
 public:
   explicit resource_store(std::filesystem::path const &root);
   auto read(std::string_view volume, std::string_view name) const->bytes;
+  auto try_read(std::string_view volume, std::string_view name) const->std::optional<bytes>;
+  bool contains(std::string_view volume, std::string_view name) const;
   auto read_original(std::string_view volume, std::string_view name) const->bytes;
   std::optional<std::filesystem::path> external(std::string_view name) const;
   game_edition edition() const { return edition_; }

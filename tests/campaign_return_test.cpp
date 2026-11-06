@@ -18,16 +18,20 @@ static random_state::state rng(binary_reader &f){random_state::state s;for(auto 
 int main(int argc,char **argv)try {
   if(argc!=3)return 1;
   resource_store resources{argv[1]};auto const data{read_file(argv[2])};binary_reader file{data};auto const magic{file.take(8)};
-  require(std::string(magic.begin(),magic.end())=="ESRET001","fixture version");auto const count{file.integer<uint32_t>()};
+  require(std::string(magic.begin(),magic.end())==(resources.edition()==game_edition::expansion?"ESEXRET1":"ESRET001"),"fixture version");auto const count{file.integer<uint32_t>()};
   auto const prices{read_service_prices(resources.read("shell0","cfg/damage.dat"))};
   for(unsigned i{};i<count;++i){
     auto const initial_career{blob(file)},initial_hangar{blob(file)},result_data{blob(file)},saved{blob(file)},hangar_after{blob(file)};
     std::array<int16_t,100> counters{};for(auto &v:counters)v=file.integer<int16_t>();random_state random{rng(file)};auto const expected_rng{rng(file)};
     auto const deaths{file.integer<int16_t>()};std::array<int16_t,3> totals{};for(auto &v:totals)v=file.integer<int16_t>();
-    auto career{read_career(initial_career)};binary_reader hangars{initial_hangar};std::array<hangar,41> history;
-    for(auto &h:history)h=read_hangar(hangars);
-    hangars.require_end();auto const results{read_mission_results(result_data)};compare(write_mission_results(results),result_data,i,"result serializer");
+    auto career{read_career(initial_career,resources.edition())};binary_reader hangars{initial_hangar};std::array<hangar,41> history;
+    for(auto &h:history)h=read_hangar(hangars,resources.edition());
+    hangars.require_end();auto const results{read_mission_results(result_data,resources.edition())};compare(write_mission_results(results),result_data,i,"result serializer");
     auto const debrief{return_from_mission(career,history[0],results,counters,prices,random)};
+    if(!std::ranges::equal(write_career(career),saved)){
+      auto expected{read_career(saved,resources.edition())};std::cerr<<"budgets "<<career.states[0].budget<<"/"<<expected.states[0].budget<<'\n';
+      for(size_t w{};w<career.inventories[0].size();++w){auto a{career.inventories[0][w]},b{expected.inventories[0][w]};std::ranges::reverse(b);if(a!=b){std::cerr<<"weapon "<<w<<" actual";for(auto v:a)std::cerr<<' '<<v;std::cerr<<" expected";for(auto v:b)std::cerr<<' '<<v;std::cerr<<'\n';}}
+    }
     compare(write_career(career),saved,i,"career");binary_writer encoded;for(auto const &h:history)encoded.append(write_hangar(h));compare(std::move(encoded).finish(),hangar_after,i,"hangar");
     require(debrief.deaths==deaths&&debrief.statistics==totals,"native debrief statistics mismatch");
     auto const &state{random.snapshot()};require(state.words==expected_rng.words&&state.first==expected_rng.first&&state.second==expected_rng.second,"native replacement RNG mismatch");

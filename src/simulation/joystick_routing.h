@@ -3,7 +3,7 @@
 namespace earthsiege {
 struct device_routing_options {
  uint8_t model{},mode{};
- bool pedals{},wcs{},external{},missile{},tilt_reverse{},backturn_reverse{},missile_reverse{},switch_held{};
+ bool pedals{},wcs{},external{},missile{},tilt_reverse{},backturn_reverse{},missile_reverse{},switch_held{},pedals_reverse{};
 };
 struct device_input_sample {
  std::array<int16_t,4> axes{};

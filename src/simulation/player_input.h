@@ -16,6 +16,7 @@ struct player_input {
   bool fire{false};
   bool enter{false};
   bool released{false};
+  bool cycle_weapon{false},toggle_radar{false};
   uint16_t command{0};                                                    // original scan code and modifier bits
   player_axis_pair camera_source{player_axis_pair::separate};               // original pointers can alias movement or aiming
   control_release_action release_action{control_release_action::none};

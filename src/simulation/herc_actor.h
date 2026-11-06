@@ -39,6 +39,7 @@ public:
   herc_actor &operator=(herc_actor const &) = delete;
   herc_actor &operator=(herc_actor &&) = delete;
   herc_body const &body() const;
+  void deploy(vec3<int32_t> const &position,vec3<uint16_t> const &angles){body_state.place(position,angles);}
   std::vector<uint16_t> footstep_sounds();
   auto &ground_attachments(){return body_state.ground_attachments();}
   herc_profile const &profile() const;

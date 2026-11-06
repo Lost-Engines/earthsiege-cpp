@@ -44,6 +44,10 @@ resource_store::resource_store(std::filesystem::path const &root) : root_path{ro
 }
 
 auto resource_store::read(std::string_view volume, std::string_view name) const->bytes {
+  if(auto result{try_read(volume,name)})return std::move(*result);
+  throw std::runtime_error{"resource not found: " + std::string{volume} + ":" + std::string{name}};
+}
+auto resource_store::try_read(std::string_view volume, std::string_view name) const->std::optional<bytes> {
   auto const found{volumes.find(normalise_path(volume))};
   if(found == volumes.end()) throw std::runtime_error{"unknown game volume: " + std::string{volume}};
   if(edition_ == game_edition::expansion) {
@@ -52,7 +56,15 @@ auto resource_store::read(std::string_view volume, std::string_view name) const-
       if(auto const *entry{candidate->find(name)}) return candidate->read(*entry);
     }
   }
-  return read_original(volume, name);
+  if(auto const *entry{found->second.find(name)})return found->second.read(*entry);
+  return {};
+}
+bool resource_store::contains(std::string_view volume,std::string_view name)const {
+  auto const found{volumes.find(normalise_path(volume))};
+  if(found==volumes.end())return false;
+  if(edition_==game_edition::expansion)for(auto const *candidate:overrides)
+    if((candidate->usage_mask()&found->second.usage_mask())&&candidate->find(name))return true;
+  return found->second.find(name)!=nullptr;
 }
 
 auto resource_store::read_original(std::string_view volume, std::string_view name) const->bytes {

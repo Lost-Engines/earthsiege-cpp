@@ -21,7 +21,7 @@ zone_resource read_zone(bytes const source) {
 
 world_environment read_world_environment(bytes const source, game_edition const edition) {
   binary_reader file{source, "world environment"};
-  world_environment result;
+  world_environment result;result.edition=edition;
   result.background = background_style{
     .horizon_band_width{file.integer<int16_t>()},
     .sky_palette_start{file.integer<int16_t>()},

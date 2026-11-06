@@ -4,6 +4,7 @@
 #include "render/scenery_renderer.h"
 #include "resources/model.h"
 #include "simulation/effect_state.h"
+#include "simulation/deployment.h"
 #include "simulation/model_instance.h"
 #include "simulation/object_pool.h"
 
@@ -43,6 +44,11 @@ struct live_smoke_emitter {
   std::function<vec3<int32_t>()> attachment;
 };
 
+struct live_deployment {
+  deployment_state state;size_t group;model_instance body,opening;
+  live_deployment(deployment_state s,size_t g,shape_part const &a,shape_part const &b):state{s},group{g},body{a},opening{b}{}
+};
+
 /// Own live effect geometry and state; phase-five collection remains explicit.
 /// Attachments resolve their owner at emission time, before actor movement.
 class world_effects {
@@ -51,6 +57,10 @@ class world_effects {
   std::vector<debris_definition> debris_definitions;
   model_resource explosion_models;
   model_resource debris_models;
+  model_resource deployment_models;
+  std::vector<bitmap> deployment_textures;
+  object_pool<live_deployment> deployments{10};
+  std::vector<vec3<int32_t>> craters;
   model_resource flat_models;
   std::vector<model_instance> flat_instances;
   model_resource smoke_models;
@@ -58,7 +68,7 @@ class world_effects {
   std::vector<bitmap> smoke_textures;
   std::vector<bitmap> weapon_textures;
   std::vector<bitmap> flat_textures;
-  std::array<std::vector<bitmap>, 9> explosion_textures;
+  std::vector<std::vector<bitmap>> explosion_textures;
   effect_lighting lighting{std::array{default_world_light()}, 2000, 10};
   object_pool<size_t> light_owners{effect_light_capacity};
   object_pool<live_explosion> explosions{explosion_capacity};
@@ -75,6 +85,8 @@ public:
   std::optional<size_t> add_puff(int16_t root, vec3<int32_t> const &position);
   std::optional<size_t> add_detached_weapon(debris_particle state);
   void advance(frame_ratio ratio);
+  bool add_deployment(size_t group,vec3<int32_t> const &destination,random_state &random);
+  void advance_deployments(frame_ratio ratio,std::function<bool(vec3<int32_t> const &)> const &impact,std::function<void(size_t,vec3<int32_t> const &)> const &release,vec3<int32_t> const &listener);
   void collect();
   effect_lighting &lights();
   /// Draw views stay valid until the next simulation update or collection.

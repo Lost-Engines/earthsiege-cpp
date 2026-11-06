@@ -106,6 +106,7 @@ public:
   void advance_turret(frame_ratio ratio, weapon_catalogue const &weapons, turret_callbacks const &callbacks);
   model_instance const &instance() const;
   model_transform const &placement() const;
+  void deploy(vec3<int32_t> const &position,vec3<uint16_t> const &angles);
   scene_model model() const;
   /// Only static bases participate in the original ground-height occupancy pass.
   std::optional<scenery_collider> occupancy() const;

@@ -37,6 +37,7 @@ struct background_style {
 };
 
 struct world_environment {
+  game_edition edition{game_edition::original};
   background_style background;
   std::array<int16_t, 4> atmosphere_parameters{};
   std::array<int16_t, 2> expansion_parameters{};

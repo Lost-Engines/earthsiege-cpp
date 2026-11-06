@@ -51,13 +51,43 @@ new expansion files and leaves the base game's saves unchanged.
   Installs without the films use the original TTM fallback presentations.
 - A shell integration test draws all nine hangar models, fits all four upgraded
   weapons, launches and returns from single/campaign missions, and saves/resumes.
+- Deployment modes 2-5 use the original approach angles, collision search and
+  timing. 192 captured searches cover headings, seeds and rejected positions;
+  24 pod sequences cover descent, opening, warning/impact sounds, obstruction
+  and release. Landed pods leave the authored crater and use radial impact damage.
+- 32 complete mission-return transactions compare saved careers, hangars,
+  inventory, repair costs, debrief values and RNG. They cover both battlesets,
+  crew losses, salvage and Apocalypse. Expansion salvage is restored to full
+  condition; the three Cybrid-only weapon types cannot enter the armory.
+- 432 environment comparisons cover all 36 WLD resources, cockpit masks and
+  smaller offset viewports, checking every VGA pixel,
+  reflection palette entry and shared visual RNG state. The expansion changes
+  ground scan conversion, texture scale, sky-band edges and cloud placement.
+  Wasteland/Ruins use a 6,000-unit cloud altitude rather than 10,000.
+- All four expansion TAP demos run to the end with simulation, commands, cockpit
+  dialogs, periodic rendering and audio updates. All 74 captured mission launches
+  also construct, advance and render successfully.
+- Expansion audio includes the deployment sounds, speech overrides and Battleset 2
+  combat music. KEYJOY adds PEDALS reversal; 34 original parser cases cover all
+  four switches, repeated settings and malformed input. GO saves 18 preference
+  bytes and DBSIM saves 22; both are accepted.
 
-## Work still in progress
+The complete suite passes 294 tests with the local optional music assets. Eleven
+expansion suites also pass ASan/UBSan and leak checking, including all four demos.
 
-Deployment effects still require their own runtime comparisons.
-Expansion TAP packets are decoded and checked, but complete recorded-gameplay
-replay equivalence has not yet been established. An initial render or successful
-mission launch does not settle those behaviours.
+## Validation limits
+
+The full expansion demo runs are integration checks. They do not yet compare
+all actor state, every rendered frame or sound timing with an original replay.
+The isolated native comparisons above establish the behaviour of their specific
+systems. Full campaign playthroughs and consecutive whole-world expansion
+comparisons remain useful follow-up coverage.
+
+The implementation targets the March CD engine. The separate floppy simulator
+and April patch have been characterised in the analysis, but are not selectable
+runtime rulesets here. Exact base-game duplicates reuse their existing resources;
+French/German media remains catalogued in the analysis while the bundled game
+uses English.
 
 The companion analysis catalogue is described in
 `earthsiege-reverse/docs/EXPANSION_INTEGRATION.md`. Original-code probes and media

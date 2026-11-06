@@ -188,6 +188,8 @@ add_library(earthsiege_core
   src/simulation/beam_effect.h
   src/render/effect_lighting.cpp
   src/render/effect_lighting.h
+  src/simulation/deployment.cpp
+  src/simulation/mission_deployment.cpp
   src/simulation/world_effects.cpp
   src/simulation/world_effects.h
   src/simulation/object_pool.h
@@ -774,6 +776,16 @@ if(BUILD_TESTING)
   add_executable(expansion_shell_test tests/expansion_shell_test.cpp)
   target_link_libraries(expansion_shell_test PRIVATE earthsiege_core)
   add_test(NAME expansion_shell COMMAND expansion_shell_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_BINARY_DIR}/test-saves)
+  add_executable(expansion_replay_test tests/expansion_replay_test.cpp)
+  target_link_libraries(expansion_replay_test PRIVATE earthsiege_core)
+  foreach(demo RANGE 1 4)
+    add_test(NAME expansion_demo${demo} COMMAND expansion_replay_test ${CMAKE_SOURCE_DIR}/assets/expansion ${demo})
+  endforeach()
+  add_test(NAME expansion_returns COMMAND campaign_return_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_returns.bin)
+  add_executable(expansion_deployment_test tests/expansion_deployment_test.cpp)
+  target_link_libraries(expansion_deployment_test PRIVATE earthsiege_core)
+  add_test(NAME expansion_deployment COMMAND expansion_deployment_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_deployment.bin ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_approaches.bin)
+
   add_executable(expansion_blast_test tests/expansion_blast_test.cpp)
   target_link_libraries(expansion_blast_test PRIVATE earthsiege_core)
   add_test(NAME expansion_blast COMMAND expansion_blast_test ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_blast.bin)
@@ -1156,6 +1168,7 @@ if(BUILD_TESTING)
   add_executable(environment_palette_test tests/environment_palette_test.cpp)
   target_link_libraries(environment_palette_test PRIVATE earthsiege_core)
   add_test(NAME environment_palette COMMAND environment_palette_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/environment_palette.bin)
+  add_test(NAME expansion_environment COMMAND environment_composition_test ${CMAKE_SOURCE_DIR}/assets/expansion ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_environment.bin)
   add_executable(environment_composition_test tests/environment_composition_test.cpp)
   target_link_libraries(environment_composition_test PRIVATE earthsiege_core)
   add_test(NAME environment_composition COMMAND environment_composition_test ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/environment_composition.bin)
@@ -1292,6 +1305,7 @@ if(BUILD_TESTING)
   add_executable(input_options_test tests/input_options_test.cpp)
   target_link_libraries(input_options_test PRIVATE earthsiege_core)
   add_test(NAME input_options COMMAND input_options_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/input_options.bin)
+  add_test(NAME expansion_input_options COMMAND input_options_test ${CMAKE_SOURCE_DIR}/tests/fixtures/input_options.bin ${CMAKE_SOURCE_DIR}/tests/fixtures/expansion_input_options.bin)
 endif()
 
 if(BUILD_TESTING)

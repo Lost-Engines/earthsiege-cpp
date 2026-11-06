@@ -31,8 +31,10 @@ world_effects::world_effects(resource_store const &resources, sound_sink sink, b
     detached_weapon_models{read_model(resources.read("simvol0", "dts/MECHWPN2.DTS"))},
     smoke_textures{read_bitmaps(resources.read("simvol0", "dba/SMOKE.DBA"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))} {
+  if(resources.edition()==game_edition::expansion){deployment_models=read_model(resources.read("simvol0","dts/METEOR.DTS"));deployment_textures=read_bitmaps(resources.read("simvol0","dba/IMPACT.DBA"));craters.reserve(150);}
   if(resources.edition()==game_edition::expansion)flat_textures=read_bitmaps(resources.read("simvol0",alternate_ground_models?"dba/FLAT2.DBA":"dba/FLAT.DBA"));
   for(auto const &root:flat_models.roots)flat_instances.emplace_back(std::get<shape_part>(root.content));
+  explosion_textures.resize(resources.edition()==game_edition::expansion?10:9);
   for(size_t bank{0}; bank != explosion_textures.size(); ++bank) explosion_textures[bank] = read_bitmaps(resources.read("simvol0", "dba/EXPLO" + std::to_string(bank) + ".DBA"));
 }
 
@@ -109,7 +111,23 @@ void world_effects::advance(frame_ratio const ratio) {
   });
 }
 
+bool world_effects::add_deployment(size_t const group,vec3<int32_t> const &destination,random_state &random){
+  if(!deployments.available())return false;
+  deployments.emplace(create_deployment(destination,random),group,std::get<shape_part>(deployment_models.roots.at(0).content),std::get<shape_part>(deployment_models.roots.at(1).content));return true;
+}
+void world_effects::advance_deployments(frame_ratio const ratio,std::function<bool(vec3<int32_t> const &)> const &impact,std::function<void(size_t,vec3<int32_t> const &)> const &release,vec3<int32_t> const &listener){
+  deployments.for_each_oldest([&](size_t slot,live_deployment &pod){
+    if(deployments.retiring(slot))return;
+    auto const frames{std::get<shape_part>(deployment_models.roots.at(1).content).cell_frame_counts.front()};
+    if(advance_deployment(pod.state,static_cast<uint16_t>(frames),ratio,{
+      .sound{[&](uint16_t id){if(sounds)sounds(sample_sound_request{sound_action::positioned,id,listener});}},.impact{impact},
+      .finish{[&](vec3<int32_t> const &position,bool clear){if(clear)release(pod.group,position);if(craters.size()<150)craters.push_back(position);}}
+    }))deployments.defer_erase(slot);
+    pod.opening.cell_frames().front()=pod.state.cell;
+  });
+}
 void world_effects::collect() {
+  deployments.collect();
   light_owners.collect([&](size_t, size_t const source){ lighting.remove(source); });
   explosions.collect();
   debris.collect();
@@ -120,6 +138,11 @@ void world_effects::collect() {
 effect_lighting &world_effects::lights() { return lighting; }
 
 void world_effects::append_models(std::vector<scene_model> &models) {
+  deployments.for_each_oldest([&](size_t,live_deployment &pod){
+    auto placement{rotation_transform(pod.state.angles)};placement.translation=pod.state.position;
+    size_t const root{pod.state.landed?1u:0u};
+    models.push_back({.roots{&deployment_models.roots.at(root),1},.instance{pod.state.landed?pod.opening:pod.body},.placement{placement},.native_class{1},.textures{deployment_textures},.attachments{},.detail_thresholds{},.detail{}});
+  });
   explosions.for_each_oldest([&](size_t, live_explosion &effect){
     auto const &definition{explosion_definitions.at(static_cast<size_t>(effect.definition))};
     auto placement{rotation_transform(effect.state.angles)};
@@ -155,6 +178,7 @@ std::vector<ground_flash> world_effects::ground_flashes() {
   explosions.for_each_oldest([&](size_t, live_explosion &effect){
     if(effect.secondary) result.push_back({flat_models.roots.at(1), *effect.secondary, effect.secondary_position,0,flat_textures});
   });
+  for(auto &position:craters)result.push_back(ground_attachment(3,position,0));
   return result;
 }
 

@@ -124,6 +124,7 @@ class mission_view {
   void apply_cockpit_view(cockpit_view view,bool reset_input);
   void present_view();
   void prepare_frame(uint32_t slow_clock);
+  bool dispatch_command(player_input &input,mission_dialog_handlers const &dialogs);
   bool step_input(player_input input,std::array<uint8_t,4> const &hat,frame_ratio ratio,bool control,mission_dialog_handlers const &dialogs={});
   std::deque<uint16_t> commands;
 

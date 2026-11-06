@@ -22,6 +22,8 @@ class mission_audio {
   combat_music_state music_state;
   music_playback playback;
   std::array<std::string,6> songs;
+  size_t speech_start{47};
+  bool expansion_music{};
   sound_sources sources;
   std::array<servo_sound_state,2> servos;
   target_sound_state target_tone;
@@ -44,6 +46,7 @@ public:
     else music=std::make_unique<music_audio>(resources,bank,settings);
     music_config=settings;
   }
+  void battle_set(bool expansion);
   bool preferences(bool music,bool effects,bool speech);
   void dispatch(sound_request const &request, vec3<int32_t> const &listener);
   void engine(bool external_view);

@@ -20,6 +20,7 @@ void presentation_player::execute() {
     case 0x0ff0: return;
     case 0x1101: case 0x1111: break; // Local/global label declarations.
     case 0x0110: current.mode = 3; break;
+    case 0x1061: break; // APOCA selects an empty palette bank; mission lamp scripts load none.
     case 0x0400: break; // Ends palette cycling; cockpit scripts have no palette cycles.
     case 0x1051:
       selected_bank = static_cast<uint8_t>(a.at(0));

@@ -12,7 +12,8 @@ class cloud_field {
   vec3<int32_t> previous,drift;
   int32_t top_texture{};
   int16_t active{};
-  bool ready{};
+  bool ready{},expansion{};
+  int32_t altitude{10000};
 public:
   cloud_field(world_environment const &,std::vector<bitmap>);
   /// Wind advances once per original draw, independently of simulation Q8 time.

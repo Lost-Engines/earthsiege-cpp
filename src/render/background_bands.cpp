@@ -17,7 +17,7 @@ void append(background_bands &result, background_primitive_kind const kind, int3
   result.primitives.push_back(background_primitive{.kind{kind}, .colour{static_cast<uint32_t>(colour)}, .points{std::move(points)}});
 }
 
-void bands(background_bands &result, background_view const &view, int32_t const first_colour, int32_t const count, int32_t const step, int32_t const first_width, bool const sky) {
+void bands(background_bands &result, background_view const &view, int32_t const first_colour, int32_t const count, int32_t const step, int32_t const first_width, bool const sky,bool const expansion=false) {
   auto first{result.horizon[0]};
   auto second{result.horizon[1]};
   auto const &direction{result.horizon[2]};
@@ -46,6 +46,22 @@ void bands(background_bands &result, background_view const &view, int32_t const 
     if(sky) first.y = view.bounds.top;
     else second.y = view.bounds.bottom;
     if(first.y <= second.y) append(result, background_primitive_kind::rectangle, colour, {vec2<int32_t>{first}, vec2<int32_t>{second}});
+    return;
+  }
+  if(sky&&expansion){
+    // Expansion 292b0 starts the rolled sky strip two steps below the
+    // horizon, then calculates each edge from the unrounded direction.
+    first.x-=dx*2;first.y-=dy*2;second.x-=dx*2;second.y-=dy*2;
+    auto const a{result.horizon[0]},b{result.horizon[1]};
+    for(int32_t index{};index<count-1;++index){
+      auto const ox{multiply_shift(-direction.x,step*index,14)};
+      auto const oy{multiply_shift((index-1)*step+(first_width>>1),direction.y,14)};
+      vec2<int32_t> left{a.x+ox,a.y+oy},right{b.x+ox,b.y+oy};
+      append(result,background_primitive_kind::sky_polygon,colour,{vec2<int32_t>{first},vec2<int32_t>{second},vec2<int32_t>{right},vec2<int32_t>{left}});
+      first=left;second=right;--colour;
+    }
+    auto const ox{multiply_shift(direction.x,-1000,14)},oy{multiply_shift(direction.y,1000,14)};
+    append(result,background_primitive_kind::sky_polygon,colour,{vec2<int32_t>{first},vec2<int32_t>{second},vec2<int32_t>{first.x+ox,first.y+oy},vec2<int32_t>{second.x+ox,second.y+oy}});
     return;
   }
   auto const kind{sky ? background_primitive_kind::sky_polygon : background_primitive_kind::ground_polygon};
@@ -112,7 +128,7 @@ background_bands make_background_bands(world_environment const &environment, bac
   }
   /// The original signed upper-limit comparison can never invert a zero-extended pitch
   result.horizon[2] = vec2<int32_t>{sine, -cosine};
-  bands(result, view, style.sky_palette_start, style.sky_bands, style.sky_step, style.horizon_band_width, true);
+  bands(result, view, style.sky_palette_start, style.sky_bands, style.sky_step, style.horizon_band_width, true,environment.edition==game_edition::expansion);
   ++result.horizon[0].y;
   ++result.horizon[1].y;
   if(include_ground) bands(result, view, style.ground_palette_start, style.ground_bands, style.ground_step, style.horizon_band_width, false);

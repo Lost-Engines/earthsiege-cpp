@@ -93,10 +93,11 @@ target_objective mission_activity::objective(size_t const index) const {
   if(entry.members.empty()) throw std::runtime_error{"target selection requires a group leader"};
   return {entry.order,entry.objectives,entry.representative,entry.members.front()};
 }
-void mission_activity::dispatch_groups(std::function<void(size_t)> const &dispatch) {
-  for(auto &entry : groups) {
+void mission_activity::dispatch_groups(std::function<void(size_t)> const &dispatch,std::function<bool(size_t)> const &activate_group) {
+  for(size_t i{};i<groups.size();++i) {
+    auto &entry{groups[i]};
     if(entry.activation_trigger) {
-      if(triggers.latched(*entry.activation_trigger)) entry.activation_trigger.reset();
+      if(triggers.latched(*entry.activation_trigger)&&(!activate_group||activate_group(i))) entry.activation_trigger.reset();
     } else for(auto const member : entry.members) dispatch(member);
   }
 }

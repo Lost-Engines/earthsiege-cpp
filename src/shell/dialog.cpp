@@ -59,7 +59,7 @@ dialog::dialog(resource_store const &resources, unsigned int requested, unsigned
   // font selection. Warning layouts all reuse MENU999's panel.
   auto const root_id{controls.front().action};
   auto const artwork{"res32/menu"+std::to_string(root_id)+".dba"};
-  if(resources.archives().at("shell0").find(artwork))panel=read_bitmaps(resources.read("shell0",artwork)).front();
+  if(resources.contains("shell0",artwork))panel=read_bitmaps(resources.read("shell0",artwork)).front();
   std::string const face{root_id==999||root_id==1240||root_id==4444?"nm_green":
     root_id==1610||root_id==1800?"cstats_2":root_id==1920?"active":"gray"};
   caption_face=read_font(resources.read("shell0","dfn/"+face+".dfn"));

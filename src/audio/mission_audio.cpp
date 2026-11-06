@@ -7,8 +7,8 @@ namespace earthsiege {
 mission_audio::mission_audio(resource_store const &source,music_settings const &settings):resources{source},music_config{settings}{
   auto const groups{read_interface_strings(source.read("simvol0","str/SOUNDS.STR"))};size_t id{};
   for(auto const &group:groups)for(auto const &item:group){
-    if(item.text.empty())return;
-    if(item.attributes.size()!=4 || id>=47)throw std::runtime_error{"invalid original simulation sound catalogue"};
+    if(item.text.empty()){speech_start=id;return;}
+    if(item.attributes.size()!=4 || id>=50)throw std::runtime_error{"invalid simulation sound catalogue"};
     if(id<songs.size())songs[id]=item.text;
     if(normalise_path(item.text).ends_with(".sfx") || normalise_path(item.text).ends_with(".raw")){
       bank.bind(id,source.read("simsound",item.text));bank.set_loops(id,-1,-1,item.attributes[0]);bank.set_volume(id,static_cast<int8_t>(item.attributes[1]));
@@ -44,6 +44,13 @@ void mission_audio::engine(bool const external_view){
   }
 }
 
+void mission_audio::battle_set(bool expansion){
+  // Expansion DBSIM 5435c changes the digit at offset 10 in the song paths.
+  if(expansion==expansion_music)return;
+  for(auto &song:songs)if(song.size()>10)song[10]+=expansion?3:-3;
+  expansion_music=expansion;
+}
+
 bool mission_audio::preferences(bool const enable_music,bool const enable_effects,bool const enable_speech){
   // Original 4e294/4e2c8 stop registered songs/effects only on a falling edge.
   // Radio's 959e4 flag gates subsequent speech starts; it does not stop a line.
@@ -71,9 +78,9 @@ bool mission_audio::play(size_t const id){auto const accepted{effects_enabled&&b
 bool mission_audio::play_at(size_t const id,vec3<int32_t> const &where){position(id,where);return play(id);}
 bool mission_audio::speech(std::string_view const path){
   if(!speech_enabled)return true; // Original disabled speech still advances the portrait.
-  for(size_t slot{47};slot<57;++slot)if(!bank.playing(slot)){
-    for(auto const volume:{"speech","simvoice"})if(auto const *entry{resources.archives().at(volume).find(path)}){
-      bank.bind(slot,resources.archives().at(volume).read(*entry));auto const accepted{bank.play(slot)};if(observe)observe({audio_event_kind::speech,slot,path,accepted});return accepted;
+  for(size_t slot{speech_start};slot<speech_start+10;++slot)if(!bank.playing(slot)){
+    for(auto const volume:{"speech","simvoice"})if(auto data{resources.try_read(volume,path)}){
+      bank.bind(slot,std::move(*data));auto const accepted{bank.play(slot)};if(observe)observe({audio_event_kind::speech,slot,path,accepted});return accepted;
     }
     return false;
   }

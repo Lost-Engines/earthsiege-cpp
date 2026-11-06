@@ -133,6 +133,11 @@ class mission_session {
   };
   mission_header settings;
   bool falloff_preference{},recorded_playback{};
+  std::vector<int16_t> deployment_modes;
+  std::vector<bool> deployment_started;
+  bool activate_group(size_t index);
+  void place_deployed(size_t actor,vec3<int32_t> const &position,std::optional<uint16_t> heading = {});
+  int16_t blast_radius(size_t actor) const;
   placement_catalogue layout;
   std::unique_ptr<mission_activity> activity;
   std::vector<mission_route> routes;

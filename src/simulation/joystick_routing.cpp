@@ -14,6 +14,7 @@ device_input_sample route_devices(device_routing_options &o,joystick_sample k,jo
   if(k.axes[0]){k.axes[2]=k.axes[0];k.axes[0]=0;}
   if(k.axes[1]){k.axes[3]=-k.axes[1];k.axes[1]=0;}
  }
+ if(o.pedals&&o.pedals_reverse)d.axes[2]=-d.axes[2];
  if(o.tilt_reverse)k.axes[3]=-k.axes[3];
  auto const replace{[&](size_t to,size_t from){if(d.axes[from])k.axes[to]=d.axes[from];}};
  bool const wcs{o.wcs&&!o.missile};

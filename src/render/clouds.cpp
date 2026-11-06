@@ -7,12 +7,13 @@
 #include <utility>
 namespace earthsiege {
 cloud_field::cloud_field(world_environment const &env,std::vector<bitmap> textures)
- :images{std::move(textures)}{
- if(env.effect_parameters[0]<0||images.size()<3)throw std::runtime_error{"invalid cloud field"};
+ :images{std::move(textures)},expansion{env.edition==game_edition::expansion},altitude{expansion?env.expansion_parameters[0]:10000}{
+ if(env.effect_parameters[0]<0||images.empty())throw std::runtime_error{"invalid cloud field"};
  field.resize(static_cast<size_t>(env.effect_parameters[0]));recycled.resize(field.size());
 }
 void cloud_field::draw(framebuffer &target,vec3<int32_t> const &position,vec3<uint16_t> const &angles,
                        camera_projection const &projection,rectangle bounds,uint8_t detail,random_state &random){
+ if(expansion&&position.z>=altitude*2)return;
  active=static_cast<int16_t>(field.size()*(static_cast<unsigned>(detail)+1)/256);
  // Movement precedes lazy initialization, whose initial wind is zero.
  for(int i{};i<active;++i)for(unsigned axis{};axis<3;++axis)
@@ -24,12 +25,13 @@ void cloud_field::draw(framebuffer &target,vec3<int32_t> const &position,vec3<ui
   previous=position;
   auto component=[](int32_t length,uint16_t angle){return wrap_long((static_cast<int64_t>(length)*model_cosine(angle)+8192)>>14);};
   for(auto &point:field){
-   auto const radius{static_cast<int32_t>(static_cast<uint16_t>(random.next()))*2};
+   auto const draw{random.next()};auto const radius{expansion?static_cast<int32_t>(draw):static_cast<int32_t>(static_cast<uint16_t>(draw))*2};
    auto const angle{static_cast<uint16_t>(random.next())};
-   point={wrap_long(static_cast<int64_t>(position.x)+component(radius,angle)),
-          wrap_long(static_cast<int64_t>(position.y)+component(radius,static_cast<uint16_t>(angle-16384))),10000};
+   auto const dx{component(radius,angle)},dy{component(radius,static_cast<uint16_t>(angle-16384))};
+   point={wrap_long(static_cast<int64_t>(position.x)+dx*(expansion?2:1)),
+          wrap_long(static_cast<int64_t>(position.y)+dy*(expansion?2:1)),altitude};
   }
-  auto const angle{static_cast<uint16_t>(random.next())};int32_t const speed{random.bounded(100)+50};
+  auto const angle{static_cast<uint16_t>(random.next())};int32_t const speed{random.bounded(expansion?1:100)+(expansion?1:50)};
   drift={component(speed,angle),component(speed,static_cast<uint16_t>(angle-16384)),0};
   top_texture=random.bounded(3);ready=true;
  }
@@ -37,7 +39,7 @@ void cloud_field::draw(framebuffer &target,vec3<int32_t> const &position,vec3<ui
  vec2<int32_t> const middle{wrap_long(static_cast<int64_t>(previous.x)+position.x)>>1,
                            wrap_long(static_cast<int64_t>(previous.y)+position.y)>>1};
  auto camera{rotation_transform(angles)};camera.translation=position;camera=inverse_transform(camera);
- std::array<vec3<int32_t>,4> const corners{vec3<int32_t>{0,0,10000},vec3<int32_t>{25000,0,10000},vec3<int32_t>{25000,25000,10000},vec3<int32_t>{0,25000,10000}};
+ std::array<vec3<int32_t>,4> const corners{vec3<int32_t>{0,0,altitude},vec3<int32_t>{25000,0,altitude},vec3<int32_t>{25000,25000,altitude},vec3<int32_t>{0,25000,altitude}};
  for(size_t i{};i<field.size();++i){
   auto &point{field[i]};
   int32_t const distance{fast_distance_2d({wrap_long(static_cast<int64_t>(point.x)-position.x),wrap_long(static_cast<int64_t>(point.y)-position.y)})};
@@ -49,7 +51,7 @@ void cloud_field::draw(framebuffer &target,vec3<int32_t> const &position,vec3<ui
   if(i>=static_cast<size_t>(active))continue;
   model_transform placement;placement.translation=point;
   auto const transform{compose_transforms(placement,camera)};
-  bool const back{position.z>=point.z+10000};
+  bool const back{position.z>=point.z+altitude};
   auto const &texture{images.at(back?static_cast<size_t>(top_texture):0)};
   int32_t const width{((static_cast<int32_t>(texture.width)-1)>>3)<<3},height{static_cast<int32_t>(texture.height)-1};
   std::array<camera_vertex,4> vertices;

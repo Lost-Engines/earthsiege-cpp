@@ -6,7 +6,8 @@
 
 namespace earthsiege {
 struct preference_change {uint8_t index{},value{};bool operator==(preference_change const &)const=default;};
-/// GO/DBSIM use 17 bytes originally and 22 in the expansion. Disk persistence is
+/// Base GO/DBSIM use 17 bytes; expansion GO writes 18 and DBSIM writes 22.
+/// Short expansion files are extended with zeroes. Disk persistence is
 /// separate from accepting an edit: saving must not silently commit it.
 class preferences {
 public:

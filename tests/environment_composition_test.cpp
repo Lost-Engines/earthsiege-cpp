@@ -11,7 +11,7 @@ int main(int argc,char **argv)try{
  auto worlds{f.integer<uint16_t>()};unsigned frames{},failures{};
  for(unsigned stream{};stream<worlds;++stream){
   auto world{f.integer<uint16_t>()};auto seed{f.integer<int16_t>()};auto count{f.integer<uint16_t>()};
-  auto env{read_world_environment(resources.read("simvol0","wld/WORLD"+std::to_string(world)+".WLD"))};
+  auto env{read_world_environment(resources.read("simvol0","wld/WORLD"+std::to_string(world)+".WLD"),resources.edition())};
   auto colours{read_palette(resources.read("simvol0","dpl/WORLD"+std::to_string(world&~1U)+".DPL"))};
   environment_renderer renderer{resources,env};random_state random{seed};
   for(unsigned step{};step<count;++step){
