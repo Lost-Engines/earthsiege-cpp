@@ -595,7 +595,7 @@ Manually supplied subrange loop descriptors have an uninitialized tail-length
 word in the original: native subranges are bounded instead. A positional gain
 query with master volume zero is defined as zero rather than dividing by zero.
 Driver-specific ISA timing and analogue circuitry remain outside these checks.
-Fixtures can be refreshed with `tools/import_audio_fixtures.py ../earthsiege-reverse/analysis`.
+Fixtures can be refreshed with `tools/import_audio_fixtures.py ../earthsiege-reverse/work/research`.
 
 ### Live PCM audio and world triggers
 

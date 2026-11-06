@@ -2,7 +2,7 @@
 import json,struct
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-source=root.parent/'earthsiege-reverse/analysis/missions/shell-preparation.json'
+source=root.parent/'earthsiege-reverse/work/research/missions/shell-preparation.json'
 cases=json.loads(source.read_text())['cases'];out=bytearray(b'ESSHL001'+struct.pack('<I',len(cases)))
 for c in cases:
  out+=struct.pack('<4h',c['seed'],c['mode'],c['category'],c['battle'])

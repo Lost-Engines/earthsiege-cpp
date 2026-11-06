@@ -3,7 +3,7 @@
 import json,struct
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-rows=json.loads((root.parent/'earthsiege-reverse/analysis/missions/herc-reactions.json').read_text())['cases']
+rows=json.loads((root.parent/'earthsiege-reverse/work/research/missions/herc-reactions.json').read_text())['cases']
 out=bytearray(b'ESHREA01')
 def write(*v):out.extend(struct.pack('<'+'i'*len(v),*v))
 write(len(rows))

@@ -3,7 +3,7 @@
 import json,struct,sys
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-source=Path(sys.argv[1])if len(sys.argv)>1 else root.parent/'earthsiege-reverse/analysis/missions/mission-activity.json'
+source=Path(sys.argv[1])if len(sys.argv)>1 else root.parent/'earthsiege-reverse/work/research/missions/mission-activity.json'
 rows=json.loads(source.read_text())['worlds'];out=bytearray(b'ESMACT01')
 def put(fmt,*args):out.extend(struct.pack('<'+fmt,*args))
 def seq(values):put('H',len(values));put('h'*len(values),*values)

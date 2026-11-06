@@ -3,7 +3,7 @@
 from pathlib import Path
 import argparse,json,shutil,struct,zlib
 parser=argparse.ArgumentParser(description=__doc__)
-parser.add_argument('analysis',type=Path,help='earthsiege-reverse/analysis directory')
+parser.add_argument('analysis',type=Path,help='earthsiege-reverse/work/research directory')
 args=parser.parse_args();root=Path(__file__).resolve().parents[1]
 base=args.analysis/'missions/compiled';rows=[]
 def checksum(raw):return f'{zlib.crc32(raw):08x}'

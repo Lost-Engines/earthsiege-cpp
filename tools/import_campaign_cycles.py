@@ -3,7 +3,7 @@ import argparse,hashlib,json,struct
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser(description='Pack independent original campaign transaction captures.')
-parser.add_argument('source',type=Path,nargs='?',default=root.parent/'earthsiege-reverse/analysis/missions/campaign-cycles.json')
+parser.add_argument('source',type=Path,nargs='?',default=root.parent/'earthsiege-reverse/work/research/missions/campaign-cycles.json')
 parser.add_argument('output',type=Path,nargs='?',default=root/'tests/fixtures/campaign_cycles.bin')
 args=parser.parse_args();data=json.loads(args.source.read_text())
 journey='terminal'in data['cases'][0]

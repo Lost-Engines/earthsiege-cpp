@@ -2,7 +2,7 @@
 """Pack original component targeting and destruction notifications."""
 import json,struct
 from pathlib import Path
-root=Path(__file__).resolve().parents[1];analysis=root.parent/'earthsiege-reverse/analysis'
+root=Path(__file__).resolve().parents[1];analysis=root.parent/'earthsiege-reverse/work/research'
 rows=json.loads((analysis/'definitions/target-geometry.json').read_text())['worlds'];starts={w['demo']:w['initial_random']for w in json.loads((analysis/'missions/starting-hercs.json').read_text())['worlds']}
 out=bytearray(b'ESTARG01')
 def put(fmt,*args):out.extend(struct.pack('<'+fmt,*args))

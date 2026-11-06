@@ -2,7 +2,7 @@
 """Import scheduler packets captured from the original HMI, before hardware output."""
 from pathlib import Path
 import json,struct,sys
-root=Path(__file__).resolve().parents[1];analysis=Path(sys.argv[1]);music=analysis/'music';original=analysis.parent/'extracted/cd_1994_10'
+root=Path(__file__).resolve().parents[1];analysis=Path(sys.argv[1]);music=analysis/'music';original=analysis.resolve().parents[1]/'extracted/cd_1994_10'
 checks=json.loads((music/'native-checks.json').read_text());out=bytearray(b'ESHMP001')+struct.pack('<I',len(checks['cases']));packets=0
 for row in checks['cases']:
  name=row['name'];path=original/'resources'/name

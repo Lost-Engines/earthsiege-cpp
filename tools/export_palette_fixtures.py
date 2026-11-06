@@ -12,7 +12,7 @@ args = parser.parse_args()
 sys.path.insert(0, str(args.research / 'tools'))
 from three_space import palette
 root = Path(__file__).resolve().parents[1]
-data = json.loads((args.research / 'analysis/models/material-shading.json').read_text())
+data = json.loads((args.research / 'work/research/models/material-shading.json').read_text())
 with (root / 'tests/fixtures/palette_shading.bin').open('wb') as out:
     out.write(b'ESSHADE1')
     out.write(struct.pack('<H', len(data['textures'])))
