@@ -857,3 +857,38 @@ eleven structure types, collision and destruction; `expansion_blast.bin` records
 corresponding `capture_expansion_*.py` tools in earthsiege-reverse. Hit queries,
 target selection and effect creation are explicitly recorded boundaries in
 these focused tests, rather than claims of complete mission replay equivalence.
+
+
+## Expansion recorded-input comparisons
+
+`expansion_demo1_path.bin` through `expansion_demo4_path.bin` use `ESPATH02`.
+Each contains the original demo number, update count, final input count and
+preferences, followed by one record per simulation update: complete gameplay
+RNG at entry (56 words and two tap bytes), then consumed input count, player
+position, three angles, throttle, gait, steering and animation rate at exit.
+The four files cover 11,071 updates and all 11,421 input packets. Playback uses
+the game's `demo_playback` owner. No expected state is supplied to the simulation.
+
+The original March 1995 executable and tapes run unchanged under a private
+DOSBox observer. Companion JSON files record executable, tape, observer,
+emulator and fixture hashes. Capture and export use
+`tools/capture_expansion_replay.py` and `tools/compare_demo_paths.py` in
+`earthsiege-reverse`. Large captures remain in that project's `work/research`.
+
+`expansion_demo_controls.bin` (`ESXCTRL1`) records original-instruction outputs
+for 6,000 tracking-servo cases, 1,000 shield recharges, 1,600 firing-line avoidance
+cases, 2,000 damage accumulators, 2,000 EMP recharge cases, 512 map pans, twenty
+controller definitions and 24 invulnerability settings. Capture uses
+`tools/capture_expansion_demo_controls.py`. Sound/model effects are omitted and
+scenery rays report clear space in the isolated movement cases.
+
+`expansion_herc_guard.bin` (`ESHGD002`) covers 1,024 original guard decisions,
+including weapons-free gating and movement during the search cooldown. Capture
+uses `tools/capture_expansion_herc_guard.py` in the analysis project.
+`expansion_flyer_motion.bin` (`ESFMOVE2`) checks 192 paths with 2,304 consecutive
+motion updates and 4,608 obstacle queries, captured by
+`tools/capture_expansion_flyer_motion.py`. Both execute expansion instructions
+with explicit callback boundaries.
+
+See [Recorded-input demo verification](../../docs/DEMO_REPLAY.md) for the findings
+and the remaining comparison limits.

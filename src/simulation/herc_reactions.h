@@ -16,6 +16,7 @@ struct herc_reaction_policy {
   bool leader_player{false};
   bool leader_targets_attacker{false};
   combat_actor_kind attacker_kind{combat_actor_kind::herc};
+  bool expansion{false}, attacker_incapacitated{false};
 };
 struct herc_reaction_callbacks {
   std::function<void()> share_contact;

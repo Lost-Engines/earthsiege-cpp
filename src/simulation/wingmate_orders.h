@@ -16,6 +16,8 @@ struct wingmate_order_state {
   vec2<int32_t> command_position{};
   int32_t incoming_damage{}, reconsider_remaining{};
   bool herc{true};
+  bool expansion{false}, weapons_free{false};
+  std::optional<size_t> followed;
 };
 struct wingmate_order {
   uint16_t command{};
@@ -34,7 +36,7 @@ struct wingmate_order_callbacks {
 /// update the actor after strategy entry. Previous reply: 0 none, 1 refused, 2 accepted.
 bool receive_wingmate_order(std::span<wingmate_order_state> actors, size_t actor,
   wingmate_order const &order, uint16_t previous_reply, size_t player, size_t leader,
-  int16_t group_order, std::optional<size_t> hud_target, wingmate_order_callbacks const &callbacks);
+  int16_t group_order, std::optional<size_t> hud_target, wingmate_order_callbacks const &callbacks, std::optional<size_t> guard_objective = std::nullopt);
 /// Group dispatcher 0x1c950: recomputes priority after each member's response.
 /// The original leaves priority uninitialized for orders without a priority
 /// rule (notably FORM UP). Zero represents the ordinary neutral-priority path.

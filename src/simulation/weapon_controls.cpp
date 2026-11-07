@@ -58,10 +58,11 @@ void advance_weapon_controls(weapon_controls &state, frame_ratio const ratio) {
   }
 }
 
-int16_t charge_capacitor(capacitor &state, bool const inhibited, int16_t const budget, frame_ratio const ratio) {
+int16_t charge_capacitor(capacitor &state, bool const inhibited, int16_t const budget, frame_ratio const ratio, bool const half_rate) {
   if(state.controls.disabled) return budget;
   advance_weapon_controls(state.controls, ratio);
-  auto const difference{wrap_word((inhibited ? 0 : state.setting) - state.charge)};
+  auto difference{wrap_word((inhibited ? 0 : state.setting) - state.charge)};
+  if(half_rate) difference = wrap_word(difference * 2);
   int16_t amount;
   if(difference <= 0) {
     state.fast = false;
@@ -70,6 +71,8 @@ int16_t charge_capacitor(capacitor &state, bool const inhibited, int16_t const b
     amount = std::min({state.fast ? capacitor_fast_charge_per_update : capacitor_charge_per_update, budget, difference});
   }
   state.charge = wrap_word(state.charge + amount);
+  // Expansion 0xcc68: EMP (weapon 21) spends full power for half the charge.
+  if(half_rate) state.charge = wrap_word(state.charge - (amount >> 1));
   return wrap_word(budget - amount);
 }
 
@@ -123,7 +126,7 @@ void fast_charge_capacitor(capacitor &state) {
   state.setting = capacitor_maximum;
 }
 
-int16_t allocate_weapon_power(std::span<weapon_power_slot const> const slots, int16_t const selected, int16_t budget, frame_ratio const ratio, bool const free_energy) {
+int16_t allocate_weapon_power(std::span<weapon_power_slot const> const slots, int16_t const selected, int16_t budget, frame_ratio const ratio, bool const free_energy, std::function<void(size_t)> const &after_update) {
   if(selected >= 0 && static_cast<size_t>(selected) >= slots.size()) throw std::out_of_range{"selected capacitor slot"};
   auto const initial_budget{budget};
   std::vector<bool> visited(slots.size(), false);
@@ -141,9 +144,10 @@ int16_t allocate_weapon_power(std::span<weapon_power_slot const> const slots, in
     visited[next] = true;
     auto const &slot{slots[next]};
     if(slot.energy) {
-      budget = slot.elf ? advance_elf(*slot.energy, *slot.elf, inhibited, budget, ratio) : charge_capacitor(*slot.energy, inhibited, budget, ratio);
-      if(slot.energy->fast) inhibited = true;
+      budget = slot.elf ? advance_elf(*slot.energy, *slot.elf, inhibited, budget, ratio) : charge_capacitor(*slot.energy, inhibited, budget, ratio, slot.half_charge_rate);
     } else advance_weapon_controls(*slot.ordinary, ratio);
+    if(after_update) after_update(next);
+    if(slot.energy && slot.energy->fast) inhibited = true;
   }
   return free_energy ? initial_budget : budget;
 }

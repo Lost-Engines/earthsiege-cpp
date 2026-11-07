@@ -42,8 +42,9 @@ new expansion files and leaves the base game's saves unchanged.
   and RNG. Its six weapon sections can be destroyed separately from the hull.
 - Structure checks cover all eleven types, 2,112 collision rays and 1,628
   lifecycle steps. Expansion structures use an explicit collision flag and
-  eight component slots. Ordinary expansion hits bypass the base edition's
-  difficulty multiplier; plasma radial damage applies its separate multiplier.
+  eight component slots. Expansion hit dispatch applies the friendly-shot difficulty multiplier once,
+  before the victim routine; it is not applied again at the actor. Plasma radial
+  damage follows its separate path.
   160 original radial shield cases cover front/rear absorption and integer limits.
 - The two CD films decode directly from their original DFL streams. All 731
   indexed frames and display palettes match the independently executed original
@@ -64,21 +65,26 @@ new expansion files and leaves the base game's saves unchanged.
   reflection palette entry and shared visual RNG state. The expansion changes
   ground scan conversion, texture scale, sky-band edges and cloud placement.
   Wasteland/Ruins use a 6,000-unit cloud altitude rather than 10,000.
-- All four expansion TAP demos run to the end with simulation, commands, cockpit
-  dialogs, periodic rendering and audio updates. All 74 captured mission launches
-  also construct, advance and render successfully.
+- All four expansion TAP demos match original player motion and gameplay RNG
+  throughout 11,071 simulation updates. All 11,421 packets are consumed, including
+  350 modal polls, through the same playback owner as Options / View Demo. See
+  [Recorded-input demo verification](DEMO_REPLAY.md) for the recovered movement,
+  AI, damage, input and map rules. All 74 captured mission launches also construct,
+  advance and render successfully.
 - Expansion audio includes the deployment sounds, speech overrides and Battleset 2
   combat music. KEYJOY adds PEDALS reversal; 34 original parser cases cover all
   four switches, repeated settings and malformed input. GO saves 18 preference
   bytes and DBSIM saves 22; both are accepted.
 
-The complete suite passes 294 tests with the local optional music assets. Eleven
-expansion suites also pass ASan/UBSan and leak checking, including all four demos.
+The complete suite passes 299 tests with the local optional music assets. An
+earlier expansion baseline passed eleven ASan/UBSan suites with leak checking,
+including all four demos; those sanitizer runs predate this replay audit.
 
 ## Validation limits
 
-The full expansion demo runs are integration checks. They do not yet compare
-all actor state, every rendered frame or sound timing with an original replay.
+The full expansion demo runs compare player motion and gameplay RNG with the
+original. They do not yet compare all actor state, every rendered frame or sound
+timing.
 The isolated native comparisons above establish the behaviour of their specific
 systems. Full campaign playthroughs and consecutive whole-world expansion
 comparisons remain useful follow-up coverage.

@@ -23,7 +23,7 @@ mission_session::mission_session(resource_store const &resources, mission_script
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))},
     random{std::move(initial_random)}, effects{resources,[this](auto const &event){emit_sound(event);},terrain.environment().atmosphere_parameters[1]!=0}, projectiles{resources, weapon_definitions,[this](auto const &event){emit_sound(event);}} {
   auto const placements{layout.place(script, roster, true)};
-  activity=std::make_unique<mission_activity>(script,placements,initial_counters,false);
+  activity=std::make_unique<mission_activity>(script,placements,initial_counters,false,resources.edition()==game_edition::expansion);
   for(auto const &group:script.groups)deployment_modes.push_back(resources.edition()==game_edition::expansion&&group.trigger>=0?script.triggers.at(static_cast<size_t>(group.trigger)).test:0);
   deployment_started.resize(script.groups.size());
   auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
@@ -126,9 +126,11 @@ bool mission_session::advance_frame(player_input &player_controls, frame_ratio c
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
-  // Phase four updates every fixed ground actor (2df8/3364), even while its
-  // group waits for activation. Group gating applies to HERC/flyer dispatch.
-  for(size_t index{0}; index != bases.size(); ++index) advance_base(index, time_ratio);
+  // The expansion moved ground actors after effects/projectiles (0x5fb6e).
+  // Base 0x5975e updates them first. This order also determines RNG use and
+  // whether a shot sees the preceding or current turret/landing-craft state.
+  auto const advance_bases{[&]{for(size_t index{0}; index != bases.size(); ++index) advance_base(index, time_ratio);}};
+  if(weapon_definitions.edition != game_edition::expansion) advance_bases();
   effects.advance(time_ratio);
   effects.advance_deployments(time_ratio,[&](vec3<int32_t> const &position){
     impact_request request;request.transform.translation=position;request.damage.armour=10000;request.area_radius=3000;
@@ -160,6 +162,7 @@ bool mission_session::advance_frame(player_input &player_controls, frame_ratio c
     if(feedback.manual_input_used) player_weapons->set_manual_guidance(true);
     if(feedback.owner_guiding && owner.actor < crew.size()) crew[owner.actor].fire.skip_selection = true;
   });
+  if(weapon_definitions.edition == game_edition::expansion) advance_bases();
   activity->dispatch_groups([&](size_t const actor){
     if(actor < crew.size()) dispatch_herc(actor, time_ratio);
     else if(actor < base_id(0)) dispatch_flyer(actor - flyer_id(0), time_ratio);
@@ -172,7 +175,7 @@ bool mission_session::advance_frame(player_input &player_controls, frame_ratio c
   activity->scan_areas(observations);
   activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);},[&](size_t observer,size_t target){notice_contact(observer,target,time_ratio);});
   for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && !crew[i].actor->damage().consequences.dead) {
-    crew[i].actor->update_power(time_ratio, settings.free_weapons(), i == player_index ? player_weapons->selection() : int16_t{-1});
+    crew[i].actor->update_power(time_ratio, settings.free_weapons(), i == player_index ? player_weapons->selection() : int16_t{-1}, [&](weapon_shot const &shot){launch(i, shot);});
     update_herc_sensors(i, time_ratio);
   }
   if(auto const result{outcome_clock.advance(time_ratio, [&]{return mission_state();})}) pending_mission_prompt=result;
@@ -219,7 +222,11 @@ void mission_session::clear_player_input() { input_router.clear_device_state(); 
 bool mission_session::player_command(uint16_t const code) {
   if(player_weapons->command(code)) return true;
   if(code >= 2 && code <= 10) return player_weapons->click_control(code - 2, false); // 1..9
-  if(code == 14) input_router.request_centre();                             // Backspace
+  if(code == 76) { // Keypad 5: 110a1 resets throttle and sets its ownership flag.
+    player_input_actions actions{}; actions.stop = true;
+    crew[player_index].actor->apply_player_controls(actions, frame_ratio_one);
+  }
+  else if(code == 14) input_router.request_centre();                             // Backspace
   else if(code == 15) cycle_target();                                       // Tab; view-specific gating belongs to the cockpit
   else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; emit_sound(sample_sound_request{sound_action::play,static_cast<uint16_t>(actor.impacts().detectable ? 26 : 27)}); }
   else return false;
@@ -277,6 +284,9 @@ std::optional<player_input_actions> mission_session::step_player(player_input in
   if(!completed)return {};
   return actions;
 }
+void mission_session::change_player_shield_balance(bool const toward_front) {
+  change_shield_balance(crew[player_index].actor->power().shields, toward_front);
+}
 int16_t mission_session::exchange_player_instruments(int16_t const requested_throttle, std::optional<bool> const shield_to_front) {
   auto &actor{*crew[player_index].actor};
   if(shield_to_front) change_shield_balance(actor.power().shields, *shield_to_front);
@@ -287,6 +297,7 @@ void mission_session::exchange_weapon_instruments(frame_ratio const ratio) {
   player_weapons->exchange_displays(player_weapon_range, crew[player_index].sensors.locks, ratio);
 }
 void mission_session::weapon_group_control(unsigned int const button) { player_weapons->request_group_control(button); }
+void mission_session::cycle_weapon_group(bool const reverse) { player_weapons->cycle_requested_group(reverse); }
 void mission_session::weapon_control(unsigned int const control_number, bool const secondary) {
   if(player_weapons->click_control(control_number, secondary)&&!secondary)emit_sound(sample_sound_request{sound_action::play,26});
 }
@@ -341,9 +352,25 @@ std::span<combat_notice const> mission_session::combat_notices() const { return 
 
 void mission_session::fire_selected(bool const pressed) {
   auto &actor{*crew[player_index].actor};
+  bool fired{false};
   player_weapons->fire(pressed, [&](size_t const slot){
+    fired = true;
     for(auto const &shot : actor.discharge_aimed_slot(slot, settings.free_weapons())) launch(player_index, shot);
   });
+  if(weapon_definitions.edition == game_edition::expansion) {
+    player_fire_line.clear();
+    if(fired) {
+      auto const &body{actor.body()};auto const &motion{body.movement()};
+      int count{20};
+      if(auto const target{activity->targets()[player_index].selected}) {
+        auto const point{combat_position(*target).position};
+        count = std::clamp(fast_distance({wrap_long(static_cast<int64_t>(point.x)-motion.position.x),wrap_long(static_cast<int64_t>(point.y)-motion.position.y),wrap_long(static_cast<int64_t>(point.z)-motion.position.z)}) >> 12, 1, 40);
+      }
+      auto const step{rotate_vector({0,4096,0},rotation_transform({0,0,static_cast<uint16_t>(motion.angles.z-body.torso().angle)}))};
+      vec2<int32_t> point{motion.position.x,motion.position.y};
+      for(int i{};i<count;++i){point.x=wrap_long(static_cast<int64_t>(point.x)+step.x);point.y=wrap_long(static_cast<int64_t>(point.y)+step.y);player_fire_line.push_back(point);}
+    }
+  }
 }
 
 herc_damage_events mission_session::damage_events(size_t const index) {
@@ -415,26 +442,35 @@ flyer_damage_events mission_session::flyer_events(size_t const index) {
   return events;
 }
 
-std::optional<int32_t> mission_session::impact(projectile_owner const &owner, impact_request const &request) {
-  if(request.area_radius){
-    auto const &centre{request.transform.translation};auto const radius{request.area_radius};auto const amount{request.damage.armour};
-    auto distance=[&](vec3<int32_t> const &p){vec3<int32_t> d;for(unsigned i{};i<3;++i)d[i]=wrap_long(static_cast<int64_t>(p[i])-centre[i]);return fast_distance(d);};
-    bool contacted{};
-    auto defeated=[&](size_t id,bool before,bool after){if(!before&&after&&owner.actor<activity->size()){if(owner.actor==player_index&&owner.target==id)announce_system(3);credit_defeat(owner.actor,id);}};
-    for(size_t i{};i<crew.size();++i){auto &m{crew[i]};if(m.waiting||distance(m.actor->body().movement().position)-m.definition->profile.collision_radius>=radius)continue;
-      contacted=true;bool before{m.actor->damage().consequences.dead||m.actor->damage().consequences.disabled};
-      m.actor->blast_damage(centre,radius,amount,random,damage_events(i),i==player_index&&settings.player_is_invulnerable());
-      defeated(i,before,m.actor->damage().consequences.dead||m.actor->damage().consequences.disabled);
-    }
-    for(size_t i{};i<flyers.size();++i){auto &m{flyers[i]};auto d{distance(m.actor->motion().position)};if(m.waiting||d>=radius)continue;
-      contacted=true;bool before{m.actor->dead()};m.actor->direct_damage(wrap_word(wrap_long(static_cast<int64_t>(radius-d)*amount)/radius),random,flyer_events(i),owner.actor==player_index&&owner.target==flyer_id(i));defeated(flyer_id(i),before,m.actor->dead());
-    }
-    for(size_t i{};i<bases.size();++i){auto &m{bases[i]};auto const &profile{m.actor->profile()};auto d{distance(m.actor->placement().translation)-(profile.collision_enabled?profile.contact_radius:0)};
-      if(m.waiting||d>=radius)continue;
-      contacted=true;if(!profile.collision_enabled||m.actor->is_wreck())continue;
-      bool before{m.actor->dead()};m.actor->direct_damage(wrap_word(wrap_long(static_cast<int64_t>(radius-d)*amount)/radius),random,base_damage_events(i));defeated(base_id(i),before,m.actor->dead());
-    }
-    return contacted?std::optional<int32_t>{0}:std::nullopt;
+bool mission_session::blast(projectile_owner const &owner, vec3<int32_t> const &centre, int16_t radius, int16_t amount) {
+  auto distance=[&](vec3<int32_t> const &p){vec3<int32_t> d;for(unsigned i{};i<3;++i)d[i]=wrap_long(static_cast<int64_t>(p[i])-centre[i]);return fast_distance(d);};
+  bool contacted{};
+  auto defeated=[&](size_t id,bool before,bool after){if(!before&&after&&owner.actor<activity->size()){if(owner.actor==player_index&&owner.target==id)announce_system(3);credit_defeat(owner.actor,id);}};
+  for(size_t i{};i<crew.size();++i){auto &m{crew[i]};if(m.waiting||distance(m.actor->body().movement().position)-m.definition->profile.collision_radius>=radius)continue;
+    contacted=true;bool before{m.actor->damage().consequences.dead||m.actor->damage().consequences.disabled};
+    m.actor->blast_damage(centre,radius,amount,random,damage_events(i),i==player_index&&settings.player_is_invulnerable(weapon_definitions.edition));
+    defeated(i,before,m.actor->damage().consequences.dead||m.actor->damage().consequences.disabled);
+  }
+  for(size_t i{};i<flyers.size();++i){auto &m{flyers[i]};auto d{distance(m.actor->motion().position)};if(m.waiting||d>=radius)continue;
+    contacted=true;bool before{m.actor->dead()};m.actor->direct_damage(wrap_word(wrap_long(static_cast<int64_t>(radius-d)*amount)/radius),random,flyer_events(i),owner.actor==player_index&&owner.target==flyer_id(i));defeated(flyer_id(i),before,m.actor->dead());
+  }
+  for(size_t i{};i<bases.size();++i){auto &m{bases[i]};auto const &profile{m.actor->profile()};auto d{distance(m.actor->placement().translation)-(profile.collision_enabled?profile.contact_radius:0)};
+    if(m.waiting||d>=radius)continue;
+    contacted=true;if(!profile.collision_enabled||m.actor->is_wreck())continue;
+    bool before{m.actor->dead()};m.actor->direct_damage(wrap_word(wrap_long(static_cast<int64_t>(radius-d)*amount)/radius),random,base_damage_events(i));defeated(base_id(i),before,m.actor->dead());
+  }
+  return contacted;
+}
+
+std::optional<int32_t> mission_session::impact(projectile_owner const &owner, impact_request const &incoming_request) {
+  auto request{incoming_request};
+  if(request.area_radius) return blast(owner, request.transform.translation, request.area_radius, request.damage.armour) ? std::optional<int32_t>{0} : std::nullopt;
+  // Expansion 0x2181c scales a friendly shot once before actor traversal.
+  // Its actor hit routines consume that result directly; base routines scale locally.
+  if(weapon_definitions.edition == game_edition::expansion) {
+    impact_conditions const conditions{.attacker_side{activity->group(actor_group(owner.actor)).side}, .difficulty{settings.difficulty}};
+    request.damage.armour = adjust_impact_damage(request.damage.armour, conditions);
+    request.damage.shield = adjust_impact_damage(request.damage.shield, conditions);
   }
   std::vector<impact_actor> actors;
   std::vector<size_t> group;
@@ -448,7 +484,7 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
       .waiting{crew[index].waiting}, .dead{damage.dead}, .disabled{damage.disabled}, .inactive{activity->decisions()[index].unavailable}, .quiet{activity->actor(index).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(index).contact_trigger},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         auto const events{damage_events(index)};
-        impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{actors[index].side}, .invulnerable{settings.player_is_invulnerable()}};
+        impact_conditions const conditions{.player{index == player_index}, .attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{actors[index].side}, .invulnerable{settings.player_is_invulnerable(weapon_definitions.edition)}};
         bool const eligible{!actors[index].dead&&!actors[index].disabled};
         auto const result{crew[index].actor->receive_impact(incoming, conditions, random, events)};
         auto const &state{crew[index].actor->damage().consequences};
@@ -486,7 +522,8 @@ std::optional<int32_t> mission_session::impact(projectile_owner const &owner, im
     if(member.group == actor_group(owner.actor)) group.push_back(base_id(index));
     actors.push_back({
       .position{vec3<int32_t>{member.actor->placement().translation}}, .group{member.group}, .side{member.side},
-      .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false}, .inactive{false}, .quiet{activity->actor(base_id(index)).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(base_id(index)).contact_trigger},
+      .waiting{member.waiting}, .dead{member.actor->dead()}, .disabled{false},
+      .inactive{member.actor->profile().edition == game_edition::expansion && !member.actor->is_turret() && !member.actor->is_landing_craft()}, .quiet{activity->actor(base_id(index)).awareness.event_busy}, .hit_enemy{false}, .trigger{activity->actor(base_id(index)).contact_trigger},
       .hit{[&, index](impact_request const &incoming) -> std::optional<int32_t> {
         impact_conditions const conditions{.attacker_side{actors.at(owner.actor).side}, .difficulty{settings.difficulty}, .difficulty_override{settings.campaign_mode != 0}, .side{bases[index].side}};
         auto const result{bases[index].actor->receive_impact(incoming, conditions, random, base_damage_events(index))};

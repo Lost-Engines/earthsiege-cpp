@@ -1,0 +1,17 @@
+{
+  "demo": 3,
+  "cycles": 200000,
+  "command": "dbsim -eggplant -pTAPES\\DEMO3 -s",
+  "game_sha256": "db430a7f313efe24bc4dd2a6bb432ea494d66e332e2a58a761c6f4028661d0a2",
+  "tape_sha256": "7d4755210b68abc94334ff3093f68806a3eb7e7e5f8326a48a1626f857a07751",
+  "observer_sha256": "bb2048ae8c31bcf32d751b672b64d15f5ef16343ffa59f0de64334ce1862e5e2",
+  "emulator_sha256": "90c972481dc1808f031f9fd55828d665494b0b504d81c7fca24d85c4383bd4e0",
+  "preferences": "01010201ffffff000000000100000200000100000000",
+  "returncode": 0,
+  "seconds": 170.022,
+  "game_unchanged": true,
+  "scope": "Complete gameplay RNG before each update; player position, angles, throttle, gait, steering and animation rate after every update; no native state supplied to the original.",
+  "frames": 3455,
+  "packets": 3605,
+  "fixture_sha256": "cd4f9786bce5d6b698282ad05234d33e470340542bf16d0045ade0cb9969d032"
+}

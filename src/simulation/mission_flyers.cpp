@@ -14,7 +14,8 @@ std::vector<observed_actor> mission_session::observe() const {
       .removed{body.movement().collapsed},.unavailable{activity->decisions()[index].unavailable},.objective_event{member.objectives.rescued}, .ignore_hud_target{member.ignore_hud_target}});
   }
   for(auto const &member:flyers)result.push_back({.position{vec3<int32_t>{member.actor->motion().position}},.heading{member.actor->angles().z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()}});
-  for(auto const &member:bases)result.push_back({.position{vec3<int32_t>{member.actor->placement().translation}},.heading{transform_angles(member.actor->placement()).z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()}});
+  for(auto const &member:bases)result.push_back({.position{vec3<int32_t>{member.actor->placement().translation}},.heading{transform_angles(member.actor->placement()).z},.dead{member.actor->dead()},.detectable{member.actor->is_detectable()},
+    .unavailable{member.actor->profile().edition == game_edition::expansion && !member.actor->is_turret() && !member.actor->is_landing_craft()}});
   return result;
 }
 int16_t mission_session::actor_speed(size_t const index) const {

@@ -118,7 +118,7 @@ class mission_view {
   struct pointer_event { player_input input; std::optional<uint32_t> timestamp; };
   std::deque<pointer_event> pointer_events;
   int16_t requested_throttle{};
-  std::optional<bool> shield_to_front;
+  std::vector<bool> shield_transfers;
   void consume_pointer_events();
   void set_camera(camera_mode mode,unsigned previous_view,bool reset_input=true);
   void apply_cockpit_view(cockpit_view view,bool reset_input);

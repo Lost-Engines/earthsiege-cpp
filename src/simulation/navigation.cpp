@@ -57,11 +57,12 @@ movement_request follow_formation(vec3<int32_t> const &position, uint16_t const 
   return {.speed{static_cast<int16_t>(distance < formation_follow_distance ? distance >> 7 : 256)}, .turn{static_cast<int16_t>(wrap_word(bearing_angle(position, destination) - heading) >> 4)}};
 }
 
-void avoid_obstacles(movement_request &control, avoidance_state const &state, std::span<contact_actor const> const actors, avoidance_query const &query) {
+void avoid_obstacles(movement_request &control, avoidance_state const &state, std::span<contact_actor const> const actors, avoidance_query const &query, avoidance_policy const &policy) {
   if((state.current_speed == 0 && control.speed == 0) || (control.speed < 0 && state.collision_countdown == 0)) return;
-  if(control.flags & 1) return;                                                 // ramming bypasses both scenery probes and actor clearance
+  if((control.flags & 1) && !policy.expansion) return;                                                 // ramming bypasses both scenery probes and actor clearance
   int32_t constexpr clear_distance{22000};
   std::array<int32_t, 2> clearance{clear_distance, clear_distance};
+  if(!(control.flags & 1)) {
   auto const rotation{rotation_transform(vec3<uint16_t>{0, 0, state.heading})};
   for(size_t side{0}; side != clearance.size(); ++side) {
     int const direction{side == 0 ? -1 : 1};
@@ -82,12 +83,28 @@ void avoid_obstacles(movement_request &control, avoidance_state const &state, st
     auto &side{clearance[angle < 0 ? 1 : 0]};
     side = std::min(side, distance);
   }
+  }
+  // Expansion 0x1388c also keeps wingmates out of the player's firing line.
+  std::array<bool, 2> firing_line{};
+  if(policy.expansion) {
+    for(auto const &point : policy.friendly_fire_line) {
+      auto const range{wrap_long((static_cast<int64_t>(fast_distance_2d({wrap_long(static_cast<int64_t>(point.x)-state.position.x), wrap_long(static_cast<int64_t>(point.y)-state.position.y)})) * 1000 + 512) >> 10)};
+      auto const angle{wrap_word(bearing_angle(state.position, {point.x,point.y,state.position.z}) - state.heading)};
+      if(std::min(std::abs(static_cast<int>(angle)),32767) >= 12288) continue;
+      auto const side{angle < 0 ? 1U : 0U};
+      if(range < clearance[side]) {clearance[side] = range; firing_line[side] = true;}
+    }
+    if(state.forward_collision && clearance[0] == clear_distance && clearance[1] == clear_distance)
+      clearance[state.collision_bias < 1 ? 1 : 0] = 16500;
+  }
   if(clearance[0] >= clear_distance && clearance[1] >= clear_distance) return;
   if(state.forward_collision && clearance[0] < clear_distance && clearance[1] < clear_distance) clearance[0] = wrap_long(static_cast<int64_t>(clearance[0]) + state.collision_bias);
-  auto const distance{std::min(clearance[0], clearance[1])};
-  auto const correction{wrap_word(wrap_long(static_cast<int64_t>(clear_distance - distance) * 2000 / clear_distance))};
+  auto const side{clearance[0] <= clearance[1] ? 0U : 1U};
+  auto const distance{clearance[side]};
+  auto const correction{wrap_word(wrap_long(static_cast<int64_t>(clear_distance - distance) * (firing_line[side] ? 2500 : 2000) / clear_distance))};
   control.turn = wrap_word(control.turn + (clearance[0] <= clearance[1] ? -correction : correction));
-  if(distance < 0) control.speed = 0;
+  if(firing_line[side] && distance < 3000) control.speed = policy.reverse_rate;
+  else if(distance < 0) control.speed = policy.expansion ? policy.reverse_rate : int16_t{0};
 }
 
 } // namespace earthsiege

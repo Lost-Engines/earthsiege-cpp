@@ -13,7 +13,7 @@ namespace earthsiege {
 herc_actor::herc_actor(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> const equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<int16_t const> const weapon_values, sound_sink sounds)
   : source{definition}, weapon_definitions{weapons}, loadout{assemble_herc_loadout(definition, equipment, weapons)},
     body_state{definition, weapons, templates, equipment, position, angles, std::move(sounds)},
-    components{loadout.damage, initial_herc_damage(loadout, body_state.model().cell_frames().size())},
+    components{loadout.damage, initial_herc_damage(loadout, body_state.model().cell_frames().size()), weapons.edition},
     power_state{.reserve{herc_power_capacity}, .shields{static_cast<int16_t>(definition.profile.shield_capacity >> 1), static_cast<int16_t>(definition.profile.shield_capacity >> 1), shield_balance_one / 2, definition.profile.shield_capacity}},
     armament{weapons, templates, definition.mounts, equipment, weapon_values},
     salvage_excluded{definition.profile.salvage_value == 0} {}
@@ -207,7 +207,7 @@ std::optional<herc_interception> herc_actor::receive_impact(impact_request const
   }};
   auto const damage{[&](size_t const section, int16_t const amount){
     if(events.body_damage) events.body_damage(section, amount);
-    if(conditions.player && conditions.invulnerable && !conditions.difficulty_override) return;
+    if(conditions.player && conditions.invulnerable && (weapon_definitions.edition == game_edition::expansion || !conditions.difficulty_override)) return;
     large_explosion = false;                                                   // suppression lasts only for this section/dependent cascade
     damage_section(section, amount, choose, detach);
   }};
@@ -218,7 +218,12 @@ std::optional<herc_interception> herc_actor::receive_impact(impact_request const
     auto const &body{*result->body};
     auto const previous{components.fraction(body.section) >> 5};
     damage(body.section, body.direct);
-    if(body.radial != 0) {
+    auto radial{body.radial};
+    if(radial != 0 && weapon_definitions.edition == game_edition::expansion) {
+      auto const bearing{wrap_word(static_cast<int32_t>(bearing_angle(body_state.movement().position, result->position)) - body_state.movement().angles.z)};
+      radial = absorb_blast(power_state.shields, std::abs(static_cast<int>(bearing)) < 16384, radial);
+    }
+    if(radial != 0) {
       int32_t constexpr radius{500};
       for(size_t section{0}; section != components.state().present.size(); ++section) {
         if(!components.state().present[section] || (random.next() & probability_mask) >= radial_damage_chance) continue;
@@ -226,7 +231,7 @@ std::optional<herc_interception> herc_actor::receive_impact(impact_request const
         vec3<int32_t> delta;
         for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(result->position[axis]) - position[axis]);
         auto const distance{fast_distance(delta)};
-        if(distance < radius) damage(section, wrap_word(body.radial * (radius - distance) / radius));
+        if(distance < radius) damage(section, wrap_word(radial * (radius - distance) / radius));
       }
     }
     auto const fraction{components.fraction(body.section)};
@@ -270,8 +275,17 @@ std::optional<herc_interception> herc_actor::receive_impact(impact_request const
   return result;
 }
 
-void herc_actor::update_power(frame_ratio const ratio, bool const free_energy, int16_t const selected_weapon) {
-  update_herc_power(power_state, components.state().consequences, ratio, [&](int16_t const budget){ return armament.allocate(selected_weapon, budget, ratio, free_energy); });
+void herc_actor::update_power(frame_ratio const ratio, bool const free_energy, int16_t const selected_weapon, std::function<void(weapon_shot const &)> const &emit) {
+  // Expansion 0xe454 fires a pending upgraded-laser pulse immediately after
+  // that slot's recharge update, independently of the player's trigger or AI.
+  auto const after_update{[&](size_t slot){
+    auto const &weapon{armament.at(slot)};
+    if(weapon_definitions.edition != game_edition::expansion || !weapon.pending_second_shot || weapon.controls().refire_remaining != 0) return;
+    for(auto const &shot : discharge_aimed_slot(slot, free_energy)) if(emit) emit(shot);
+  }};
+  update_herc_power(power_state, components.state().consequences, ratio, [&](int16_t const budget){
+    return armament.allocate(selected_weapon, budget, ratio, free_energy, after_update);
+  }, weapon_definitions.edition == game_edition::expansion ? 5 : shield_charge_per_update);
   body_state.update_weapons(armament);
   if(!combat_rating_valid) {
     cached_combat_rating = herc_combat_rating(source.profile, loadout.damage, components.state(), armament, weapon_definitions);
@@ -279,8 +293,8 @@ void herc_actor::update_power(frame_ratio const ratio, bool const free_energy, i
   }
 }
 
-void herc_actor::apply_aim(herc_aim_request const &request, frame_ratio const ratio) {
-  body_state.prepare_aim(request.controls, ratio);
+void herc_actor::apply_aim(herc_aim_request const &request, frame_ratio const ratio, std::optional<vec2<int16_t>> const target) {
+  body_state.prepare_aim(request.controls, ratio, weapon_definitions.edition == game_edition::expansion ? target : std::nullopt);
   for(size_t i{0}; i != armament.slots().size(); ++i) if(armament.slots()[i]) {
     auto &weapon{armament.at(i)};
     auto const offset{weapon_mount_offset(source.mounts.at(i), weapon_definitions.weapons.at(static_cast<size_t>(weapon.definition)))};
@@ -289,11 +303,11 @@ void herc_actor::apply_aim(herc_aim_request const &request, frame_ratio const ra
 }
 vec3<int16_t> herc_actor::aim_at(vec3<int32_t> const &point, frame_ratio const ratio) {
   auto const request{aim_herc_at(point, body_state.placement(), body_state.aiming_pivot(), source.profile.camera_offset.z)};
-  apply_aim(request, ratio);
+  apply_aim(request, ratio, vec2<int16_t>{wrap_word(body_state.torso().angle - request.errors.z), wrap_word(body_state.elevation().angle + request.errors.x)});
   return vec3<int16_t>{request.errors};
 }
 void herc_actor::centre_aim(int32_t const distance, frame_ratio const ratio) {
-  apply_aim(centre_herc_aim(body_state.torso().angle, body_state.elevation().angle, distance), ratio);
+  apply_aim(centre_herc_aim(body_state.torso().angle, body_state.elevation().angle, distance), ratio, vec2<int16_t>{0, 0});
 }
 std::vector<weapon_shot> herc_actor::discharge_aimed_slot(size_t const slot, bool const free_ammunition) {
   auto const &angles{armament.at(slot).convergence};

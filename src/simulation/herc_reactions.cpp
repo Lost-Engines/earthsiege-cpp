@@ -15,7 +15,7 @@ void advance_herc_reactions(herc_reaction_state &state, frame_ratio const ratio)
 }
 void react_to_herc_hit(herc_reaction_state &state, engagement_state &decision, std::span<target_relationship> const targets, size_t const observer, size_t const attacker, int16_t const damage, herc_reaction_policy const &policy, bool &ignore_hud_target, std::optional<size_t> &designated, herc_reaction_callbacks const &callbacks) {
   if(policy.attacker_player && policy.player_group) warn_friendly_fire(state, callbacks.friendly_warning);
-  if(policy.friendly) return;
+  if(policy.friendly || (policy.expansion && policy.attacker_incapacitated)) return;
   callbacks.share_contact();
   state.damage_remaining = 30000;
   if(policy.player_group) {
@@ -23,7 +23,7 @@ void react_to_herc_hit(herc_reaction_state &state, engagement_state &decision, s
     if(state.incoming_damage <= 7999) return;
   }
   if(policy.player || state.retaliate_remaining != 0) return;
-  auto const &behavior{describe(decision.controller.type.value())};
+  auto const &behavior{describe(decision.controller.type.value(), policy.expansion)};
   if(targets[observer].selected == attacker && behavior.attacking()) return;
   state.retaliate_remaining = 10000;
   if(!behavior.attacking() && policy.leader_player) {
@@ -31,7 +31,7 @@ void react_to_herc_hit(herc_reaction_state &state, engagement_state &decision, s
     if(policy.leader_targets_attacker) ignore_hud_target = false;
   }
   if(behavior.properties & 4) {
-    if(policy.leader_player) {decision.command = 4; designated.reset();}
+    if(policy.leader_player && (!policy.expansion || decision.command == 0)) {decision.command = 4; designated.reset();}
     decision.controller.reconsider_remaining = 0;
   } else if(!(behavior.properties & 8)) {
     auto const old{targets[observer].selected};

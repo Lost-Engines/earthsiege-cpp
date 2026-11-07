@@ -103,6 +103,7 @@ bool attack_with_herc(behavior const type, herc_attack_state &state, int16_t &co
       break;
     case behavior::attacking_flyer:
       geometry.direction = geometry.bearing_magnitude < 2000 && (geometry.facing_magnitude > 2000 || geometry.distance > 35000) ? 0 : -1;
+      if(input.expansion && geometry.bearing_magnitude < 2000 && geometry.facing_magnitude > 2000 && geometry.distance > 35000) geometry.direction = 1;
       geometry.near_distance = 0;
       geometry.far_distance = 1000000;
       callbacks.move(herc_range_movement(geometry, state.last_direction));

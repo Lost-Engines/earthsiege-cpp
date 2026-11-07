@@ -15,9 +15,14 @@ void guard_with_herc(std::span<engagement_state> const actors, std::span<target_
   auto &state{actors[actor]};
   assign_target(targets, actor, std::nullopt);
   auto &timer{state.controller.target_search_remaining};
-  timer = std::max<int16_t>(0, wrap_word(timer - ratio));
-  if(timer != 0 || (policy.leader_player && state.command == 0)) { callbacks.navigate(); return; }
+  bool const following_player{policy.leader_player && state.command == 0};
+  bool const may_search{!policy.expansion || !following_player || policy.weapons_free};
+  if(may_search) timer = std::max<int16_t>(0, wrap_word(timer - ratio));
+  // Expansion 0x19f34 keeps guarding the anchor between searches. Base
+  // 0x17ed4 instead delegates those frames to ordinary route navigation.
+  if(!policy.expansion && (timer != 0 || following_player)) { callbacks.navigate(); return; }
   std::optional<size_t> selected;
+  if(may_search && timer == 0) {
   if(state.command == 4 && policy.designated) selected = policy.designated;
   else {
     int32_t const radius{policy.group_has_objective ? 945000 : 980000};
@@ -35,7 +40,14 @@ void guard_with_herc(std::span<engagement_state> const actors, std::span<target_
       if(score > best || (!best_active && active)) { best = score; best_active = active; selected = candidate; }
     }
   }
+  }
   if(!selected) {
+    if(following_player) {
+      callbacks.navigate();
+      detectable = policy.radar_active;
+      callbacks.centre_aim();
+      return;
+    }
     auto const own{callbacks.position(actor)};
     auto const range{distance(policy.anchor, own.position)};
     callbacks.centre_aim();

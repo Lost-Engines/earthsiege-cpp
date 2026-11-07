@@ -102,7 +102,7 @@ void damage_display::draw(framebuffer &target, rectangle const &bounds, damage_d
       target.image(art.frames.at(2), x, y, true);
       if(!state.player) {
         name_font = state.friendly ? 1 : 2;
-        label(0, text(17)); label(1, text(19, static_cast<size_t>(state.model)), name_font);
+        label(0, text(17)); label(1, state.name.empty() ? text(19, static_cast<size_t>(state.model)) : state.name, name_font);
       }
       label(2, text(18));
       for(auto const &region : view.regions) remap(target, region, region_colour(region, region_damage(region.section, state.armour)), x, y);

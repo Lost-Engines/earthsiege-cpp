@@ -48,7 +48,7 @@ void cockpit_radio::advance_portraits(mission_session &session,uint32_t const fa
       if(!visible)return;
       if(kind==0){
         if(order.dead){labels.draw_static(cache,p.painted,p.pilot,i,p.noise_frame);p.noise_frame=(p.noise_frame+1)%5;}
-        else labels.draw_idle(cache,p.painted,p.pilot,i,session.instrument_damage(p.actor).armour,herc_status(order.type,order.disabled,order.dead,order.command));
+        else labels.draw_idle(cache,p.painted,p.pilot,i,session.instrument_damage(p.actor).armour,herc_status(order.type,order.disabled,order.dead,order.command,order.expansion));
       }else if(kind==1){labels.draw_static(cache,p.painted,p.pilot,i,p.noise_frame);p.noise_frame=(p.noise_frame+1)%5;}
       else if(kind==2){p.portrait.update(static_cast<size_t>(value),random);p.portrait.draw(cache,p.painted);labels.draw_name(cache,p.painted,p.pilot,i);}
       p.initialized=true;

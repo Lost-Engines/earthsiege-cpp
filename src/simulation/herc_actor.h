@@ -28,7 +28,7 @@ class herc_actor {
   bool combat_rating_valid{false};
   std::function<void(damage_consequences const &, damage_consequences const &)> consequence_notification;
   void detach_section(size_t section, bool &large_explosion, random_state &random, herc_damage_events const &events);
-  void apply_aim(herc_aim_request const &request, frame_ratio ratio);
+  void apply_aim(herc_aim_request const &request, frame_ratio ratio, std::optional<vec2<int16_t>> target = {});
   std::pair<int16_t, vec3<int16_t>> section_centre(size_t section, bool last = false) const;
   vec3<int32_t> section_position(size_t section, bool radial) const;
 
@@ -61,7 +61,7 @@ public:
   std::optional<herc_interception> receive_impact(impact_request const &request, impact_conditions const &conditions, random_state &random, herc_damage_events const &events);
   weapon_bank &weapons();
   weapon_bank const &weapons() const;
-  void update_power(frame_ratio ratio, bool free_energy = false, int16_t selected_weapon = -1);
+  void update_power(frame_ratio ratio, bool free_energy = false, int16_t selected_weapon = -1, std::function<void(weapon_shot const &)> const &emit = {});
   int16_t exchange_throttle(int16_t requested);
   void apply_player_controls(player_input_actions const &actions, frame_ratio ratio, movement_event_sink const &events = {});
   vec3<int16_t> aim_at(vec3<int32_t> const &point, frame_ratio ratio);

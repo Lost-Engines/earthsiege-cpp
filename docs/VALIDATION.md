@@ -10,15 +10,17 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The last full expansion integration run passed **294/294 tests**, including the original-game
+The last full expansion integration run passed **299/299 tests**, including the original-game
 regressions, GLFW window check and the locally enabled firmware/SoundFont test.
-Without optional hardware assets the suite has 293 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
+Without optional hardware assets the suite has 298 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
 The earlier 263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
 affected movement/world suites passed both sanitizers. The six audio suites,
 including the new physical-MIDI captures and real synthesis backends, also pass
-ASan/UBSan with leak checking after this audio update. The expansion adds eleven
+ASan/UBSan with leak checking after this audio update. The earlier expansion baseline passed eleven
 ASan/UBSan suites with leak checking: all four demos, shell, mission returns,
-deployment, landing craft, bullets, environments and input parsing. All pass.
+deployment, landing craft, bullets, environments and input parsing. Those
+sanitizer runs predate the latest recorded-demo audit. The 299-test result above
+checks the current code in the normal local build.
 
 ## Options menu playtesting
 
@@ -36,15 +38,14 @@ Two short `options_demo` regression tests cover both editions, the actual mouse
 button handlers, all presets, Cancel, persistence, demo startup and interruption.
 Full recording runs use `options_demo_test assets build full` and the equivalent
 `assets/expansion` command locally. The ordinary shell-flow test also passes.
-All four base recordings completed through this owner. Expansion demos 1-3
-also reached their recorded endings. Expansion demo 4 remains a known gameplay
-mismatch: with the same maximum-detail preferences, the unmodified DOS executable
-opens alert 13 at input poll 3836 and exits after poll 3954. The native simulation
-instead raises alert 6 after packet 1914; the new owner subsequently reaches a
-death alert and stops after packet 3815. The older replay harness also raises
-that unexpected alert 6, including when drawing every frame. This predates the
-menu wiring and is not evidence of a fully faithful expansion campaign. The
-optional full expansion run deliberately reports the incomplete recording.
+All four base and expansion recordings complete through this owner. Expansion
+playback now compares the original player's coordinates, angles and movement
+controls after every update, plus the complete gameplay RNG at each update's
+entry. All 11,071 states match, consuming 11,421 packets with 350 modal polls.
+This fixes the former premature DEMO4 alert and the Apocalypse patrol's failure
+to reverse away from its first building. See [Recorded-input demo verification](DEMO_REPLAY.md)
+for the original traces, recovered expansion rules and remaining actor-state
+limitations.
 
 The GLFW window was checked locally against the original DOSBox preferences:
 Max displays correctly, all four presets cycle, a demo plays, and Escape returns
@@ -66,8 +67,9 @@ The supplied 1996 base reissue contains the same game files. The March 1995
 expansion has separate [integration checks](EXPANSION.md), including original
 mission launches, technology, careers, transfer, returns, weapons, landing craft,
 deployment, input, 432 complete environment frames and CD films. All four
-expansion demos run through. Full original replay-state comparisons and complete
-expansion campaign playthroughs remain follow-up validation.
+expansion demos match the original player motion and gameplay RNG throughout.
+Complete expansion campaign playthroughs, full actor-state comparisons and
+replay rendering/audio comparisons remain further coverage.
 
 ## Independent original comparisons
 

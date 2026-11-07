@@ -4,6 +4,7 @@
 #include <vector>
 #include "vectorstorm/vector/vector3.h"
 #include "resources/binary_reader.h"
+#include "resources/edition.h"
 
 namespace earthsiege {
 
@@ -47,7 +48,9 @@ struct mission_header {
   int16_t palette_variant{};
 
   bool free_weapons() const { return campaign_mode == 0 && unlimited_weapons == 1; }
-  bool player_is_invulnerable() const { return campaign_mode == 0 && invulnerable_player == 1; }
+  bool player_is_invulnerable(game_edition const edition = game_edition::original) const {
+    return campaign_mode == 0 ? invulnerable_player == 1 : edition == game_edition::expansion && difficulty == 0;
+  }
   int32_t detection_range() const { return world_variant == 1 ? 30000 : 60000; }
 };
 

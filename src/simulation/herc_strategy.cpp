@@ -10,7 +10,7 @@ void reconsider_herc_attack(std::span<engagement_state> const actors, std::span<
   if(state.attack_requested) state.attack_requested = false;
   else if(state.command >= 0 && state.command <= 2) {
     bool const travelling{state.command == 1 || (state.command == 0 && policy.order == 11)};
-    if(travelling && state.controller.type && describe(*state.controller.type).attacking()) { callbacks.resume_orders(); return; }
+    if(travelling && state.controller.type && describe(*state.controller.type, policy.expansion).attacking()) { callbacks.resume_orders(); return; }
     assign_target(targets, actor, callbacks.select(target_selection_flags::prefer_objective));
     if(!targets[actor].selected) { callbacks.resume_orders(); return; }
   } else {
@@ -20,7 +20,7 @@ void reconsider_herc_attack(std::span<engagement_state> const actors, std::span<
   }
   if(group.front() == actor) for(auto const follower : group) {
     auto const &other{actors[follower]};
-    if(follower != actor && !other.disabled && !other.dead && other.controller.type && !describe(*other.controller.type).attacking()) callbacks.alert_follower(follower);
+    if(follower != actor && !other.disabled && !other.dead && other.controller.type && !describe(*other.controller.type, policy.expansion).attacking()) callbacks.alert_follower(follower);
   }
   state.aimed_component = -1;
   if(callbacks.retreat()) return;

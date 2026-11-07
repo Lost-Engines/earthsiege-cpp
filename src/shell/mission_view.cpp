@@ -180,7 +180,7 @@ void mission_view::consume_pointer_events() {
       if(hdd->activate(*action,*session,instruments,mfd_ranges[displays->state().range_index])){flush_interface_audio();continue;}
       if(displays->activate(*action,*session,instruments)){flush_interface_audio();continue;}
       if(action->index == 0) requested_throttle = static_cast<int16_t>(throttle.slider_layout().vertical ? -action->value : action->value);
-      else if(action->index < 3) { if(action->value & 1){shield_to_front = action->index == 1;audio.play(17);} }
+      else if(action->index < 3) { if(action->value & 1){shield_transfers.push_back(action->index == 1);audio.play(17);} }
       else {
         if(action->value & 1) for(size_t i{}; i < weapon_groups.size(); ++i)
           if(action->index == weapon_groups[i]) session->weapon_group_control(static_cast<unsigned int>(i));
@@ -205,7 +205,7 @@ void mission_view::clear_input() {
   pointer.left = pointer.right = false;
   pointer_events.clear();
   instruments.reset_input();
-  shield_to_front.reset();
+  shield_transfers.clear();
   commands.clear();
   session->clear_player_input();
   camera.angular_rates = vec3<int16_t>{0, 0, 0};
@@ -424,6 +424,9 @@ bool mission_view::dispatch_command(player_input &input,mission_dialog_handlers 
   if(input.command) {
     if(input.command==47){external_view_requested=!external_view_active;transitions.request(external_view_requested?2:3);input.command=0;}
     if((input.command==15||input.command==28)&&camera.mode!=camera_mode::attached){external_camera_control=!external_camera_control;input.command=0;}
+    // 3805b/3807a cycle the pending I/II/III widget choice (` / Alt+`).
+    if((input.command==41||input.command==0x229)&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->cycle_weapon_group(input.command==0x229);input.command=0;}
+    if((input.command==26||input.command==27)&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->change_player_shield_balance(input.command==27);audio.play(17);input.command=0;}
     // 380c4 applies L immediately, before selection/firing, and plays the UI click.
     if(input.command==38&&camera.mode==camera_mode::attached&&panel!=cockpit_view::lower){session->toggle_weapon_pair();audio.play(17);input.command=0;}
     // 38034 routes TRACK through the widget. The bank reads the pending
@@ -436,8 +439,14 @@ bool mission_view::dispatch_command(player_input &input,mission_dialog_handlers 
     if(input.command==67){hat_view({0,0,0,1});input.command=0;}
     if(input.command==68){hat_view({0,0,1,0});input.command=0;}
     if(input.command==1&&camera.mode==camera_mode::attached&&panel!=cockpit_view::forward){transitions.request(panel==cockpit_view::lower?1:6);input.command=0;}
-    if(hdd->command(input.command,*session,instruments,mfd_ranges[displays->state().range_index]))input.command=0;
-    else if(displays->command(input.command,*session,instruments))input.command=0;
+    // Global Escape (59fe9 / expansion 602fe) returns from an external view.
+    if(input.command==1&&camera.mode!=camera_mode::attached){external_view_requested=false;transitions.request(3);audio.play(45);input.command=0;}
+    // The cockpit handler (2d24c) is inactive in external views, including
+    // its Alt+letter radio shortcuts. A tape can contain ignored shortcuts.
+    if(camera.mode==camera_mode::attached){
+      if(hdd->command(input.command,*session,instruments,mfd_ranges[displays->state().range_index]))input.command=0;
+      else if(displays->command(input.command,*session,instruments))input.command=0;
+    }
   }
   flush_interface_audio();
   return true;
@@ -453,8 +462,9 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
   if(!result)return false;
   if(dialogs.outcome)if(auto const prompt{session->take_mission_prompt()};prompt&&dialogs.outcome(*prompt))return false;
   painted_throttle_boundary=instruments.at(0).boundary;
-  auto const throttle_request{session->exchange_player_instruments(requested_throttle, shield_to_front)};
-  shield_to_front.reset();
+  for(bool toward_front : shield_transfers) session->change_player_shield_balance(toward_front);
+  auto const throttle_request{session->exchange_player_instruments(requested_throttle, std::nullopt)};
+  shield_transfers.clear();
   if(requested_throttle != throttle_request) {
     requested_throttle = throttle_request;
     instruments.set_value(0, requested_throttle);

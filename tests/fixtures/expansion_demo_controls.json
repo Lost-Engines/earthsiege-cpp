@@ -1,0 +1,13 @@
+{
+  "scope": "Capture original expansion tracking servos, shield recharge and wingmate avoidance.\n\nSynthetic actors omit sound/model side effects. Scenery rays return clear; original\ncoordinate transforms and firing-line avoidance execute unchanged. No C++ outputs\nare supplied to the reference. Binary output is a compact test fixture.\n",
+  "image_sha256": "2ae2c903cbba85c048c5fd1d8b1c8340eedeff44354bc87f2c8be742debc2923",
+  "aim": 6000,
+  "shield": 1000,
+  "avoidance": 1600,
+  "damage": 2000,
+  "capacitor": 2000,
+  "map_pan": 512,
+  "controller_definitions": 20,
+  "invulnerability": 24,
+  "fixture_sha256": "0d573bfb08130d43951c44513aebe800ccb4c7fe454c0880d2cca35baa962446"
+}

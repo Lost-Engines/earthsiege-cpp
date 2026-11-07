@@ -7,6 +7,7 @@ struct herc_strategy_policy {
   bool leader_player{false};
   bool radar_active{false};
   int16_t ecm_remaining{0};
+  bool expansion{false};
 };
 struct herc_strategy_callbacks {
   std::function<std::optional<size_t>(target_selection_flags)> select;

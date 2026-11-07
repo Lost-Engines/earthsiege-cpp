@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "vectorstorm/vector/vector2.h"
 #include <functional>
 #include <optional>
 #include <span>
@@ -31,7 +32,13 @@ struct avoidance_state {
   bool forward_collision{false};
 };
 
+struct avoidance_policy {
+  bool expansion{false};
+  std::span<vec2<int32_t> const> friendly_fire_line{};
+  int16_t reverse_rate{};
+};
+
 using avoidance_query = std::function<std::optional<int32_t>(avoidance_probe, vec3<int32_t> const &, vec3<int32_t> const &)>;
-void avoid_obstacles(movement_request &control, avoidance_state const &state, std::span<contact_actor const> actors, avoidance_query const &query);
+void avoid_obstacles(movement_request &control, avoidance_state const &state, std::span<contact_actor const> actors, avoidance_query const &query, avoidance_policy const &policy = {});
 
 } // namespace earthsiege

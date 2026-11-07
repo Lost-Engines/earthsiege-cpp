@@ -95,14 +95,14 @@ void weapon_bank::disable_missing_sections(std::span<int16_t const> const presen
   }
 }
 
-int16_t weapon_bank::allocate(int16_t const selected, int16_t const budget, frame_ratio const ratio, bool const free_energy) {
+int16_t weapon_bank::allocate(int16_t const selected, int16_t const budget, frame_ratio const ratio, bool const free_energy, std::function<void(size_t)> const &after_update) {
   std::vector<weapon_power_slot> slots;
   slots.reserve(weapons.size());
   for(auto &weapon : weapons) {
     if(!weapon) slots.push_back({});
-    else slots.push_back({.energy{weapon->energy()}, .elf{weapon->elf()}, .ordinary{weapon->energy() ? nullptr : &weapon->controls()}});
+    else slots.push_back({.energy{weapon->energy()}, .elf{weapon->elf()}, .ordinary{weapon->energy() ? nullptr : &weapon->controls()}, .half_charge_rate{source.edition == game_edition::expansion && weapon->definition == 21}});
   }
-  return allocate_weapon_power(slots, selected, budget, ratio, free_energy);
+  return allocate_weapon_power(slots, selected, budget, ratio, free_energy, after_update);
 }
 
 } // namespace earthsiege

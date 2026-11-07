@@ -14,8 +14,8 @@ int16_t absorb_blast(shield_power &state,bool front,int16_t amount){
   auto remaining{wrap_word((-static_cast<int>(shield)*1024)/1000)};shield=0;return remaining;
 }
 
-int16_t recharge_shields(shield_power &state, int16_t const budget) {
-  auto const amount{std::min({shield_charge_per_update, budget, wrap_word(state.capacity - wrap_word(state.front + state.rear))})};
+int16_t recharge_shields(shield_power &state, int16_t const budget, int16_t const charge_limit) {
+  auto const amount{std::min({charge_limit, budget, wrap_word(state.capacity - wrap_word(state.front + state.rear))})};
   auto const total{wrap_word(state.front + state.rear + amount)};
   auto const desired{wrap_word((total * state.balance + shield_balance_one / 2) >> 10)};
   if(desired < state.front) state.front = std::max(desired, wrap_word(state.front - shield_transfer_per_update));

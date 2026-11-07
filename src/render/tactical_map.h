@@ -25,12 +25,13 @@ struct tactical_map_state {
   uint32_t ticks{};
   bool failed{}, blink_phase{};
   std::vector<tactical_contact> contacts;
+  unsigned projection_shift{7};
 };
 struct tactical_hit { rectangle bounds; size_t contact; };
 
-int32_t initial_tactical_height(rectangle const &mission_bounds, rectangle const &screen_bounds);
+int32_t initial_tactical_height(rectangle const &mission_bounds, rectangle const &screen_bounds, unsigned projection_shift = 7);
 int32_t tactical_pan_step(int32_t height);
-vec2<int32_t> tactical_project(vec3<int32_t> const &point, vec3<int32_t> const &camera, rectangle const &bounds);
+vec2<int32_t> tactical_project(vec3<int32_t> const &point, vec3<int32_t> const &camera, rectangle const &bounds, unsigned projection_shift = 7);
 /// Original north-up lower-panel map: fixed grid, cell-1 scenery and ICONS.DBA.
 class tactical_map {
   framebuffer &target;

@@ -34,7 +34,7 @@ int constexpr heavy_damage_speed_q10{400};
 
 } // anonymous namespace
 
-bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events) {
+bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, bool const reset_recovery) {
   /// Preserve per-update throttle and acceleration; only root-motion time is scaled
   bool const forward{std::abs(throttle_input) > throttle_direction_threshold ? throttle_input <= 0 : state.throttle >= 0};
   if(forward) steering_input = wrap_word(-steering_input);
@@ -45,16 +45,17 @@ bool update_player_movement(locomotion_state &state, movement_profile const &pro
     state.throttle = crosses_neutral ? 0 : static_cast<int16_t>(std::clamp<int>(next_throttle, -throttle_limit, throttle_limit));
   }
   auto const desired{scale(state.throttle, state.throttle < 0 ? -profile.reverse_rate : profile.forward_rate, 10)};
-  update_requested_movement(state, profile, channel, desired, steering_input, damage, ratio, events);
+  update_requested_movement(state, profile, channel, desired, steering_input, damage, ratio, events, {}, reset_recovery);
   return throttle_change != 0;
 }
 
-void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t desired, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) {
+void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t desired, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance, bool const reset_recovery) {
   if(damage.disabled) {
     desired = 0;
     steering_input = 0;
   } else {
     state.collision_recovery = std::max(0, wrap_long(static_cast<int64_t>(state.collision_recovery) - ratio));
+    if(reset_recovery && state.collision_recovery == 0) state.reverse_recovery = false;
     desired = state.collision_recovery != 0 ? (state.reverse_recovery ? profile.reverse_rate : profile.forward_rate) : std::clamp(desired, profile.reverse_rate, profile.forward_rate);
   }
   if(!damage.disabled && avoidance) avoidance(desired, steering_input);

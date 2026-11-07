@@ -10,6 +10,8 @@ struct herc_guard_policy {
   bool persistent_signature{false};
   bool group_has_objective{false};
   std::optional<size_t> designated;
+  bool expansion{false};
+  bool weapons_free{false};
 };
 struct herc_guard_callbacks {
   std::function<herc_combat_position(size_t)> position;

@@ -60,7 +60,7 @@ public:
   std::span<std::optional<weapon_state> const> slots() const;
   weapon_state &at(size_t slot);
   void disable_missing_sections(std::span<int16_t const> presence);
-  int16_t allocate(int16_t selected, int16_t budget, frame_ratio ratio, bool free_energy = false);
+  int16_t allocate(int16_t selected, int16_t budget, frame_ratio ratio, bool free_energy = false, std::function<void(size_t)> const &after_update = {});
 };
 
 } // namespace earthsiege

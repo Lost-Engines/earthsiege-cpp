@@ -57,12 +57,15 @@ void mission_session::move_herc(size_t const index, movement_request const &requ
     auto bodies{contact_bodies()}; bodies.at(index).radius = 0;
     movement_request adjusted{request.flags, speed, turn};
     avoid_obstacles(adjusted, {vec3<int32_t>{motion.position}, motion.angles.z, motion.gait_rate, motion.collision_recovery, member.collision_bias, motion.reverse_recovery}, bodies,
-      [&](avoidance_probe kind, auto const &start, auto const &end){return obstacle_distance(kind, start, end);});
+      [&](avoidance_probe kind, auto const &start, auto const &end){return obstacle_distance(kind, start, end);},
+      {.expansion{weapon_definitions.edition == game_edition::expansion},
+       .friendly_fire_line{activity->actor(activity->group(member.group).members.front()).player ? std::span<vec2<int32_t> const>{player_fire_line} : std::span<vec2<int32_t> const>{}},
+       .reverse_rate{member.definition->profile.movement.reverse_rate}});
     speed = adjusted.speed; turn = adjusted.turn;
   });
 }
 
-void mission_session::navigate_herc(size_t const index, frame_ratio const ratio) {
+void mission_session::navigate_herc(size_t const index, frame_ratio const ratio, bool const centre) {
   auto &member{crew.at(index)}; auto &actor{*member.actor}; auto &group{activity->group(member.group)};
   auto const &motion{actor.body().movement()}; auto const command{activity->decisions()[index].command};
   movement_request request;
@@ -76,7 +79,7 @@ void mission_session::navigate_herc(size_t const index, frame_ratio const ratio)
   }
   move_herc(index, request, ratio);
   actor.impacts().detectable = activity->actor(group.members.front()).player ? member.radar_active : activity->actor(index).persistent_signature;
-  actor.centre_aim(0, ratio);
+  if(centre) actor.centre_aim(0, ratio);
 }
 
 bool mission_session::contact_herc(size_t const index) {
@@ -85,7 +88,12 @@ bool mission_session::contact_herc(size_t const index) {
     if(hit->other < crew.size()) crew[hit->other].contact_received = true;
     frame_contacts.push_back(*hit);
     if(hit->damage > 0 && hit->other < crew.size()) {
-      for(auto const victim : {index, hit->other}) crew[victim].actor->radial_damage(hit->position, ramming_damage_radius, wrap_word(hit->damage), random, damage_events(victim), victim == player_index && settings.player_is_invulnerable());
+      for(auto const victim : {index, hit->other}) {
+        // Expansion 0x16080 calls virtual +0x74, which now absorbs the
+        // collision in the directional shield before damaging components.
+        auto const damage{weapon_definitions.edition == game_edition::expansion ? &herc_actor::blast_damage : &herc_actor::radial_damage};
+        (crew[victim].actor.get()->*damage)(hit->position, ramming_damage_radius, wrap_word(hit->damage), random, damage_events(victim), victim == player_index && settings.player_is_invulnerable(weapon_definitions.edition));
+      }
     }
     return true;
   }
@@ -105,9 +113,10 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
       // 18278 passes actor+20 into 1f75c by address. Self-damage can move
       // a removed rammer underground before later victims are visited.
       auto const &centre{actor.body().movement().position};
-      for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && distance(centre, crew[i].actor->body().movement().position) < 3000)
-        crew[i].actor->radial_damage(centre, 3000, 2000, random, damage_events(i), i == player_index && settings.player_is_invulnerable());
-      if(index != player_index || !settings.player_is_invulnerable()) for(size_t section{0}; section != actor.damage().present.size(); ++section)
+      if(weapon_definitions.edition == game_edition::expansion) blast({.actor{activity->size()}, .target{}}, centre, 3000, 2000);
+      else for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && distance(centre, crew[i].actor->body().movement().position) < 3000)
+        crew[i].actor->radial_damage(centre, 3000, 2000, random, damage_events(i), i == player_index && settings.player_is_invulnerable(weapon_definitions.edition));
+      if(index != player_index || !settings.player_is_invulnerable(weapon_definitions.edition)) for(size_t section{0}; section != actor.damage().present.size(); ++section)
         if(actor.damage().present[section]) actor.direct_damage(section, 32000, random, damage_events(index));
     }
     return;
@@ -147,7 +156,10 @@ void mission_session::damage_consequences_changed(size_t const index, damage_con
 vec3<int32_t> mission_session::guard_anchor(size_t const index) const {
   auto const &member{crew.at(index)};
   switch(activity->decisions()[index].command) {
-    case 6: return vec3<int32_t>{member.command_position};
+    case 6:
+      // Expansion DEFEND can follow a selected friendly actor instead of a point.
+      if(weapon_definitions.edition == game_edition::expansion && member.followed) return combat_position(*member.followed).position;
+      return vec3<int32_t>{member.command_position};
     case 3: return combat_position(member.followed.value()).position;
     case 5: return combat_position(member.designated.value()).position;
     default: break;
@@ -164,7 +176,7 @@ bool mission_session::herc_target_completed(size_t const index) const {
   auto const observations{observe()};
   if(own.command == 4 && crew[index].designated) {
     auto const type{activity->decisions()[target].controller.type};
-    auto const properties{type ? describe(*type).properties : uint16_t{0}};
+    auto const properties{type ? describe(*type, weapon_definitions.edition == game_edition::expansion).properties : uint16_t{0}};
     return (properties & 32 ? 2 : properties & 16 ? 1 : 0) > crew[index].stop_status;
   }
   auto const &objectives{activity->group(crew[index].group).objectives};
@@ -203,9 +215,13 @@ void mission_session::hit_reaction(size_t const victim, size_t const attacker, i
   if(victim >= crew.size()) {activity->share_contact(victim, attacker, observe()); return;}
   auto &member{crew[victim]};auto const &group{activity->group(member.group)};
   auto const leader{group.members.front()};
+  // Projectiles can arrive after their owner dies. Read live actor flags, not
+  // the last controller decision (a dead flyer no longer makes decisions).
+  auto const source{observe().at(attacker)};
   react_to_herc_hit(member.reactions, activity->decisions()[victim], activity->targets(), victim, attacker, damage,
     {victim == player_index, member.group == crew[player_index].group, attacker == player_index, member.side == activity->group(actor_group(attacker)).side,
-     activity->actor(leader).player, activity->targets()[leader].selected == attacker, combat_kind(activity->actor(attacker).kind)},
+     activity->actor(leader).player, activity->targets()[leader].selected == attacker, combat_kind(activity->actor(attacker).kind),
+     weapon_definitions.edition == game_edition::expansion, source.dead || source.disabled || source.unavailable},
     member.ignore_hud_target, member.designated, {
     .share_contact{[&]{activity->share_contact(victim, attacker, observe());}},
     .friendly_warning{[&]{frame_notices.push_back({combat_notice_kind::friendly_warning, victim, 0, 0, {}});announce(victim,8);}},
@@ -228,7 +244,7 @@ void mission_session::reconsider_herc(size_t const index) {
     activity->decisions()[i].disabled = observations[i].disabled;
   }
   reconsider_herc_attack(activity->decisions(), activity->targets(), index, group.members,
-    {group.order, activity->actor(group.members.front()).player, member.radar_active, actor.impacts().ecm_remaining}, actor.impacts().detectable, {
+    {group.order, activity->actor(group.members.front()).player, member.radar_active, actor.impacts().ecm_remaining, weapon_definitions.edition == game_edition::expansion}, actor.impacts().detectable, {
     .select{[&](target_selection_flags flags){return activity->select(observe(), index, flags, std::nullopt, random);}},
     .target_kind{[&](size_t target){return combat_kind(activity->actor(target).kind);}},
     // 0x174ca invokes each eligible follower's own strategy synchronously.
@@ -263,7 +279,7 @@ void mission_session::aim_herc(size_t const index, size_t const target, int16_t 
   if(selection.mode == herc_aim_mode::centre_controls) { actor.centre_aim(0, ratio); return; }
   auto const point{target_position(target, selection.component)};
   aim_and_fire_herc(member.fire, actor.weapons(), weapon_definitions, own.position, {vec3<int32_t>{point}, other.heading, facing},
-    {member.side != 0, settings.campaign_mode != 0, settings.difficulty}, random, {
+    {member.side != 0, weapon_definitions.edition != game_edition::expansion && settings.campaign_mode != 0, settings.difficulty}, random, {
     .select_weapon{[&](int32_t range, int16_t direction){
       auto &decision{activity->decisions()[index]};
       herc_weapon_selection_state state{member.sensors.locks, member.aim_tolerance, actor.impacts().ecm_remaining, actor.impacts().detectable, decision.unavailable};
@@ -321,7 +337,7 @@ void mission_session::dispatch_herc(size_t const index, frame_ratio const ratio)
     if(enter_skirting(index)) return false;
     auto const target{activity->targets()[index].selected.value()};
     return attack_with_herc(type, member.attack, state.command,
-      {combat_position(index), combat_position(target), actor.impacts().damage_received, incapacitated(state), incapacitated(activity->decisions()[target]), herc_target_completed(index), target >= base_id(0) && bases[target-base_id(0)].actor->profile().can_retaliate}, ratio, {
+      {combat_position(index), combat_position(target), actor.impacts().damage_received, incapacitated(state), incapacitated(activity->decisions()[target]), herc_target_completed(index), target >= base_id(0) && bases[target-base_id(0)].actor->profile().can_retaliate, weapon_definitions.edition == game_edition::expansion}, ratio, {
       .move{[&](movement_request const &request){move_herc(index, request, ratio);}},
       .aim{[&](int16_t facing){aim_herc(index, target, facing, ratio);}},
       .completed{[&, target, type]{
@@ -363,7 +379,7 @@ void mission_session::dispatch_herc(size_t const index, frame_ratio const ratio)
         case behavior::patrolling: case behavior::search_destroy:
           patrol_engagement(type == behavior::patrolling ? engagement_mode::herc_patrol : engagement_mode::herc_search, state, index, activity->targets(), activity->objective(index), ratio, activity->entry_stagger(), {
             .navigate{[&]{navigate_herc(index, ratio);}}, .select{orders.select}, .attack{[&]{reconsider_herc(index);}}, .enter{orders.enter},
-          });
+          }, weapon_definitions.edition == game_edition::expansion && member.weapons_free);
           return false;
         case behavior::travelling: case behavior::bulldog_travel:
           travel_with_herc(member.travel, activity->targets(), index, activity->actor(index).persistent_signature, actor.impacts().detectable, ratio, orders); return false;
@@ -380,9 +396,9 @@ void mission_session::dispatch_herc(size_t const index, frame_ratio const ratio)
         case behavior::guarding: {
           std::vector<size_t> candidates(crew.size()); std::iota(candidates.begin(), candidates.end(), 0);
           guard_with_herc(activity->decisions(), activity->targets(), index, candidates,
-            {guard_anchor(index), activity->actor(group.members.front()).player, member.radar_active, activity->actor(index).persistent_signature, group.representative.has_value(), member.designated}, actor.impacts().detectable, ratio, {
+            {guard_anchor(index), activity->actor(group.members.front()).player, member.radar_active, activity->actor(index).persistent_signature, group.representative.has_value(), member.designated, weapon_definitions.edition == game_edition::expansion, member.weapons_free}, actor.impacts().detectable, ratio, {
             .position{orders.position}, .eligible{[&](size_t target){return activity->eligible(observe(), index, target);}},
-            .navigate{[&]{navigate_herc(index, ratio);}}, .centre_aim{orders.centre_aim},
+            .navigate{[&]{navigate_herc(index, ratio, weapon_definitions.edition != game_edition::expansion);}}, .centre_aim{orders.centre_aim},
             .move_to{[&](vec3<int32_t> const &point){auto const own{combat_position(index)}; move_herc(index, {.speed{member.requested_speed ? member.requested_speed : int16_t{170}}, .turn{static_cast<int16_t>(wrap_word(bearing_angle(own.position, point) - own.heading) >> 4)}}, ratio);}},
             .move{orders.move}, .choose_component{[&]{return actor.choose_aimed_component(*crew.at(activity->targets()[index].selected.value()).actor, random);}}, .enter{orders.enter},
           });

@@ -18,13 +18,13 @@ void assign_target(std::span<target_relationship> const relationships, size_t co
   state.changed = true;
 }
 
-void patrol_engagement(engagement_mode const mode, engagement_state &state, size_t const actor, std::span<target_relationship> const relationships, target_objective const &objective, frame_ratio const ratio, uint16_t &world_stagger, engagement_callbacks const &callbacks) {
+void patrol_engagement(engagement_mode const mode, engagement_state &state, size_t const actor, std::span<target_relationship> const relationships, target_objective const &objective, frame_ratio const ratio, uint16_t &world_stagger, engagement_callbacks const &callbacks, bool const weapons_free) {
   bool const flyer{mode == engagement_mode::flyer_search || mode == engagement_mode::flyer_patrol};
   bool const patrol{mode == engagement_mode::herc_patrol || mode == engagement_mode::flyer_patrol};
   auto const command{state.command};
   callbacks.navigate();
   if(!flyer) assign_target(relationships, actor, std::nullopt);
-  if(actor != objective.leader && !(patrol && !flyer && command != 0)) return;
+  if(actor != objective.leader && !(patrol && !flyer && command != 0) && !(weapons_free && !flyer)) return;
   auto &timer{state.controller.target_search_remaining};
   timer = std::max<int16_t>(0, wrap_word(timer - ratio));
   if(timer != 0) return;

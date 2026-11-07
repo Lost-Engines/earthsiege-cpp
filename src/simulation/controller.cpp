@@ -9,7 +9,7 @@ namespace earthsiege {
 bool behavior_definition::holds_countdown() const { return (properties & 1U) != 0; }
 bool behavior_definition::attacking() const { return (properties & 2U) != 0; }
 
-behavior_definition const &describe(behavior const type) {
+behavior_definition const &describe(behavior const type, bool const expansion) {
   static std::array<behavior_definition, 27> constexpr definitions{{
     {"deciding", 0, 0, 3}, {"player", 10, 1, 3}, {"attacking", 50000, 2, 0},
     {"flanking", 50000, 2, 0}, {"facing off", 50000, 2, 0}, {"attacking base", 50000, 2, 0},
@@ -22,6 +22,9 @@ behavior_definition const &describe(behavior const type) {
     {"patrolling", 5000, 0, std::nullopt}, {"search and destroy", 5000, 0, std::nullopt},
     {"sleeping", 500, 1, std::nullopt}, {"scouting", 5000, 0, std::nullopt}, {"dead", 500, 1, std::nullopt},
   }};
+  // Expansion table b693c keeps a HERC attacking while it skirts an obstacle.
+  static constexpr behavior_definition expansion_skirting{"skirting", 10, 3, 0};
+  if(expansion && type == behavior::skirting) return expansion_skirting;
   return definitions.at(static_cast<size_t>(type));
 }
 
@@ -61,8 +64,8 @@ behavior initial_flyer_behavior(int16_t const order) {
   }
 }
 
-int16_t herc_status(behavior const type, bool const disabled, bool const dead, int16_t const command) {
-  auto const &definition{describe(type)};
+int16_t herc_status(behavior const type, bool const disabled, bool const dead, int16_t const command, bool const expansion) {
+  auto const &definition{describe(type, expansion)};
   if(!definition.status) throw std::invalid_argument{"flyer controller has no HERC status"};
   if(!disabled && !dead && *definition.status != 5 && !definition.attacking()) {
     switch(command) {

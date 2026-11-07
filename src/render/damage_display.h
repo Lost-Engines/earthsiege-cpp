@@ -17,6 +17,7 @@ struct damage_display_state {
   int16_t total_damage{};
   std::array<int16_t, 19> armour{};
   std::array<int16_t, 12> internal{};
+  std::string name;
 };
 
 /// STATUS/TARGET share an original paper doll renderer and retain the name font.

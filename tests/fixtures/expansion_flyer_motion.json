@@ -1,0 +1,7 @@
+{
+  "scope": "Original flyer steering and movement with recorded obstacle-query boundaries.\n\nAll original pitch/bank control, Euler/matrix arithmetic, integration, ground\nintersection and avoidance clocks execute. Scenery/base probes return explicit\nsynthetic distances; their call order and endpoints are recorded for comparison.\n",
+  "image_sha256": "2ae2c903cbba85c048c5fd1d8b1c8340eedeff44354bc87f2c8be742debc2923",
+  "cases": 192,
+  "steps": 2304,
+  "fixture_sha256": "eb7e8bc3ff531d2ab9a9d7474879298fdf0278aaa0e71ee0620e7ca4e0fa29e3"
+}

@@ -34,6 +34,7 @@ public:
   void initialise_displays();
   std::span<weapon_display const> displays() const;
   void request_group_control(unsigned int button);
+  void cycle_requested_group(bool reverse);
   void exchange_group_controls();
   bool click_control(unsigned int control_number, bool secondary);
   void request_charge(unsigned int control_number, int32_t value);

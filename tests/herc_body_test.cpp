@@ -73,6 +73,7 @@ int main(int const argc, char **argv) try {
           return hits.at(visited++);
         })};
         if(visited != probes || hit != expected_hit) file.fail("contact response differs");
+        if(hit && body.exchange_throttle(1024) != 0) file.fail("collision stop lost to cockpit slider");
       } else if(version == "ESBODY03") body.step_requested(controls.throttle, controls.steering, vec2<int16_t>{controls.torso, controls.elevation}, ratio);
       else body.step(controls, ratio);
       check(body, read_state(file), name + "/" + std::to_string(step));

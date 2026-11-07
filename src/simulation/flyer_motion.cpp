@@ -22,14 +22,20 @@ void aim_flyer_pitch(flyer_motion &state, flyer_profile const &profile, int16_t 
 void steer_flyer(flyer_motion &state, flyer_profile const &profile, int16_t const pitch_input, int16_t const bank_input) {
   auto const input{std::clamp<int16_t>(bank_input,-256,256)};
   state.angular_step.y = approach(state.angular_step.y,scaled(input,profile.bank_rate,8),profile.bank_acceleration);
-  state.angular_step.z = wrap_word(-static_cast<int32_t>(wrap_word(state.angles.y)) >> (profile.bank_turn_shift & 31));
-  aim_flyer_pitch(state,profile,wrap_word(state.angles.x + pitch_input * 16));
+  auto const bank{wrap_word(state.angles.y)};
+  if(profile.edition == game_edition::expansion) {
+    state.angular_step.z = wrap_word((std::abs(static_cast<int>(bank)) < 16384 ? -static_cast<int>(bank) : static_cast<int>(wrap_word(bank - 32768))) >> (profile.bank_turn_shift & 31));
+    state.angular_step.x = approach(state.angular_step.x, scaled(pitch_input, profile.pitch_step, 8), profile.bank_acceleration);
+  } else {
+    state.angular_step.z = wrap_word(-static_cast<int32_t>(bank) >> (profile.bank_turn_shift & 31));
+    aim_flyer_pitch(state,profile,wrap_word(state.angles.x + pitch_input * 16));
+  }
 }
 void hold_flyer_bank(flyer_motion &state, flyer_profile const &profile, int16_t const bank) {
   steer_flyer(state,profile,0,wrap_word((bank - wrap_word(state.angles.y)) >> 4));
 }
 void turn_flyer(flyer_motion &state, flyer_profile const &profile, int16_t const heading_error, std::optional<flyer_leader_turn> const leader) {
-  auto yaw{state.angular_step.z};
+  auto yaw{profile.edition == game_edition::expansion ? state.previous_yaw_step : state.angular_step.z};
   if(leader) {
     auto const projected{scaled(leader->heading_step,model_cosine(static_cast<uint16_t>(state.angles.z - leader->heading)),14)};
     yaw = wrap_word(yaw - scaled(200,projected,10));
@@ -47,7 +53,18 @@ void hold_flyer_altitude(flyer_motion &state, flyer_profile const &profile, int3
 void advance_flyer(flyer_motion &state, flyer_profile const &profile, frame_ratio const ratio, avoidance_query const &query) {
   state.velocity.y = profile.forward_step;
   state.position = transform_point(state.velocity,flyer_placement(state));
-  for(unsigned int axis{0}; axis != 3; ++axis) state.angles[axis] = static_cast<uint16_t>(state.angles[axis] + state.angular_step[axis]);
+  if(profile.edition == game_edition::expansion) {
+    // Expansion 1d29c composes local pitch/bank matrices, extracts their angles,
+    // then applies world yaw. Even a zero step retains the lookup quantisation.
+    auto const yaw{state.angular_step.z};
+    state.previous_yaw_step = yaw;
+    state.angular_step.z = 0;
+    auto const delta{rotation_transform(vec3<uint16_t>{state.angular_step})};
+    state.angles = transform_angles(compose_transforms(delta, rotation_transform(state.angles)));
+    state.angles.z = static_cast<uint16_t>(state.angles.z + yaw);
+  } else {
+    for(unsigned int axis{0}; axis != 3; ++axis) state.angles[axis] = static_cast<uint16_t>(state.angles[axis] + state.angular_step[axis]);
+  }
   auto end{transform_point({0,15000,0},flyer_placement(state))};
   auto start{state.position}; end.z = wrap_long(static_cast<int64_t>(end.z) - 500); start.z = wrap_long(static_cast<int64_t>(start.z) - 500);
   int32_t distance{0};

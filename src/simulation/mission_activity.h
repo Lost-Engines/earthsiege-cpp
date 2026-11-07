@@ -52,6 +52,7 @@ struct observed_actor {
 /// Positions and damage remain owned by the corresponding live actors.
 class mission_activity {
   mission_header settings;
+  bool expansion{};
   mission_counters counters;
   mission_triggers triggers;
   std::vector<mission_actor_activity> actors;
@@ -63,7 +64,7 @@ class mission_activity {
   std::vector<perception_actor> perception_views(std::span<observed_actor const> observations);
 
 public:
-  mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial = {}, bool initialise_controllers = true);
+  mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial = {}, bool initialise_controllers = true, bool expansion = false);
   mission_actor_activity const &actor(size_t index) const;
   mission_actor_activity &actor(size_t index);
   mission_group_activity const &group(size_t index) const;

@@ -32,6 +32,9 @@ void player_armament::request_group_control(unsigned int const button) {
   else if(button == 3) requested_link = true;
   else if(button == 4) requested_tracking = !requested_tracking.value_or(tracking);
 }
+void player_armament::cycle_requested_group(bool const reverse) {
+  requested_group = static_cast<uint8_t>((requested_group.value_or(group) + (reverse ? 2 : 1)) % 3);
+}
 void player_armament::exchange_group_controls() {
   // Original 0xcf78 performs automatic selection first, then these UI writes.
   // B has already changed the bank and overrides a pending mouse group choice.

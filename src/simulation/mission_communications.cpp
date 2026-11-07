@@ -5,14 +5,15 @@ namespace earthsiege {
 std::optional<int16_t> mission_session::pilot_identity(size_t const actor) const { return actor<crew.size()?crew[actor].pilot_slot:std::nullopt; }
 wingmate_order_state mission_session::order_state(size_t const index) const {
   wingmate_order_state s;
+  s.expansion=weapon_definitions.edition==game_edition::expansion;
   auto const &decision{activity->decisions()[index]};
   s.position=combat_position(index).position; s.type=decision.controller.type.value_or(behavior::herc_deciding);
   s.dead=decision.dead; s.disabled=decision.disabled; s.unavailable=decision.unavailable;
   s.selected=activity->targets()[index].selected; s.herc=index<crew.size();
   if(s.herc) {
-    auto const &member{crew[index]};
+    auto const &member{crew[index]}; s.weapons_free=member.weapons_free;
     s.radar=member.actor->impacts().detectable; s.radar_requested=member.radar_active; s.ignore_target=member.ignore_hud_target;
-    s.command=decision.command; s.designated=member.designated; s.stop_status=member.stop_status;
+    s.command=decision.command; s.designated=member.designated; s.followed=member.followed; s.stop_status=member.stop_status;
     s.command_position={member.command_position.x,member.command_position.y};
     s.incoming_damage=member.reactions.incoming_damage; s.reconsider_remaining=decision.controller.reconsider_remaining;
   }
@@ -56,7 +57,8 @@ bool mission_session::transmit_order(wingmate_order const &order,std::optional<s
   auto const apply{[&](size_t index) {
     auto const &s{states[index]}; auto &member{crew.at(index)}; auto &decision{activity->decisions()[index]};
     member.actor->impacts().detectable=s.radar; member.radar_active=s.radar_requested; member.ignore_hud_target=s.ignore_target;
-    decision.command=s.command; member.designated=s.designated; member.stop_status=s.stop_status;
+    member.weapons_free=s.weapons_free;
+    decision.command=s.command; member.designated=s.designated; member.followed=s.followed; member.stop_status=s.stop_status;
     member.command_position.x=s.command_position.x; member.command_position.y=s.command_position.y;
     member.reactions.incoming_damage=s.incoming_damage; decision.controller.reconsider_remaining=s.reconsider_remaining;
   }};
@@ -79,7 +81,7 @@ bool mission_session::transmit_order(wingmate_order const &order,std::optional<s
       .resume{[&]{apply(index);resume_herc_orders(index);refresh();}},
       .enter{[&](behavior type){apply(index);enter_herc(index,type);refresh();}},
       .acknowledge{[&](uint16_t response){if(!states[index].dead) announce(index,response);}},
-    })};
+    },group.representative)};
     apply(index);return accepted;
   }};
   if(recipient) {

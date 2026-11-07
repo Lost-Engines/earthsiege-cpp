@@ -17,6 +17,6 @@ struct herc_power {
 
 using weapon_power_allocator = std::function<int16_t(int16_t)>;
 /// Ratio-scaled reactor supply, then weapon allocation, then shield charging and reserve clamp
-void update_herc_power(herc_power &state, damage_consequences const &damage, frame_ratio ratio, weapon_power_allocator const &allocate);
+void update_herc_power(herc_power &state, damage_consequences const &damage, frame_ratio ratio, weapon_power_allocator const &allocate, int16_t shield_charge = shield_charge_per_update);
 
 } // namespace earthsiege

@@ -1,32 +1,43 @@
-#include "shell/mission_view.h"
-#include "shell/mission_alert.h"
+#include "shell/demo_playback.h"
 #include <iostream>
 #include <stdexcept>
 using namespace earthsiege;
 int main(int argc,char **argv)try{
- if(argc<3)return 1;resource_store resources{argv[1]};auto demo{std::stoi(argv[2])};
- auto tape{read_input_tape(read_file(resources.root()/"TAPES"/("DEMO"+std::to_string(demo)+".TAP")),resources.edition())};mission_view view{resources,tape};
- preferences::values defaults{1,1,2,1,255,255,255,0,0,0,0,1,0,0,2,0,0,1};auto settings{preferences{defaults,true,resources.edition()}};view.configure_input(settings,{});
- size_t next{},frames{},modals{},queued{};uint64_t clock{};bool exited{};
- auto alert=[&](int message){
-  mission_alert dialog{resources,message};if(next<tape.frames.size()){++next;++modals;}
-  bool left{};std::optional<int> answer;
-  while(!answer&&next<tape.frames.size()){
-   auto const &input{tape.frames[next++]};++modals;
-   for(auto const &e:input.mouse){bool held{bool(e.kind&1)};if(held&&!left)dialog.mouse_down(e.position.x,e.position.y);if(!held&&left)answer=dialog.mouse_up(e.position.x,e.position.y);left=held;}
-   if(!answer)answer=dialog.input(input.command,input.buttons&1,input.buttons&2,settings.current()[10]!=0).response;
-  }
-  exited=answer&&dialog.exits_mission(*answer);return exited;
- };
- mission_dialog_handlers dialogs{.command{[&](uint16_t code){if(code==16)return alert(static_cast<int>(view.status(true)))?mission_command_result::exit_mission:mission_command_result::handled;return mission_command_result::unhandled;}},.outcome{[&](mission_status status){return alert(static_cast<int>(status));}}};
- while(next<tape.frames.size()&&!exited){
-  auto const &record{tape.frames[next++]};queued+=record.commands.size();clock+=static_cast<uint64_t>(record.delta)*100/256;
-  if(!view.step_recorded(record,static_cast<uint32_t>(clock*60/1000),false,dialogs))exited=true;
-  view.audio_clock(clock*120/1000);view.take_audio();
-  if(frames%64==0||exited){view.draw();if(argc>3){std::filesystem::path path{argv[3]};std::filesystem::create_directories(path);view.image().save(path/("demo"+std::to_string(demo)+"-"+std::to_string(frames)+".ppm"),view.colours());}}
-  ++frames;
+ if(argc!=4)throw std::runtime_error{"Usage: expansion_replay_test DATA FIXTURE SAVE_DIRECTORY"};
+ auto const bytes{read_file(argv[2])};binary_reader expected{bytes};auto magic{expected.take(8)};
+ if(std::string(magic.begin(),magic.end())!="ESPATH02")expected.fail("demo path fixture version");
+ auto const demo{expected.integer<uint32_t>()},frames{expected.integer<uint32_t>()},packets{expected.integer<uint32_t>()};
+ auto const prefs{expected.take(expected.integer<uint16_t>())};
+ resource_store resources{argv[1]};preferences settings{prefs,true,resources.edition()};
+ demo_playback replay{resources,demo,settings,std::filesystem::path{argv[3]}/("demo"+std::to_string(demo))};
+ auto const present{[&](unsigned,framebuffer const &){replay.view().take_audio();replay.view().take_pan_frames();return true;}};
+ unsigned startup{};
+ while(replay.view().starting()&&!replay.done()){
+  if(++startup>20000)expected.fail("demo startup did not finish");
+  replay.step(present);
  }
- if(next!=tape.frames.size())throw std::runtime_error{"Replay exited before consuming all recorded input"};
- if(frames<1000)throw std::runtime_error{"Replay ended before sustained simulation"};
- std::cout<<"Expansion demo "<<demo<<": "<<frames<<" simulation frames, "<<modals<<" modal packets, "<<queued<<" queued commands; consumed "<<next<<"/"<<tape.frames.size()<<" packets\n";return 0;
+ for(uint32_t frame{};frame<frames;++frame){
+  if(replay.done())expected.fail("demo ended before original frame "+std::to_string(frame));
+  auto check{[&](auto actual,auto original,char const *field){
+   if(actual!=original)expected.fail("demo "+std::to_string(demo)+" frame "+std::to_string(frame)+" "+field+": native "+std::to_string(actual)+", original "+std::to_string(original));
+  }};
+  auto const &random{replay.view().simulation().random_snapshot()};
+  for(auto value:random.words)check(value,expected.integer<uint16_t>(),"gameplay random word");
+  check(random.first,expected.integer<uint8_t>(),"gameplay random first tap");
+  check(random.second,expected.integer<uint8_t>(),"gameplay random second tap");
+  replay.step(present);
+  check(replay.frames_played(),frame+1,"simulation count");
+  check(replay.packets_read(),expected.integer<uint32_t>(),"input packets");
+  auto const &motion{replay.view().simulation().player().movement()};
+  for(auto value:{motion.position.x,motion.position.y,motion.position.z})check(value,expected.integer<int32_t>(),"position");
+  for(auto value:{motion.angles.x,motion.angles.y,motion.angles.z})check(value,expected.integer<uint16_t>(),"angle");
+  check(motion.throttle,expected.integer<int16_t>(),"throttle");
+  check(motion.gait_rate,expected.integer<int16_t>(),"gait");
+  check(motion.steering_rate,expected.integer<int16_t>(),"steering");
+  check(motion.playback_rate,expected.integer<int16_t>(),"animation rate");
+ }
+ expected.require_end();
+ if(!replay.done()||replay.packets_read()!=packets)expected.fail("demo did not end at the original packet");
+ std::cout<<"Expansion demo "<<demo<<": "<<frames<<" player states and gameplay RNG agree exactly with DOSBox; "<<packets<<" packets, "<<replay.modal_packets_read()<<" modal packets\n";
+ return 0;
 }catch(std::exception const &e){std::cerr<<e.what()<<'\n';return 1;}

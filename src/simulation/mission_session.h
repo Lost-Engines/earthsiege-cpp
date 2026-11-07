@@ -95,6 +95,7 @@ class mission_session {
     bool obstructed{false};
     bool radar_active{false};
     bool ignore_hud_target{false};
+    bool weapons_free{false};
     std::optional<impact_obstruction> obstruction{};
     player_objective_progress objectives{};
     bool route_checked{false};
@@ -137,6 +138,7 @@ class mission_session {
   std::vector<bool> deployment_started;
   bool activate_group(size_t index);
   void place_deployed(size_t actor,vec3<int32_t> const &position,std::optional<uint16_t> heading = {});
+  bool blast(projectile_owner const &, vec3<int32_t> const &centre, int16_t radius, int16_t amount);
   int16_t blast_radius(size_t actor) const;
   placement_catalogue layout;
   std::unique_ptr<mission_activity> activity;
@@ -165,7 +167,7 @@ class mission_session {
   void hit_reaction(size_t victim, size_t attacker, int16_t damage);
   void friendly_fire_warning(size_t index);
   vec3<int32_t> obstruction_position(size_t index) const;
-  void navigate_herc(size_t index, frame_ratio ratio);
+  void navigate_herc(size_t index, frame_ratio ratio, bool centre = true);
   void move_herc(size_t index, movement_request const &request, frame_ratio ratio);
   void aim_herc(size_t index, size_t target, int16_t facing, frame_ratio ratio);
   void advance_herc(size_t index, frame_ratio ratio, bool ramming = false);
@@ -205,6 +207,7 @@ class mission_session {
   void announce_system(uint16_t message);
   void announce(size_t actor,uint16_t message,bool allow_dead=false);
   std::unique_ptr<player_armament> player_weapons;
+  std::vector<vec2<int32_t>> player_fire_line;
   int32_t player_weapon_range{};
   player_input_router input_router;
   std::optional<size_t> displayed_target;
@@ -258,8 +261,10 @@ public:
   void initialise_weapon_instruments();
   void exchange_weapon_instruments(frame_ratio ratio);
   void weapon_group_control(unsigned int button);
+  void cycle_weapon_group(bool reverse);
   void weapon_control(unsigned int control_number, bool secondary);
   void weapon_charge_request(unsigned int control_number, int32_t value);
+  void change_player_shield_balance(bool toward_front);
   int16_t exchange_player_instruments(int16_t requested_throttle, std::optional<bool> shield_to_front = {});
   void clear_player_input();
   bool player_command(uint16_t code);

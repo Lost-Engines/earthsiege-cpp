@@ -7,8 +7,8 @@ namespace earthsiege {
 namespace {
 std::optional<size_t> reference(int16_t const value) { return value < 0 ? std::nullopt : std::optional<size_t>{static_cast<size_t>(value)}; }
 }
-mission_activity::mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial, bool const initialise_controllers)
-  : settings{script.header}, counters{initial}, triggers{script} {
+mission_activity::mission_activity(mission_script const &script, mission_placement const &placement, mission_counters initial, bool const initialise_controllers, bool const expanded)
+  : settings{script.header}, expansion{expanded}, counters{initial}, triggers{script} {
   counters[7] = 0;
   std::array<size_t,3> offsets{0,placement.actors[0].size(),placement.actors[0].size()+placement.actors[1].size()};
   auto const count{offsets[2]+placement.actors[2].size()};
@@ -151,7 +151,7 @@ std::optional<size_t> mission_activity::select(std::span<observed_actor const> c
       .side{groups[state.group].side}, .strength{input.strength}, .known{state.awareness.known}, .seen{state.awareness.seen},
       .dead{input.dead}, .removed{input.removed || waiting(i)}, .disabled{input.disabled}, .unavailable{input.unavailable}, .objective_event{input.objective_event},
       .player{state.player}, .ignore_hud_target{input.ignore_hud_target}, .target{relationships[i].selected}, .attackers{relationships[i].attackers},
-      .controller_attacking{controllers[i].controller.type ? std::optional<bool>{describe(*controllers[i].controller.type).attacking()} : std::nullopt},
+      .controller_attacking{controllers[i].controller.type ? std::optional<bool>{describe(*controllers[i].controller.type, expansion).attacking()} : std::nullopt},
       .compares_combat_strength{state.kind==actor_kind::herc}});
   }
   return select_target(candidates,observer,flags,objective(observer),settings.objective_kind,hud_target,random,maximum_bearing);

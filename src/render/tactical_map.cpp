@@ -7,16 +7,16 @@
 #include "simulation/model_math.h"
 
 namespace earthsiege {
-int32_t initial_tactical_height(rectangle const &mission, rectangle const &screen) {
-  return 2*std::max((((mission.right-mission.left)>>1)<<7)/(2*((screen.right-screen.left)>>1)),
-                    (((mission.bottom-mission.top)>>1)<<7)/(2*((screen.bottom-screen.top)>>1)));
+int32_t initial_tactical_height(rectangle const &mission, rectangle const &screen, unsigned const projection_shift) {
+  return 2*std::max((((mission.right-mission.left)>>1)<<projection_shift)/(2*((screen.right-screen.left)>>1)),
+                    (((mission.bottom-mission.top)>>1)<<projection_shift)/(2*((screen.bottom-screen.top)>>1)));
 }
 int32_t tactical_pan_step(int32_t const height) { return (((height-50000)>>3)*11875/118750)*8+5000; }
-vec2<int32_t> tactical_project(vec3<int32_t> const &point, vec3<int32_t> const &camera, rectangle const &bounds) {
+vec2<int32_t> tactical_project(vec3<int32_t> const &point, vec3<int32_t> const &camera, rectangle const &bounds, unsigned const projection_shift) {
   int32_t const distance{camera.z-point.z};
   if(!distance) return {bounds.left,bounds.top};
-  return {bounds.left+((bounds.right-bounds.left)>>1)+wrap_long(static_cast<int64_t>(point.x-camera.x)*128)/distance,
-          bounds.top+((bounds.bottom-bounds.top)>>1)-wrap_long(static_cast<int64_t>(point.y-camera.y)*128)/distance};
+  return {bounds.left+((bounds.right-bounds.left)>>1)+wrap_long(static_cast<int64_t>(point.x-camera.x)*(1<<projection_shift))/distance,
+          bounds.top+((bounds.bottom-bounds.top)>>1)-wrap_long(static_cast<int64_t>(point.y-camera.y)*(1<<projection_shift))/distance};
 }
 tactical_map::tactical_map(resource_store const &resources, framebuffer &buffer, scenery_world const &source)
   : target{buffer}, world{source}, colours{source.colours()}, models{buffer,colours},
@@ -28,8 +28,8 @@ std::vector<tactical_hit> tactical_map::draw(rectangle const &bounds,tactical_ma
   scoped_framebuffer_clip clip{target,&mask};
   target.fill(bounds,54);std::vector<tactical_hit> hits;
   if(state.failed) return hits;
-  auto const origin{tactical_project({0,0,0},state.camera,bounds)};
-  auto const far{tactical_project({800000,800000,0},state.camera,bounds)};
+  auto const origin{tactical_project({0,0,0},state.camera,bounds,state.projection_shift)};
+  auto const far{tactical_project({800000,800000,0},state.camera,bounds,state.projection_shift)};
   int const span{far.x-origin.x};
   if(span>0) {
     for(int i{};origin.x+((i*span)>>4)<bounds.right;++i)
@@ -45,12 +45,12 @@ std::vector<tactical_hit> tactical_map::draw(rectangle const &bounds,tactical_ma
     target.fill({box.left,box.top,box.right,box.top},colour);target.fill({box.left,box.bottom,box.right,box.bottom},colour);
     target.fill({box.left,box.top,box.left,box.bottom},colour);target.fill({box.right,box.top,box.right,box.bottom},colour);
   }};
-  auto const lower{tactical_project({state.mission_bounds.left,state.mission_bounds.top,0},state.camera,bounds)};
-  auto const upper{tactical_project({state.mission_bounds.right,state.mission_bounds.bottom,0},state.camera,bounds)};
+  auto const lower{tactical_project({state.mission_bounds.left,state.mission_bounds.top,0},state.camera,bounds,state.projection_shift)};
+  auto const upper{tactical_project({state.mission_bounds.right,state.mission_bounds.bottom,0},state.camera,bounds,state.projection_shift)};
   outline({lower.x,upper.y,upper.x,lower.y},53);
   auto camera{rotation_transform({49152,0,0})};camera.translation=state.camera;
   model_view view;view.camera=inverse_transform(camera);view.bounds=bounds;
-  view.projection.perspective_shift=7;view.projection.near_distance=128;
+  view.projection.perspective_shift=state.projection_shift;view.projection.near_distance=128;
   view.projection.centre={bounds.left+((bounds.right-bounds.left)>>1),bounds.top+((bounds.bottom-bounds.top)>>1)};
   std::array const lights{default_world_light()};
   {
@@ -70,12 +70,12 @@ std::vector<tactical_hit> tactical_map::draw(rectangle const &bounds,tactical_ma
         position={contact.last_position.x,contact.last_position.y,0};
       }
     }
-    auto const centre{tactical_project(position,state.camera,bounds)};
+    auto const centre{tactical_project(position,state.camera,bounds,state.projection_shift)};
     int const half{contact.size>>1};
     rectangle const hit{centre.x-half,centre.y-half,centre.x-half+contact.size,centre.y-half+contact.size};
     hits.push_back({hit,i});
     if(contact.destination) {
-      auto const point{tactical_project(*contact.destination,state.camera,bounds)};
+      auto const point{tactical_project(*contact.destination,state.camera,bounds,state.projection_shift)};
       draw_model_line(target,vec2<int32_t>{centre},vec2<int32_t>{point},bounds,contact.destination_colour);
     }
     int x{hit.left},y{hit.top};size_t frame{static_cast<size_t>(contact.frame)};

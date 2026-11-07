@@ -43,6 +43,7 @@ struct herc_attack_inputs {
   bool target_incapacitated{false};
   bool target_completed{false};                                            // separate objective/command completion policy
   bool base_can_retaliate{false};
+  bool expansion{false};
 };
 struct herc_attack_callbacks {
   std::function<void(movement_request const &)> move;

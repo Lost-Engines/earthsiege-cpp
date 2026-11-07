@@ -12,7 +12,7 @@ void label(framebuffer &target,font const &face,std::string_view text,rectangle 
 void outline(framebuffer &target,rectangle const &b,uint8_t colour){target.fill({b.left,b.top,b.right,b.top},colour);target.fill({b.left,b.bottom,b.right,b.bottom},colour);target.fill({b.left,b.top,b.left,b.bottom},colour);target.fill({b.right,b.top,b.right,b.bottom},colour);}
 }
 cockpit_hdd::cockpit_hdd(resource_store const &r,cockpit_layout const &layout,mission_session &session,pointer_controls &input,random_state &rng)
- :random{rng},map{r,cache,session.scenery()},damage{r},map_state{session.tactical_state(0)},wingmates{session.wingmate_ids()},
+ :random{rng},map{r,cache,session.scenery()},damage{r},controller{r.edition()==game_edition::expansion},map_state{session.tactical_state(0)},wingmates{session.wingmate_ids()},
  button_art{read_bitmaps(r.read("simvol0","dba/PBUTTONS.DBA"))},
  fonts{read_font(r.read("simvol0","dfn/CPGREEN.DFN")),read_font(r.read("simvol0","dfn/CPYLW.DFN")),read_font(r.read("simvol0","dfn/CPRED.DFN")),read_font(r.read("simvol0","dfn/CPBLUE.DFN"))},
  strings{read_interface_strings(r.read("simvol0","str/STRINGS0.STR"))}{
@@ -26,7 +26,7 @@ cockpit_hdd::cockpit_hdd(resource_store const &r,cockpit_layout const &layout,mi
   for(size_t i{};i<selection_lights.size();++i)selection_lights[i]=rect(0x5fc+i*16);
   int const step{(command_bounds.bottom-command_bounds.top)/9};
   for(size_t i{};i<rows.size();++i){auto b{command_bounds};b.top+=static_cast<int>(i+1)*step;b.bottom=b.top+static_cast<int>(fonts[0].height);rows[i]=b;row_ids[i]=input.add_button(b);}
-  map_id=input.add_button(map_bounds);auto const &p{session.player().movement().position};controller.camera({p.x,p.y,initial_tactical_height(map_state.mission_bounds,map_bounds)});enable(input);
+  map_id=input.add_button(map_bounds);auto const &p{session.player().movement().position};controller.camera({p.x,p.y,0});controller.initialize_height(initial_tactical_height(map_state.mission_bounds,map_bounds,map_state.projection_shift));enable(input);
 }
 void cockpit_hdd::enable(pointer_controls &input){
   constexpr std::array<std::array<bool,15>,2> enabled{{{1,1,1,1,1,1,1,1,0,0,1,1,1,1,1},{1,1,1,1,1,1,0,0,0,0,1,1,1,0,0}}};
@@ -82,7 +82,7 @@ void cockpit_hdd::execute_button(size_t i,mission_session &session,pointer_contr
       default:break;
     }if(page==0 && i>=2 && i<=7)map_dirty=true;dirty=true;
 }
-bool cockpit_hdd::activate(control_activation const &action,mission_session &session,pointer_controls &input,int32_t const range){
+bool cockpit_hdd::activate(control_activation const &action,mission_session &session,pointer_controls &,int32_t const range){
   for(size_t i{};i<button_ids.size();++i)if(action.index==button_ids[i]){
     // 3d430 stores only the last request; 3cd28 dispatches it after simulation.
     if(action.value&1){pending_button=i;sounds.push_back(17);}
@@ -114,14 +114,14 @@ bool cockpit_hdd::command(uint16_t const code,mission_session &session,pointer_c
       auto const &s{controller.state()};if(!s.requires_destination)return true;
       int const saved_x{mouse_x},saved_y{mouse_y};
       if(s.command==11 || s.command==12){
-        if(selected_actor){for(auto const &c:map_state.contacts)if(c.actor==selected_actor){auto p{tactical_project(c.position,s.camera,map_bounds)};mouse_x=p.x;mouse_y=p.y;break;}}
+        if(selected_actor){for(auto const &c:map_state.contacts)if(c.actor==selected_actor){auto p{tactical_project(c.position,s.camera,map_bounds,map_state.projection_shift)};mouse_x=p.x;mouse_y=p.y;break;}}
         else if(s.command==11)return true;
       }
       pick(session,range);mouse_x=saved_x;mouse_y=saved_y;return true;
     }
     case 15:{
       auto const &s{controller.state()};if(s.wingmate<0 || (s.command!=11 && s.command!=12))return true;
-      selected_actor=cycle_tactical_target(map_state.contacts,s.camera,map_bounds,session.player().movement().position,s.command==11?1:0,selected_actor);
+      selected_actor=cycle_tactical_target(map_state.contacts,s.camera,map_bounds,session.player().movement().position,s.command==11?1:0,selected_actor,map_state.projection_shift);
       if(selected_actor){controller.designate(*selected_actor);sounds.push_back(26);prompt.reset();map_dirty=true;}
       else sounds.push_back(27);
       dirty=true;return true;

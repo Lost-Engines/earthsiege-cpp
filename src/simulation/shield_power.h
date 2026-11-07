@@ -18,6 +18,6 @@ struct shield_power {
 void change_shield_balance(shield_power &state, bool toward_front);
 /// Expansion radial hits use Q10 damage against shield units scaled by 1000.
 int16_t absorb_blast(shield_power &state,bool front,int16_t amount);
-int16_t recharge_shields(shield_power &state, int16_t budget);
+int16_t recharge_shields(shield_power &state, int16_t budget, int16_t charge_limit = shield_charge_per_update);
 
 } // namespace earthsiege

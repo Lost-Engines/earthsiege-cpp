@@ -12,6 +12,7 @@ struct flyer_motion {
   int16_t obstacle_strength{0};
   int16_t obstacle_timer{0};
   bool obstacle{false};
+  int16_t previous_yaw_step{}; // expansion: yaw saved before local matrix integration
 };
 struct flyer_leader_turn {
   uint16_t heading{0};

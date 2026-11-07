@@ -46,7 +46,7 @@ void aim_and_fire_herc(herc_fire_state &state, weapon_bank const &bank, weapon_c
   auto const errors{callbacks.aim(point)};
   if(weapon_lock_channel(weapon, definitions) || (errors.x >= -1000 && errors.x < 1000 && errors.z >= -1000 && errors.z < 1000)) {
     callbacks.fire(*selected);
-    if(weapon.definition == 3) state.retained_weapon = selected;
+    if(weapon.definition == 3 || (definitions.edition == game_edition::expansion && weapon.definition == 18)) state.retained_weapon = selected;
   }
 }
 } // namespace earthsiege

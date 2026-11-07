@@ -16,6 +16,8 @@ damage_display_state mission_session::instrument_damage(std::optional<size_t> co
     auto const &member{crew[index]};
     auto const &actor{*member.actor};
     result.kind = damage_display_kind::herc;
+    // Expansion 0x36968 reads the profile name; STRINGS0 retains only the base roster.
+    if(weapon_definitions.edition == game_edition::expansion) result.name = actor.profile().name;
     for(auto const &[id, definition] : definitions) if(definition.get() == member.definition) { result.model = id; break; }
     result.dead = actor.damage().consequences.dead;
     result.shield_warning = actor.impacts().shield_warning;
@@ -72,7 +74,7 @@ full_damage_state mission_session::full_damage(std::optional<size_t> const selec
 }
 
 tactical_map_state mission_session::tactical_state(uint32_t const ticks) const {
-  tactical_map_state result;result.ticks=ticks;
+  tactical_map_state result;result.ticks=ticks;result.projection_shift=weapon_definitions.edition==game_edition::expansion?8:7;
   // The original globals begin at zero, so the mission rectangle also encloses
   // the world origin when every authored point lies on the same side of it.
   for(auto const &p:points) {

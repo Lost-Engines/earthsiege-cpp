@@ -10,13 +10,13 @@ bool incapable(wingmate_order_state const &a) { return a.unavailable || a.disabl
 }
 bool receive_wingmate_order(std::span<wingmate_order_state> const actors, size_t const index,
   wingmate_order const &order, uint16_t const previous_reply, size_t const player, size_t const leader,
-  int16_t const group_order, std::optional<size_t> const hud_target, wingmate_order_callbacks const &callbacks) {
+  int16_t const group_order, std::optional<size_t> const hud_target, wingmate_order_callbacks const &callbacks, std::optional<size_t> const guard_objective) {
   auto &a{actors[index]};
   bool accepted{}; uint16_t reply{0xffff};
-  auto const props{[&]{return describe(a.type).properties;}};
+  auto const props{[&]{return describe(a.type, a.expansion).properties;}};
   auto const attack{[&](size_t target) {
     a.command=4; a.designated=target;
-    auto const properties{describe(actors[target].type).properties};
+    auto const properties{describe(actors[target].type, actors[target].expansion).properties};
     a.stop_status=properties&32 ? 2 : properties&16 ? 1 : 0;
     callbacks.attack(target); a.incoming_damage=0;
   }};
@@ -70,6 +70,18 @@ bool receive_wingmate_order(std::span<wingmate_order_state> const actors, size_t
       break;
     case 5:
       a.ignore_target=false;
+      if(a.expansion) {
+        if(incapable(a)) {reply=27; break;}
+        if(props()&2) reply=32;
+        else {
+          if(auto const target{callbacks.select(true)}) {
+            if(group_order==6 && guard_objective && distance(a.position,actors[*guard_objective].position)<100000) callbacks.resume();
+            else {a.command=0; callbacks.attack(*target);}
+          }
+          reply=28;
+        }
+        a.weapons_free=true; accepted=true; break;
+      }
       if(incapable(a)) reply=27;
       else if(props()&2) {reply=32; accepted=true;}
       else if(auto const target{callbacks.select(true)}) {
@@ -82,6 +94,10 @@ bool receive_wingmate_order(std::span<wingmate_order_state> const actors, size_t
       a.radar=false; a.radar_requested=false; reply=40; accepted=true;
       break;
     case 8:
+      if(a.expansion) {
+        if(props()&2) {callbacks.resume(); a.command=0;}
+        a.weapons_free=false; a.incoming_damage=0; accepted=true; reply=12; break;
+      }
       if(props()&2) {callbacks.resume(); a.command=0; accepted=true;}
       else accepted=callbacks.select(false).has_value();
       reply=12; a.incoming_damage=0;
@@ -93,12 +109,16 @@ bool receive_wingmate_order(std::span<wingmate_order_state> const actors, size_t
       else if(!order.target || actors[*order.target].disabled || actors[*order.target].dead) reply=29;
       else {attack(*order.target); reply=17; accepted=true;}
       break;
-    case 12:
+    case 12: {
+      bool const same_point{fast_distance_2d({wrap_long(static_cast<int64_t>(order.position.x)-a.command_position.x),wrap_long(static_cast<int64_t>(order.position.y)-a.command_position.y)})<1000};
+      bool const same_destination{a.expansion && (a.followed || order.target) ? a.followed == order.target : same_point};
       if(incapable(a)) reply=27;
-      else if(a.command==6 && fast_distance_2d({wrap_long(static_cast<int64_t>(order.position.x)-a.command_position.x),wrap_long(static_cast<int64_t>(order.position.y)-a.command_position.y)})<1000) reply=32;
+      else if(a.command==6 && same_destination) reply=32;
       else {callbacks.enter(behavior::guarding); a.command=6; reply=23; accepted=true;}
       a.command_position={order.position.x,order.position.y};
+      if(a.expansion) a.followed=order.target;
       break;
+    }
     case 13: case 14: {
       int16_t const command{order.command==13 ? int16_t{2} : int16_t{1}};
       if(a.disabled) reply=27;
@@ -122,7 +142,7 @@ bool dispatch_wingmate_order(std::span<wingmate_order_state const> const actors,
     for(size_t i{}; i<group.size(); ++i) {
       auto const index{group[i]}; auto const &a{actors[index]};
       if(visited[i] || a.dead || index==order.issuer) continue;
-      bool const attacking{describe(a.type).attacking()}; int candidate{fallback_priority};
+      bool const attacking{describe(a.type, a.expansion).attacking()}; int candidate{fallback_priority};
       switch(order.command) {
         case 0: case 2: case 5: candidate=!attacking; break;
         case 1: case 8: case 15: candidate=attacking; break;

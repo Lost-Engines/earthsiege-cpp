@@ -12,6 +12,7 @@ namespace earthsiege {
 
 herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &weapons, model_resource const &templates, std::span<int16_t const> const equipment, vec3<int32_t> const &position, vec3<uint16_t> const &angles, sound_sink sink)
   : source{definition}, sounds{std::move(sink)}, rig{std::get<shape_part>(definition.models.roots.front().content)}, armament{definition.models.roots.front(), definition.mounts, equipment, weapons, templates}, movement_state{.position{vec3<int32_t>{position}}, .angles{vec3<uint16_t>{angles}}} {
+  expansion = weapons.edition == game_edition::expansion;
   body_channel = rig.add_channel(source.profile.movement.forward_stop_sequence);
   if(source.profile.torso.sequence >= 0) torso_channel = rig.add_channel(source.profile.torso.sequence);
   if(source.profile.elevation.sequence >= 0) elevation_channel = rig.add_channel(source.profile.elevation.sequence);
@@ -68,7 +69,7 @@ void herc_body::prepare_player(herc_controls const &controls, frame_ratio const 
 }
 void herc_body::prepare_player_movement(int16_t const throttle, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events) {
   auto const notify{[&](movement_event const event){ frame_movement_events.push_back(event); if(events) events(event); }};
-  if(update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), throttle, steering, damage, ratio, notify)) throttle_command_pending = true;
+  if(update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), throttle, steering, damage, ratio, notify, expansion)) throttle_command_pending = true;
 }
 void herc_body::reset_aim_angles() { torso_state.angle = 0; elevation_state.angle = 0; }
 void herc_body::align_disabled_player() {
@@ -91,13 +92,13 @@ int16_t herc_body::exchange_throttle(int16_t const requested) {
 
 void herc_body::prepare_requested(int16_t const speed, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) {
   auto const notify{[&](movement_event const event){ frame_movement_events.push_back(event); if(events) events(event); }};
-  update_requested_movement(movement_state, source.profile.movement, rig.channel(body_channel), speed, steering, damage, ratio, notify, avoidance);
+  update_requested_movement(movement_state, source.profile.movement, rig.channel(body_channel), speed, steering, damage, ratio, notify, avoidance, expansion);
 }
 
-void herc_body::prepare_aim(vec2<int16_t> const &aim, frame_ratio const ratio) {
-  update_aim(torso_state, source.profile.torso, aim.x, ratio);
+void herc_body::prepare_aim(vec2<int16_t> const &aim, frame_ratio const ratio, std::optional<vec2<int16_t>> const target) {
+  update_aim(torso_state, source.profile.torso, aim.x, ratio, target ? std::optional<int16_t>{target->x} : std::nullopt);
   if(sounds) sounds(servo_sound_request{0,aim.x,torso_state.angle});
-  update_aim(elevation_state, source.profile.elevation, aim.y, ratio);
+  update_aim(elevation_state, source.profile.elevation, aim.y, ratio, target ? std::optional<int16_t>{target->y} : std::nullopt);
   if(sounds) sounds(servo_sound_request{1,aim.y,elevation_state.angle});
   if(torso_channel) rig.channel(*torso_channel).set_phase(source.profile.torso.sequence, static_cast<int16_t>(static_cast<uint16_t>(torso_state.angle) >> 2));
   if(elevation_channel) rig.channel(*elevation_channel).set_phase(source.profile.elevation.sequence, static_cast<int16_t>(static_cast<uint16_t>(elevation_state.angle) >> 2));
@@ -138,7 +139,9 @@ bool herc_body::advance(frame_ratio const time_ratio, std::function<bool(herc_bo
   if(!contact || !contact(*this)){update_ground_attachments();return false;}
   restore();
   if(blocked) blocked();
-  movement_state.throttle = 0;
+  // 14844 / expansion 16758 also set the throttle ownership flag (+8d).
+  // Otherwise the instrument exchange restores the stale slider value.
+  stop_throttle();
   auto &channel{rig.channel(body_channel)};
   if((std::to_underlying(channel.state().flags) & std::to_underlying(animation_channel_flags::transition)) == 0) {
     movement_state.gait_rate = std::clamp(wrap_word(-movement_state.gait_rate), source.profile.movement.reverse_fast_exit_rate, source.profile.movement.forward_rate);

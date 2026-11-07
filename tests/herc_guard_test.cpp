@@ -11,17 +11,19 @@ std::optional<size_t> optional_actor(int16_t value) { return value < 0 ? std::nu
 int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != "ESHGD001") file.fail("fixture version");
+  auto const version{std::string(magic.begin(), magic.end())};
+  if(version != "ESHGD001" && version != "ESHGD002") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()}; std::array<size_t, 2> coverage{};
   for(unsigned int trial{0}; trial != count; ++trial) {
     bool const driving{file.integer<uint8_t>() != 0}; ++coverage[driving];
+    herc_guard_policy policy;
+    if(version == "ESHGD002") {policy.expansion = file.integer<uint8_t>() != 0; policy.weapons_free = file.integer<uint8_t>() != 0;}
     std::array<engagement_state, 9> states; std::array<target_relationship, 9> targets;
     std::array<herc_combat_position, 9> positions; std::array<bool, 9> eligible;
     for(size_t i{0}; i != states.size(); ++i) {
       positions[i].position = {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()}; positions[i].heading = file.integer<uint16_t>();
       eligible[i] = file.integer<uint8_t>() != 0; states[i].dead = file.integer<uint8_t>() != 0; states[i].disabled = file.integer<uint8_t>() != 0; states[i].unavailable = file.integer<uint8_t>() != 0; targets[i].attackers = file.integer<int16_t>();
     }
-    herc_guard_policy policy;
     policy.anchor = {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
     auto &own{states[0]}; own.command = file.integer<int16_t>(); own.controller.target_search_remaining = file.integer<int16_t>();
     own.controller.type = driving ? behavior::driving_off_enemy : behavior::guarding;
@@ -70,7 +72,7 @@ int main(int argc, char **argv) try {
     if((driving && result != static_cast<bool>(expected_result)) || targets[0].selected != selected || targets[0].changed != changed || policy.designated != designated || own.controller.target_search_remaining != final_timer || own.aimed_component != final_component || tolerance != final_tolerance || detectable != final_detectable || own.controller.type != final_behavior || own.controller.reconsider_remaining != final_clock || stagger != final_stagger) file.fail(label + " guard state");
     for(size_t i{0}; i != counts.size(); ++i) if(targets[i].attackers != counts[i]) file.fail(label + " guard counts");
   }
-  file.require_end(); for(auto const n : coverage) if(n != 1024) file.fail("guard coverage");
+  file.require_end(); if(coverage[0] != 1024 || coverage[1] != (version == "ESHGD001" ? 1024U : 0U)) file.fail("guard coverage");
   std::cout << count << " original guard/drive-off decisions agree\n";
   return EXIT_SUCCESS;
 } catch(std::exception const &error) { std::cerr << error.what() << '\n'; return EXIT_FAILURE; }

@@ -31,6 +31,7 @@ class herc_body {
   locomotion_state movement_state;
   movement_damage damage;
   bool throttle_command_pending{false};
+  bool expansion{false};
   std::vector<movement_event> frame_movement_events;
   aiming_state torso_state;
   aiming_state elevation_state;
@@ -61,7 +62,7 @@ public:
   /// Keyboard/stop commands take precedence over the cockpit slider until exchanged.
   int16_t exchange_throttle(int16_t requested);
   void prepare_requested(int16_t speed, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});
-  void prepare_aim(vec2<int16_t> const &input, frame_ratio ratio);
+  void prepare_aim(vec2<int16_t> const &input, frame_ratio ratio, std::optional<vec2<int16_t>> target = {});
   bool advance(frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, std::function<void()> const &blocked = {});
   std::vector<uint16_t> footstep_sounds();
   auto &ground_attachments(){return ground;}

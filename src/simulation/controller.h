@@ -23,7 +23,7 @@ struct behavior_definition {
   bool holds_countdown() const;
   bool attacking() const;
 };
-behavior_definition const &describe(behavior type);
+behavior_definition const &describe(behavior type, bool expansion = false);
 
 struct controller_state {
   std::optional<behavior> type;
@@ -38,7 +38,7 @@ void enter_behavior(controller_state &state, behavior type, uint16_t &world_stag
 void finish_controller_update(controller_state &state);
 behavior initial_herc_behavior(bool player, int16_t order, int16_t torso_yaw_limit);
 behavior initial_flyer_behavior(int16_t order);
-int16_t herc_status(behavior type, bool disabled, bool dead, int16_t command);
+int16_t herc_status(behavior type, bool disabled, bool dead, int16_t command, bool expansion = false);
 
 struct controller_callbacks {
   std::function<void(behavior)> reconsider;
