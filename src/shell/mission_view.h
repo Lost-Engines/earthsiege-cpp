@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include <map>
 #include "audio/mission_audio.h"
 #include <memory>
 #include "render/scenery_renderer.h"
@@ -94,6 +95,11 @@ class mission_view {
   earthsiege::environment_detail detail;
   scenery_renderer renderer;
   camera_state camera;
+  std::optional<size_t> viewed_actor;
+  std::map<size_t,camera_state> actor_cameras;
+  void select_camera_actor(size_t actor);
+  void next_camera_actor();
+  bool camera_control()const{return external_camera_control||(viewed_actor&&*viewed_actor!=session->player_id());}
   std::optional<camera_state> options_camera;
   int options_view{};
   bool suppress_interface{};
@@ -140,6 +146,7 @@ public:
   void apply_preferences(preferences const &);
   void configure_input(preferences const &,std::array<joystick_calibration,2> const &);
   void devices(std::array<joystick_hardware,2> const &value,int16_t lever){hardware=value;device_throttle=lever;}
+  void key_modifiers(bool alt) { keyboard.modifiers(alt); }
   void key(held_key key, bool pressed, bool alt);
   void command(uint16_t code);
   void mouse_position(int x, int y);
@@ -157,6 +164,7 @@ public:
   auto active_lights()const{return session->visual_effects().lights().registered();}
   void observe_scene(scene_draw_observer callback){renderer.observe=std::move(callback);}
   camera_state const &view_camera()const{return camera;}
+  size_t camera_actor()const{return viewed_actor.value_or(session->player_id());}
   void change_camera(camera_mode mode);
   void change_cockpit_view(cockpit_view view);
   void advance_time(unsigned milliseconds);

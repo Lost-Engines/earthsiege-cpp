@@ -10,16 +10,16 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The last full expansion integration run passed **299/299 tests**, including the original-game
+The last full expansion integration run passed **303/303 tests**, including the original-game
 regressions, GLFW window check and the locally enabled firmware/SoundFont test.
-Without optional hardware assets the suite has 298 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
+Without optional hardware assets the suite has 302 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
 The earlier 263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
 affected movement/world suites passed both sanitizers. The six audio suites,
 including the new physical-MIDI captures and real synthesis backends, also pass
 ASan/UBSan with leak checking after this audio update. The earlier expansion baseline passed eleven
 ASan/UBSan suites with leak checking: all four demos, shell, mission returns,
 deployment, landing craft, bullets, environments and input parsing. Those
-sanitizer runs predate the latest recorded-demo audit. The 299-test result above
+sanitizer runs predate the latest recorded-demo audit. The 303-test result above
 checks the current code in the normal local build.
 
 ## Options menu playtesting
@@ -59,6 +59,17 @@ the same interface click. The existing `weapon_groups` test now also checks
 linking and unlinking through a live mission, ignored Alt/Ctrl modifiers, and
 the lower-panel/external-view restrictions. It and the original player-armament
 comparisons pass locally.
+
+## Keyboard and squad-view audit
+
+The host adapter now includes F11, N, keypad Enter, keypad 0/Insert and all eight movement-key
+aliases. Alt state updates on modifier-only events as well as held-control events.
+The F11 objectives window matches six original full-frame captures exactly.
+Squad-camera tests cover all four demos in both editions, including the fresh
+orbit on first selection and restoration when returning to the player. An
+original-code capture independently checks six switches, camera retention and
+control ownership. [Keyboard coverage](KEYBOARD.md) distinguishes these fixes
+from the development and recording shortcuts that remain unimplemented.
 
 ## Edition coverage
 

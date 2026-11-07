@@ -305,8 +305,9 @@ public:
   std::vector<mission_base_view> ground_actors() const;
   std::vector<mission_flyer_view> flying_actors() const;
   random_state::state const &random_snapshot() const;
-  camera_target view_target() const;
-  camera_state make_camera(camera_mode mode) const;
+  camera_target view_target(std::optional<size_t> actor = {}) const;
+  camera_state make_camera(camera_mode mode, std::optional<size_t> actor = {}) const;
+  std::vector<std::string> objective_text;
 };
 
 } // namespace earthsiege

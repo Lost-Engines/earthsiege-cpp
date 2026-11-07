@@ -59,6 +59,7 @@ public:
   void speech_output(std::function<bool(std::string_view)> player){speech_player=std::move(player);}
   void input_source(radio_input_source source){observation=std::move(source);}
   radio_presentation_state const &system_state()const{return system_controller.state();}
+  std::string pilot_name(int identity)const{return identity>=0&&identity<36?labels.name(static_cast<size_t>(identity/3)):"????";}
   void captions(bool enabled){text_enabled=enabled;}
   bool submit(radio_event event,uint32_t ticks);
   void update(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);

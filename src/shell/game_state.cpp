@@ -76,7 +76,11 @@ void game_state::update_roster(){player_=launch_player_roster(crew(),roster(),ca
 std::unique_ptr<mission_session> game_state::launch(){
   if(!prepared_)throw std::runtime_error{"mission has not been prepared"};
   update_roster();
-  return std::make_unique<mission_session>(resources,prepared_->compiled.script,player_,random_state{},prepared_->counters);
+  auto result{std::make_unique<mission_session>(resources,prepared_->compiled.script,player_,random_state{},prepared_->counters)};
+  if(auto section{text_.find(mission_text_kind::objectives)})
+    if(auto lines{std::get_if<std::vector<earthsiege::objective_text>>(&section->content)})
+      for(auto const &line:*lines)result->objective_text.push_back(line.text);
+  return result;
 }
 void game_state::restore_history(size_t history){
   if(!career_||history==0||history>=41||!career_->career.states[history].valid)throw std::runtime_error{"invalid career history"};

@@ -17,6 +17,7 @@ class mission_alert {
   font title,body,button_metrics;
   std::array<font,3> button_fonts;
   interface_strings strings;
+  std::optional<std::vector<std::string>> objectives;
   int message_{};
   int focus_{},pressed_{-1};
   rectangle button(int i)const;
@@ -27,6 +28,7 @@ class mission_alert {
   int activate(int index){if(click)click();return index;}
 public:
   mission_alert(resource_store const &resources,int message,int initial_focus=0);
+  mission_alert(resource_store const &resources,std::span<std::string const> objective_lines);
   void feedback(std::function<void()> callback){click=std::move(callback);}
   int message()const{return message_;}
   int count()const;

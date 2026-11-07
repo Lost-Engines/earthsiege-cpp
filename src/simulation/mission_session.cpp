@@ -607,8 +607,8 @@ std::vector<scene_model> mission_session::herc_models(bool const roster_only, bo
   return result;
 }
 
-camera_target mission_session::view_target() const {
-  auto const &member{crew.at(player_index)};
+camera_target mission_session::view_target(std::optional<size_t> actor) const {
+  auto const &member{crew.at(actor.value_or(player_index))};
   camera_target result{.angles{vec3<uint16_t>{member.actor->body().movement().angles}}, .placement{member.actor->body().placement()}, .attachment{std::nullopt}};
   auto const part{find_model_part(member.definition->models.roots.front(), member.definition->profile.camera_part)};
   if(part) {
@@ -618,13 +618,13 @@ camera_target mission_session::view_target() const {
   return result;
 }
 
-camera_state mission_session::make_camera(camera_mode const mode) const {
-  auto const &profile{crew.at(player_index).definition->profile};
+camera_state mission_session::make_camera(camera_mode const mode, std::optional<size_t> actor) const {
+  auto const &profile{crew.at(actor.value_or(player_index)).definition->profile};
   camera_state result;
   result.mode = mode;
   result.focus_offset = profile.camera_focus;
   result.attachment_offset = profile.camera_offset;
-  update_camera(result, view_target());
+  update_camera(result, view_target(actor));
   return result;
 }
 

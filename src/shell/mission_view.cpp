@@ -23,7 +23,10 @@ std::unique_ptr<mission_session> demo_start(resource_store const &resources,inpu
   auto const script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
   auto const roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)],tape.edition)};
   auto const counters{read_mission_counters(tape.starting_files[std::to_underlying(tape_file::campaign_flags)])};
-  return std::make_unique<mission_session>(resources, script, roster, random_state{}, counters);
+  auto result{std::make_unique<mission_session>(resources, script, roster, random_state{}, counters)};
+  auto const text{read_interface_strings(tape.starting_files[std::to_underlying(tape_file::objective_text)])};
+  if(!text.empty())for(auto const &line:text.front())result->objective_text.push_back(line.text);
+  return result;
 }
 
 } // namespace
@@ -64,7 +67,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     routing.tilt_reverse=options.tilt_reverse;routing.backturn_reverse=options.backturn_reverse;routing.missile_reverse=options.missile_reverse;routing.pedals_reverse=options.pedals_reverse;break;
   }
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()), resources.edition());
-  update_camera(camera, session->view_target());
+  update_camera(camera, session->view_target(viewed_actor));
   environment.initialize_palette(display_colours,camera.angles.x);
   display_device.present(display_colours);
   session->on_cockpit_impact([this]{impact.hit(interface_ticks,impact_view(),ui_random);});
@@ -217,13 +220,35 @@ void mission_view::toggle_pause() {
   clear_input();
 }
 
+void mission_view::select_camera_actor(size_t actor){
+  auto const current{camera_actor()};
+  if(actor==current)return;
+  actor_cameras[current]=camera;
+  if(auto found{actor_cameras.find(actor)};found!=actor_cameras.end())camera=found->second;
+  else{
+    auto const target{session->make_camera(camera_mode::orbit,actor)};
+    camera.focus_offset=target.focus_offset;camera.attachment_offset=target.attachment_offset;
+    // 5923c -> 3d0 clears orbit controls when binding a new actor.
+    camera.orbit_angles={};camera.orbit_distance=0;camera.angular_rates={};camera.movement=0;
+  }
+  viewed_actor=actor;camera.mode=camera_mode::orbit;
+}
+void mission_view::next_camera_actor(){
+  auto const actors{session->hercs()};auto const current{camera_actor()};
+  auto const group{actors.at(session->player_id()).group};
+  for(size_t step{1};step<actors.size();++step){
+    auto const next{(current+step)%actors.size()};
+    if(actors[next].group==group&&actors[next].actor.body().movement().position.z>=0){select_camera_actor(next);break;}
+  }
+}
 void mission_view::change_camera(camera_mode const mode) { transitions.reset(mode==camera_mode::attached?static_cast<int>(panel):4);set_camera(mode,impact_view().mode); }
 void mission_view::set_camera(camera_mode const mode,unsigned previous,bool reset_input) {
   // 5894c/58a44 retain the target camera across cockpit and external views.
+  if(mode==camera_mode::attached&&viewed_actor&&*viewed_actor!=session->player_id())select_camera_actor(session->player_id());
   camera.mode = mode;
   impact.change_view(previous,impact_view());
   if(reset_input){clear_input();external_view_requested=external_view_active=mode!=camera_mode::attached;}
-  if(reset_input)update_camera(camera, session->view_target());
+  if(reset_input)update_camera(camera, session->view_target(viewed_actor));
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
@@ -355,7 +380,7 @@ bool mission_view::step(bool const control, bool const zoom,mission_dialog_handl
   if(!ratio)return false;
   if(paused) { pointer_events.clear(); return false; }
   prepare_frame(pacing.state().slow);
-  routing.external=control||(external_view_active&&external_camera_control);routing.missile=session->player_weapon_controls().manual_guidance();
+  routing.external=control||(external_view_active&&camera_control());routing.missile=session->player_weapon_controls().manual_guidance();
   auto const keys{keyboard.sample((routing.mode==1&&!routing.external)||routing.missile)};
   joystick_sample keyboard_packet{{keys.movement.x,keys.movement.y,keys.aiming.x,keys.aiming.y},{uint8_t(keys.fire),uint8_t(keys.enter),0,0},{}};
   joystick_sample device;
@@ -402,7 +427,7 @@ bool mission_view::step_recorded(tape_frame const &record,uint32_t slow_clock,bo
     pointer_events.push_back({mouse,event.timestamp});
   }
   prepare_frame(slow_clock);
-  routing.external=external_view_active&&external_camera_control;routing.missile=session->player_weapon_controls().manual_guidance();
+  routing.external=external_view_active&&camera_control();routing.missile=session->player_weapon_controls().manual_guidance();
   auto const packet{route_tape_frame(routing,record,suppress_camera,device_throttle)};
   player_input input;
   input.command=record.command;
@@ -422,6 +447,7 @@ bool mission_view::dispatch_command(player_input &input,mission_dialog_handlers 
     }
   }
   if(input.command) {
+    if(input.command==49&&external_view_active&&camera.mode!=camera_mode::attached){next_camera_actor();input.command=0;}
     if(input.command==47){external_view_requested=!external_view_active;transitions.request(external_view_requested?2:3);input.command=0;}
     if((input.command==15||input.command==28)&&camera.mode!=camera_mode::attached){external_camera_control=!external_camera_control;input.command=0;}
     // 3805b/3807a cycle the pending I/II/III widget choice (` / Alt+`).
@@ -496,7 +522,7 @@ bool mission_view::step_input(player_input initial_input,std::array<uint8_t,4> c
     auto const requested{external_view_requested?camera_mode::orbit:camera_mode::attached};
     if(camera.mode!=requested)set_camera(requested,impact_view().mode,false);
   }
-  update_camera(camera, session->view_target());
+  update_camera(camera, session->view_target(viewed_actor));
   auto const &player{session->player_actor()};
   navigation.update(static_cast<int16_t>(player.body().movement().angles.z), player.body().torso().angle,
                     player.body().elevation().angle, player.damage().consequences.disabled);
@@ -536,26 +562,26 @@ void mission_view::begin_options(){
   // Original 57820 drains any outstanding pan before preparing the orbit
   // preview. Each preparation draws the frozen world and its interface.
   while(transitions.snapshot().pending!=-1||transitions.snapshot().prepared){
-    present_pending=true;present_view();update_camera(camera,session->view_target());draw();
+    present_pending=true;present_view();update_camera(camera,session->view_target(viewed_actor));draw();
   }
   options_view=transitions.snapshot().view;
   auto preview=[&]{
-    camera=session->make_camera(camera_mode::orbit);camera.orbit_distance=0;
-    update_camera(camera,session->view_target());
+    camera=session->make_camera(camera_mode::orbit,viewed_actor);camera.orbit_distance=0;
+    update_camera(camera,session->view_target(viewed_actor));
   };
   if(options_view!=4){
     transitions.request(2);bool prepared{};
     do{
       present_pending=true;present_view();
       if(!prepared&&transitions.snapshot().prepared){prepared=true;preview();}
-      update_camera(camera,session->view_target());draw();
+      update_camera(camera,session->view_target(viewed_actor));draw();
     }while(!prepared||transitions.snapshot().prepared);
   }else{preview();draw();}
 }
 void mission_view::step_options_recorded(){
   if(!options_camera)return;
   // Original 577f8: fixed camera-turn request, no world simulation.
-  steer_camera(camera,false,0,-64);update_camera(camera,session->view_target());
+  steer_camera(camera,false,0,-64);update_camera(camera,session->view_target(viewed_actor));
 }
 bool mission_view::step_options(){
   if(!options_camera||!pacing.take())return false;
@@ -665,7 +691,11 @@ void mission_view::draw() {
     // 35060 paints the ATT label after every HUD child, including waypoints.
     if(session->player_weapon_controls().auto_tracking()) navigation.draw_tracking(frame, x, y);
   }
-  if(!inside&&!options_camera)external_artwork.draw(frame,external_camera_control);
+  if(!inside&&!options_camera){
+    std::string target;
+    if(camera_actor()!=session->player_id())if(auto identity{session->pilot_identity(camera_actor())})target=radio->pilot_name(*identity);
+    external_artwork.draw(frame,camera_control(),target);
+  }
   radio->advance_queue(*session,interface_ticks);
   radio->draw(frame);
   flush_interface_audio();

@@ -1,4 +1,5 @@
 #include "mission_alert.h"
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 namespace earthsiege {
@@ -11,14 +12,39 @@ mission_alert::mission_alert(resource_store const &r,int message,int initial_foc
   if(message<0||message>=19)throw std::out_of_range{"mission alert"};
   focus(initial_focus);
 }
+mission_alert::mission_alert(resource_store const &r,std::span<std::string const> lines)
+ :mission_alert{r,0}{
+  objectives.emplace(lines.begin(),lines.end());
+  background=read_bitmaps(r.read("simvol0","dba/hst_alrt.dba")).front();
+  strings=read_interface_strings(r.read("simvol0","str/obj_alrt.str"));
+  title=read_font(r.read("simvol0","dfn/green6x8.dfn"));
+  body=button_metrics;
+  focus(0);
+}
 int mission_alert::count()const{switch(message_){case 0:case 2:case 3:case 7:case 8:case 17:case 18:return 1;default:return 2;}}
 bool mission_alert::exits_mission(int response)const{
   // DBSIM 0x97158, compared by the original Q handler at 0x59fb7.
   constexpr std::array<int,19> exit_response{1,1,0,0,1,1,1,1,0,1,1,1,1,1,1,1,1,0,0};
   return message_>1 && response==exit_response.at(static_cast<size_t>(message_));
 }
-rectangle mission_alert::button(int i)const{int const left{count()==1?71:i==0?22:120};return {48+left,115,48+left+80,135};}
+rectangle mission_alert::button(int i)const{if(objectives)return {129,138,189,148};int const left{count()==1?71:i==0?22:120};return {48+left,115,48+left+80,135};}
 void mission_alert::draw(framebuffer &frame)const{
+  if(objectives){
+    // DBSIM 4a1b4/4a5a4: first seven nonempty lines among twenty entries.
+    frame.image(background,2,45,true);
+    auto const &caption{strings.at(0).at(0).text};
+    frame.text(title,caption,159-((title.text_width(caption)-1)>>1),57);
+    int row{};
+    for(size_t i{};i<std::min<size_t>(20,objectives->size())&&row<7;++i){
+      auto const &line{objectives->at(i)};
+      if(!line.empty())frame.text(body,line,22,71+10*row++);
+    }
+    int const state{pressed_==0?1:0};auto const bounds{button(0)};
+    draw_dialog_button(frame,bounds,styles[static_cast<size_t>(state)],corners);
+    auto const &label{strings.at(1).at(0).text};auto const &face{button_fonts[static_cast<size_t>(state)]};
+    frame.text(face,label,159-((face.text_width(label)-1)>>1),146);
+    return;
+  }
   int constexpr x{48},y{45};frame.image(background,x,y,true);
   auto const &caption{strings.at(0).at(static_cast<size_t>(message_)).text};int const width{title.text_width(caption)};
   rectangle const b{x+((222-width-20)>>1),y+4,x+((222-width-20)>>1)+width+20,y+21};

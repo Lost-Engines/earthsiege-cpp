@@ -27,7 +27,7 @@ bool demo_playback::present(presenter const &show,unsigned milliseconds,framebuf
   return !finished;
 }
 bool demo_playback::alert(int message,presenter const &show){
-  mission_alert dialog{resources,message};dialog.feedback([&]{view_.click_sound();});
+  mission_alert dialog{message==-1?mission_alert{resources,view_.simulation().objective_text}:mission_alert{resources,message}};dialog.feedback([&]{view_.click_sound();});
   // 45f00 consumes an initialization poll before dispatching modal input.
   if(next==tape.frames.size()){finished=true;return true;}
   ++next;++modal_packets;suppressed=true;
@@ -50,6 +50,7 @@ bool demo_playback::alert(int message,presenter const &show){
 }
 mission_command_result demo_playback::command(uint16_t code,presenter const &show){
   using enum mission_command_result;
+  if(code==87&&view_.view_camera().mode==camera_mode::attached)return alert(-1,show)?exit_mission:handled;
   if(code==16)return alert(static_cast<int>(view_.status(true)),show)?exit_mission:handled;
   if(code==25||code==0x401||code==0x410)return alert(code==25?0:1,show)?exit_mission:handled;
   if(code!=88&&code!=0x219)return unhandled;

@@ -16,6 +16,7 @@
 #include <GLFW/glfw3.h>
 #include "platform/paths.h"
 #include "platform/window.h"
+#include "platform/keyboard.h"
 #include "platform/music_setup.h"
 #include "platform/audio_output.h"
 #include "platform/joystick_devices.h"
@@ -41,82 +42,6 @@ auto integer_option(std::string_view text)->unsigned int {
   return result;
 }
 
-auto held_key(int const code)->std::optional<earthsiege::held_key> {
-  using enum earthsiege::held_key;
-  switch(code) {
-    case GLFW_KEY_KP_7: return forward_left;
-    case GLFW_KEY_KP_8: case GLFW_KEY_UP: return forward;
-    case GLFW_KEY_KP_9: return forward_right;
-    case GLFW_KEY_KP_4: case GLFW_KEY_LEFT: return left;
-    case GLFW_KEY_KP_6: case GLFW_KEY_RIGHT: return right;
-    case GLFW_KEY_KP_1: return reverse_left;
-    case GLFW_KEY_KP_2: case GLFW_KEY_DOWN: return reverse;
-    case GLFW_KEY_KP_3: return reverse_right;
-    case GLFW_KEY_M: return aim_down;
-    case GLFW_KEY_J: return aim_left;
-    case GLFW_KEY_K: return aim_right;
-    case GLFW_KEY_I: return aim_up;
-    case GLFW_KEY_SPACE: return fire;
-    case GLFW_KEY_ENTER: return enter;
-    default: return std::nullopt;
-  }
-}
-
-auto command(int const code, bool const alt, bool const control)->std::optional<uint16_t> {
-  uint16_t scan;
-  switch(code) {
-    case GLFW_KEY_ESCAPE: scan=1; break;
-    case GLFW_KEY_INSERT: scan=82; break;
-    case GLFW_KEY_F9: scan=67; break;
-    case GLFW_KEY_F10: scan=68; break;
-    case GLFW_KEY_SPACE: scan=57; break;
-    case GLFW_KEY_P: scan=25; break;
-    case GLFW_KEY_Q: scan=16; break;
-    case GLFW_KEY_F12: scan=88; break;
-    case GLFW_KEY_D: scan=32; break;
-    case GLFW_KEY_T: scan=20; break;
-    case GLFW_KEY_X: scan=45; break;
-    case GLFW_KEY_S: scan=31; break;
-    case GLFW_KEY_I: scan=23; break;
-    case GLFW_KEY_COMMA: scan=51; break;
-    case GLFW_KEY_PERIOD: scan=52; break;
-    case GLFW_KEY_ENTER: scan=28; break;
-    case GLFW_KEY_KP_5: scan=76; break;
-    case GLFW_KEY_KP_8: case GLFW_KEY_UP: scan=72; break;
-    case GLFW_KEY_KP_2: case GLFW_KEY_DOWN: scan=80; break;
-    case GLFW_KEY_KP_4: case GLFW_KEY_LEFT: scan=75; break;
-    case GLFW_KEY_KP_6: case GLFW_KEY_RIGHT: scan=77; break;
-    case GLFW_KEY_PAGE_UP: scan=73; break;
-    case GLFW_KEY_PAGE_DOWN: scan=81; break;
-    case GLFW_KEY_A: scan=30; break;
-    case GLFW_KEY_G: scan=34; break;
-    case GLFW_KEY_H: scan=35; break;
-    case GLFW_KEY_O: scan=24; break;
-    case GLFW_KEY_C: scan=46; break;
-    case GLFW_KEY_E: scan=18; break;
-    case GLFW_KEY_F: scan=33; break;
-    case GLFW_KEY_W: scan=17; break;
-    case GLFW_KEY_L: scan=38; break;
-    case GLFW_KEY_GRAVE_ACCENT: scan=41; break;
-    case GLFW_KEY_LEFT_BRACKET: scan=26; break;
-    case GLFW_KEY_RIGHT_BRACKET: scan=27; break;
-    case GLFW_KEY_V: scan=47; break;
-    case GLFW_KEY_B: scan=48; break;
-    case GLFW_KEY_Z: scan=44; break;
-    case GLFW_KEY_R: scan=19; break;
-    case GLFW_KEY_TAB: scan=15; break;
-    case GLFW_KEY_BACKSPACE: scan=14; break;
-    case GLFW_KEY_MINUS: scan=12; break;
-    case GLFW_KEY_EQUAL: scan=13; break;
-    case GLFW_KEY_KP_SUBTRACT: scan=74; break;
-    case GLFW_KEY_KP_ADD: scan=78; break;
-    default:
-      if(code>=GLFW_KEY_F1 && code<=GLFW_KEY_F8) scan=static_cast<uint16_t>(59+code-GLFW_KEY_F1);
-      else if(code>=GLFW_KEY_1 && code<=GLFW_KEY_9) scan=static_cast<uint16_t>(2+code-GLFW_KEY_1);
-      else return std::nullopt;
-  }
-  return static_cast<uint16_t>(scan | (alt ? 0x200 : 0) | (control ? 0x400 : 0));
-}
 
 } // namespace
 
@@ -311,7 +236,7 @@ auto main(int argc, char *argv[])->int try {
       }
       if(options) {
         if(focused&&event.type==earthsiege::event_type::key_down&&!event.repeat){
-          if(auto scan{command(event.key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})options->key(*scan);
+          if(auto scan{earthsiege::keyboard_command(event.key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})options->key(*scan);
         }else if(focused&&(event.type==earthsiege::event_type::button_down||event.type==earthsiege::event_type::button_up)&&(event.button==GLFW_MOUSE_BUTTON_LEFT||event.button==GLFW_MOUSE_BUTTON_RIGHT)){
           bool right{event.button==GLFW_MOUSE_BUTTON_RIGHT};
           if(event.type==earthsiege::event_type::button_down)options->mouse_down(event.x,event.y,right);
@@ -322,7 +247,7 @@ auto main(int argc, char *argv[])->int try {
       }
       if(alert) {
         if(focused && event.type==earthsiege::event_type::key_down && !event.repeat) {
-          if(auto scan{command(event.key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})if(auto response{alert->input(*scan,event.key==GLFW_KEY_SPACE,false,menu.settings().current()[10]!=0).response})respond(*response);
+          if(auto scan{earthsiege::keyboard_command(event.key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})if(auto response{alert->input(*scan,event.key==GLFW_KEY_SPACE,false,menu.settings().current()[10]!=0).response})respond(*response);
         } else if(focused && event.type==earthsiege::event_type::button_down && event.button==GLFW_MOUSE_BUTTON_LEFT)alert->mouse_down(event.x,event.y);
         else if(focused && event.type==earthsiege::event_type::button_up && event.button==GLFW_MOUSE_BUTTON_LEFT)if(auto response{alert->mouse_up(event.x,event.y)})respond(*response);
         if(!alert)return;
@@ -332,7 +257,7 @@ auto main(int argc, char *argv[])->int try {
       if(event.type==earthsiege::event_type::text && !scene){menu.text_input(event.text);continue;}
       if(event.type == earthsiege::event_type::key_down && !event.repeat) {
         auto const key{event.key};
-        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{command(key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})menu.key(*scan);}
+        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{earthsiege::keyboard_command(key,(event.modifiers&GLFW_MOD_ALT)!=0,(event.modifiers&GLFW_MOD_CONTROL)!=0)})menu.key(*scan);}
         else if(focused) {
           if(key==GLFW_KEY_ESCAPE && inspect_demo && !(event.modifiers&(GLFW_MOD_CONTROL|GLFW_MOD_ALT))){scene.reset();if(sound)sound->clear();continue;}
           if(key==GLFW_KEY_F1 && (event.modifiers&GLFW_MOD_CONTROL))scene->change_cockpit_view(earthsiege::cockpit_view::forward);
@@ -343,10 +268,11 @@ auto main(int argc, char *argv[])->int try {
       if(scene) {
         if(focused && (event.type == earthsiege::event_type::key_down || event.type == earthsiege::event_type::key_up) && !event.repeat) {
           bool const alt{(event.modifiers & GLFW_MOD_ALT)!=0};
-          if(auto const key{held_key(event.key)}) scene->key(*key, event.type == earthsiege::event_type::key_down, alt);
-          if(event.type==earthsiege::event_type::key_down)if(auto const code{command(event.key,alt,(event.modifiers & GLFW_MOD_CONTROL)!=0)}){
+          scene->key_modifiers(alt);
+          if(auto const key{earthsiege::keyboard_held_key(event.key)}) scene->key(*key, event.type == earthsiege::event_type::key_down, alt);
+          if(event.type==earthsiege::event_type::key_down)if(auto const code{earthsiege::keyboard_command(event.key,alt,(event.modifiers & GLFW_MOD_CONTROL)!=0)}){
             scene->command(*code);
-            if(*code==88||*code==0x219||*code==25||*code==0x401||*code==0x410||*code==16){
+            if(*code==87||*code==88||*code==0x219||*code==25||*code==0x401||*code==0x410||*code==16){
               modal_command_pending=true;return;
             }
           }
@@ -409,9 +335,13 @@ auto main(int argc, char *argv[])->int try {
   earthsiege::mission_dialog_handlers const dialogs{
     .command{[&](uint16_t code){
       using enum earthsiege::mission_command_result;
-      if(code!=88&&code!=0x219&&code!=25&&code!=0x401&&code!=0x410&&code!=16)return unhandled;
+      if(code!=87&&code!=88&&code!=0x219&&code!=25&&code!=0x401&&code!=0x410&&code!=16)return unhandled;
       modal_command_pending=false;
-      if(code==88||code==0x219){
+      if(code==87){
+        if(scene->view_camera().mode!=earthsiege::camera_mode::attached)return unhandled;
+        alert=std::make_unique<earthsiege::mission_alert>(resources,scene->simulation().objective_text);
+        scene->clear_input();alert->feedback([&]{scene->click_sound();});pending=0;
+      }else if(code==88||code==0x219){
         options=menu.flight_options();options->feedback([&]{scene->click_sound();});scene->begin_options();scene_dirty=true;pending=0;
       }else if(code==25)open_alert(0);
       else if(code==0x401||code==0x410)open_alert(1);

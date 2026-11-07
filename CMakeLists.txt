@@ -369,6 +369,7 @@ target_compile_options(earthsiege_core PUBLIC
 
 add_executable(earthsiege
   src/main.cpp
+  src/platform/keyboard.cpp
   src/platform/music_setup.cpp
   src/platform/joystick_devices.cpp
   src/platform/audio_output.cpp
@@ -1487,3 +1488,16 @@ if(BUILD_TESTING)
 endif()
 
 include(cmake/install.cmake)
+
+if(BUILD_TESTING)
+  add_executable(platform_keyboard_test tests/platform_keyboard_test.cpp src/platform/keyboard.cpp)
+  target_link_libraries(platform_keyboard_test PRIVATE earthsiege_core glfw)
+  add_test(NAME platform_keyboard COMMAND platform_keyboard_test)
+  add_executable(objectives_dialog_test tests/objectives_dialog_test.cpp)
+  target_link_libraries(objectives_dialog_test PRIVATE earthsiege_core)
+  add_test(NAME objectives_dialog COMMAND objectives_dialog_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/objectives_dialog.bin")
+  add_executable(squad_camera_test tests/squad_camera_test.cpp)
+  target_link_libraries(squad_camera_test PRIVATE earthsiege_core)
+  add_test(NAME squad_camera COMMAND squad_camera_test "${PROJECT_SOURCE_DIR}/assets")
+  add_test(NAME expansion_squad_camera COMMAND squad_camera_test "${PROJECT_SOURCE_DIR}/assets/expansion")
+endif()
