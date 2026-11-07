@@ -474,6 +474,7 @@ bool mission_view::dispatch_command(player_input &input,mission_dialog_handlers 
       else if(displays->command(input.command,*session,instruments))input.command=0;
     }
   }
+  if(input.command&&session->development_command(input.command,camera_actor()))input.command=0;
   flush_interface_audio();
   return true;
 }
@@ -636,7 +637,10 @@ void mission_view::draw() {
   if(!inside)mask=external_view_artwork::clipping(view.bounds);
   // 59c8f skips the world while the lower panel is stable. The transition
   // still draws it, but idle lower-panel frames do not advance cloud wind.
-  if(transitions.snapshot().view!=1||transitions.snapshot().prepared) {
+  if(session->recording_paused()&&!options_camera){
+    scoped_framebuffer_clip clip{frame,&mask};
+    for(unsigned y{};y<screen_height;++y)for(unsigned x{};x<screen_width;++x)frame.pixel(x,y,world_frame.pixels()[y*screen_width+x]);
+  }else if(transitions.snapshot().view!=1||transitions.snapshot().prepared) {
     scoped_framebuffer_clip clip{frame, &mask};
     // 25b68 passes the cockpit's authored layout offset to 26264. The
     // projection centre alone leaves uncovered sky in an off-centre side view.
@@ -647,6 +651,7 @@ void mission_view::draw() {
     auto &effects{session->visual_effects()};
     auto const ground{session->ground_models()};
     renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground, view);
+    if(!options_camera){world_frame=frame;world_frame.clip(nullptr);}
   }
   session->refresh_target_instruments(inside&&panel==cockpit_view::forward);
   if(inside) {

@@ -130,53 +130,58 @@ bool mission_session::advance_frame(player_input &player_controls, frame_ratio c
   // Base 0x5975e updates them first. This order also determines RNG use and
   // whether a shot sees the preceding or current turret/landing-craft state.
   auto const advance_bases{[&]{for(size_t index{0}; index != bases.size(); ++index) advance_base(index, time_ratio);}};
-  if(weapon_definitions.edition != game_edition::expansion) advance_bases();
-  effects.advance(time_ratio);
-  effects.advance_deployments(time_ratio,[&](vec3<int32_t> const &position){
-    impact_request request;request.transform.translation=position;request.damage.armour=10000;request.area_radius=3000;
-    return impact(projectile_owner{.actor{activity->size()},.target{}},request).has_value();
-  },[&](size_t group,vec3<int32_t> const &position){
-    auto &entry{activity->group(group)};if(!entry.members.empty())place_deployed(entry.members.front(),position);entry.activation_trigger.reset();
-  },player().movement().position);
-  player_weapons->set_manual_guidance(false);
-  projectiles.advance(time_ratio, [&](projectile_owner &owner){
-    projectile_guidance input;
-    input.player_owner = owner.actor == player_index;
-    input.damage_falloff=falloff_preference||recorded_playback;
-    auto const attacker_side{activity->group(actor_group(owner.actor)).side};
-    input.area_damage_multiplier=attacker_side==0?std::array<int16_t,4>{2800,2000,1400,1000}.at(static_cast<size_t>(settings.difficulty)):1024;
-    input.manual_held = player_controls.fire;
-    input.manual_axes = player_controls.camera_input();
-    if(owner.actor < crew.size()) input.interference = crew[owner.actor].sensors.interfered;
-    input.owner_tracks_target = activity->targets()[owner.actor].selected == owner.target;
-    if(owner.target) {
-      input.target_position = target_position(*owner.target, owner.target_component);
-      input.target_detectable = observe().at(*owner.target).detectable;
-      input.target_origin.emplace(observe().at(*owner.target).position);
-    }
-    return input;
-  }, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); },
-  [&](projectile_owner const &owner, projectile_guidance const &feedback){
-    player_controls.fire = feedback.manual_held;
-    player_controls.camera_input(feedback.manual_axes);
-    if(feedback.manual_input_used) player_weapons->set_manual_guidance(true);
-    if(feedback.owner_guiding && owner.actor < crew.size()) crew[owner.actor].fire.skip_selection = true;
-  });
-  if(weapon_definitions.edition == game_edition::expansion) advance_bases();
-  activity->dispatch_groups([&](size_t const actor){
-    if(actor < crew.size()) dispatch_herc(actor, time_ratio);
-    else if(actor < base_id(0)) dispatch_flyer(actor - flyer_id(0), time_ratio);
-  },[&](size_t group){return activate_group(group);});
+  // Alt+S gates the world before input; the same command can change the later power gate.
+  if(!world_frozen){
+    if(weapon_definitions.edition != game_edition::expansion) advance_bases();
+    effects.advance(time_ratio);
+    effects.advance_deployments(time_ratio,[&](vec3<int32_t> const &position){
+      impact_request request;request.transform.translation=position;request.damage.armour=10000;request.area_radius=3000;
+      return impact(projectile_owner{.actor{activity->size()},.target{}},request).has_value();
+    },[&](size_t group,vec3<int32_t> const &position){
+      auto &entry{activity->group(group)};if(!entry.members.empty())place_deployed(entry.members.front(),position);entry.activation_trigger.reset();
+    },player().movement().position);
+    player_weapons->set_manual_guidance(false);
+    projectiles.advance(time_ratio, [&](projectile_owner &owner){
+      projectile_guidance input;
+      input.player_owner = owner.actor == player_index;
+      input.damage_falloff=falloff_preference||recorded_playback;
+      auto const attacker_side{activity->group(actor_group(owner.actor)).side};
+      input.area_damage_multiplier=attacker_side==0?std::array<int16_t,4>{2800,2000,1400,1000}.at(static_cast<size_t>(settings.difficulty)):1024;
+      input.manual_held = player_controls.fire;
+      input.manual_axes = player_controls.camera_input();
+      if(owner.actor < crew.size()) input.interference = crew[owner.actor].sensors.interfered;
+      input.owner_tracks_target = activity->targets()[owner.actor].selected == owner.target;
+      if(owner.target) {
+        input.target_position = target_position(*owner.target, owner.target_component);
+        input.target_detectable = observe().at(*owner.target).detectable;
+        input.target_origin.emplace(observe().at(*owner.target).position);
+      }
+      return input;
+    }, [&](projectile_owner const &owner, impact_request const &request){ return impact(owner, request); },
+    [&](projectile_owner const &owner, projectile_guidance const &feedback){
+      player_controls.fire = feedback.manual_held;
+      player_controls.camera_input(feedback.manual_axes);
+      if(feedback.manual_input_used) player_weapons->set_manual_guidance(true);
+      if(feedback.owner_guiding && owner.actor < crew.size()) crew[owner.actor].fire.skip_selection = true;
+    });
+    if(weapon_definitions.edition == game_edition::expansion) advance_bases();
+    activity->dispatch_groups([&](size_t const actor){
+      if(actor < crew.size()) dispatch_herc(actor, time_ratio);
+      else if(actor < base_id(0)) dispatch_flyer(actor - flyer_id(0), time_ratio);
+    },[&](size_t group){return activate_group(group);});
+  }
   if(!prepare_player())return false; // Original Q leaves after player controls, before perception and power.
   for(size_t i{0};i!=crew.size();++i)crew[i].waiting=activity->waiting(i);
   for(size_t i{0};i!=flyers.size();++i)flyers[i].waiting=activity->waiting(flyer_id(i));
   for(size_t i{0};i!=bases.size();++i)bases[i].waiting=activity->waiting(base_id(i));
   auto const observations{observe()};
   activity->scan_areas(observations);
-  activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);},[&](size_t observer,size_t target){notice_contact(observer,target,time_ratio);});
-  for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && !crew[i].actor->damage().consequences.dead) {
-    crew[i].actor->update_power(time_ratio, settings.free_weapons(), i == player_index ? player_weapons->selection() : int16_t{-1}, [&](weapon_shot const &shot){launch(i, shot);});
-    update_herc_sensors(i, time_ratio);
+  if(!world_frozen){
+    activity->perceive(observations,time_ratio,random,[&](size_t first,size_t second){return !intersect_scenery_segment(terrain.colliders(),observations[first].position,observations[second].position);},[&](size_t observer,size_t target){notice_contact(observer,target,time_ratio);});
+    for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && !crew[i].actor->damage().consequences.dead) {
+      crew[i].actor->update_power(time_ratio, settings.free_weapons(), i == player_index ? player_weapons->selection() : int16_t{-1}, [&](weapon_shot const &shot){launch(i, shot);});
+      update_herc_sensors(i, time_ratio);
+    }
   }
   if(auto const result{outcome_clock.advance(time_ratio, [&]{return mission_state();})}) pending_mission_prompt=result;
   // Phase-five reclamation follows firing: expired objects occupy their slots
@@ -220,6 +225,7 @@ void mission_session::set_displayed_target(std::optional<size_t> const target) {
 }
 void mission_session::clear_player_input() { input_router.clear_device_state(); }
 bool mission_session::player_command(uint16_t const code) {
+  if(development_command(code))return true;
   if(player_weapons->command(code)) return true;
   if(code >= 2 && code <= 10) return player_weapons->click_control(code - 2, false); // 1..9
   if(code == 76) { // Keypad 5: 110a1 resets throttle and sets its ownership flag.
@@ -231,6 +237,35 @@ bool mission_session::player_command(uint16_t const code) {
   else if(code == 19) { auto &actor{*crew[player_index].actor}; actor.impacts().detectable = !actor.impacts().detectable; emit_sound(sample_sound_request{sound_action::play,static_cast<uint16_t>(actor.impacts().detectable ? 26 : 27)}); }
   else return false;
   return true;
+}
+bool mission_session::development_command(uint16_t code,std::optional<size_t> subject){
+  if(code==0x402){if(weapon_definitions.edition!=game_edition::expansion){development.toggle_direction();crew[player_index].actor->movement_direction(development.movement_direction);}return true;}
+  if(code==0x21f){if(recorded_playback)world_frozen=!world_frozen;return true;}
+  if(code==0x619){
+    if(weapon_definitions.edition==game_edition::expansion){
+      auto const &body{player()};
+      auto const destination{development_pod_destination(body.movement().position,body.movement().angles.z)};
+      effects.add_deployment(std::nullopt,destination,random);return true;
+    }
+    auto const [actors,groups]{objective_facts()};
+    // Original f744 considers hostile HERCs, not flyers or gun towers.
+    bool const safe{objective_world{std::span{actors}.first(crew.size()),groups,player_index,mission_bounds::from_points(points)}.safe(player_index)};
+    auto const observations{observe()};std::vector<development_contact> contacts;
+    for(size_t i{};i<observations.size();++i){
+      auto const &actor{observations[i]};
+      bool const armed{i<base_id(0)||bases[i-base_id(0)].actor->profile().can_retaliate};
+      contacts.push_back({vec3<int32_t>{actor.position},i<crew.size()?45000:i<base_id(0)?50000:35000,
+        i<crew.size()?crew[i].definition->profile.base_combat_rating:int16_t{500},
+        activity->group(actor_group(i)).side,armed&&!activity->waiting(i)&&!actor.dead&&!actor.disabled&&!actor.unavailable});
+    }
+    int const passes{development_damage_passes(contacts,player().movement().position,crew[player_index].side,safe)};
+    for(int i{};i<passes;++i)crew[player_index].actor->random_damage(64,64,random,damage_events(player_index));
+    return true;
+  }
+  auto &actor{*crew.at(subject.value_or(player_index)).actor};
+  auto position{actor.body().movement().position};auto angles{actor.body().movement().angles};
+  if(!development.reposition(code,position,angles))return false;
+  actor.place(position,angles);return true;
 }
 random_state &mission_session::interface_random() { return visual_random; }
 music_contacts mission_session::music_observations()const{

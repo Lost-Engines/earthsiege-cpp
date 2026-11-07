@@ -34,19 +34,24 @@ int constexpr heavy_damage_speed_q10{400};
 
 } // anonymous namespace
 
-bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, bool const reset_recovery) {
-  /// Preserve per-update throttle and acceleration; only root-motion time is scaled
-  bool const forward{std::abs(throttle_input) > throttle_direction_threshold ? throttle_input <= 0 : state.throttle >= 0};
-  if(forward) steering_input = wrap_word(-steering_input);
-  auto const throttle_change{scale(-throttle_input, throttle_change_scale)};
-  if(throttle_change != 0) {
-    auto const next_throttle{wrap_word(state.throttle + throttle_change)};
-    bool const crosses_neutral{(state.throttle & 4095) != 0 && (next_throttle < 0) != (state.throttle < 0)};
-    state.throttle = crosses_neutral ? 0 : static_cast<int16_t>(std::clamp<int>(next_throttle, -throttle_limit, throttle_limit));
+bool update_player_throttle(int16_t &throttle, int16_t input, int16_t &steering, int16_t const direction) {
+  if(direction<0)input=wrap_word(-input);
+  bool const forward{std::abs(input)>throttle_direction_threshold ? input<=0 : throttle>=0};
+  if(forward)steering=wrap_word(-steering);
+  auto const change{scale(-input,throttle_change_scale)};
+  if(change!=0){
+    auto const next{wrap_word(throttle+change)};
+    bool const crosses_neutral{(throttle&4095)!=0&&(next<0)!=(throttle<0)};
+    throttle=crosses_neutral?0:static_cast<int16_t>(std::clamp<int>(next,direction>0?0:-throttle_limit,direction<0?0:throttle_limit));
   }
+  return change!=0;
+}
+
+bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, bool const reset_recovery, int16_t const direction) {
+  bool const changed{update_player_throttle(state.throttle,throttle_input,steering_input,direction)};
   auto const desired{scale(state.throttle, state.throttle < 0 ? -profile.reverse_rate : profile.forward_rate, 10)};
   update_requested_movement(state, profile, channel, desired, steering_input, damage, ratio, events, {}, reset_recovery);
-  return throttle_change != 0;
+  return changed;
 }
 
 void update_requested_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t desired, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance, bool const reset_recovery) {

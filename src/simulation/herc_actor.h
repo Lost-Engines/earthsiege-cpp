@@ -50,6 +50,7 @@ public:
   void notify_damage_changes(std::function<void(damage_consequences const &, damage_consequences const &)> callback);
   void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   void align_disabled_player();
+  void movement_direction(int16_t mode){body_state.movement_direction(mode);}
   damage_state const &damage() const;
   herc_power const &power() const;
   herc_power &power();

@@ -290,6 +290,7 @@ add_library(earthsiege_core
   src/simulation/scenery_world.h
   src/simulation/scenery_collision.cpp
   src/simulation/scenery_collision.h
+  src/simulation/development_controls.cpp
   src/simulation/locomotion.cpp
   src/simulation/locomotion.h
   src/simulation/arctangent_table.h
@@ -1500,4 +1501,17 @@ if(BUILD_TESTING)
   target_link_libraries(squad_camera_test PRIVATE earthsiege_core)
   add_test(NAME squad_camera COMMAND squad_camera_test "${PROJECT_SOURCE_DIR}/assets")
   add_test(NAME expansion_squad_camera COMMAND squad_camera_test "${PROJECT_SOURCE_DIR}/assets/expansion")
+endif()
+
+if(BUILD_TESTING)
+  add_executable(development_keys_test tests/development_keys_test.cpp)
+  target_link_libraries(development_keys_test PRIVATE earthsiege_core)
+  add_test(NAME development_keys COMMAND development_keys_test "${PROJECT_SOURCE_DIR}/tests/fixtures/development_keys.bin")
+endif()
+
+if(BUILD_TESTING)
+  add_executable(development_integration_test tests/development_integration_test.cpp)
+  target_link_libraries(development_integration_test PRIVATE earthsiege_core)
+  add_test(NAME development_integration COMMAND development_integration_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/development_pods.bin")
+  add_test(NAME expansion_development_integration COMMAND development_integration_test "${PROJECT_SOURCE_DIR}/assets/expansion" "${PROJECT_SOURCE_DIR}/tests/fixtures/development_pods.bin")
 endif()

@@ -1,0 +1,17 @@
+{
+  "sha256": {
+    "earthsiege-reverse/work/research/executable/images/dbsim.bin": "7aa4759c3a40616cb358a76c7590e7711ebf30adef2c8ae74aee67e4d0c8b12c",
+    "earthsiege-reverse/work/research/releases/executables/images/expansion_cd.bin": "2ae2c903cbba85c048c5fd1d8b1c8340eedeff44354bc87f2c8be742debc2923",
+    "earthsiege-reverse/tools/capture_development_keys.py": "1ebc397371087e5c9e0082a7ae149f3acfeb924e7433ae034779bdb69266dedd",
+    "earthsiege-reverse/tools/check_development_dispatch.py": "f3031dea80b5aa14c2602b292cdb1791828017bf1be901e459959bed8226d356",
+    "earthsiege-cpp/tests/fixtures/development_keys.bin": "4df9890985eb7e44d43e821ebb700ee8bdf8934a50250d44f202ba0dbd770803",
+    "earthsiege-cpp/tests/fixtures/development_pods.bin": "844fbee2fb277881950eeac5ac5e19cc9e0375dfd22815fb7967610e5185db07"
+  },
+  "counts": {
+    "repositionings": 2160,
+    "throttle": 6000,
+    "damage_budgets": 600,
+    "pod_destinations": 64
+  },
+  "boundaries": "See tests/fixtures/README.md; isolated x86 calls, not complete rendered mission traces."
+}

@@ -148,7 +148,7 @@ auto main(int argc, char *argv[])->int try {
     scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo,music_settings);
     scene->configure_input(menu.settings(),menu.device_calibrations());
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
-      "Ctrl + arrows move camera; Ctrl + Shift + up/down change distance.\n"
+      "Ctrl+Shift+arrows move the inspection camera; add Alt to change distance.\n"
       "Ctrl+F1 cockpit, Ctrl+F2 orbit, Ctrl+F3 free camera; P pauses, Escape returns to menu.\n"
       "F7 tactical map, F8 damage, F9 left, F10 right cockpit view.\n"
       "Space fires; 1–9 or W/Alt+W selects weapons; Tab selects targets; Enter confirms tactical orders; R toggles radar.\n"
@@ -269,8 +269,11 @@ auto main(int argc, char *argv[])->int try {
         if(focused && (event.type == earthsiege::event_type::key_down || event.type == earthsiege::event_type::key_up) && !event.repeat) {
           bool const alt{(event.modifiers & GLFW_MOD_ALT)!=0};
           scene->key_modifiers(alt);
-          if(auto const key{earthsiege::keyboard_held_key(event.key)}) scene->key(*key, event.type == earthsiege::event_type::key_down, alt);
-          if(event.type==earthsiege::event_type::key_down)if(auto const code{earthsiege::keyboard_command(event.key,alt,(event.modifiers & GLFW_MOD_CONTROL)!=0)}){
+          auto const held_key{earthsiege::keyboard_held_key(event.key)};
+          if(held_key) scene->key(*held_key, event.type == earthsiege::event_type::key_down, alt);
+          bool const inspection_camera{inspect_demo&&held_key&&
+            (event.modifiers&(GLFW_MOD_CONTROL|GLFW_MOD_SHIFT))==(GLFW_MOD_CONTROL|GLFW_MOD_SHIFT)};
+          if(event.type==earthsiege::event_type::key_down&&!inspection_camera)if(auto const code{earthsiege::keyboard_command(event.key,alt,(event.modifiers & GLFW_MOD_CONTROL)!=0)}){
             scene->command(*code);
             if(*code==87||*code==88||*code==0x219||*code==25||*code==0x401||*code==0x410||*code==16){
               modal_command_pending=true;return;
@@ -403,9 +406,11 @@ auto main(int argc, char *argv[])->int try {
       if(focused&&options&&scene->step_options())scene_dirty=true;
       if(focused&&!alert&&!options){
         auto const modifiers{display ? display->modifiers() : 0};
+        bool const inspection_camera{inspect_demo&&
+          (modifiers&(GLFW_MOD_CONTROL|GLFW_MOD_SHIFT))==(GLFW_MOD_CONTROL|GLFW_MOD_SHIFT)};
         if(scene->starting()){
           if(scene->step_startup())scene_dirty=false;
-        }else if(scene->step((modifiers & GLFW_MOD_CONTROL)!=0,(modifiers & GLFW_MOD_SHIFT)!=0,
+        }else if(scene->step(inspection_camera,(modifiers & GLFW_MOD_ALT)!=0,
                             display?dialogs:earthsiege::mission_dialog_handlers{}))scene_dirty=true;
         if(!running)break;
         if(leave_mission){

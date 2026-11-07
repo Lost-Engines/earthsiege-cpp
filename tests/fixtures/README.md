@@ -892,3 +892,29 @@ with explicit callback boundaries.
 
 See [Recorded-input demo verification](../../docs/DEMO_REPLAY.md) for the findings
 and the remaining comparison limits.
+
+## Development keys and recording freeze
+
+`development_keys.bin` (`ESDEV001`) stores three counted sections: 2,160 direct
+movement/turn cases, 6,000 throttle/steering cases and 600 damage-budget cases.
+Each section contains base-game captures followed by expansion captures.
+`tools/capture_development_keys.py` in earthsiege-reverse uses seed `0x11050`
+and runs the original HERC handler, throttle arithmetic and damage loop.
+The weapon dispatcher, shared gait controller, threat predicate, collection
+transport and random-damage sink are explicit callback boundaries. Full Euler
+rotations, signed-short limits, neutral crossing, strict distance boundaries,
+eligibility flags and friendly/enemy sums execute unchanged original code.
+The expansion's retained damage routine is captured too, although its global
+keyboard dispatcher intercepts Alt+Ctrl+P before that routine can run.
+
+`development_pods.bin` (`ESDEVP01`) holds 64 heading/destination pairs from the
+expansion global command handler, with player position (1000,2000,3000).
+`tools/check_development_dispatch.py` also executes both global dispatchers:
+Ctrl+1's four successive results, all recording/playback flag combinations for
+Alt+S, the viewed-actor fallback, and the null-group pod constructor call.
+The UI command callbacks and pod constructor are explicit boundaries here.
+
+`development_capture.json` identifies the source images, scripts and fixtures.
+The deployment motion and random-damage consumers have separate original-code
+fixtures. Integration tests check the actual keyboard consumers in both editions;
+the game does not load any of these expected outputs.

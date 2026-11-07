@@ -18,6 +18,7 @@
 #include "simulation/mission_activity.h"
 #include "simulation/wingmate_orders.h"
 #include "simulation/mission_objectives.h"
+#include "simulation/development_controls.h"
 #include "simulation/flyer_attack.h"
 #include "simulation/herc_actor.h"
 #include "simulation/player_armament.h"
@@ -133,7 +134,8 @@ class mission_session {
     bool waiting{false};
   };
   mission_header settings;
-  bool falloff_preference{},recorded_playback{};
+  bool falloff_preference{},recorded_playback{},world_frozen{};
+  development_controls development;
   std::vector<int16_t> deployment_modes;
   std::vector<bool> deployment_started;
   bool activate_group(size_t index);
@@ -268,6 +270,8 @@ public:
   int16_t exchange_player_instruments(int16_t requested_throttle, std::optional<bool> shield_to_front = {});
   void clear_player_input();
   bool player_command(uint16_t code);
+  bool development_command(uint16_t code,std::optional<size_t> actor = {});
+  bool recording_paused()const{return world_frozen;}
   wingmate_order_state order_state(size_t actor) const;
   bool transmit_order(uint16_t command);
   bool transmit_order(wingmate_order const &order, std::optional<size_t> recipient);

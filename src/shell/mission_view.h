@@ -45,6 +45,7 @@ class mission_view {
   random_state &ui_random;
   mission_audio audio;
   framebuffer frame;
+  framebuffer world_frame;
   cockpit_artwork cockpit;
   reactor_gauge reactor;
   throttle_gauge throttle;

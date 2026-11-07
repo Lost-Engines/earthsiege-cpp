@@ -32,6 +32,7 @@ class herc_body {
   movement_damage damage;
   bool throttle_command_pending{false};
   bool expansion{false};
+  int16_t direction_mode{};
   std::vector<movement_event> frame_movement_events;
   aiming_state torso_state;
   aiming_state elevation_state;
@@ -59,6 +60,7 @@ public:
   /// Original 13250: preserve the player cockpit heading when the legs fail.
   void align_disabled_player();
   void stop_throttle();
+  void movement_direction(int16_t mode){direction_mode=mode;}
   /// Keyboard/stop commands take precedence over the cockpit slider until exchanged.
   int16_t exchange_throttle(int16_t requested);
   void prepare_requested(int16_t speed, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});

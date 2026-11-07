@@ -111,7 +111,7 @@ void world_effects::advance(frame_ratio const ratio) {
   });
 }
 
-bool world_effects::add_deployment(size_t const group,vec3<int32_t> const &destination,random_state &random){
+bool world_effects::add_deployment(std::optional<size_t> const group,vec3<int32_t> const &destination,random_state &random){
   if(!deployments.available())return false;
   deployments.emplace(create_deployment(destination,random),group,std::get<shape_part>(deployment_models.roots.at(0).content),std::get<shape_part>(deployment_models.roots.at(1).content));return true;
 }
@@ -121,7 +121,7 @@ void world_effects::advance_deployments(frame_ratio const ratio,std::function<bo
     auto const frames{std::get<shape_part>(deployment_models.roots.at(1).content).cell_frame_counts.front()};
     if(advance_deployment(pod.state,static_cast<uint16_t>(frames),ratio,{
       .sound{[&](uint16_t id){if(sounds)sounds(sample_sound_request{sound_action::positioned,id,listener});}},.impact{impact},
-      .finish{[&](vec3<int32_t> const &position,bool clear){if(clear)release(pod.group,position);if(craters.size()<150)craters.push_back(position);}}
+      .finish{[&](vec3<int32_t> const &position,bool clear){if(pod.group){if(clear)release(*pod.group,position);if(craters.size()<150)craters.push_back(position);}}}
     }))deployments.defer_erase(slot);
     pod.opening.cell_frames().front()=pod.state.cell;
   });

@@ -10,9 +10,9 @@ This is the current baseline for comparison playtesting. The chronological
 [implementation record](IMPLEMENTATION.md) preserves earlier milestones;
 its old lists of unfinished integration are superseded by this page.
 
-The last full expansion integration run passed **303/303 tests**, including the original-game
+The last full expansion integration run passed **306/306 tests**, including the original-game
 regressions, GLFW window check and the locally enabled firmware/SoundFont test.
-Without optional hardware assets the suite has 302 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
+Without optional hardware assets the suite has 305 tests. See [PLATFORM.md](PLATFORM.md) for the host integration checks.
 The earlier 263-test baseline passed ASan/UBSan. After the final gameplay fixes, all 19
 affected movement/world suites passed both sanitizers. The six audio suites,
 including the new physical-MIDI captures and real synthesis backends, also pass
@@ -69,7 +69,9 @@ Squad-camera tests cover all four demos in both editions, including the fresh
 orbit on first selection and restoration when returning to the player. An
 original-code capture independently checks six switches, camera retention and
 control ownership. [Keyboard coverage](KEYBOARD.md) distinguishes these fixes
-from the development and recording shortcuts that remain unimplemented.
+from the original development and recording controls. Those controls now have
+8,760 captured arithmetic/handler cases, 64 expansion pod destinations and
+live mission routing checks in both editions, including Alt+S phase ordering.
 
 ## Edition coverage
 

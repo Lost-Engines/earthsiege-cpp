@@ -71,12 +71,17 @@ new expansion files and leaves the base game's saves unchanged.
   [Recorded-input demo verification](DEMO_REPLAY.md) for the recovered movement,
   AI, damage, input and map rules. All 74 captured mission launches also construct,
   advance and render successfully.
+- Development shortcuts preserve the expansion changes: Ctrl+1 is a no-op, and
+  Alt+Ctrl+P creates an unassigned deployment pod rather than applying the base
+  game's damage-balancing routine. Such a pod leaves no crater and releases no
+  HERC. Alt+S retains its playback-only world freeze in the native implementation.
+  See [keyboard coverage](KEYBOARD.md) for the comparisons and routing details.
 - Expansion audio includes the deployment sounds, speech overrides and Battleset 2
   combat music. KEYJOY adds PEDALS reversal; 34 original parser cases cover all
   four switches, repeated settings and malformed input. GO saves 18 preference
   bytes and DBSIM saves 22; both are accepted.
 
-The complete suite passes 299 tests with the local optional music assets. An
+The complete suite passes 306 tests with the local optional music assets. An
 earlier expansion baseline passed eleven ASan/UBSan suites with leak checking,
 including all four demos; those sanitizer runs predate this replay audit.
 

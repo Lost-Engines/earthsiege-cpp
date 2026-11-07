@@ -45,8 +45,8 @@ struct live_smoke_emitter {
 };
 
 struct live_deployment {
-  deployment_state state;size_t group;model_instance body,opening;
-  live_deployment(deployment_state s,size_t g,shape_part const &a,shape_part const &b):state{s},group{g},body{a},opening{b}{}
+  deployment_state state;std::optional<size_t> group;model_instance body,opening;
+  live_deployment(deployment_state s,std::optional<size_t> g,shape_part const &a,shape_part const &b):state{s},group{g},body{a},opening{b}{}
 };
 
 /// Own live effect geometry and state; phase-five collection remains explicit.
@@ -85,7 +85,7 @@ public:
   std::optional<size_t> add_puff(int16_t root, vec3<int32_t> const &position);
   std::optional<size_t> add_detached_weapon(debris_particle state);
   void advance(frame_ratio ratio);
-  bool add_deployment(size_t group,vec3<int32_t> const &destination,random_state &random);
+  bool add_deployment(std::optional<size_t> group,vec3<int32_t> const &destination,random_state &random);
   void advance_deployments(frame_ratio ratio,std::function<bool(vec3<int32_t> const &)> const &impact,std::function<void(size_t,vec3<int32_t> const &)> const &release,vec3<int32_t> const &listener);
   void collect();
   effect_lighting &lights();
