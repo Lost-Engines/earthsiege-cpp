@@ -114,6 +114,7 @@ public:
   bool transition_active()const{return door_motion!=nullptr;}
   bool quit_requested()const{return quitting;}
   bool ready_to_launch()const{return launch_requested;}
+  void request_demo(){demo_requested=true;}
   bool take_demo_request();
   void demo_return();
   preferences const &settings()const{return preferences_;}

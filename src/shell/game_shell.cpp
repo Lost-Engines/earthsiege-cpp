@@ -399,7 +399,7 @@ void game_shell::action_impl(uint16_t id){
       if(id==99||id==100){if(id==100){preferences_.commit(false);saves.save_preferences(preferences_);}else preferences_.cancel(false);show(1100);return;}
       return;
     case 1300:
-      if(id==1301){demo_requested=true;return;}
+      if(id==1301){request_demo();return;}
       if(id==1320){controls=std::make_unique<controls_dialog>(resources,preferences_,saves,calibrations);return;}
       if(id==1302){std::vector<std::pair<std::string,int>> credits{{"intro/credit_a.ttm",-1},{"intro/credit_b.ttm",-1}};if(resources.edition()==game_edition::expansion)credits.emplace_back("intro/credit_c.ttm",-1);start_movies(std::move(credits),1300);return;}
       if(id==100){show(options_owner);return;}

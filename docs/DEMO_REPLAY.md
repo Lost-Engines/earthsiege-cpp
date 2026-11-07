@@ -10,6 +10,35 @@ stopped the HERC, but the cockpit restored the old throttle on its next update.
 The corrected exchange accepts the collision stop, allowing the recorded reverse
 movement and detour to work.
 
+## Selecting a recording
+
+Launch `earthsiege --demo 1` through `--demo 4` to play a specific original-game
+recording. Add `--expansion` for the expansion recordings; its Apocalypse patrol
+is `earthsiege --expansion --demo 3`. An explicit `--data-dir` selects that data
+set instead. The opening cinematics and edition selector are skipped, and a key
+or mouse click returns to the main menu, as does the end of playback.
+
+The native View Demo menu chooses `1 + (current time in seconds % 4)`. It is a
+clock-based choice, not a sequence through the recordings. `--demo` overrides
+only the initial playback; later menu selections use the usual clock choice.
+`--frames` also bounds playback, and `--screenshot` saves the last displayed
+frame when that limit is reached. `--inspect-demo` remains a separate live
+inspection mode and cannot be combined with `--demo`.
+
+The DOS simulator also accepts named playback. From the installed game directory,
+with the usual CD mount and `ALT_DRIVE` environment in place, run:
+
+```dos
+DBSIM -eggplant -pTAPES\DEMO3
+```
+
+Use the expansion's installation for its recordings. The name is attached to
+lowercase `-p`, without a space or `.TAP` extension. This bypasses the shell and
+runs the simulator directly; it is the command used for the original-game
+comparison captures. DOS View Demo itself has no numbered picker. Its `-D`
+selector reads `TAPES/DEMOLIST.STR` and uses the current time modulo the number
+of entries, retrying if it matches the selector's retained previous index.
+
 ## Original comparison
 
 The analysis project runs the unchanged March 1995 expansion executable and TAP

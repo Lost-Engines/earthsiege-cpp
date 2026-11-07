@@ -19,7 +19,7 @@ including the new physical-MIDI captures and real synthesis backends, also pass
 ASan/UBSan with leak checking after this audio update. The earlier expansion baseline passed eleven
 ASan/UBSan suites with leak checking: all four demos, shell, mission returns,
 deployment, landing craft, bullets, environments and input parsing. Those
-sanitizer runs predate the latest recorded-demo audit. The 303-test result above
+sanitizer runs predate the latest recorded-demo audit. The 306-test result above
 checks the current code in the normal local build.
 
 ## Options menu playtesting
@@ -33,6 +33,13 @@ View Demo now launches the recorded-input simulator from the shell. Playback
 owns recorded modal input as well as ordinary frames, and returns to the main
 menu without importing a demo result into a career. The expansion passes its
 selected battleset to the simulator. Live keypresses or clicks end playback.
+
+The `--demo N` launcher was checked locally for all eight recordings, rendering
+120 frames and saving a distinct screenshot from each. Invalid numbers and
+conflicting inspection options fail before window creation. Default edition,
+`--demo=N`, explicit expansion data directories, and the two existing demo/menu
+regressions also pass. These launch checks do not replace the full replay
+comparisons below.
 
 Two short `options_demo` regression tests cover both editions, the actual mouse
 button handlers, all presets, Cancel, persistence, demo startup and interruption.

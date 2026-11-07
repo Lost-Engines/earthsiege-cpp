@@ -13,7 +13,7 @@ A native C++26 reconstruction of **Metaltech: Earthsiege**, using the original 1
 
 The March 1995 CD expansion is included alongside the original game. The launcher offers a choice of editions; `--original` and `--expansion` start either directly. Both battlesets, career transfer, Apocalypse, the new enemies and weapons, deployment pods, environments, music and CD cinematics are connected. All four expansion demos now match the original player motion and gameplay RNG throughout; the [replay audit](docs/DEMO_REPLAY.md) covers 11,071 simulation updates. [Expansion integration](docs/EXPANSION.md) describes the original-code comparisons and the limits of that coverage. The 1996 base-game reissue has unchanged 1.0 game files.
 
-The build is ready for comparison playtesting. All 272 standard tests pass, along with the optional Linux window check, including four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
+The build is ready for comparison playtesting. The latest local suite passed 306 tests, including the optional Linux window check and four complete original recordings whose gameplay states and return files match. See [current validation and fidelity limits](docs/VALIDATION.md) for the evidence and remaining presentation/audio timing boundaries. This does not establish a bug-free playthrough of every campaign branch.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -24,7 +24,14 @@ ctest --test-dir build --output-on-failure
 
 Requires a C++26 compiler, CMake 3.30 or newer and OpenGL development files. CMake fetches pinned GLFW, miniaudio, Munt, Nuked-SC55 and TinySoundFont sources on the first configure; see [third-party code](THIRD_PARTY.md). Original freeware game resources are bundled in `assets`; `--data-dir PATH` selects another installation. The floating window uses square pixels and the largest integer scale that fits the desktop. GLFW presents the software framebuffer through OpenGL and handles input; miniaudio supplies PCM output, consistently with Darker and TFX. No DOS executable or emulator is needed by the native program. See [platform implementation](docs/PLATFORM.md).
 
-Options → View Demo plays one of the four original recordings for the selected edition. Press a key or click to return to the main menu. Preferences → Detail cycles through Low, Medium, High and Max; Accept saves it and Cancel restores the previous setting.
+Options → View Demo chooses one of the four recordings for the selected edition from the current clock value. To play a particular recording immediately, use `--demo N` (1-4):
+
+```sh
+./build/earthsiege --demo 1
+./build/earthsiege --expansion --demo 3
+```
+
+The second command plays the Apocalypse patrol on the red world. `--demo` skips the opening screens and defaults to the original game unless `--expansion` or another `--data-dir` is supplied. Playback returns to the main menu when it finishes; press a key or click to interrupt it. Preferences → Detail cycles through Low, Medium, High and Max; Accept saves it and Cancel restores the previous setting.
 
 `--inspect-demo 1` (or 2–4) opens a recorded mission’s starting terrain and HERC roster. Use arrows/keypad to walk and turn, I/J/K/M or right mouse to aim, and Space to fire. W/Alt+W cycles weapons; L links/unlinks the selected matching weapon pair; Tab cycles targets; Enter confirms tactical-panel commands. F1–F6 select the six MFD pages. Ctrl+F1 shows the cockpit, Ctrl+F2 orbits and Ctrl+F3 detaches. F7/F8 select the lower tactical map/damage panel and F9/F10 the left/right panels. Ctrl+Shift+arrows controls the inspection camera; adding Alt changes distance; P pauses and Escape returns to the menu. The cockpit throttle and weapon charge sliders, shield allocation buttons, weapon groups, LINK and TRACK controls respond to the mouse. Click a numbered weapon to select it, right-click to change its group membership, or use 1–9. The HUD shows heading, torso and pitch indicators, target lock brackets and the next waypoint. The cockpit clock and animated lamps use the original presentation scripts.
 
