@@ -54,7 +54,7 @@ and remain separate from the ordinary movement keys.
 | Alt+arrows / keypad 2, 4, 6, 8 | Reposition the viewed HERC along its local axes. | Same. |
 | Ctrl+Left/Right / keypad 4, 6 | Turn the viewed HERC by the selected angular step. | Same. |
 | Alt+Ctrl+1 through 9 | Select a translation/rotation step. | Same. |
-| Ctrl+1 | Alternate forward-only and reverse-only throttle regimes. | Consumed without changing anything, as in the expansion executable. |
+| Ctrl+1 | Alternate forward-only and reverse-only throttle regimes; assigned to the shipped WCS reverse button. | Global handler is a no-op. The earlier documented WCS preset path is separate and remains incomplete in this port; see below. |
 | Alt+Ctrl+P | Apply the original nearby-force damage calculation to the player. | Spawn an unassigned drop pod 50,000 units ahead of the player. |
 | Alt+S | Freeze or resume world updates during tape playback. | Same. |
 
@@ -98,3 +98,22 @@ check modifier dispatch, freeze gating, the expansion's Ctrl+1 no-op and 64 pod
 destinations. Live mission checks cover both editions, command routing to a
 squadmate, freeze/resume phase order, retained world rendering and the distinction
 between assigned and unassigned pods. See [fixture provenance](../tests/fixtures/README.md).
+
+## Manual comparison and remaining WCS input coverage
+
+F11, N and L are documented gameplay keys. The original Ctrl+Alt+P effects,
+direct repositioning, step selection and recording freeze are absent from the
+supplied player instructions. B, Z and Enter's external-view alias are other
+unlisted controls. The analysis repository's `docs/CHEATS_AND_DEVELOPMENT.md`
+contains the manual page references, controller-profile evidence and the full
+classification of identified controls and internal launch switches.
+
+Ctrl+1 is a controller-specific exception. The base ES.ADV assigns it to reverse
+direction. The expansion manual and README document Ctrl+1 through Ctrl+0 as
+WCS throttle presets. Callback `0x51c28` handles those before global dispatch;
+`0x51f84` combines the retained level with current throttle in the WCS input
+calculation. The native port currently supplies a modern physical throttle axis
+and lacks that complete keyboard/feedback route. The earlier statement that
+expansion Ctrl+1 simply does nothing described only its global handler and
+ordinary play with WCS disabled. Original callback captures now establish this
+remaining input work; the 306 passing tests did not cover the WCS preset path.

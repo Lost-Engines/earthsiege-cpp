@@ -71,7 +71,8 @@ new expansion files and leaves the base game's saves unchanged.
   [Recorded-input demo verification](DEMO_REPLAY.md) for the recovered movement,
   AI, damage, input and map rules. All 74 captured mission launches also construct,
   advance and render successfully.
-- Development shortcuts preserve the expansion changes: Ctrl+1 is a no-op, and
+- Development shortcuts preserve the expansion changes: the global Ctrl+1
+  handler is a no-op (the earlier WCS preset path is a separate coverage gap), and
   Alt+Ctrl+P creates an unassigned deployment pod rather than applying the base
   game's damage-balancing routine. Such a pod leaves no crater and releases no
   HERC. Alt+S retains its playback-only world freeze in the native implementation.
@@ -86,6 +87,10 @@ earlier expansion baseline passed eleven ASan/UBSan suites with leak checking,
 including all four demos; those sanitizer runs predate this replay audit.
 
 ## Validation limits
+
+The documented WCS Ctrl+number preset callback and its throttle feedback path
+remain to be integrated. Current input routing uses a modern physical throttle
+axis. See [the manual-comparison correction](KEYBOARD.md#manual-comparison-and-remaining-wcs-input-coverage).
 
 The full expansion demo runs compare player motion and gameplay RNG with the
 original. They do not yet compare all actor state, every rendered frame or sound

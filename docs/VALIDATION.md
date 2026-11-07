@@ -73,6 +73,12 @@ from the original development and recording controls. Those controls now have
 8,760 captured arithmetic/handler cases, 64 expansion pod destinations and
 live mission routing checks in both editions, including Alt+S phase ordering.
 
+The subsequent manual comparison found a separate WCS input gap: expansion
+Ctrl+number presets are consumed by an earlier keyboard callback, before global
+dispatch. The port's modern-axis route does not reproduce that callback and
+its throttle feedback calculation. The 306-test baseline does not validate
+that path. See [keyboard coverage](KEYBOARD.md#manual-comparison-and-remaining-wcs-input-coverage).
+
 ## Edition coverage
 
 The comparisons below concern the original October 1994 version 1.0 build.
