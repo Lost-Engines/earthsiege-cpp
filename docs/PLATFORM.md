@@ -1,6 +1,6 @@
 # Platform implementation
 
-Earthsiege uses GLFW 3.4 for its window, keyboard, mouse and joystick input,
+Earthsiege uses GLFW for its window, keyboard, mouse and joystick input,
 and miniaudio for PCM output. The versions and build approach match Darker and
 TFX. SDL is no longer a dependency.
 

@@ -65,7 +65,7 @@ packages needed to build GLFW on Linux.
 ```sh
 cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF \
-  -DCMAKE_DISABLE_FIND_PACKAGE_glfw3=ON -DEARTHSIEGE_STATIC_RUNTIME=ON
+  -DEARTHSIEGE_STATIC_RUNTIME=ON
 cmake --build build-release --target earthsiege --parallel 3
 cmake --install build-release --prefix "$PWD/build-release/package/earthsiege-cpp" --component Runtime
 cmake -DPACKAGE_ROOT="$PWD/build-release/package" -DOUTPUT_DIR="$PWD/build-release/dist" \
@@ -74,9 +74,8 @@ python3 tools/check_package.py build-release/dist/earthsiege-cpp-linux-x86_64.ta
 ```
 
 Use `windows-x86_64` or `macos-arm64` when packaging for the corresponding host.
-The package checker requires Python 3.12 or newer. Ordinary development builds
-use a system GLFW 3.4 when available; otherwise CMake builds the pinned version.
-Dependencies are pinned and hash-checked; [THIRD_PARTY.md](../THIRD_PARTY.md)
+The package checker requires Python 3.12 or newer. Development and CI builds both use upstream GLFW `master`.
+Other downloaded dependencies are pinned and hash-checked; [THIRD_PARTY.md](../THIRD_PARTY.md)
 describes offline source overrides.
 
 

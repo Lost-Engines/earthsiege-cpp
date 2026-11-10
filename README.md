@@ -22,7 +22,7 @@ ctest --test-dir build --output-on-failure
 ./build/earthsiege
 ```
 
-Requires a C++26 compiler, CMake 3.30 or newer and OpenGL development files. CMake fetches pinned GLFW, miniaudio, Munt, Nuked-SC55 and TinySoundFont sources on the first configure; see [third-party code](THIRD_PARTY.md). Original freeware game resources are bundled in `assets`; `--data-dir PATH` selects another installation. The floating window uses square pixels and the largest integer scale that fits the desktop. GLFW presents the software framebuffer through OpenGL and handles input; miniaudio supplies PCM output, consistently with Darker and TFX. No DOS executable or emulator is needed by the native program. See [platform implementation](docs/PLATFORM.md).
+Requires a C++26 compiler, CMake 3.30 or newer and OpenGL development files. CMake builds GLFW from upstream `master` and fetches pinned miniaudio, Munt, Nuked-SC55 and TinySoundFont sources on the first configure; see [third-party code](THIRD_PARTY.md). Original freeware game resources are bundled in `assets`; `--data-dir PATH` selects another installation. The floating window uses square pixels and the largest integer scale that fits the desktop. GLFW presents the software framebuffer through OpenGL and handles input; miniaudio supplies PCM output, consistently with Darker and TFX. No DOS executable or emulator is needed by the native program. See [platform implementation](docs/PLATFORM.md).
 
 Options → View Demo chooses one of the four recordings for the selected edition from the current clock value. To play a particular recording immediately, use `--demo N` (1-4):
 
