@@ -17,7 +17,7 @@ private:
   save_store saves;
   std::array<joystick_calibration,2> calibrations{};
   size_t next{},simulation_frames{},modal_packets{};
-  uint64_t elapsed_units{}; // milliseconds * 256, retaining fractional tape periods
+  uint64_t elapsed_units{};                                                     // milliseconds * 256, retaining fractional tape periods
   uint16_t last_delta{};
   bool finished{},suppressed{};
   unsigned advance(uint16_t delta);
