@@ -11,10 +11,14 @@ void assign_target(std::span<target_relationship> const relationships, size_t co
   if(state.selected == selected) return;
   if(state.selected) {
     if(*state.selected >= relationships.size()) throw std::out_of_range{"previous target relationship reference"};
-    auto &previous{relationships[*state.selected]}; previous.attackers = wrap_word(previous.attackers - 1);
+    auto &previous{relationships[*state.selected]};
+    previous.attackers = wrap_word(previous.attackers - 1);
   }
   state.selected = selected;
-  if(selected) { auto &next{relationships[*selected]}; next.attackers = wrap_word(next.attackers + 1); }
+  if(selected) {
+    auto &next{relationships[*selected]};
+    next.attackers = wrap_word(next.attackers + 1);
+  }
   state.changed = true;
 }
 
@@ -31,9 +35,11 @@ void patrol_engagement(engagement_mode const mode, engagement_state &state, size
   timer = 10000;
   bool const retreat{!flyer && (state.unavailable || state.disabled || state.dead)};
   std::optional<target_selection_flags> selection;
-  if(flyer) selection = static_cast<target_selection_flags>(patrol ? 16 : 17);
-  else if(retreat) selection = target_selection_flags::none;
-  else if(!patrol || (command == 0 && objective.order == 8) || command == 2) selection = target_selection_flags::prefer_objective;
+  if(flyer) {
+    selection = static_cast<target_selection_flags>(patrol ? 16 : 17);
+  } else if(retreat) {
+    selection = target_selection_flags::none;
+  } else if(!patrol || (command == 0 && objective.order == 8) || command == 2) selection = target_selection_flags::prefer_objective;
   if(!selection) return;
   auto const target{callbacks.select(*selection)};
   if(!patrol && !retreat && (!target || std::ranges::find(objective.actors, *target) == objective.actors.end())) return;
@@ -41,8 +47,11 @@ void patrol_engagement(engagement_mode const mode, engagement_state &state, size
   if(!target) return;
   if(retreat) {
     state.aimed_component = -1;
-    if(callbacks.enter) callbacks.enter(behavior::fleeing);
-    else enter_behavior(state.controller, behavior::fleeing, world_stagger);
+    if(callbacks.enter) {
+      callbacks.enter(behavior::fleeing);
+    } else {
+      enter_behavior(state.controller, behavior::fleeing, world_stagger);
+    }
   } else {
     if(!flyer) state.attack_requested = true;
     callbacks.attack();

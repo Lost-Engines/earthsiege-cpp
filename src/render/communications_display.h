@@ -5,16 +5,16 @@
 namespace earthsiege {
 
 struct communications_choice {
-  bool disabled{};
-  bool alternate{};
+  bool disabled{false};
+  bool alternate{false};
 };
 struct communications_display_state {
-  size_t selected{};
+  size_t selected{0};
   std::array<communications_choice, 6> choices{};
   size_t command() const;
 };
 class communications_display {
-  std::array<font, 4> fonts;                                                // green, yellow, red, disabled
+  std::array<font, 4> fonts;                                                   // green, yellow, red, disabled
   std::vector<interface_string> commands;
 public:
   explicit communications_display(resource_store const &resources);

@@ -26,15 +26,17 @@ struct projectile_flight {
   int16_t animation_remaining{0};
   std::vector<uint16_t> cells;
   bool target_present{false};
-  int16_t strength{1024}, falloff_step{}, impact_strength{1024};
+  int16_t strength{1024};
+  int16_t falloff_step{0};
+  int16_t impact_strength{1024};
 };
 
 /// Target location is resolved from the selected model node or actor origin by the owner
 struct projectile_guidance {
   vec3<int32_t> target_position;
   std::optional<vec3<int32_t>> target_origin;
-  bool damage_falloff{};
-  bool proximity_burst{};
+  bool damage_falloff{false};
+  bool proximity_burst{false};
   int16_t area_damage_multiplier{1024};
   bool player_owner{false};
   bool owner_tracks_target{false};
@@ -43,10 +45,14 @@ struct projectile_guidance {
   bool manual_held{false};
   vec2<int16_t> manual_axes;
   bool owner_guiding{false};
-  bool manual_input_used{false};                                          // player steering consumer ran, even when releasing guidance
+  bool manual_input_used{false};                                               // player steering consumer ran, even when releasing guidance
 };
 
-enum class projectile_result { flying, expired, impact };
+enum class projectile_result {
+  flying,
+  expired,
+  impact
+};
 using projectile_contact = std::function<bool(model_transform const &, int16_t, int16_t)>;
 
 /// Advance original cells, lifetime and guidance; dispatch the ray before committing movement

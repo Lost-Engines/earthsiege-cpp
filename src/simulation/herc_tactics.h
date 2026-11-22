@@ -26,7 +26,7 @@ struct herc_combat_position {
 /// Scratch state shared by the attack/facing/flanking controllers; reset on entry.
 struct herc_attack_state {
   int16_t last_direction{0};
-  int16_t steering_memory{0};                                               // original +0x57, cleared when the torso centres behind a target
+  int16_t steering_memory{0};                                                  // original +0x57, cleared when the torso centres behind a target
   int16_t reverse_remaining{0};
   int16_t damage_check_remaining{0};
   bool behind_target{false};
@@ -41,14 +41,14 @@ struct herc_attack_inputs {
   int32_t received_damage{0};
   bool actor_incapacitated{false};
   bool target_incapacitated{false};
-  bool target_completed{false};                                            // separate objective/command completion policy
+  bool target_completed{false};                                                // separate objective/command completion policy
   bool base_can_retaliate{false};
   bool expansion{false};
 };
 struct herc_attack_callbacks {
   std::function<void(movement_request const &)> move;
-  std::function<void(int16_t)> aim;                                         // signed target-relative facing, used by weapon selection
-  std::function<bool()> completed{};                                          // live check after firing; fixture inputs remain the fallback
+  std::function<void(int16_t)> aim;                                            // signed target-relative facing, used by weapon selection
+  std::function<bool()> completed{};                                           // live check after firing; fixture inputs remain the fallback
 };
 
 /// Obstruction/skirting entry precedes this pass. Return whether the controller

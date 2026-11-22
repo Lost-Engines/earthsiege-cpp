@@ -17,8 +17,13 @@ int slider_geometry::clamp_boundary(int const x, int const y) const {
 }
 rectangle slider_geometry::thumb_at(int const boundary) const {
   auto result{bounds};
-  if(vertical) { result.bottom = boundary; result.top = boundary - thumb_extent; }
-  else { result.left = boundary; result.right = boundary + thumb_extent; }
+  if(vertical) {
+    result.bottom = boundary;
+    result.top = boundary - thumb_extent;
+  } else {
+    result.left = boundary;
+    result.right = boundary + thumb_extent;
+  }
   return result;
 }
 int slider_geometry::axis_value(rectangle const &painted_thumb) const {

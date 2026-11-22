@@ -12,16 +12,25 @@ namespace earthsiege {
 struct palette;
 class software_cursor;
 
-enum class event_type { close, focus, key_down, key_up, text, motion, button_down, button_up };
+enum class event_type {
+  close,
+  focus,
+  key_down,
+  key_up,
+  text,
+  motion,
+  button_down,
+  button_up
+};
 struct window_event {
   event_type type{};
-  int key{};
-  int modifiers{};
-  int button{};
-  int x{};
-  int y{};
-  bool repeat{};
-  bool focused{};
+  int key{0};
+  int modifiers{0};
+  int button{0};
+  int x{0};
+  int y{0};
+  bool repeat{false};
+  bool focused{false};
   std::string text{};
 };
 
@@ -35,7 +44,7 @@ struct glfw_context {
 class window {
   glfw_context context;
   std::unique_ptr<GLFWwindow, decltype(&glfwDestroyWindow)> handle{nullptr, glfwDestroyWindow};
-  unsigned int texture{};
+  unsigned int texture{0};
   std::array<std::array<uint8_t, 4>, screen_width * screen_height> display{};
   std::deque<window_event> events;
   static auto self(GLFWwindow *handle)->window &;

@@ -5,7 +5,10 @@ namespace earthsiege {
 
 zone_resource read_zone(bytes const source) {
   binary_reader file{source, "zone placements"};
-  zone_resource result{.stored_terrain{file.integer<uint16_t>()}, .placements{}};
+  zone_resource result{
+    .stored_terrain{file.integer<uint16_t>()},
+    .placements{}
+  };
   auto const count{file.integer<uint16_t>()};
   result.placements.reserve(count);
   for(unsigned int index{0}; index != count; ++index) {
@@ -21,7 +24,8 @@ zone_resource read_zone(bytes const source) {
 
 world_environment read_world_environment(bytes const source, game_edition const edition) {
   binary_reader file{source, "world environment"};
-  world_environment result;result.edition=edition;
+  world_environment result;
+  result.edition = edition;
   result.background = background_style{
     .horizon_band_width{file.integer<int16_t>()},
     .sky_palette_start{file.integer<int16_t>()},
@@ -33,7 +37,9 @@ world_environment read_world_environment(bytes const source, game_edition const 
     .horizon_offset{file.integer<int16_t>()},
   };
   for(auto &value : result.atmosphere_parameters) value = file.integer<int16_t>();
-  if(edition == game_edition::expansion) for(auto &value : result.expansion_parameters) value = file.integer<int16_t>();
+  if(edition == game_edition::expansion) {
+    for(auto &value : result.expansion_parameters) value = file.integer<int16_t>();
+  }
   for(auto &band : result.distance_bands) {
     auto const count{file.integer<uint32_t>()};
     if(count > file.remaining() / sizeof(int32_t)) file.fail("distance band exceeds descriptor");
@@ -43,8 +49,11 @@ world_environment read_world_environment(bytes const source, game_edition const 
   result.shade_levels = file.integer<int16_t>();
   auto const count{file.integer<int16_t>()};
   if(count < 0) file.fail("negative palette range count");
-  auto const range{[&file] {
-    return palette_range{.first{file.integer<int16_t>()}, .count{file.integer<int16_t>()}};
+  auto const range{[&file]{
+    return palette_range{
+      .first{file.integer<int16_t>()},
+      .count{file.integer<int16_t>()}
+    };
   }};
   for(int index{0}; index != count; ++index) result.near_ranges.push_back(range());
   result.stored_far_range_count = file.integer<int16_t>();
@@ -81,17 +90,26 @@ world_selection select_world(mission_header const &header) {
   auto const palette{static_cast<int>(header.terrain) * variants_per_terrain + header.palette_variant * environments_per_palette};
   auto const environment{palette + header.world_variant};
   if(palette < 0 || palette >= 36 || environment < 0 || environment >= 36) throw std::out_of_range{"mission world selection"};
-  return world_selection{.palette{palette}, .environment{environment}};
+  return world_selection{
+    .palette{palette},
+    .environment{environment}
+  };
 }
 
 std::string_view terrain_name(terrain_kind const terrain) {
   switch(terrain) {
-  case terrain_kind::desert: return "DESERT";
-  case terrain_kind::temperate: return "TEMPER";
-  case terrain_kind::ice: return "ICE";
-  case terrain_kind::urban: return "URBAN";
-  case terrain_kind::wasteland: return "WASTE";
-  case terrain_kind::ruins: return "RUINS";
+  case terrain_kind::desert:
+    return "DESERT";
+  case terrain_kind::temperate:
+    return "TEMPER";
+  case terrain_kind::ice:
+    return "ICE";
+  case terrain_kind::urban:
+    return "URBAN";
+  case terrain_kind::wasteland:
+    return "WASTE";
+  case terrain_kind::ruins:
+    return "RUINS";
   }
   throw std::out_of_range{"unknown terrain kind"};
 }

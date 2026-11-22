@@ -2,15 +2,15 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include "resources/resource_store.h"
-#include "simulation/herc_body.h"
-#include "simulation/component_damage.h"
-
 #include "herc_body_reference.h"
+#include "resources/resource_store.h"
+#include "simulation/component_damage.h"
+#include "simulation/herc_body.h"
 
 
 int main(int const argc, char **argv) try {
-  using namespace herc_reference;
+  using herc_reference::check;
+  using herc_reference::read_state;
   if(argc != 3) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
   auto const weapons{earthsiege::read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))};
@@ -56,8 +56,12 @@ int main(int const argc, char **argv) try {
         if(recovery >= 0) body.recover_from_collision(recovery, reverse);
         std::vector<std::array<int16_t, 3>> actual_events;
         body.step_requested(controls.throttle, controls.steering, {controls.torso, controls.elevation}, ratio, {}, [&](earthsiege::movement_event const event){
-          if(event == earthsiege::movement_event::collapse_started) actual_events.push_back({0, 0x1e, 0});
-          else { actual_events.push_back({1, 120, 150}); actual_events.push_back({0, 0x29, 0}); }
+          if(event == earthsiege::movement_event::collapse_started) {
+            actual_events.push_back({0, 0x1e, 0});
+          } else {
+            actual_events.push_back({1, 120, 150});
+            actual_events.push_back({0, 0x29, 0});
+          }
         });
         if(body.movement().collision_recovery != expected_recovery || body.movement().collapsed != collapsed || actual_events != expected_events) file.fail(name + "/" + std::to_string(step) + ": damaged movement events/recovery differ");
       } else if(collisions) {
@@ -74,8 +78,11 @@ int main(int const argc, char **argv) try {
         })};
         if(visited != probes || hit != expected_hit) file.fail("contact response differs");
         if(hit && body.exchange_throttle(1024) != 0) file.fail("collision stop lost to cockpit slider");
-      } else if(version == "ESBODY03") body.step_requested(controls.throttle, controls.steering, vec2<int16_t>{controls.torso, controls.elevation}, ratio);
-      else body.step(controls, ratio);
+      } else if(version == "ESBODY03") {
+        body.step_requested(controls.throttle, controls.steering, vec2<int16_t>{controls.torso, controls.elevation}, ratio);
+      } else {
+        body.step(controls, ratio);
+      }
       check(body, read_state(file), name + "/" + std::to_string(step));
       ++total;
     }

@@ -59,7 +59,10 @@ class painter_tree {
       auto const axis{bounded(difference(segment.second, segment.first))};
       auto const view{bounded(difference(eye, segment.first))};
       auto const normal{bounded(cross(axis, bounded(cross(axis, view))))};
-      plane = separating_plane{.normal{vec3<int32_t>{normal}}, .eye_side{positive_side(normal, view)}};
+      plane = separating_plane{
+        .normal{vec3<int32_t>{normal}},
+        .eye_side{positive_side(normal, view)}
+      };
     }
     return positive_side(plane->normal, bounded(difference(point.position, segment.first))) == plane->eye_side;
   }
@@ -74,7 +77,8 @@ class painter_tree {
         if(inside(other.segment->second, owner)) return &other.segment->second;
         return nullptr;
       }};
-      size_t owner{a}, point_index{b};
+      size_t owner{a};
+      size_t point_index{b};
       auto position{endpoint(first, second)};
       if(!position) {
         owner = b;
@@ -111,12 +115,19 @@ class painter_tree {
   }
 
 public:
-  painter_tree(std::span<scene_order_entry const> const source, vec3<int32_t> const &observer) : entries{source}, eye{observer}, nodes(source.size()) {
+  painter_tree(std::span<scene_order_entry const> const source, vec3<int32_t> const &observer)
+    : entries{source},
+      eye{observer},
+      nodes(source.size()) {
   }
 
   std::vector<size_t> order() {
-    for(size_t index{0}; index != entries.size(); ++index) if(entries[index].segment) insert(index);
-    for(size_t index{0}; index != entries.size(); ++index) if(!entries[index].segment) insert(index);
+    for(size_t index{0}; index != entries.size(); ++index) {
+      if(entries[index].segment) insert(index);
+    }
+    for(size_t index{0}; index != entries.size(); ++index) {
+      if(!entries[index].segment) insert(index);
+    }
     std::vector<size_t> result;
     result.reserve(entries.size());
     std::vector<size_t> pending;

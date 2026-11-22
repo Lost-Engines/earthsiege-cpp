@@ -5,7 +5,11 @@
 
 namespace earthsiege {
 
-enum class effect_light_kind : int16_t { none, ordinary, distance_gated };
+enum class effect_light_kind : int16_t {
+  none,
+  ordinary,
+  distance_gated
+};
 
 struct explosion_definition {
   int16_t model{0};

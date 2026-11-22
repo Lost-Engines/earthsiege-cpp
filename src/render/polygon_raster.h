@@ -9,7 +9,7 @@ namespace earthsiege {
 
 struct polygon_span {
   int16_t left{0};
-  int16_t right{0};                                                         // inclusive original endpoints
+  int16_t right{0};                                                            // inclusive original endpoints
 };
 
 struct polygon_edges {

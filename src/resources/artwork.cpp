@@ -17,8 +17,8 @@ auto read_bitmap(binary_reader &file)->bitmap {
     .pixels{},
   };
   result.width = file.integer<uint16_t>();
-  unsigned int bits{};
-  uint32_t amount{};
+  unsigned int bits{0};
+  uint32_t amount{0};
   if(tag == 0x280000) {
     bits = file.integer<uint16_t>();
     result.flags = static_cast<uint8_t>(file.integer<uint16_t>());
@@ -29,7 +29,9 @@ auto read_bitmap(binary_reader &file)->bitmap {
     file.take(1);
     amount = file.integer<uint32_t>();
     file.take(2);
-  } else file.fail("unknown bitmap tag");
+  } else {
+    file.fail("unknown bitmap tag");
+  }
   if(bits != 8 || !result.width || !result.height || amount != result.width * result.height) {
     file.fail("unsupported bitmap raster");
   }
@@ -40,7 +42,9 @@ auto read_bitmap(binary_reader &file)->bitmap {
   // the legacy ICONS.DBA declares stale cached bytes beyond its complete raster
   if(end > file.position() + file.remaining()) {
     if(tag != 0x280000) file.fail("bitmap extent exceeds resource");
-  } else file.seek(end + ((end & 1) && end < file.position() + file.remaining() ? 1 : 0));
+  } else {
+    file.seek(end + ((end & 1) && end < file.position() + file.remaining() ? 1 : 0));
+  }
   return result;
 }
 
@@ -54,18 +58,21 @@ auto read_bitmaps(bytes data)->std::vector<bitmap> {
   if(tag == 0x280001) {
     file.take(4);
     count = file.integer<uint32_t>();
-  } else if(tag == 0x28000b) file.seek(16);
-  else file.seek(0);
+  } else if(tag == 0x28000b) {
+    file.seek(16);
+  } else {
+    file.seek(0);
+  }
   if(count > 10000) file.fail("excessive bitmap array count");
   std::vector<bitmap> result;
   result.reserve(count);
-  for(unsigned int index{}; index < count; ++index) result.push_back(read_bitmap(file));
+  for(unsigned int index{0}; index < count; ++index) result.push_back(read_bitmap(file));
   return result;
 }
 
-auto display_colour(std::array<uint8_t,3> const &dac)->uint32_t {
-  auto expand=[](uint8_t c)->uint32_t{return (static_cast<uint32_t>(c)<<2)|(c>>4);};
-  return 0xff000000u|(expand(dac[0])<<16)|(expand(dac[1])<<8)|expand(dac[2]);
+auto display_colour(std::array<uint8_t, 3> const &dac)->uint32_t {
+  auto expand{[](uint8_t c)->uint32_t {return (static_cast<uint32_t>(c) << 2) | (c >> 4);}};
+  return 0xff000000u | (expand(dac[0]) << 16) | (expand(dac[1]) << 8) | expand(dac[2]);
 }
 
 auto read_palette(bytes data)->palette {
@@ -77,7 +84,7 @@ auto read_palette(bytes data)->palette {
   auto const count{file.integer<uint32_t>()};
   if(count > 256) file.fail("excessive palette colours");
   palette result;
-  for(unsigned int index{}; index < count; ++index) {
+  for(unsigned int index{0}; index < count; ++index) {
     unsigned int const red{file.integer<uint8_t>()};
     unsigned int const green{file.integer<uint8_t>()};
     unsigned int const blue{file.integer<uint8_t>()};
@@ -89,11 +96,11 @@ auto read_palette(bytes data)->palette {
   if(file.remaining()) {
     auto const ramps{file.integer<uint32_t>()};
     if(ramps > 256) file.fail("excessive palette ramps");
-    for(unsigned int index{}; index < ramps; ++index) {
+    for(unsigned int index{0}; index < ramps; ++index) {
       auto const length{file.integer<uint16_t>()};
       std::vector<uint16_t> ramp;
       ramp.reserve(length);
-      for(unsigned int level{}; level < length; ++level) ramp.push_back(file.integer<uint16_t>());
+      for(unsigned int level{0}; level < length; ++level) ramp.push_back(file.integer<uint16_t>());
       result.shade_ramps.push_back(std::move(ramp));
     }
   }
@@ -121,7 +128,7 @@ auto read_font(bytes data)->font {
   auto const raster{file.take(raster_size)};
   binary_reader offsets{file.take(count * 4), "glyph offsets"};
   auto const widths{file.take(count)};
-  for(unsigned int index{}; index < count; ++index) {
+  for(unsigned int index{0}; index < count; ++index) {
     auto const offset{offsets.integer<uint32_t>()};
     size_t const amount{widths[index] * result.height};
     if(offset > raster.size() || amount > raster.size() - offset) file.fail("glyph outside font raster");
@@ -136,7 +143,7 @@ auto read_font(bytes data)->font {
 }
 
 auto font::text_width(std::string_view text) const->int {
-  int width{};
+  int width{0};
   for(unsigned char const character : text) {
     if(character >= first_character && character - first_character < glyphs.size()) {
       width += static_cast<int>(glyphs[character - first_character].width);

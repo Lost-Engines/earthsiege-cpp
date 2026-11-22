@@ -27,7 +27,7 @@ int main(int const argc, char **argv) try {
       bool const split{file.integer<uint8_t>() != 0};
       auto const level{file.integer<uint16_t>()};
       bool const culled{file.integer<uint8_t>() != 0};
-      auto const require{[&](bool const success, std::string const &field) {
+      auto const require{[&](bool const success, std::string const &field){
         if(!success) throw std::runtime_error{"world " + std::to_string(world) + " distance case " + std::to_string(index) + ' ' + field + " differs"};
       }};
       require(shading.band(distance, kind, radius) == level, "band");

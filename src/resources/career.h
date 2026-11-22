@@ -1,7 +1,7 @@
 #pragma once
-#include "resources/player_roster.h"
 #include <array>
 #include <optional>
+#include "resources/player_roster.h"
 
 namespace earthsiege {
 
@@ -12,16 +12,36 @@ class armory {
 public:
   armory() = default;
   explicit armory(size_t count) : types(count) {}
-  auto size() const { return types.size(); }
-  void resize(size_t count) { types.resize(count); }
-  auto begin() { return types.begin(); }
-  auto end() { return types.end(); }
-  auto begin() const { return types.begin(); }
-  auto end() const { return types.end(); }
-  auto &operator[](size_t i) { return types[i]; }
-  auto const &operator[](size_t i) const { return types[i]; }
-  auto &at(size_t i) { return types.at(i); }
-  auto const &at(size_t i) const { return types.at(i); }
+  auto size() const {
+    return types.size();
+  }
+  void resize(size_t count) {
+    types.resize(count);
+  }
+  auto begin() {
+    return types.begin();
+  }
+  auto end() {
+    return types.end();
+  }
+  auto begin() const {
+    return types.begin();
+  }
+  auto end() const {
+    return types.end();
+  }
+  auto &operator[](size_t i) {
+    return types[i];
+  }
+  auto const &operator[](size_t i) const {
+    return types[i];
+  }
+  auto &at(size_t i) {
+    return types.at(i);
+  }
+  auto const &at(size_t i) const {
+    return types.at(i);
+  }
   bool operator==(armory const &) const = default;
 };
 armory read_armory(binary_reader &file);
@@ -31,57 +51,82 @@ struct hangar {
   int16_t capacity{8};
   int16_t selected{-1};
   int16_t construction_slot{-1};
-  int16_t construction_remaining{};
-  int32_t construction_value{};
+  int16_t construction_remaining{0};
+  int32_t construction_value{0};
   std::vector<player_herc> hercs;
   player_herc *find(int16_t slot);
   player_herc const *find(int16_t slot) const;
 };
-hangar read_hangar(binary_reader &file, game_edition edition=game_edition::original);
-hangar read_hangar(bytes source, game_edition edition=game_edition::original);
+hangar read_hangar(binary_reader &file, game_edition edition = game_edition::original);
+hangar read_hangar(bytes source, game_edition edition = game_edition::original);
 std::vector<uint8_t> write_hangar(hangar const &roster);
 
 struct crew_member {
-  int16_t name{},variant{},next_name{},rotation{},hangar_slot{-1};
-  uint8_t active{};
-  int16_t skill{},rank{},health{100};
-  std::array<int16_t,3> current{},total{};
-  int16_t prior_skill{},experience{};
-  int32_t budget_share{};
+  int16_t name{0};
+  int16_t variant{0};
+  int16_t next_name{0};
+  int16_t rotation{0};
+  int16_t hangar_slot{-1};
+  uint8_t active{0};
+  int16_t skill{0};
+  int16_t rank{0};
+  int16_t health{100};
+  std::array<int16_t, 3> current{};
+  std::array<int16_t, 3> total{};
+  int16_t prior_skill{0};
+  int16_t experience{0};
+  int32_t budget_share{0};
 };
-struct technology_entry { int16_t early{-1},late{-1};uint8_t available{}; };
+struct technology_entry {
+  int16_t early{-1};
+  int16_t late{-1};
+  uint8_t available{0};
+};
 struct technology_state {
-  int16_t last_type{},last_index{};
+  int16_t last_type{0};
+  int16_t last_index{0};
   std::vector<technology_entry> entries = std::vector<technology_entry>(25);
-  size_t chassis_slots{8}, chassis_count{8}, weapon_count{17};
+  size_t chassis_slots{8};
+  size_t chassis_count{8};
+  size_t weapon_count{17};
   game_edition edition{game_edition::original};
-  int16_t battle_set{};
-  bool weapon_available(size_t id) const { return entries.at(chassis_slots+id).available; }
+  int16_t battle_set{0};
+  bool weapon_available(size_t id) const {
+    return entries.at(chassis_slots + id).available;
+  }
 };
 struct career_state {
-  uint8_t valid{},current{};
-  int16_t node_progress{},screen{},node{},step{},missions{},mission_kind{};
-  int16_t selected_crew{},crew_count{},crew_cursor{};
-  std::array<crew_member,4> crew{};
+  uint8_t valid{0};
+  uint8_t current{0};
+  int16_t node_progress{0};
+  int16_t screen{0};
+  int16_t node{0};
+  int16_t step{0};
+  int16_t missions{0};
+  int16_t mission_kind{0};
+  int16_t selected_crew{0};
+  int16_t crew_count{0};
+  int16_t crew_cursor{0};
+  std::array<crew_member, 4> crew{};
   technology_state technology;
-  int32_t budget{};
-  std::array<int16_t,100> counters{};
-  int16_t repair_policy{};
+  int32_t budget{0};
+  std::array<int16_t, 100> counters{};
+  int16_t repair_policy{0};
 };
 struct career_record {
   game_edition edition{game_edition::original};
-  uint8_t active{};
-  int16_t mode{};
-  std::array<int16_t,12> names{};
-  std::array<career_state,41> states{};
-  std::array<armory,41> inventories{};
+  uint8_t active{0};
+  int16_t mode{0};
+  std::array<int16_t, 12> names{};
+  std::array<career_state, 41> states{};
+  std::array<armory, 41> inventories{};
 };
-career_state read_career_state(binary_reader &file,game_edition edition=game_edition::original,int16_t battle_set=0);
+career_state read_career_state(binary_reader &file, game_edition edition = game_edition::original, int16_t battle_set = 0);
 std::vector<uint8_t> write_career_state(career_state const &state);
-career_record read_career(bytes source,game_edition edition=game_edition::original);
+career_record read_career(bytes source, game_edition edition = game_edition::original);
 std::vector<uint8_t> write_career(career_record const &career);
 /// GO 0x168b0's working-state update and history copy, before serialization.
-void checkpoint_career(career_record &career,size_t history,int16_t node_progress,
-                       int32_t budget,std::array<int16_t,100> const &counters,int16_t repair_policy);
+void checkpoint_career(career_record &career, size_t history, int16_t node_progress,
+                       int32_t budget, std::array<int16_t, 100> const &counters, int16_t repair_policy);
 
 } // namespace earthsiege

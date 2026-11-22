@@ -13,7 +13,10 @@ std::vector<palette_band> split_gouraud_triangle(std::array<vec2<int32_t>, 3> co
   if(points[0] == points[1] || points[0] == points[2] || points[1] == points[2]) return result;
   auto const [minimum, maximum]{std::ranges::minmax(colours)};
   if(minimum == maximum) {
-    palette_band band{.vertex_count{3}, .colour{maximum}};
+    palette_band band{
+      .vertex_count{3},
+      .colour{maximum}
+    };
     std::ranges::copy(points, band.points.begin());
     result.push_back(band);
     return result;
@@ -21,7 +24,7 @@ std::vector<palette_band> split_gouraud_triangle(std::array<vec2<int32_t>, 3> co
   unsigned int high{0};
   unsigned int low{0};
   for(unsigned int index{0}; index != 3; ++index) {
-    if(colours[index] == maximum) high = index;                                 // native ties select the last vertex
+    if(colours[index] == maximum) high = index;                                // native ties select the last vertex
     if(colours[index] == minimum) low = index;
   }
   auto const middle{3U - high - low};
@@ -45,9 +48,11 @@ std::vector<palette_band> split_gouraud_triangle(std::array<vec2<int32_t>, 3> co
   }};
   auto const direct{edge(high, low, count)};
   std::vector<vec2<int32_t>> bent;
-  if(upper_steps == 0) bent = edge(middle, low, count);
-  else if(lower_steps == 0) bent = edge(high, middle, count);
-  else {
+  if(upper_steps == 0) {
+    bent = edge(middle, low, count);
+  } else if(lower_steps == 0) {
+    bent = edge(high, middle, count);
+  } else {
     bent = edge(high, middle, upper_steps);
     bent.pop_back();
     auto const lower{edge(middle, low, lower_steps)};
@@ -58,7 +63,10 @@ std::vector<palette_band> split_gouraud_triangle(std::array<vec2<int32_t>, 3> co
   for(unsigned int index{0}; index != count; ++index) {
     auto const &a{flip ? bent : direct};
     auto const &b{flip ? direct : bent};
-    palette_band band{.vertex_count{4}, .colour{static_cast<uint8_t>(maximum - index)}};
+    palette_band band{
+      .vertex_count{4},
+      .colour{static_cast<uint8_t>(maximum - index)}
+    };
     band.points[0] = a[index];
     band.points[1] = a[index + 1];
     band.points[2] = b[index + 1];

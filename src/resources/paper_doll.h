@@ -5,7 +5,12 @@
 
 namespace earthsiege {
 
-enum class damage_colour_mode : int32_t { shaded_range, exact_colour, additive, solid_range };
+enum class damage_colour_mode : int32_t {
+  shaded_range,
+  exact_colour,
+  additive,
+  solid_range
+};
 struct paper_doll_region {
   int32_t section;
   rectangle bounds;

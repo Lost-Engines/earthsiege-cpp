@@ -12,7 +12,9 @@ namespace {
 void bind_parent(model_part &part, int16_t const parent) {
   if(part.kind == model_kind::animated_shape) return;
   if(part.kind == model_kind::group || part.kind == model_kind::cell_animation) part.header.transform = parent;
-  if(auto *bsp{std::get_if<bsp_part>(&part.content)}) for(auto &node : bsp->nodes) node.transform = parent;
+  if(auto *bsp{std::get_if<bsp_part>(&part.content)}) {
+    for(auto &node : bsp->nodes) node.transform = parent;
+  }
   for(auto &child : model_children(part)) bind_parent(child, parent);
 }
 
@@ -22,12 +24,14 @@ void shift_geometry(model_part &part, vec3<int16_t> const &offset) {
     std::vector<bool> used(mesh->points.size(), false);
     for(auto const &surface : mesh->polygons) {
       switch(surface.kind) {
-        case model_kind::helper_polygon:
-        case model_kind::solid_polygon:
-        case model_kind::shaded_polygon:
-        case model_kind::gouraud_polygon:
-        case model_kind::textured_polygon: break;
-        default: continue;
+      case model_kind::helper_polygon:
+      case model_kind::solid_polygon:
+      case model_kind::shaded_polygon:
+      case model_kind::gouraud_polygon:
+      case model_kind::textured_polygon:
+        break;
+      default:
+        continue;
       }
       used.at(surface.centre) = true;
       for(unsigned int index{0}; index != surface.vertex_count; ++index) {
@@ -53,7 +57,13 @@ weapon_assembly::weapon_assembly(model_part const &owner, std::span<weapon_mount
     auto const *body{find_model_part(owner, mount.model_part)};
     if(!body) throw std::runtime_error{"weapon mount has no body part"};
     auto const selected{equipment[static_cast<size_t>(mount.equipment_slot)]};
-    mounted_weapon_model weapon{.body_part{mount.model_part}, .weapon{selected}, .equipment_slot{mount.equipment_slot}, .geometry{std::nullopt}, .cell_frames{}};
+    mounted_weapon_model weapon{
+      .body_part{mount.model_part},
+      .weapon{selected},
+      .equipment_slot{mount.equipment_slot},
+      .geometry{std::nullopt},
+      .cell_frames{}
+    };
     if(selected != empty_weapon_slot) {
       auto const &definition{definitions.weapons.at(static_cast<size_t>(selected))};
       auto const model{definition.model_indices.at(mount.orientation)};
@@ -78,11 +88,13 @@ void weapon_assembly::disable_missing_sections(std::span<int16_t const> const pr
 }
 
 void weapon_assembly::update_cells(weapon_bank const &bank) {
-  for(auto &model : models) for(auto const &weapon : bank.slots()) {
-    if(!weapon || weapon->equipment_slot != model.equipment_slot) continue;
-    model.disabled = weapon->controls().disabled;
-    if(!model.cell_frames.empty()) model.cell_frames.front() = weapon->controls().cell;
-    break;
+  for(auto &model : models) {
+    for(auto const &weapon : bank.slots()) {
+      if(!weapon || weapon->equipment_slot != model.equipment_slot) continue;
+      model.disabled = weapon->controls().disabled;
+      if(!model.cell_frames.empty()) model.cell_frames.front() = weapon->controls().cell;
+      break;
+    }
   }
 }
 

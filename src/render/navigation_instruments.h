@@ -15,11 +15,11 @@ class navigation_instruments {
   std::vector<bitmap> pitch_art;
   font tracking_font;
   std::string tracking_label;
-  int16_t previous_heading{};
-  int16_t previous_torso{};
-  int16_t previous_pitch{};
-  int16_t torso_indicator{};
-  int16_t pitch_indicator{};
+  int16_t previous_heading{0};
+  int16_t previous_torso{0};
+  int16_t previous_pitch{0};
+  int16_t torso_indicator{0};
+  int16_t pitch_indicator{0};
   size_t heading_first;
   size_t heading_second{0};
   int heading_x;

@@ -11,7 +11,7 @@ vec2<int32_t> point(earthsiege::binary_reader &file) {
   return {file.integer<int32_t>(), file.integer<int32_t>()};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;

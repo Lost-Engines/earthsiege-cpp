@@ -2,18 +2,29 @@
 #include <functional>
 #include <optional>
 #include <span>
-#include "resources/mission_script.h"
 #include "vectorstorm/vector/vector2.h"
+#include "resources/mission_script.h"
 #include "simulation/frame_time.h"
 
 namespace earthsiege {
 
 // These values index the original mission-status text and response tables.
 enum class mission_status : int16_t {
-  none = -1, dead = 2, disabled = 3, threatened = 4, objective_critical = 6,
-  boundary_warning = 7, outside_area = 8, complete = 9, complete_under_threat = 10,
-  route_incomplete = 11, reconnaissance_incomplete = 12, protection_incomplete = 13,
-  escort_incomplete = 14, rescue_incomplete = 15, attack_incomplete = 16,
+  none = -1,
+  dead = 2,
+  disabled = 3,
+  threatened = 4,
+  objective_critical = 6,
+  boundary_warning = 7,
+  outside_area = 8,
+  complete = 9,
+  complete_under_threat = 10,
+  route_incomplete = 11,
+  reconnaissance_incomplete = 12,
+  protection_incomplete = 13,
+  escort_incomplete = 14,
+  rescue_incomplete = 15,
+  attack_incomplete = 16,
   abandoned_disabled = 18,
 };
 

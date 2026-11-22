@@ -16,14 +16,18 @@ void aim_and_fire_herc(herc_fire_state &state, weapon_bank const &bank, weapon_c
     if(!weapon.ready(definition) || !weapon_in_range(definition, distance)) selected.reset();
   }
   if(!selected) {
-    if(state.skip_selection) state.skip_selection = false;
-    else {
+    if(state.skip_selection) {
+      state.skip_selection = false;
+    } else {
       selected = callbacks.select_weapon(distance, target.relative_facing);
       state.retained_weapon.reset();
     }
   }
   auto point{vec3<int32_t>{target.point}};
-  if(!selected) { callbacks.aim(point); return; }
+  if(!selected) {
+    callbacks.aim(point);
+    return;
+  }
   auto const &weapon{bank.slots()[*selected].value()};
   if(!weapon.projectile) throw std::logic_error{"AI selected weapon without projectile"};
   auto const speed{definitions.projectiles.at(*weapon.projectile).speed};
@@ -38,10 +42,12 @@ void aim_and_fire_herc(herc_fire_state &state, weapon_bank const &bank, weapon_c
     point.y = wrap_long(static_cast<int64_t>(point.y) + offset.y);
   }
   if(accuracy.enemy) {
-    static constexpr std::array<int16_t, 4> error_by_difficulty{1000, 666, 333, 0};
+    static std::array<int16_t, 4> constexpr error_by_difficulty{1000, 666, 333, 0};
     auto const spread{error_by_difficulty.at(static_cast<size_t>(accuracy.campaign ? 3 : accuracy.difficulty))};
     // Original errors are positive on all three axes, not centred around zero.
-    if(spread) for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(static_cast<int64_t>(point[axis]) + random.bounded(spread));
+    if(spread) {
+      for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(static_cast<int64_t>(point[axis]) + random.bounded(spread));
+    }
   }
   auto const errors{callbacks.aim(point)};
   if(weapon_lock_channel(weapon, definitions) || (errors.x >= -1000 && errors.x < 1000 && errors.z >= -1000 && errors.z < 1000)) {

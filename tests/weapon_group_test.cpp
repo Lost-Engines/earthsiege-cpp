@@ -2,36 +2,72 @@
 #include <iostream>
 #include <stdexcept>
 #include "render/weapon_instruments.h"
-#include "shell/mission_view.h"
 #include "resources/name_table.h"
+#include "shell/mission_view.h"
 #include "simulation/player_armament.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::camera_mode;
+  using earthsiege::cockpit_view;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::mission_session;
+  using earthsiege::mission_view;
+  using earthsiege::model_resource;
+  using earthsiege::player_armament;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::read_herc_definition;
+  using earthsiege::read_input_tape;
+  using earthsiege::read_mission_script;
+  using earthsiege::read_player_roster;
+  using earthsiege::read_resource_names;
+  using earthsiege::resource_store;
+  using earthsiege::tape_file;
+  using earthsiege::tape_frame;
+  using earthsiege::weapon_bank;
+  using earthsiege::weapon_catalogue;
+  using earthsiege::weapon_instruments;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
-  auto const source{read_file(argv[2])}; binary_reader file{source}; auto const magic{file.take(8)};
+  auto const source{read_file(argv[2])};
+  binary_reader file{source};
+  auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESWPNG01") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
-  for(unsigned int i{}; i < count; ++i) {
-    auto const name{file.cstring()}; auto const group{file.integer<uint8_t>()};
-    std::array<unsigned int, 5> faces; for(auto &face : faces) face = file.integer<uint8_t>();
+  for(unsigned int i{0}; i < count; ++i) {
+    auto const name{file.cstring()};
+    auto const group{file.integer<uint8_t>()};
+    std::array<unsigned int, 5> faces;
+    for(auto &face : faces) face = file.integer<uint8_t>();
     auto const expected{file.integer<uint32_t>()};
     auto const layout{read_cockpit_layout(resources.read("simvol0", "gau/" + name + ".GAU"))};
-    weapon_instruments instruments{resources,layout};
-    for(auto const &bounds : instruments.group_bounds()) for(auto const value : {bounds.left,bounds.top,bounds.right,bounds.bottom})
-      if(value != file.integer<int32_t>()) file.fail("group control rectangle differs");
-    framebuffer frame; frame.clear(123); instruments.draw_groups(frame,group,faces);
+    weapon_instruments instruments{resources, layout};
+    for(auto const &bounds : instruments.group_bounds()) {
+      for(auto const value : {bounds.left, bounds.top, bounds.right, bounds.bottom}) {
+        if(value != file.integer<int32_t>()) file.fail("group control rectangle differs");
+      }
+    }
+    framebuffer frame;
+    frame.clear(123);
+    instruments.draw_groups(frame, group, faces);
     if(crc32(frame.pixels()) != expected) file.fail(name + " group paint differs: " + std::to_string(crc32(frame.pixels())) + " expected " + std::to_string(expected));
   }
   auto const inputs{file.integer<uint32_t>()};
-  for(unsigned int i{}; i < inputs; ++i) {
-    unsigned int const group{file.integer<uint8_t>()}, requested{file.integer<uint8_t>()}, keyboard{file.integer<uint8_t>()};
-    bool const tracking{file.integer<uint8_t>() != 0}, wanted_tracking{file.integer<uint8_t>() != 0}, link{file.integer<uint8_t>() != 0};
-    std::array<unsigned int, 6> expected; for(auto &value : expected) value = file.integer<uint8_t>();
-    weapon_catalogue definitions{}; model_resource models;
-    weapon_bank bank{definitions,models,{},{}};
-    player_armament controls{bank,definitions,{}};
+  for(unsigned int i{0}; i < inputs; ++i) {
+    unsigned int const group{file.integer<uint8_t>()};
+    unsigned int const requested{file.integer<uint8_t>()};
+    unsigned int const keyboard{file.integer<uint8_t>()};
+    bool const tracking{file.integer<uint8_t>() != 0};
+    bool const wanted_tracking{file.integer<uint8_t>() != 0};
+    bool const link{file.integer<uint8_t>() != 0};
+    std::array<unsigned int, 6> expected;
+    for(auto &value : expected) value = file.integer<uint8_t>();
+    weapon_catalogue definitions{};
+    model_resource models;
+    weapon_bank bank{definitions, models, {}, {}};
+    player_armament controls{bank, definitions, {}};
     controls.change_group(static_cast<uint8_t>(keyboard ? (group + 2) % 3 : group));
     controls.set_tracking(tracking);
     controls.request_group_control(requested);
@@ -43,40 +79,54 @@ int main(int argc, char **argv) try {
     if(controls.current_group() != expected[0] || controls.auto_tracking() != bool(expected[1])) file.fail("group exchange differs");
     if(expected[2] || expected[5] || expected[3] != expected[0] || expected[4] != expected[1]) file.fail("original exchange did not consume requests");
     // A new mouse selection must work after the keyboard latch was consumed.
-    controls.request_group_control((expected[0] + 1) % 3); controls.exchange_group_controls();
+    controls.request_group_control((expected[0] + 1) % 3);
+    controls.exchange_group_controls();
     if(controls.current_group() != (expected[0] + 1) % 3) file.fail("keyboard precedence persisted into the following update");
   }
   file.require_end();
   // The original 38034/380c4 handler links immediately, unlike the mouse
   // button's pending request. Exercise the cockpit dispatch, not just the bank.
-  auto const tape{read_input_tape(read_file(resources.root()/"TAPES"/"DEMO1.TAP"))};
+  auto const tape{read_input_tape(read_file(resources.root() / "TAPES" / "DEMO1.TAP"))};
   auto const script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
   auto roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
   auto &herc{roster.hercs.at(static_cast<size_t>(roster.selected))};
-  std::fill(herc.weapons.begin(),herc.weapons.end(),6); // Matching lasers in paired mounts.
-  auto const names{read_resource_names(resources.read("simvol0","nam/MECHS.NAM"))};
-  auto const definition{read_herc_definition(resources,names.at(static_cast<size_t>(herc.chassis)))};
+  std::fill(herc.weapons.begin(), herc.weapons.end(), 6);                      // Matching lasers in paired mounts.
+  auto const names{read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))};
+  auto const definition{read_herc_definition(resources, names.at(static_cast<size_t>(herc.chassis)))};
   auto const partner{definition.mounts.at(0).paired_slot_offset};
-  if(partner<=0)throw std::runtime_error{"test HERC needs a paired first mount"};
-  auto session{std::make_unique<mission_session>(resources,script,roster)};
-  session->set_auto_tracking(false);session->select_weapon(0);
-  mission_view scene{resources,std::move(session)};
+  if(partner <= 0) throw std::runtime_error{"test HERC needs a paired first mount"};
+  auto session{std::make_unique<mission_session>(resources, script, roster)};
+  session->set_auto_tracking(false);
+  session->select_weapon(0);
+  mission_view scene{resources, std::move(session)};
   scene.draw();
   auto const &controls{scene.simulation().player_weapon_controls()};
-  uint32_t clock{};
-  auto check_key=[&](uint16_t code,bool linked){
-    tape_frame input;input.command=code;input.delta=1;
-    if(!scene.step_recorded(input,++clock))throw std::runtime_error{"link command ended mission"};
-    if(controls.linked(0)!=linked||controls.linked(static_cast<size_t>(partner))!=linked)
+  uint32_t clock{0};
+  auto check_key{[&](uint16_t code, bool linked){
+    tape_frame input;
+    input.command = code;
+    input.delta = 1;
+    if(!scene.step_recorded(input, ++clock)) throw std::runtime_error{"link command ended mission"};
+    if(controls.linked(0) != linked || controls.linked(static_cast<size_t>(partner)) != linked) {
       throw std::runtime_error{"cockpit link command did not update both weapons"};
-  };
-  check_key(38,true);check_key(38,false);
-  check_key(0x226,false);check_key(0x426,false); // Alt/Ctrl+L are not L.
-  scene.change_cockpit_view(cockpit_view::lower);check_key(38,false);
-  scene.change_cockpit_view(cockpit_view::forward);check_key(38,true);
-  scene.change_camera(camera_mode::orbit);check_key(38,true);
-  scene.change_camera(camera_mode::attached);check_key(38,false);
+    }
+  }};
+  check_key(38, true);
+  check_key(38, false);
+  check_key(0x226, false);
+  check_key(0x426, false);                                                     // Alt/Ctrl+L are not L.
+  scene.change_cockpit_view(cockpit_view::lower);
+  check_key(38, false);
+  scene.change_cockpit_view(cockpit_view::forward);
+  check_key(38, true);
+  scene.change_camera(camera_mode::orbit);
+  check_key(38, true);
+  scene.change_camera(camera_mode::attached);
+  check_key(38, false);
 
   std::cout << count << " original group frames and " << inputs << " group exchanges match\n";
   return EXIT_SUCCESS;
-} catch(std::exception const &e) { std::cerr << e.what() << '\n'; return EXIT_FAILURE; }
+} catch(std::exception const &e) {
+  std::cerr << e.what() << '\n';
+  return EXIT_FAILURE;
+}

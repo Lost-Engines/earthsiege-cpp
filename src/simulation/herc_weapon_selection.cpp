@@ -39,9 +39,13 @@ std::optional<size_t> select_herc_weapon(weapon_bank const &bank, weapon_catalog
     if(!weapon.projectile) throw std::runtime_error{"unused grenade has no valid original projectile definition"};
     auto const &projectile{definitions.projectiles.at(*weapon.projectile)};
     int32_t value{shield == 0 ? projectile.armour_damage : shield < projectile.shield_damage ? projectile.armour_damage + 10000 : projectile.shield_damage};
-    auto const first{random.bounded(variation)}, second{random.bounded(variation)};
+    auto const first{random.bounded(variation)};
+    auto const second{random.bounded(variation)};
     value = ((value * 100 + 512) >> 10) - ((1000 * source.shot_value_penalty + 512) >> 10) + first * second;
-    if(value > best) { best = wrap_word(value); selected = i; }
+    if(value > best) {
+      best = wrap_word(value);
+      selected = i;
+    }
   }
   if(unarmed && !state.unavailable) {
     state.unavailable = true;

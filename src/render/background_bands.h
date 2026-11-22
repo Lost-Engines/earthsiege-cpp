@@ -2,9 +2,9 @@
 #include <array>
 #include <cstdint>
 #include <vector>
+#include "vectorstorm/vector/vector2.h"
 #include "render/framebuffer.h"
 #include "resources/world.h"
-#include "vectorstorm/vector/vector2.h"
 
 namespace earthsiege {
 
@@ -30,7 +30,7 @@ struct background_primitive {
 };
 
 struct background_bands {
-  std::array<vec2<int32_t>, 3> horizon;                                         // endpoints followed by the band direction
+  std::array<vec2<int32_t>, 3> horizon;                                        // endpoints followed by the band direction
   std::vector<background_primitive> primitives;
 };
 

@@ -8,7 +8,7 @@
 #include <windows.h>
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
-#endif
+#endif // _WIN32
 
 namespace earthsiege {
 
@@ -18,7 +18,7 @@ auto executable_path(char const *argument)->std::filesystem::path {
   auto const size{GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()))};
   if(size && size < buffer.size()) return std::filesystem::path{std::wstring{buffer.data(), size}};
 #elif defined(__APPLE__)
-  uint32_t size{};
+  uint32_t size{0};
   _NSGetExecutablePath(nullptr, &size);
   std::vector<char> buffer(size);
   if(_NSGetExecutablePath(buffer.data(), &size) == 0) return std::filesystem::weakly_canonical(buffer.data());
@@ -26,7 +26,7 @@ auto executable_path(char const *argument)->std::filesystem::path {
   std::error_code error;
   auto const path{std::filesystem::read_symlink("/proc/self/exe", error)};
   if(!error) return path;
-#endif
+#endif // _WIN32
   return std::filesystem::absolute(argument);
 }
 auto user_save_directory()->std::filesystem::path {
@@ -39,12 +39,12 @@ auto user_save_directory()->std::filesystem::path {
     base = std::filesystem::path{home} / "Library/Application Support";
 #else
     base = std::filesystem::path{home} / ".local/share";
-#endif
+#endif // __APPLE__
   }
 #ifndef __APPLE__
   if(auto const *xdg{std::getenv("XDG_DATA_HOME")}; xdg && std::filesystem::path{xdg}.is_absolute()) base = xdg;
-#endif
-#endif
+#endif // __APPLE__
+#endif // _WIN32
   if(base.empty()) throw std::runtime_error{"cannot locate user data directory; use --save-dir"};
   auto const result{base / "lost-engines/earthsiege"};
   std::filesystem::create_directories(result);

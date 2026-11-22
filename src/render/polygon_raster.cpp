@@ -33,11 +33,15 @@ std::vector<vec2<int32_t>> clip_polygon_rectangle(std::span<vec2<int32_t> const>
     for(auto const &current : clipped) {
       auto const a{side(*previous)};
       auto const b{side(current)};
-      if(a == 0 && b == 0) result.push_back(current);
-      else if(a != b) {
+      if(a == 0 && b == 0) {
+        result.push_back(current);
+      } else if(a != b) {
         if(a) result.push_back(crossing(*previous, current, a));
-        if(b) result.push_back(crossing(current, *previous, b));
-        else result.push_back(current);
+        if(b) {
+          result.push_back(crossing(current, *previous, b));
+        } else {
+          result.push_back(current);
+        }
       }
       previous = &current;
     }
@@ -63,7 +67,10 @@ polygon_edges make_polygon_edges(std::span<vec2<int32_t> const> const points) {
   result.first_row = static_cast<int16_t>(first);
   result.spans.resize(static_cast<size_t>(last - first + 1));
   if(first == last) {
-    result.spans[0] = {.left{wrap_word(points[bottom].x)}, .right{wrap_word(points[top].x)}};
+    result.spans[0] = {
+      .left{wrap_word(points[bottom].x)},
+      .right{wrap_word(points[top].x)}
+    };
     return result;
   }
   for(unsigned int side{0}; side != 2; ++side) {
@@ -71,8 +78,11 @@ polygon_edges make_polygon_edges(std::span<vec2<int32_t> const> const points) {
     auto const destination{side ? last : first};
     auto const put{[&](int32_t const x, int32_t const y){
       auto &span{result.spans.at(static_cast<size_t>(y - first))};
-      if(side) span.right = wrap_word(x);
-      else span.left = wrap_word(x);
+      if(side) {
+        span.right = wrap_word(x);
+      } else {
+        span.left = wrap_word(x);
+      }
     }};
     while(points[cursor].y != destination) {
       vec2<int32_t> a{points[cursor]};
@@ -134,12 +144,14 @@ static void draw_region(framebuffer &target, std::span<vec2<int32_t> const> cons
   for(size_t row{0}; row != edges.spans.size(); ++row) {
     auto const &span{edges.spans[row]};
     auto const y{edges.first_row + static_cast<int>(row)};
-    int left{span.left}, right{span.right};
+    int left{span.left};
+    int right{span.right};
     if(region) {
       int const mask_row{y - region->first_row};
       if(mask_row < 0 || static_cast<size_t>(mask_row) >= region->spans.size()) continue;
       auto const cutout{region->spans[static_cast<size_t>(mask_row)]};
-      left = std::max(left, cutout.left); right = std::min(right, cutout.right);
+      left = std::max(left, cutout.left);
+      right = std::min(right, cutout.right);
     }
     if(left <= right) target.fill({left, y, right, y}, colour);
   }
@@ -147,7 +159,10 @@ static void draw_region(framebuffer &target, std::span<vec2<int32_t> const> cons
 
 void draw_solid_polygon(framebuffer &target, std::span<vec2<int32_t> const> points, rectangle bounds, uint8_t colour, polygon_winding winding) {
   auto const *mask{target.clip()};
-  if(!mask) { draw_region(target, points, bounds, colour, winding, nullptr); return; }
+  if(!mask) {
+    draw_region(target, points, bounds, colour, winding, nullptr);
+    return;
+  }
   // The original rectangle regions clip geometry before building the edge table;
   // curved regions instead intersect the completed scanline spans.
   for(auto const &region : mask->regions) {

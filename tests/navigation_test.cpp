@@ -20,7 +20,7 @@ void check(earthsiege::movement_request const &a, earthsiege::movement_request c
   if(a.flags != b.flags || a.speed != b.speed || a.turn != b.turn) throw std::runtime_error{label + " differs: speed " + std::to_string(a.speed) + '/' + std::to_string(b.speed) + ", turn " + std::to_string(a.turn) + '/' + std::to_string(b.turn)};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;

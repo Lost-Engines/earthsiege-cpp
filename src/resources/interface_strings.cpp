@@ -9,7 +9,7 @@ interface_strings read_interface_strings(bytes source) {
   while(file.remaining()) {
     auto const count{file.integer<uint16_t>()};
     auto &group{result.emplace_back()};
-    for(unsigned int i{}; i < count; ++i) {
+    for(unsigned int i{0}; i < count; ++i) {
       auto const text{file.take(file.integer<uint16_t>())};
       if(text.empty() || text.back()) file.fail("interface string lacks final NUL");
       auto const attributes{file.take(file.integer<uint8_t>())};

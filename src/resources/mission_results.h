@@ -1,15 +1,18 @@
 #pragma once
+#include <utility>
 #include "resources/edition.h"
 #include "resources/player_roster.h"
-#include <utility>
 namespace earthsiege {
-struct returned_herc {herc_condition condition;std::array<int16_t,3> statistics{};};
+struct returned_herc {
+  herc_condition condition;
+  std::array<int16_t, 3> statistics{};
+};
 struct mission_results {
-  int16_t grade{};
-  int32_t recovery{};
-  std::vector<std::pair<int16_t,int16_t>> salvage;
+  int16_t grade{0};
+  int32_t recovery{0};
+  std::vector<std::pair<int16_t, int16_t>> salvage;
   std::vector<returned_herc> crew;
 };
-mission_results read_mission_results(bytes source,game_edition edition=game_edition::original);
+mission_results read_mission_results(bytes source, game_edition edition = game_edition::original);
 std::vector<uint8_t> write_mission_results(mission_results const &results);
 } // namespace earthsiege

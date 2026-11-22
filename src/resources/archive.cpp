@@ -26,7 +26,7 @@ archive::archive(std::vector<uint8_t> input, std::string label) : data{std::move
   auto const payload_start{file.position()};
   std::vector<std::pair<size_t, size_t>> intervals;
   intervals.reserve(count);
-  for(unsigned int index{}; index < count; ++index) {
+  for(unsigned int index{0}; index < count; ++index) {
     binary_reader filename{table.take(13), "VOLN filename"};
     auto const basename{filename.cstring()};
     auto const directory{table.integer<uint8_t>()};
@@ -63,7 +63,9 @@ archive::archive(std::vector<uint8_t> input, std::string label) : data{std::move
   }
 }
 
-auto archive::entries() const->std::map<std::string, archive_entry, std::less<>> const & { return catalogue; }
+auto archive::entries() const->std::map<std::string, archive_entry, std::less<>> const & {
+  return catalogue;
+}
 
 auto archive::find(std::string_view name) const->archive_entry const * {
   auto const found{catalogue.find(normalise_path(name))};

@@ -5,29 +5,39 @@
 
 namespace earthsiege {
 struct tactical_contact {
-  int16_t kind{-1};                                                          // -1 waypoint, 0 HERC, 1 building, 2 flyer
-  int16_t frame{}, size{};
-  uint8_t side{};
-  bool dead{}, hidden{}, detected{}, last_position_unavailable{true};
-  bool group_active{true}, selectable{true}, known{};
-  uint16_t heading{};
+  int16_t kind{-1};                                                            // -1 waypoint, 0 HERC, 1 building, 2 flyer
+  int16_t frame{0};
+  int16_t size{0};
+  uint8_t side{0};
+  bool dead{false};
+  bool hidden{false};
+  bool detected{false};
+  bool last_position_unavailable{true};
+  bool group_active{true};
+  bool selectable{true};
+  bool known{false};
+  uint16_t heading{0};
   vec3<int32_t> position{};
   vec2<int32_t> last_position{};
-  bool selected{};
+  bool selected{false};
   std::optional<size_t> actor;
   std::optional<vec3<int32_t>> destination;
-  uint8_t destination_colour{};
-  bool blink{};
+  uint8_t destination_colour{0};
+  bool blink{false};
 };
 struct tactical_map_state {
   vec3<int32_t> camera{};
   rectangle mission_bounds;
-  uint32_t ticks{};
-  bool failed{}, blink_phase{};
+  uint32_t ticks{0};
+  bool failed{false};
+  bool blink_phase{false};
   std::vector<tactical_contact> contacts;
   unsigned projection_shift{7};
 };
-struct tactical_hit { rectangle bounds; size_t contact; };
+struct tactical_hit {
+  rectangle bounds;
+  size_t contact;
+};
 
 int32_t initial_tactical_height(rectangle const &mission_bounds, rectangle const &screen_bounds, unsigned projection_shift = 7);
 int32_t tactical_pan_step(int32_t height);

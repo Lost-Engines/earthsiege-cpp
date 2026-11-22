@@ -1,6 +1,6 @@
 #pragma once
-#include <span>
 #include <functional>
+#include <span>
 #include <vector>
 #include "render/distance_shading.h"
 #include "render/effect_lighting.h"
@@ -37,12 +37,15 @@ struct ground_flash {
   model_part const &root;
   model_instance const &instance;
   vec3<int32_t> &position;
-  uint16_t heading{};
+  uint16_t heading{0};
   std::span<bitmap const> textures;
 };
 
 /// Render owned scenery with the original distance ramps and whole-scene painter tree
-enum class scene_shading { distance, cockpit_map };
+enum class scene_shading {
+  distance,
+  cockpit_map
+};
 
 struct scene_draw_observation {
   vec3<int32_t> position;
@@ -52,7 +55,7 @@ struct scene_draw_observation {
   size_t detail;
   std::span<light const> lights;
 };
-using scene_draw_observer=std::function<void(scene_draw_observation const &)>;
+using scene_draw_observer = std::function<void(scene_draw_observation const &)>;
 
 class scenery_renderer {
   framebuffer &target;
@@ -66,7 +69,9 @@ class scenery_renderer {
 public:
   scene_draw_observer observe;
   scenery_renderer(framebuffer &target, scenery_world const &world, distance_shade_bindings bindings, scene_shading palette_mode = scene_shading::distance);
-  void shape_detail(uint8_t value){shapes=earthsiege::shape_detail(value);}
+  void shape_detail(uint8_t value) {
+    shapes = earthsiege::shape_detail(value);
+  }
   std::vector<size_t> draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights = false, std::span<scene_model const> actors = {}, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {}, model_view view = {});
   std::vector<size_t> draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights, std::span<scene_object const> objects, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {}, model_view view = {});
 };

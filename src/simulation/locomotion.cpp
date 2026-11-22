@@ -35,20 +35,20 @@ int constexpr heavy_damage_speed_q10{400};
 } // anonymous namespace
 
 bool update_player_throttle(int16_t &throttle, int16_t input, int16_t &steering, int16_t const direction) {
-  if(direction<0)input=wrap_word(-input);
-  bool const forward{std::abs(input)>throttle_direction_threshold ? input<=0 : throttle>=0};
-  if(forward)steering=wrap_word(-steering);
-  auto const change{scale(-input,throttle_change_scale)};
-  if(change!=0){
-    auto const next{wrap_word(throttle+change)};
-    bool const crosses_neutral{(throttle&4095)!=0&&(next<0)!=(throttle<0)};
-    throttle=crosses_neutral?0:static_cast<int16_t>(std::clamp<int>(next,direction>0?0:-throttle_limit,direction<0?0:throttle_limit));
+  if(direction < 0) input = wrap_word(-input);
+  bool const forward{std::abs(input) > throttle_direction_threshold ? input <= 0 : throttle >= 0};
+  if(forward) steering = wrap_word(-steering);
+  auto const change{scale(-input, throttle_change_scale)};
+  if(change != 0) {
+    auto const next{wrap_word(throttle + change)};
+    bool const crosses_neutral{(throttle & 4095) != 0 && (next < 0) != (throttle < 0)};
+    throttle = crosses_neutral ? 0 : static_cast<int16_t>(std::clamp<int>(next, direction > 0 ? 0 : -throttle_limit, direction < 0 ? 0 : throttle_limit));
   }
-  return change!=0;
+  return change != 0;
 }
 
 bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, bool const reset_recovery, int16_t const direction) {
-  bool const changed{update_player_throttle(state.throttle,throttle_input,steering_input,direction)};
+  bool const changed{update_player_throttle(state.throttle, throttle_input, steering_input, direction)};
   auto const desired{scale(state.throttle, state.throttle < 0 ? -profile.reverse_rate : profile.forward_rate, 10)};
   update_requested_movement(state, profile, channel, desired, steering_input, damage, ratio, events, {}, reset_recovery);
   return changed;
@@ -64,8 +64,9 @@ void update_requested_movement(locomotion_state &state, movement_profile const &
     desired = state.collision_recovery != 0 ? (state.reverse_recovery ? profile.reverse_rate : profile.forward_rate) : std::clamp(desired, profile.reverse_rate, profile.forward_rate);
   }
   if(!damage.disabled && avoidance) avoidance(desired, steering_input);
-  if(damage.heavy) desired = scale(desired, heavy_damage_speed_q10, 10);
-  else if(damage.light) desired = scale(desired, light_damage_speed_q10, 10);
+  if(damage.heavy) {
+    desired = scale(desired, heavy_damage_speed_q10, 10);
+  } else if(damage.light) desired = scale(desired, light_damage_speed_q10, 10);
   auto const &pose{channel.state()};
   auto const previous{state.gait_rate};
   state.gait_rate = approach(state.gait_rate, desired, profile.acceleration);
@@ -102,7 +103,9 @@ void update_requested_movement(locomotion_state &state, movement_profile const &
           state.playback_rate = state.gait_rate;
           if(pose.requested_sequence == profile.forward_stop_sequence || pose.requested_sequence == profile.reverse_stop_sequence) channel.cancel_request();
           if(state.gait_rate > profile.gait_threshold && pose.requested_sequence != profile.fast_sequence) channel.request_sequence(profile.fast_sequence);
-        } else channel.cancel_request();
+        } else {
+          channel.cancel_request();
+        }
       } else {
         if(state.gait_rate < 1) {
           state.gait_rate = std::max(state.gait_rate, wrap_word(-profile.gait_threshold));
@@ -123,7 +126,9 @@ void update_requested_movement(locomotion_state &state, movement_profile const &
           state.gait_rate = previous < 1 ? profile.reverse_fast_exit_rate : profile.gait_threshold;
           state.playback_rate = state.gait_rate;
           if(pose.requested_sequence != profile.movement_sequence) channel.request_sequence(profile.movement_sequence);
-        } else channel.cancel_request();
+        } else {
+          channel.cancel_request();
+        }
       } else if(pose.sequence == profile.movement_sequence) {
         if(magnitude == 0) {
           state.playback_rate = 0;
@@ -147,9 +152,15 @@ void update_requested_movement(locomotion_state &state, movement_profile const &
           channel.request_sequence(profile.turn_sequence);
         }
         state.playback_rate = steering_input < 0 ? -stop_transition_rate : stop_transition_rate;
-      } else state.playback_rate = scale(turn_animation_rate, steering_input, 10);
-    } else state.playback_rate = state.gait_rate;
-  } else state.gait_rate = previous;
+      } else {
+        state.playback_rate = scale(turn_animation_rate, steering_input, 10);
+      }
+    } else {
+      state.playback_rate = state.gait_rate;
+    }
+  } else {
+    state.gait_rate = previous;
+  }
 
   int steering{0};
   int const absolute{std::abs(state.gait_rate)};

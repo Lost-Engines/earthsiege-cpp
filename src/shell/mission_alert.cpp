@@ -3,81 +3,164 @@
 #include <stdexcept>
 #include <utility>
 namespace earthsiege {
-mission_alert::mission_alert(resource_store const &r,int message,int initial_focus)
- :background{read_bitmaps(r.read("simvol0",message<2?"dba/gnl2alrt.dba":"dba/gnl_alrt.dba")).front()},
- corners{read_bitmaps(r.read("simvol0","dba/corners.dba"))},styles{read_button_styles(r.read("simvol0","dat/styles.dat"))},
- title{read_font(r.read("simvol0","dfn/title.dfn"))},body{read_font(r.read("simvol0","dfn/green6x8.dfn"))},button_metrics{read_font(r.read("simvol0","dfn/cpylw.dfn"))},
- button_fonts{read_font(r.read("simvol0","dfn/active.dfn")),read_font(r.read("simvol0","dfn/pushed.dfn")),read_font(r.read("simvol0","dfn/inactive.dfn"))},
- strings{read_interface_strings(r.read("simvol0","str/gnl_alrt.str"))},message_{message}{
-  if(message<0||message>=19)throw std::out_of_range{"mission alert"};
+mission_alert::mission_alert(resource_store const &r, int message, int initial_focus)
+ : background{read_bitmaps(r.read("simvol0", message < 2 ? "dba/gnl2alrt.dba" : "dba/gnl_alrt.dba")).front()},
+ corners{read_bitmaps(r.read("simvol0", "dba/corners.dba"))},
+   styles{read_button_styles(r.read("simvol0", "dat/styles.dat"))},
+ title{read_font(r.read("simvol0", "dfn/title.dfn"))},
+   body{read_font(r.read("simvol0", "dfn/green6x8.dfn"))},
+   button_metrics{read_font(r.read("simvol0", "dfn/cpylw.dfn"))},
+ button_fonts{read_font(r.read("simvol0", "dfn/active.dfn")), read_font(r.read("simvol0", "dfn/pushed.dfn")), read_font(r.read("simvol0", "dfn/inactive.dfn"))},
+ strings{read_interface_strings(r.read("simvol0", "str/gnl_alrt.str"))},
+   message_{message} {
+  if(message < 0 || message >= 19) throw std::out_of_range{"mission alert"};
   focus(initial_focus);
 }
-mission_alert::mission_alert(resource_store const &r,std::span<std::string const> lines)
- :mission_alert{r,0}{
-  objectives.emplace(lines.begin(),lines.end());
-  background=read_bitmaps(r.read("simvol0","dba/hst_alrt.dba")).front();
-  strings=read_interface_strings(r.read("simvol0","str/obj_alrt.str"));
-  title=read_font(r.read("simvol0","dfn/green6x8.dfn"));
-  body=button_metrics;
+mission_alert::mission_alert(resource_store const &r, std::span<std::string const> lines)
+ : mission_alert{r, 0} {
+  objectives.emplace(lines.begin(), lines.end());
+  background = read_bitmaps(r.read("simvol0", "dba/hst_alrt.dba")).front();
+  strings = read_interface_strings(r.read("simvol0", "str/obj_alrt.str"));
+  title = read_font(r.read("simvol0", "dfn/green6x8.dfn"));
+  body = button_metrics;
   focus(0);
 }
-int mission_alert::count()const{switch(message_){case 0:case 2:case 3:case 7:case 8:case 17:case 18:return 1;default:return 2;}}
-bool mission_alert::exits_mission(int response)const{
-  // DBSIM 0x97158, compared by the original Q handler at 0x59fb7.
-  constexpr std::array<int,19> exit_response{1,1,0,0,1,1,1,1,0,1,1,1,1,1,1,1,1,0,0};
-  return message_>1 && response==exit_response.at(static_cast<size_t>(message_));
+int mission_alert::count() const {
+  switch(message_) {
+  case 0:
+  case 2:
+  case 3:
+  case 7:
+  case 8:
+  case 17:
+  case 18:
+    return 1;
+  default:
+    return 2;
+  }
 }
-rectangle mission_alert::button(int i)const{if(objectives)return {129,138,189,148};int const left{count()==1?71:i==0?22:120};return {48+left,115,48+left+80,135};}
-void mission_alert::draw(framebuffer &frame)const{
-  if(objectives){
+bool mission_alert::exits_mission(int response) const {
+  // DBSIM 0x97158, compared by the original Q handler at 0x59fb7.
+  std::array<int, 19> constexpr exit_response{1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
+  return message_ > 1 && response == exit_response.at(static_cast<size_t>(message_));
+}
+rectangle mission_alert::button(int i) const {
+  if(objectives) return {129, 138, 189, 148};
+  int const left{count() == 1 ? 71 : i == 0 ? 22 : 120};
+  return {48 + left, 115, 48 + left + 80, 135};
+}
+void mission_alert::draw(framebuffer &frame) const {
+  if(objectives) {
     // DBSIM 4a1b4/4a5a4: first seven nonempty lines among twenty entries.
-    frame.image(background,2,45,true);
+    frame.image(background, 2, 45, true);
     auto const &caption{strings.at(0).at(0).text};
-    frame.text(title,caption,159-((title.text_width(caption)-1)>>1),57);
-    int row{};
-    for(size_t i{};i<std::min<size_t>(20,objectives->size())&&row<7;++i){
+    frame.text(title, caption, 159 - ((title.text_width(caption) - 1) >> 1), 57);
+    int row{0};
+    for(size_t i{0}; i < std::min<size_t>(20, objectives->size()) && row < 7; ++i) {
       auto const &line{objectives->at(i)};
-      if(!line.empty())frame.text(body,line,22,71+10*row++);
+      if(!line.empty()) frame.text(body, line, 22, 71 + 10 * row++);
     }
-    int const state{pressed_==0?1:0};auto const bounds{button(0)};
-    draw_dialog_button(frame,bounds,styles[static_cast<size_t>(state)],corners);
-    auto const &label{strings.at(1).at(0).text};auto const &face{button_fonts[static_cast<size_t>(state)]};
-    frame.text(face,label,159-((face.text_width(label)-1)>>1),146);
+    int const state{pressed_ == 0 ? 1 : 0};
+    auto const bounds{button(0)};
+    draw_dialog_button(frame, bounds, styles[static_cast<size_t>(state)], corners);
+    auto const &label{strings.at(1).at(0).text};
+    auto const &face{button_fonts[static_cast<size_t>(state)]};
+    frame.text(face, label, 159 - ((face.text_width(label) - 1) >> 1), 146);
     return;
   }
-  int constexpr x{48},y{45};frame.image(background,x,y,true);
-  auto const &caption{strings.at(0).at(static_cast<size_t>(message_)).text};int const width{title.text_width(caption)};
-  rectangle const b{x+((222-width-20)>>1),y+4,x+((222-width-20)>>1)+width+20,y+21};
-  frame.line(b.left,b.top,b.right,b.top,16);frame.line(b.left,b.top,b.left,b.bottom,16);frame.line(b.right,b.top,b.right,b.bottom,27);frame.line(b.left,b.bottom,b.right,b.bottom,28);
-  frame.image(corners.at(0),b.left,b.top,true);frame.image(corners.at(1),b.right-4,b.top,true);frame.image(corners.at(2),b.left,b.bottom-4,true);frame.image(corners.at(3),b.right-4,b.bottom-4,true);
-  frame.text(title,caption,b.left+((b.right-b.left)>>1)-((width-1)>>1),b.top+((17+static_cast<int>(title.height))>>1)-11);
-  int lines{};while(lines<4&&!strings.at(2).at(static_cast<size_t>(message_*4+lines)).text.empty())++lines;
-  for(int i{};i<lines;++i){auto const &text{strings.at(2).at(static_cast<size_t>(message_*4+i)).text};int const row{i+(lines==1?1:0)};
-    frame.text(body,text,x+111-((body.text_width(text)-1)>>1),y+30+10*row+((10+static_cast<int>(body.height))>>1));}
-  for(int i{};i<count();++i){auto const bounds{button(i)};int const state{pressed_==i?1:0};draw_dialog_button(frame,bounds,styles[static_cast<size_t>(state)],corners);
-    auto const &text{strings.at(1).at(static_cast<size_t>(message_*2+i)).text};auto const &face{button_fonts[static_cast<size_t>(state)]};
-    frame.text(face,text,bounds.left+40-((face.text_width(text)-1)>>1),bounds.top+((20+static_cast<int>(button_metrics.height))>>1)-3);
+  int constexpr x{48};
+  int constexpr y{45};
+  frame.image(background, x, y, true);
+  auto const &caption{strings.at(0).at(static_cast<size_t>(message_)).text};
+  int const width{title.text_width(caption)};
+  rectangle const b{x + ((222 - width - 20) >> 1), y + 4, x + ((222 - width - 20) >> 1) + width + 20, y + 21};
+  frame.line(b.left, b.top, b.right, b.top, 16);
+  frame.line(b.left, b.top, b.left, b.bottom, 16);
+  frame.line(b.right, b.top, b.right, b.bottom, 27);
+  frame.line(b.left, b.bottom, b.right, b.bottom, 28);
+  frame.image(corners.at(0), b.left, b.top, true);
+  frame.image(corners.at(1), b.right - 4, b.top, true);
+  frame.image(corners.at(2), b.left, b.bottom - 4, true);
+  frame.image(corners.at(3), b.right - 4, b.bottom - 4, true);
+  frame.text(title, caption, b.left + ((b.right - b.left) >> 1) - ((width - 1) >> 1), b.top + ((17 + static_cast<int>(title.height)) >> 1) - 11);
+  int lines{0};
+  while(lines < 4 && !strings.at(2).at(static_cast<size_t>(message_ * 4 + lines)).text.empty()) ++lines;
+  for(int i{0}; i < lines; ++i) {
+    auto const &text{strings.at(2).at(static_cast<size_t>(message_ * 4 + i)).text};
+    int const row{i + (lines == 1 ? 1 : 0)};
+    frame.text(body, text, x + 111 - ((body.text_width(text) - 1) >> 1), y + 30 + 10 * row + ((10 + static_cast<int>(body.height)) >> 1));
+  }
+  for(int i{0}; i < count(); ++i) {
+    auto const bounds{button(i)};
+    int const state{pressed_ == i ? 1 : 0};
+    draw_dialog_button(frame, bounds, styles[static_cast<size_t>(state)], corners);
+    auto const &text{strings.at(1).at(static_cast<size_t>(message_ * 2 + i)).text};
+    auto const &face{button_fonts[static_cast<size_t>(state)]};
+    frame.text(face, text, bounds.left + 40 - ((face.text_width(text) - 1) >> 1), bounds.top + ((20 + static_cast<int>(button_metrics.height)) >> 1) - 3);
   }
 }
-void mission_alert::focus(int i){
- if(i<-1||i>=count())throw std::out_of_range{"alert focus"};
- focus_=i;if(i>=0){auto b{button(i)};warp=vec2<int32_t>{(b.left+b.right)/2,(b.top+b.bottom)/2};}
+void mission_alert::focus(int i) {
+  if(i < -1 || i >= count()) throw std::out_of_range{"alert focus"};
+  focus_ = i;
+  if(i >= 0) {
+    auto b{button(i)};
+    warp = vec2<int32_t>{(b.left + b.right) / 2, (b.top + b.bottom) / 2};
+  }
 }
-alert_input_result mission_alert::input(uint16_t scan,bool fire,bool next,bool wcs){
- if(fire){if(focus_<0){focus(0);return {true,{}};}return {true,activate(focus_)};}
- if(next){focus((focus_+1)%count());return {true,{}};}
- if(scan==1){focus(0);return {true,activate(0)};}
- if(scan==28){if(focus_<0){focus(0);return {true,{}};}return {true,activate(focus_)};}
- if(scan==15||(scan==82&&wcs))focus((focus_+1)%count());
- else if(scan==0x20f)focus(focus_<0?count()-1:(focus_+count()-1)%count());
- else if(scan!=82)return {};
- return {true,{}};
+alert_input_result mission_alert::input(uint16_t scan, bool fire, bool next, bool wcs) {
+  if(fire) {
+    if(focus_ < 0) {
+      focus(0);
+      return {true, {}};
+    }
+    return {true, activate(focus_)};
+  }
+  if(next) {
+    focus((focus_ + 1) % count());
+    return {true, {}};
+  }
+  if(scan == 1) {
+    focus(0);
+    return {true, activate(0)};
+  }
+  if(scan == 28) {
+    if(focus_ < 0) {
+      focus(0);
+      return {true, {}};
+    }
+    return {true, activate(focus_)};
+  }
+  if(scan == 15 || (scan == 82 && wcs)) {
+    focus((focus_ + 1) % count());
+  } else if(scan == 0x20f) {
+    focus(focus_ < 0 ? count() - 1 : (focus_ + count() - 1) % count());
+  } else if(scan != 82) return {};
+  return {true, {}};
 }
-std::optional<int> mission_alert::devices(std::array<joystick_hardware,2> const &raw,bool wcs){
- auto bits{raw[0].buttons|raw[1].buttons};bool fire{(bits&5)!=0},next{(bits&10)!=0};
- auto result{input(0,fire&&!fire_held,next&&!next_held,wcs)};fire_held=fire;next_held=next;return result.response;
+std::optional<int> mission_alert::devices(std::array<joystick_hardware, 2> const &raw, bool wcs) {
+  auto bits{raw[0].buttons | raw[1].buttons};
+  bool fire{(bits & 5) != 0};
+  bool next{(bits & 10) != 0};
+  auto result{input(0, fire && !fire_held, next && !next_held, wcs)};
+  fire_held = fire;
+  next_held = next;
+  return result.response;
 }
-std::optional<vec2<int32_t>> mission_alert::take_warp(){return std::exchange(warp,{});}
-void mission_alert::mouse_down(int x,int y){pressed_=-1;for(int i{};i<count();++i)if(button(i).contains(x,y)){pressed_=focus_=i;}}
-std::optional<int> mission_alert::mouse_up(int x,int y){int const previous{pressed_};pressed_=-1;if(previous>=0&&button(previous).contains(x,y))return activate(previous);return {};}
+std::optional<vec2<int32_t>> mission_alert::take_warp() {
+  return std::exchange(warp, {});
 }
+void mission_alert::mouse_down(int x, int y) {
+  pressed_ = -1;
+  for(int i{0}; i < count(); ++i) {
+    if(button(i).contains(x, y)) {
+      pressed_ = focus_ = i;
+    }
+  }
+}
+std::optional<int> mission_alert::mouse_up(int x, int y) {
+  int const previous{pressed_};
+  pressed_ = -1;
+  if(previous >= 0 && button(previous).contains(x, y)) return activate(previous);
+  return {};
+}
+} // namespace earthsiege

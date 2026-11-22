@@ -25,7 +25,10 @@ struct rocket_motion {
   int16_t shot_noise{0};
 };
 
-struct beam_style { int16_t width{}; uint8_t colour{}; };
+struct beam_style {
+  int16_t width{0};
+  uint8_t colour{0};
+};
 std::vector<beam_style> read_beam_styles(bytes source);
 
 struct projectile_motions {

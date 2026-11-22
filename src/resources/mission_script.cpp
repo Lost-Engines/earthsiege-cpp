@@ -20,17 +20,17 @@ auto table(binary_reader &file, F read) {
   if(count > 1000) file.fail("excessive compiled mission table count");
   std::vector<T> result;
   result.reserve(count);
-  for(unsigned int index{}; index < count; ++index) result.push_back(read());
+  for(unsigned int index{0}; index < count; ++index) result.push_back(read());
   return result;
 }
 
-} // namespace
+} // anonymous namespace
 
 auto read_routes_record(binary_reader &file)->mission_route {
   mission_route route;
   auto const count{file.integer<uint16_t>()};
   route.points.reserve(count);
-  for(unsigned int index{}; index < count; ++index) route.points.push_back(file.integer<int16_t>());
+  for(unsigned int index{0}; index < count; ++index) route.points.push_back(file.integer<int16_t>());
   return route;
 }
 
@@ -130,16 +130,18 @@ auto read_mission_script(bytes source)->mission_script {
     .world_variant{file.integer<int16_t>()},
     .palette_variant{file.integer<int16_t>()},
   };
-  result.points = table(file, [&file]{ return vec3<world_coordinate>{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()}; });
-  result.headings = table(file, [&file]{ return file.integer<int16_t>(); });
-  result.routes = table(file, [&file]{ return read_routes_record(file); });
-  result.areas = table(file, [&file]{ return read_areas_record(file); });
-  result.triggers = table(file, [&file]{ return read_triggers_record(file); });
-  result.hercs = table(file, [&file]{ return read_hercs_record(file); });
-  result.flyers = table(file, [&file]{ return read_flyers_record(file); });
-  result.bases = table(file, [&file]{ return read_bases_record(file); });
-  result.groups = table(file, [&file]{ return read_groups_record(file); });
-  result.consumed = file.position();                                          // the original writer leaves stale tails in existing files
+  result.points = table(file, [&file]{
+    return vec3<world_coordinate>{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
+  });
+  result.headings = table(file, [&file]{return file.integer<int16_t>();});
+  result.routes = table(file, [&file]{return read_routes_record(file);});
+  result.areas = table(file, [&file]{return read_areas_record(file);});
+  result.triggers = table(file, [&file]{return read_triggers_record(file);});
+  result.hercs = table(file, [&file]{return read_hercs_record(file);});
+  result.flyers = table(file, [&file]{return read_flyers_record(file);});
+  result.bases = table(file, [&file]{return read_bases_record(file);});
+  result.groups = table(file, [&file]{return read_groups_record(file);});
+  result.consumed = file.position();                                           // the original writer leaves stale tails in existing files
   return result;
 }
 

@@ -59,7 +59,7 @@ uint16_t direction_angle(int32_t const x, int32_t const y) {
   /// Original octant lookup, including rounding without carry into the high word
   auto const ax{static_cast<uint64_t>(std::abs(static_cast<int64_t>(x)))};
   auto const ay{static_cast<uint64_t>(std::abs(static_cast<int64_t>(y)))};
-  auto const ratio_angle{[](uint64_t const small, uint64_t const large) {
+  auto const ratio_angle{[](uint64_t const small, uint64_t const large){
     if(small == 0) return 0;
     auto const product{small * 512};
     auto const rounded{(product & ~uint64_t{0xffffffff}) | static_cast<uint32_t>(product + (large >> 1))};
@@ -144,9 +144,11 @@ model_transform inverse_transform(model_transform const &source) {
 
 auto compose_transforms(model_transform const &local, model_transform const &parent)->model_transform {
   model_transform result;
-  if(local.type == 0) result = model_transform{parent};
-  else if(parent.type == 0) result = model_transform{local};
-  else {
+  if(local.type == 0) {
+    result = model_transform{parent};
+  } else if(parent.type == 0) {
+    result = model_transform{local};
+  } else {
     for(unsigned int column{0}; column < 3; ++column) {
       for(unsigned int row{0}; row < 3; ++row) {
         int64_t sum{0};

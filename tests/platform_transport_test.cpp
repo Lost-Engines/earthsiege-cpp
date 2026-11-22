@@ -1,8 +1,9 @@
-#include "platform/viewport.h"
-#include "platform/pcm_queue.h"
 #include <array>
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include "platform/pcm_queue.h"
+#include "platform/viewport.h"
 
 namespace {
 void require(bool value, char const *message) {
@@ -40,5 +41,5 @@ int main() try {
   std::cout << "Viewport and PCM transport checks pass\n";
 } catch(std::exception const &error) {
   std::cerr << error.what() << '\n';
-  return 1;
+  return EXIT_FAILURE;
 }

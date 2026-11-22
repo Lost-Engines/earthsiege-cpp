@@ -4,21 +4,33 @@
 #include "resources/resource_store.h"
 namespace earthsiege {
 class calibration_artwork {
- bitmap background;
- std::vector<bitmap> corners;
- std::array<button_style,4> styles;
- font title,metrics,values;
- std::array<font,3> faces;
- interface_strings strings;
- int origin_x{49},origin_y{50};uint8_t field_background{31};
- int width{},title_padding{},title_top{},title_height{},title_offset{};
- std::array<rectangle,3> buttons;
- std::array<int,3> offsets{};
- rectangle value_field,prompt;
- int value_x{},value_y{};
+  bitmap background;
+  std::vector<bitmap> corners;
+  std::array<button_style, 4> styles;
+  font title;
+  font metrics;
+  font values;
+  std::array<font, 3> faces;
+  interface_strings strings;
+  int origin_x{49};
+  int origin_y{50};
+  uint8_t field_background{31};
+  int width{0};
+  int title_padding{0};
+  int title_top{0};
+  int title_height{0};
+  int title_offset{0};
+  std::array<rectangle, 3> buttons;
+  std::array<int, 3> offsets{};
+  rectangle value_field;
+  rectangle prompt;
+  int value_x{0};
+  int value_y{0};
 public:
- explicit calibration_artwork(resource_store const &,bool in_flight=false);
- rectangle button(unsigned i)const{return buttons.at(i);}
- void draw(framebuffer &,unsigned choice,int message,std::span<uint8_t const,3> appearance)const;
+  explicit calibration_artwork(resource_store const &, bool in_flight = false);
+  rectangle button(unsigned i) const {
+    return buttons.at(i);
+  }
+  void draw(framebuffer &, unsigned choice, int message, std::span<uint8_t const, 3> appearance) const;
 };
-}
+} // namespace earthsiege

@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <functional>
+#include <string>
 #include "render/instrument_bars.h"
 #include "simulation/weapon_display.h"
 
@@ -11,14 +11,14 @@ class weapon_instruments {
   struct charge_pixels {
     bitmap painted;
     std::vector<uint8_t> saved_thumb;
-    int thumb_boundary{};
-    int led_boundary{};
-    int32_t value{};
-    int32_t requested{};
+    int thumb_boundary{0};
+    int led_boundary{0};
+    int32_t value{0};
+    int32_t requested{0};
     bool full{true};
   };
   std::vector<charge_pixels> charge_cache;
-  std::vector<std::optional<std::array<unsigned int,5>>> header_cache;
+  std::vector<std::optional<std::array<unsigned int, 5>>> header_cache;
   std::vector<bool> expanded_label;
   cockpit_layout layout;
   std::vector<bitmap> buttons;

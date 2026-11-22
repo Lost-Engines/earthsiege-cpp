@@ -1,143 +1,419 @@
-#include "shell/game_shell.h"
-#include <chrono>
 #include <algorithm>
+#include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
-using namespace earthsiege;
+#include "shell/game_shell.h"
+using earthsiege::armament_catalog;
+using earthsiege::framebuffer;
+using earthsiege::game_shell;
+using earthsiege::read_hangar;
+using earthsiege::resource_store;
+using earthsiege::save_store;
+using earthsiege::shell_statistics;
 namespace {
-void require(bool ok,char const *message){if(!ok)throw std::runtime_error{message};}
-struct temporary_saves {
- std::filesystem::path path;
- explicit temporary_saves(std::filesystem::path const &root):path{root/("shell-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))}{}
- ~temporary_saves(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}
-};
-void skip_speech(game_shell &shell){for(unsigned i{};shell.presentation_active()&&i<64;++i){if(shell.transition_active())shell.advance(20);else shell.key(1);}require(!shell.presentation_active(),"speech skip terminates");}
-void click(game_shell &shell,uint16_t action){auto c{shell.current_dialog().find(action)};if(!c||!c->enabled){std::cerr<<"click "<<action<<" on screen "<<shell.screen()<<"\n";throw std::runtime_error{"click target enabled"};}int x{(c->bounds.left+c->bounds.right)/2},y{(c->bounds.top+c->bounds.bottom)/2};shell.mouse_down(x,y);shell.mouse_up(x,y);skip_speech(shell);}
-void screen(game_shell const &shell,unsigned expected){if(shell.screen()!=expected){std::cerr<<"screen "<<shell.screen()<<" expected "<<expected<<'\n';throw std::runtime_error{"screen transition"};}framebuffer f;shell.draw(f);require(std::ranges::any_of(f.pixels(),[](uint8_t v){return v!=0;}),"screen draws");}
+void require(bool ok, char const *message) {
+  if(!ok) throw std::runtime_error{message};
 }
-int main(int argc,char **argv)try{
- if(argc!=3&&argc!=4)return 1;
- resource_store resources{argv[1]};temporary_saves root{argv[2]};game_shell shell{resources,root.path,17};
- screen(shell,1000);require(!shell.current_dialog().find(1700)->enabled,"no career to resume");
- click(shell,1100);screen(shell,1100);shell.key(80);require(shell.current_dialog().selection(1101)==1,"mission keyboard selection");
- click(shell,1110);screen(shell,1110);auto original{shell.settings().current()};click(shell,1111);require(shell.settings().current()[12]!=original[12],"single option changes");shell.key(1);screen(shell,1100);require(shell.settings().current()==original,"single cancel rolls back");
- click(shell,1501);screen(shell,1501);require(shell.state().ready()&&!shell.state().campaign(),"single mission prepared");framebuffer map_initial;shell.draw(map_initial);shell.advance(2600);
- framebuffer map_complete;shell.draw(map_complete);require(map_initial.pixels()!=map_complete.pixels(),"briefing tour changes the live menu");
- click(shell,108);framebuffer map_zoom;shell.draw(map_zoom);require(map_complete.pixels()!=map_zoom.pixels(),"briefing zoom button reaches map owner");
- shell.key(77);framebuffer map_pan;shell.draw(map_pan);require(map_zoom.pixels()!=map_pan.pixels(),"briefing arrow shortcut pans map");
- if(argc==4){auto path{std::filesystem::path{argv[3]}};path.replace_filename("briefing-menu.ppm");map_pan.save(path,shell.colours());}
- click(shell,1800);screen(shell,1800);
- auto idle_random{shell.state().random_snapshot()};framebuffer preview_before;shell.draw(preview_before);
- for(unsigned i{};i<240;++i)shell.advance(3);
- require(idle_random.words!=shell.state().random_snapshot().words||idle_random.first!=shell.state().random_snapshot().first,"resident bay scripts advance in live shell");
- auto menu_pcm{shell.take_audio()};require(std::ranges::any_of(menu_pcm,[](auto sample){return sample!=0;}),"shell audio reaches output");
- framebuffer preview_after;shell.draw(preview_after);bool preview_changed{};auto bounds{shell.current_dialog().find(1803)->bounds};
- for(int y{bounds.top};y<=bounds.bottom;++y)for(int x{bounds.left};x<=bounds.right;++x)
-  preview_changed|=preview_before.pixels()[static_cast<size_t>(y*320+x)]!=preview_after.pixels()[static_cast<size_t>(y*320+x)];
- require(preview_changed,"selected weapon performs its original turn animation");
-
- auto initial_slot{shell.state().roster().selected};auto const initial_herc{*shell.state().roster().find(initial_slot)};
- auto const old_weapon{initial_herc.weapons[0]};auto const old_count{shell.state().inventory()[static_cast<size_t>(old_weapon)].size()};
- armament_catalog catalog{resources};auto const &region{catalog.hotspots(initial_herc.chassis)[0]};
- int const mx{(region.left+region.right)/2},my{(region.top+region.bottom)/2};shell.mouse_down(mx,my);shell.mouse_up(mx,my);
- for(int i{};i<18;++i)shell.key(72);
- require(shell.state().roster().find(initial_slot)->weapons[0]==17,"remove weapon through actual input");
- require(shell.state().inventory()[static_cast<size_t>(old_weapon)].size()==old_count+1,"removed weapon returned to inventory");
- shell.key(80);require(shell.state().roster().find(initial_slot)->weapons[0]!=17,"equip weapon through actual input");
- if(argc==4){framebuffer frame;shell.draw(frame);frame.save(argv[3],shell.colours());}
- click(shell,2004);require(shell.state().roster().selected!=initial_slot,"single mission HERC changes");
- require(shell.state().crew().crew[0].hangar_slot==shell.state().roster().selected,"single mission selected HERC assigned");
- click(shell,100);screen(shell,1501);
- click(shell,100);require(shell.ready_to_launch(),"single launch request");auto single{shell.launch()};require(single!=nullptr&&!shell.ready_to_launch(),"launch consumed");auto single_result{single->results()};single_result.crew[0].statistics={3,2,1};single_result.recovery=1234;single_result.salvage={{2,80}};
- shell.mission_return(single_result,single->mission_variables());skip_speech(shell);screen(shell,1510);
- require(shell.state().crew().crew[0].current==single_result.crew[0].statistics,"single-mission personal kills reach debrief");
- require(shell.state().returned().statistics[0]==3&&shell.state().returned().recovered_weapons==1&&shell.state().returned().recovery==1234,"single-mission squad/salvage display");
- require(shell.state().roster().hercs.size()==8,"temporary single-mission wingmates excluded on shell return");
- if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("single-debrief-test.ppm");frame.save(path,shell.colours());}
- click(shell,1000);click(shell,1200);screen(shell,1200);click(shell,1210);screen(shell,1210);shell.text_input("Test Pilot");click(shell,100);screen(shell,1700);require(shell.state().campaign(),"registered campaign");auto name{shell.state().mission_name()};
- framebuffer bay_before;shell.draw(bay_before);bool moving{};
- for(unsigned i{};i<600&&!moving;++i){shell.advance(3);framebuffer f;shell.draw(f);moving=f.pixels()!=bay_before.pixels();}
- require(moving,"original workers animate in the service bay");
- auto crew_before{shell.state().crew()};
- click(shell,1610);screen(shell,1610);
- if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("crew-test.ppm");frame.save(path,shell.colours());}
- click(shell,2004);
- require(shell.state().crew().crew[0].hangar_slot==crew_before.crew[1].hangar_slot,"crew swaps selected HERC");
- require(shell.state().crew().crew[1].hangar_slot==crew_before.crew[0].hangar_slot,"displaced pilot gets previous HERC");
- click(shell,2004);
- require(shell.state().crew().crew[1].hangar_slot==crew_before.crew[1].hangar_slot,"cycling restores previous displaced pilot");
- click(shell,1700);screen(shell,1700);
- for(size_t i{};i<4;++i)require(shell.state().crew().crew[i].hangar_slot==crew_before.crew[i].hangar_slot,"crew cancel restores assignments");
- click(shell,1610);click(shell,1616);click(shell,1623);
- require(shell.state().crew().crew[1].hangar_slot==-1,"wingmate can be unassigned");
- click(shell,1700);screen(shell,1700);
- click(shell,1610);click(shell,2004);click(shell,100);screen(shell,1700);
- require(shell.state().crew().crew[0].hangar_slot==crew_before.crew[1].hangar_slot,"crew accept retains swap");
-
- click(shell,100);auto mission{shell.launch()};auto result{mission->results()};auto counters{mission->mission_variables()};result.grade=1;result.recovery+=60000;for(auto &c:result.crew){c.condition.armour.fill(60);c.condition.internal.fill(70);c.condition.internal[9]=100;c.condition.equipment.fill(55);}shell.mission_return(result,counters,13);skip_speech(shell);screen(shell,1520);require(shell.state().crew().missions==1,"return advances career");
-
- click(shell,1710);screen(shell,1710);click(shell,1900);screen(shell,1900);
- auto repair_slot{shell.state().roster().selected};auto repair_before{*shell.state().roster().find(repair_slot)};auto repair_budget{shell.state().crew().budget};
- click(shell,1920);screen(shell,1920);click(shell,106);
- require(shell.state().crew().budget<repair_budget,"component repair spends material");
- if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("component-repair-test.ppm");frame.save(path,shell.colours());}
- click(shell,99);screen(shell,1900);
- require(shell.state().crew().budget==repair_budget&&shell.state().roster().find(repair_slot)->condition.internal==repair_before.condition.internal,"component cancel restores material and conditions");
- click(shell,1920);click(shell,106);click(shell,1900);screen(shell,1900);
- require(shell.state().roster().find(repair_slot)->condition.internal[0]==91,"accept retains native extra repair band");
- if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("repair-test.ppm");frame.save(path,shell.colours());}
- click(shell,1910);screen(shell,1910);click(shell,1911);screen(shell,1900);require(shell.state().crew().repair_policy==0,"manual repair policy");
- auto repair_count{shell.state().roster().hercs.size()};
- click(shell,1901);screen(shell,4444);click(shell,1900);screen(shell,1900);require(shell.state().roster().hercs.size()==repair_count,"scrap cancellation leaves roster intact");
- click(shell,1902);require(shell.state().roster().find(repair_slot)->condition.internal[0]==100,"whole HERC repair");
- click(shell,1710);screen(shell,1710);click(shell,2000);screen(shell,2000);
- auto build_budget{shell.state().crew().budget};auto build_count{shell.state().roster().hercs.size()};
- require(shell.state().roster().construction_slot>=0,"construction reserves an empty bay");
- click(shell,2001);screen(shell,2000);
- require(shell.state().roster().hercs.size()==build_count+1&&shell.state().crew().budget==build_budget-50000,"construction spends material");
- require(!shell.current_dialog().find(2004)->enabled,"cannot cycle during construction");
- if(argc==4){framebuffer frame;shell.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("construction-test.ppm");frame.save(path,shell.colours());}
- click(shell,2001);
- require(shell.state().roster().hercs.size()==build_count&&shell.state().crew().budget==build_budget,"immediate cancellation returns construction allocation");
- click(shell,2001);click(shell,1710);screen(shell,1710);click(shell,1000);screen(shell,1000);
-
- game_shell reopened{resources,root.path,23};require(reopened.current_dialog().find(1700)->enabled,"resume survives restart");click(reopened,1700);screen(reopened,1710);require(reopened.state().crew().missions==1,"original save loaded");require(reopened.state().roster().construction_remaining==1,"construction survives reload");click(reopened,1499);screen(reopened,1500);require(reopened.state().crew().step==1,"next mission advances step");require(reopened.state().mission_name()!=name,"next mission differs");click(reopened,1700);
- click(reopened,1000);click(reopened,1200);click(reopened,1220);screen(reopened,1220);click(reopened,1221);require(reopened.state().career().career.states[2].valid,"manual backup stored");
- click(reopened,1230);screen(reopened,1230);
- {framebuffer actual,expected;reopened.draw(actual);reopened.current_dialog().draw(expected);
-  shell_statistics panels{resources};panels.career(expected,reopened.current_dialog().find(1231)->bounds,reopened.state().career().career.states[2],"Test Pilot");
-  require(actual.pixels()==expected.pixels(),"statistics use selected backup without restoring it");
-  if(argc==4){auto path{std::filesystem::path{argv[3]}};path.replace_filename("career-statistics-test.ppm");actual.save(path,reopened.colours());}}
- reopened.key(1);screen(reopened,1220);
- click(reopened,1222);require(reopened.state().crew().step==1,"manual backup restored");
- // Resume genuine save-format careers into each original validation path.
- auto seed{shell.state().career()};
- auto const entry{save_store{root.path}.index().entries.front()};
- for(int scenario{};scenario<5;++scenario){
-  auto saved{seed};auto &c{saved.career.states[0]};auto &h{saved.hangars[0]};
-  h=read_hangar(resources.read("shell0","car/sm_init.dat"));h.selected=0;c.selected_crew=0;c.crew_cursor=0;c.screen=scenario<2?1700:1710;
-  for(size_t i{};i<4;++i){c.crew[i].active=1;c.crew[i].hangar_slot=static_cast<int16_t>(i);}
-  if(scenario==0)c.crew[0].hangar_slot=-1;
-  if(scenario==1)std::ranges::fill(h.find(0)->weapons,int16_t{17});
-  if(scenario==2)h.find(0)->condition.internal[0]=49;
-  if(scenario==3)h.find(1)->condition.internal[5]=49;
-  save_store{root.path}.save(entry,saved);
-  game_shell guarded{resources,root.path,17};click(guarded,1700);screen(guarded,c.screen);
-  if(scenario==0){
-   click(guarded,100);screen(guarded,3333);require(!guarded.ready_to_launch(),"missing player blocks launch");click(guarded,99);screen(guarded,1700);
-  }else if(scenario==1){
-   click(guarded,100);screen(guarded,3000);guarded.key(1);screen(guarded,1700);require(!guarded.ready_to_launch(),"unarmed warning cancel");
-   click(guarded,1500);screen(guarded,1500);click(guarded,100);screen(guarded,3000);
-   if(argc==4){framebuffer frame;guarded.draw(frame);auto path{std::filesystem::path{argv[3]}};path.replace_filename("launch-warning-test.ppm");frame.save(path,guarded.colours());}
-   click(guarded,100);require(guarded.ready_to_launch(),"unarmed warning permits proceed");
-  }else if(scenario==2){
-   click(guarded,1499);screen(guarded,7770);click(guarded,99);screen(guarded,1710);require(guarded.state().crew().step==c.step,"disabled player leaves mission unchanged");
-  }else if(scenario==3){
-   click(guarded,1499);screen(guarded,7771);guarded.key(1);screen(guarded,1710);require(guarded.state().crew().step==c.step,"disabled wingmate cancel");
-   click(guarded,1499);click(guarded,1499);screen(guarded,1500);require(guarded.state().crew().step!=c.step,"disabled wingmate proceed");
-  }else{
-   click(guarded,2000);screen(guarded,7772);click(guarded,99);screen(guarded,1710);require(guarded.state().roster().construction_slot==-1,"full hangar cannot reserve construction");
+struct temporary_saves {
+  std::filesystem::path path;
+  explicit temporary_saves(std::filesystem::path const &root) : path{root / ("shell-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))} {}
+  ~temporary_saves() {
+    std::error_code ignored;
+    std::filesystem::remove_all(path, ignored);
   }
- }
- std::cout<<"Single mission and career launch/return, isolated persistence, preferences and backups pass\n";return 0;
-}catch(std::exception const &e){std::cerr<<e.what()<<'\n';return 1;}
+};
+void skip_speech(game_shell &shell) {
+  for(unsigned i{0}; shell.presentation_active() && i < 64; ++i) {
+    if(shell.transition_active()) {
+      shell.advance(20);
+    } else {
+      shell.key(1);
+    }
+  }
+  require(!shell.presentation_active(), "speech skip terminates");
+}
+void click(game_shell &shell, uint16_t action) {
+  auto c{shell.current_dialog().find(action)};
+  if(!c || !c->enabled) {
+    std::cerr << "click " << action << " on screen " << shell.screen() << "\n";
+    throw std::runtime_error{"click target enabled"};
+  }
+  int x{(c->bounds.left + c->bounds.right) / 2};
+  int y{(c->bounds.top + c->bounds.bottom) / 2};
+  shell.mouse_down(x, y);
+  shell.mouse_up(x, y);
+  skip_speech(shell);
+}
+void screen(game_shell const &shell, unsigned expected) {
+  if(shell.screen() != expected) {
+    std::cerr << "screen " << shell.screen() << " expected " << expected << '\n';
+    throw std::runtime_error{"screen transition"};
+  }
+  framebuffer f;
+  shell.draw(f);
+  require(std::ranges::any_of(f.pixels(), [](uint8_t v){return v != 0;}), "screen draws");
+}
+} // anonymous namespace
+int main(int argc, char **argv) try {
+  if(argc != 3 && argc != 4) return EXIT_FAILURE;
+  resource_store resources{argv[1]};
+  temporary_saves root{argv[2]};
+  game_shell shell{resources, root.path, 17};
+  screen(shell, 1000);
+  require(!shell.current_dialog().find(1700)->enabled, "no career to resume");
+  click(shell, 1100);
+  screen(shell, 1100);
+  shell.key(80);
+  require(shell.current_dialog().selection(1101) == 1, "mission keyboard selection");
+  click(shell, 1110);
+  screen(shell, 1110);
+  auto original{shell.settings().current()};
+  click(shell, 1111);
+  require(shell.settings().current()[12] != original[12], "single option changes");
+  shell.key(1);
+  screen(shell, 1100);
+  require(shell.settings().current() == original, "single cancel rolls back");
+  click(shell, 1501);
+  screen(shell, 1501);
+  require(shell.state().ready() && !shell.state().campaign(), "single mission prepared");
+  framebuffer map_initial;
+  shell.draw(map_initial);
+  shell.advance(2600);
+  framebuffer map_complete;
+  shell.draw(map_complete);
+  require(map_initial.pixels() != map_complete.pixels(), "briefing tour changes the live menu");
+  click(shell, 108);
+  framebuffer map_zoom;
+  shell.draw(map_zoom);
+  require(map_complete.pixels() != map_zoom.pixels(), "briefing zoom button reaches map owner");
+  shell.key(77);
+  framebuffer map_pan;
+  shell.draw(map_pan);
+  require(map_zoom.pixels() != map_pan.pixels(), "briefing arrow shortcut pans map");
+  if(argc == 4) {
+    auto path{std::filesystem::path{argv[3]}};
+    path.replace_filename("briefing-menu.ppm");
+    map_pan.save(path, shell.colours());
+  }
+  click(shell, 1800);
+  screen(shell, 1800);
+  auto idle_random{shell.state().random_snapshot()};
+  framebuffer preview_before;
+  shell.draw(preview_before);
+  for(unsigned i{0}; i < 240; ++i) shell.advance(3);
+  require(idle_random.words != shell.state().random_snapshot().words || idle_random.first != shell.state().random_snapshot().first, "resident bay scripts advance in live shell");
+  auto menu_pcm{shell.take_audio()};
+  require(std::ranges::any_of(menu_pcm, [](auto sample){return sample != 0;}), "shell audio reaches output");
+  framebuffer preview_after;
+  shell.draw(preview_after);
+  bool preview_changed{false};
+  auto bounds{shell.current_dialog().find(1803)->bounds};
+  for(int y{bounds.top}; y <= bounds.bottom; ++y) {
+    for(int x{bounds.left}; x <= bounds.right; ++x) {
+      preview_changed |= preview_before.pixels()[static_cast<size_t>(y * 320 + x)] != preview_after.pixels()[static_cast<size_t>(y * 320 + x)];
+    }
+  }
+  require(preview_changed, "selected weapon performs its original turn animation");
+
+  auto initial_slot{shell.state().roster().selected};
+  auto const initial_herc{*shell.state().roster().find(initial_slot)};
+  auto const old_weapon{initial_herc.weapons[0]};
+  auto const old_count{shell.state().inventory()[static_cast<size_t>(old_weapon)].size()};
+  armament_catalog catalog{resources};
+  auto const &region{catalog.hotspots(initial_herc.chassis)[0]};
+  int const mx{(region.left + region.right) / 2};
+  int const my{(region.top + region.bottom) / 2};
+  shell.mouse_down(mx, my);
+  shell.mouse_up(mx, my);
+  for(int i{0}; i < 18; ++i) shell.key(72);
+  require(shell.state().roster().find(initial_slot)->weapons[0] == 17, "remove weapon through actual input");
+  require(shell.state().inventory()[static_cast<size_t>(old_weapon)].size() == old_count + 1, "removed weapon returned to inventory");
+  shell.key(80);
+  require(shell.state().roster().find(initial_slot)->weapons[0] != 17, "equip weapon through actual input");
+  if(argc == 4) {
+    framebuffer frame;
+    shell.draw(frame);
+    frame.save(argv[3], shell.colours());
+  }
+  click(shell, 2004);
+  require(shell.state().roster().selected != initial_slot, "single mission HERC changes");
+  require(shell.state().crew().crew[0].hangar_slot == shell.state().roster().selected, "single mission selected HERC assigned");
+  click(shell, 100);
+  screen(shell, 1501);
+  click(shell, 100);
+  require(shell.ready_to_launch(), "single launch request");
+  auto single{shell.launch()};
+  require(single != nullptr && !shell.ready_to_launch(), "launch consumed");
+  auto single_result{single->results()};
+  single_result.crew[0].statistics = {3, 2, 1};
+  single_result.recovery = 1234;
+  single_result.salvage = {{2, 80}};
+  shell.mission_return(single_result, single->mission_variables());
+  skip_speech(shell);
+  screen(shell, 1510);
+  require(shell.state().crew().crew[0].current == single_result.crew[0].statistics, "single-mission personal kills reach debrief");
+  require(shell.state().returned().statistics[0] == 3 && shell.state().returned().recovered_weapons == 1 && shell.state().returned().recovery == 1234, "single-mission squad/salvage display");
+  require(shell.state().roster().hercs.size() == 8, "temporary single-mission wingmates excluded on shell return");
+  if(argc == 4) {
+    framebuffer frame;
+    shell.draw(frame);
+    auto path{std::filesystem::path{argv[3]}};
+    path.replace_filename("single-debrief-test.ppm");
+    frame.save(path, shell.colours());
+  }
+  click(shell, 1000);
+  click(shell, 1200);
+  screen(shell, 1200);
+  click(shell, 1210);
+  screen(shell, 1210);
+  shell.text_input("Test Pilot");
+  click(shell, 100);
+  screen(shell, 1700);
+  require(shell.state().campaign(), "registered campaign");
+  auto name{shell.state().mission_name()};
+  framebuffer bay_before;
+  shell.draw(bay_before);
+  bool moving{false};
+  for(unsigned i{0}; i < 600 && !moving; ++i) {
+    shell.advance(3);
+    framebuffer f;
+    shell.draw(f);
+    moving = f.pixels() != bay_before.pixels();
+  }
+  require(moving, "original workers animate in the service bay");
+  auto crew_before{shell.state().crew()};
+  click(shell, 1610);
+  screen(shell, 1610);
+  if(argc == 4) {
+    framebuffer frame;
+    shell.draw(frame);
+    auto path{std::filesystem::path{argv[3]}};
+    path.replace_filename("crew-test.ppm");
+    frame.save(path, shell.colours());
+  }
+  click(shell, 2004);
+  require(shell.state().crew().crew[0].hangar_slot == crew_before.crew[1].hangar_slot, "crew swaps selected HERC");
+  require(shell.state().crew().crew[1].hangar_slot == crew_before.crew[0].hangar_slot, "displaced pilot gets previous HERC");
+  click(shell, 2004);
+  require(shell.state().crew().crew[1].hangar_slot == crew_before.crew[1].hangar_slot, "cycling restores previous displaced pilot");
+  click(shell, 1700);
+  screen(shell, 1700);
+  for(size_t i{0}; i < 4; ++i) require(shell.state().crew().crew[i].hangar_slot == crew_before.crew[i].hangar_slot, "crew cancel restores assignments");
+  click(shell, 1610);
+  click(shell, 1616);
+  click(shell, 1623);
+  require(shell.state().crew().crew[1].hangar_slot == -1, "wingmate can be unassigned");
+  click(shell, 1700);
+  screen(shell, 1700);
+  click(shell, 1610);
+  click(shell, 2004);
+  click(shell, 100);
+  screen(shell, 1700);
+  require(shell.state().crew().crew[0].hangar_slot == crew_before.crew[1].hangar_slot, "crew accept retains swap");
+
+  click(shell, 100);
+  auto mission{shell.launch()};
+  auto result{mission->results()};
+  auto counters{mission->mission_variables()};
+  result.grade = 1;
+  result.recovery += 60000;
+  for(auto &c : result.crew) {
+    c.condition.armour.fill(60);
+    c.condition.internal.fill(70);
+    c.condition.internal[9] = 100;
+    c.condition.equipment.fill(55);
+  }
+  shell.mission_return(result, counters, 13);
+  skip_speech(shell);
+  screen(shell, 1520);
+  require(shell.state().crew().missions == 1, "return advances career");
+
+  click(shell, 1710);
+  screen(shell, 1710);
+  click(shell, 1900);
+  screen(shell, 1900);
+  auto repair_slot{shell.state().roster().selected};
+  auto repair_before{*shell.state().roster().find(repair_slot)};
+  auto repair_budget{shell.state().crew().budget};
+  click(shell, 1920);
+  screen(shell, 1920);
+  click(shell, 106);
+  require(shell.state().crew().budget < repair_budget, "component repair spends material");
+  if(argc == 4) {
+    framebuffer frame;
+    shell.draw(frame);
+    auto path{std::filesystem::path{argv[3]}};
+    path.replace_filename("component-repair-test.ppm");
+    frame.save(path, shell.colours());
+  }
+  click(shell, 99);
+  screen(shell, 1900);
+  require(shell.state().crew().budget == repair_budget && shell.state().roster().find(repair_slot)->condition.internal == repair_before.condition.internal, "component cancel restores material and conditions");
+  click(shell, 1920);
+  click(shell, 106);
+  click(shell, 1900);
+  screen(shell, 1900);
+  require(shell.state().roster().find(repair_slot)->condition.internal[0] == 91, "accept retains native extra repair band");
+  if(argc == 4) {
+    framebuffer frame;
+    shell.draw(frame);
+    auto path{std::filesystem::path{argv[3]}};
+    path.replace_filename("repair-test.ppm");
+    frame.save(path, shell.colours());
+  }
+  click(shell, 1910);
+  screen(shell, 1910);
+  click(shell, 1911);
+  screen(shell, 1900);
+  require(shell.state().crew().repair_policy == 0, "manual repair policy");
+  auto repair_count{shell.state().roster().hercs.size()};
+  click(shell, 1901);
+  screen(shell, 4444);
+  click(shell, 1900);
+  screen(shell, 1900);
+  require(shell.state().roster().hercs.size() == repair_count, "scrap cancellation leaves roster intact");
+  click(shell, 1902);
+  require(shell.state().roster().find(repair_slot)->condition.internal[0] == 100, "whole HERC repair");
+  click(shell, 1710);
+  screen(shell, 1710);
+  click(shell, 2000);
+  screen(shell, 2000);
+  auto build_budget{shell.state().crew().budget};
+  auto build_count{shell.state().roster().hercs.size()};
+  require(shell.state().roster().construction_slot >= 0, "construction reserves an empty bay");
+  click(shell, 2001);
+  screen(shell, 2000);
+  require(shell.state().roster().hercs.size() == build_count + 1 && shell.state().crew().budget == build_budget - 50000, "construction spends material");
+  require(!shell.current_dialog().find(2004)->enabled, "cannot cycle during construction");
+  if(argc == 4) {
+    framebuffer frame;
+    shell.draw(frame);
+    auto path{std::filesystem::path{argv[3]}};
+    path.replace_filename("construction-test.ppm");
+    frame.save(path, shell.colours());
+  }
+  click(shell, 2001);
+  require(shell.state().roster().hercs.size() == build_count && shell.state().crew().budget == build_budget, "immediate cancellation returns construction allocation");
+  click(shell, 2001);
+  click(shell, 1710);
+  screen(shell, 1710);
+  click(shell, 1000);
+  screen(shell, 1000);
+
+  game_shell reopened{resources, root.path, 23};
+  require(reopened.current_dialog().find(1700)->enabled, "resume survives restart");
+  click(reopened, 1700);
+  screen(reopened, 1710);
+  require(reopened.state().crew().missions == 1, "original save loaded");
+  require(reopened.state().roster().construction_remaining == 1, "construction survives reload");
+  click(reopened, 1499);
+  screen(reopened, 1500);
+  require(reopened.state().crew().step == 1, "next mission advances step");
+  require(reopened.state().mission_name() != name, "next mission differs");
+  click(reopened, 1700);
+  click(reopened, 1000);
+  click(reopened, 1200);
+  click(reopened, 1220);
+  screen(reopened, 1220);
+  click(reopened, 1221);
+  require(reopened.state().career().career.states[2].valid, "manual backup stored");
+  click(reopened, 1230);
+  screen(reopened, 1230);
+  {
+    framebuffer actual;
+    framebuffer expected;
+    reopened.draw(actual);
+    reopened.current_dialog().draw(expected);
+    shell_statistics panels{resources};
+    panels.career(expected, reopened.current_dialog().find(1231)->bounds, reopened.state().career().career.states[2], "Test Pilot");
+    require(actual.pixels() == expected.pixels(), "statistics use selected backup without restoring it");
+    if(argc == 4) {
+      auto path{std::filesystem::path{argv[3]}};
+      path.replace_filename("career-statistics-test.ppm");
+      actual.save(path, reopened.colours());
+    }
+  }
+  reopened.key(1);
+  screen(reopened, 1220);
+  click(reopened, 1222);
+  require(reopened.state().crew().step == 1, "manual backup restored");
+  // Resume genuine save-format careers into each original validation path.
+  auto seed{shell.state().career()};
+  auto const entry{save_store{root.path}.index().entries.front()};
+  for(int scenario{0}; scenario < 5; ++scenario) {
+    auto saved{seed};
+    auto &c{saved.career.states[0]};
+    auto &h{saved.hangars[0]};
+    h = read_hangar(resources.read("shell0", "car/sm_init.dat"));
+    h.selected = 0;
+    c.selected_crew = 0;
+    c.crew_cursor = 0;
+    c.screen = scenario < 2 ? 1700 : 1710;
+    for(size_t i{0}; i < 4; ++i) {
+      c.crew[i].active = 1;
+      c.crew[i].hangar_slot = static_cast<int16_t>(i);
+    }
+    if(scenario == 0) c.crew[0].hangar_slot = -1;
+    if(scenario == 1) std::ranges::fill(h.find(0)->weapons, int16_t{17});
+    if(scenario == 2) h.find(0)->condition.internal[0] = 49;
+    if(scenario == 3) h.find(1)->condition.internal[5] = 49;
+    save_store{root.path}.save(entry, saved);
+    game_shell guarded{resources, root.path, 17};
+    click(guarded, 1700);
+    screen(guarded, c.screen);
+    if(scenario == 0) {
+      click(guarded, 100);
+      screen(guarded, 3333);
+      require(!guarded.ready_to_launch(), "missing player blocks launch");
+      click(guarded, 99);
+      screen(guarded, 1700);
+    } else if(scenario == 1) {
+      click(guarded, 100);
+      screen(guarded, 3000);
+      guarded.key(1);
+      screen(guarded, 1700);
+      require(!guarded.ready_to_launch(), "unarmed warning cancel");
+      click(guarded, 1500);
+      screen(guarded, 1500);
+      click(guarded, 100);
+      screen(guarded, 3000);
+      if(argc == 4) {
+        framebuffer frame;
+        guarded.draw(frame);
+        auto path{std::filesystem::path{argv[3]}};
+        path.replace_filename("launch-warning-test.ppm");
+        frame.save(path, guarded.colours());
+      }
+      click(guarded, 100);
+      require(guarded.ready_to_launch(), "unarmed warning permits proceed");
+    } else if(scenario == 2) {
+      click(guarded, 1499);
+      screen(guarded, 7770);
+      click(guarded, 99);
+      screen(guarded, 1710);
+      require(guarded.state().crew().step == c.step, "disabled player leaves mission unchanged");
+    } else if(scenario == 3) {
+      click(guarded, 1499);
+      screen(guarded, 7771);
+      guarded.key(1);
+      screen(guarded, 1710);
+      require(guarded.state().crew().step == c.step, "disabled wingmate cancel");
+      click(guarded, 1499);
+      click(guarded, 1499);
+      screen(guarded, 1500);
+      require(guarded.state().crew().step != c.step, "disabled wingmate proceed");
+    } else {
+      click(guarded, 2000);
+      screen(guarded, 7772);
+      click(guarded, 99);
+      screen(guarded, 1710);
+      require(guarded.state().roster().construction_slot == -1, "full hangar cannot reserve construction");
+    }
+  }
+  std::cout << "Single mission and career launch/return, isolated persistence, preferences and backups pass\n";
+  return EXIT_SUCCESS;
+} catch(std::exception const &e) {
+  std::cerr << e.what() << '\n';
+  return EXIT_FAILURE;
+}

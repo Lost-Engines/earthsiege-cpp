@@ -37,21 +37,25 @@ enum class target_kind : int16_t {
 
 struct mission_header {
   terrain_kind terrain{};
-  int16_t zone{};
-  int16_t campaign_mode{};                                                   // GO selects 0 for instant action, 1 for campaign
-  int16_t objective_kind{};
-  int16_t objective_variant{};                                               // retained shell objective selector
-  int16_t unlimited_weapons{};
-  int16_t invulnerable_player{};
-  int16_t difficulty{};
-  int16_t world_variant{};
-  int16_t palette_variant{};
+  int16_t zone{0};
+  int16_t campaign_mode{0};                                                    // GO selects 0 for instant action, 1 for campaign
+  int16_t objective_kind{0};
+  int16_t objective_variant{0};                                                // retained shell objective selector
+  int16_t unlimited_weapons{0};
+  int16_t invulnerable_player{0};
+  int16_t difficulty{0};
+  int16_t world_variant{0};
+  int16_t palette_variant{0};
 
-  bool free_weapons() const { return campaign_mode == 0 && unlimited_weapons == 1; }
+  bool free_weapons() const {
+    return campaign_mode == 0 && unlimited_weapons == 1;
+  }
   bool player_is_invulnerable(game_edition const edition = game_edition::original) const {
     return campaign_mode == 0 ? invulnerable_player == 1 : edition == game_edition::expansion && difficulty == 0;
   }
-  int32_t detection_range() const { return world_variant == 1 ? 30000 : 60000; }
+  int32_t detection_range() const {
+    return world_variant == 1 ? 30000 : 60000;
+  }
 };
 
 using mission_counters = std::array<int16_t, 100>;
@@ -63,14 +67,14 @@ struct mission_route {
 };
 
 struct trigger_area {
-  int16_t kind{};
+  int16_t kind{0};
   mission_reference first_point{};
-  int16_t second_point_or_radius{};
+  int16_t second_point_or_radius{0};
 };
 
 struct mission_trigger {
-  int16_t mode{};
-  int16_t test{};
+  int16_t mode{0};
+  int16_t test{0};
   std::array<mission_reference, 8> areas{};
   int16_t counter{-1};
   int16_t counter_operation{-1};
@@ -80,52 +84,52 @@ using source_field_mask = std::array<int16_t, 20>;                             /
 
 struct herc_spawn {
   source_field_mask field_mask{};
-  int16_t chassis{};
+  int16_t chassis{0};
   std::array<int16_t, 10> weapons{};
   mission_reference position{};
   mission_reference heading{};
-  int16_t counter{};
-  int16_t counter_operation{};
+  int16_t counter{0};
+  int16_t counter_operation{0};
   std::array<int16_t, 10> ammunition{};
-  int16_t skill{};
+  int16_t skill{0};
   mission_reference trigger_a{};
   mission_reference trigger_b{};
-  int16_t initial_condition{};
+  int16_t initial_condition{0};
 };
 
 struct flyer_spawn {
   source_field_mask field_mask{};
   mission_reference position{};
   mission_reference heading{};
-  int16_t type{};
-  int16_t counter{};
-  int16_t counter_operation{};
+  int16_t type{0};
+  int16_t counter{0};
+  int16_t counter_operation{0};
   mission_reference trigger_a{};
   mission_reference trigger_b{};
-  int16_t initial_value{};
+  int16_t initial_value{0};
 };
 
 struct base_spawn {
-  int16_t type{};
+  int16_t type{0};
   mission_reference position{};
   mission_reference heading{};
-  int16_t counter{};
-  int16_t counter_operation{};
+  int16_t counter{0};
+  int16_t counter_operation{0};
   mission_reference trigger_a{};
   mission_reference trigger_b{};
-  int16_t initial_value{};
+  int16_t initial_value{0};
 };
 
 struct group_spawn {
   source_field_mask field_mask{};
   actor_kind kind{};
-  int16_t formation{};
-  int16_t argument{};
+  int16_t formation{0};
+  int16_t argument{0};
   mission_reference position{};
   mission_reference heading{};
   mission_reference route{};
   std::array<mission_reference, 8> members{};
-  int16_t mode{};
+  int16_t mode{0};
   target_kind target_type{};
   mission_reference target{};
   mission_reference trigger{};
@@ -143,7 +147,7 @@ struct mission_script {
   std::vector<flyer_spawn> flyers;
   std::vector<base_spawn> bases;
   std::vector<group_spawn> groups;
-  size_t consumed{};
+  size_t consumed{0};
 };
 
 auto read_mission_script(bytes source)->mission_script;

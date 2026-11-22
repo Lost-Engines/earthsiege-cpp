@@ -1,16 +1,18 @@
 #pragma once
 #include "resources/packed_strings.h"
-#include "shell/dialog.h"
 #include "shell/crew_assignment.h"
+#include "shell/dialog.h"
 namespace earthsiege {
 class crew_artwork {
- std::vector<bitmap> portraits,mechs;
- bitmap insignia,mesh;
- std::array<font,3> faces;
- shell_text text;
+  std::vector<bitmap> portraits;
+  std::vector<bitmap> mechs;
+  bitmap insignia;
+  bitmap mesh;
+  std::array<font, 3> faces;
+  shell_text text;
 public:
- explicit crew_artwork(resource_store const &);
- void draw(framebuffer &,dialog const &,hangar const &,career_state const &,
-           crew_assignment const &,std::string const &player_name)const;
+  explicit crew_artwork(resource_store const &);
+  void draw(framebuffer &, dialog const &, hangar const &, career_state const &,
+           crew_assignment const &, std::string const &player_name) const;
 };
-}
+} // namespace earthsiege

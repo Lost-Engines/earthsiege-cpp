@@ -1,8 +1,8 @@
 #include "effect_state.h"
 #include <algorithm>
 #include <stdexcept>
-#include "simulation/fixed_math.h"
 #include "resources/combat.h"
+#include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
 
 namespace earthsiege {
@@ -15,22 +15,25 @@ std::optional<int16_t> advance_smoke_emitter(smoke_emitter_state &state, frame_r
   if(!state.remaining) return {};
   state.timer = std::max<int16_t>(0, wrap_word(state.timer - ratio));
   if(state.timer) return {};
-  state.timer = 200; --state.remaining;
-  auto const root{state.root}; state.root = static_cast<int16_t>(state.family * 4 + ((state.root + 1) & 3));
+  state.timer = 200;
+  --state.remaining;
+  auto const root{state.root};
+  state.root = static_cast<int16_t>(state.family * 4 + ((state.root + 1) & 3));
   return root;
 }
 bool advance_smoke_puff(smoke_puff_state &state, uint16_t const frames, frame_ratio const ratio) {
-  for(unsigned int axis{}; axis < 3; ++axis) state.position[axis] = wrap_long(static_cast<int64_t>(state.position[axis]) + state.velocity[axis]);
+  for(unsigned int axis{0}; axis < 3; ++axis) state.position[axis] = wrap_long(static_cast<int64_t>(state.position[axis]) + state.velocity[axis]);
   state.timer = std::max(0, wrap_long(static_cast<int64_t>(state.timer) - ratio));
   if(state.timer) return false;
-  state.timer = 200; state.cell = static_cast<uint16_t>((state.cell + 1U) % frames);
+  state.timer = 200;
+  state.cell = static_cast<uint16_t>((state.cell + 1U) % frames);
   return state.cell == 0;
 }
 vec3<int32_t> smoke_attachment_position(model_transform const &owner, std::optional<vec3<int16_t>> const &offset, model_transform const *part) {
   if(!part && !offset) return vec3<int32_t>{owner.translation};
   auto local{part ? (offset ? transform_point(*offset, *part) : vec3<int32_t>{part->translation}) : vec3<int32_t>{*offset}};
   auto result{rotate_vector(local, owner)};
-  for(unsigned int axis{}; axis < 3; ++axis) result[axis] = wrap_long(static_cast<int64_t>(result[axis]) + owner.translation[axis]);
+  for(unsigned int axis{0}; axis < 3; ++axis) result[axis] = wrap_long(static_cast<int64_t>(result[axis]) + owner.translation[axis]);
   return result;
 }
 debris_particle create_detached_weapon(weapon_definition const &definition, weapon_mount const &mount, model_transform const &hardpoint, vec3<int32_t> const &owner_centre) {
@@ -77,7 +80,11 @@ bool advance_explosion(explosion_state &state, explosion_definition const &defin
 }
 
 bool advance_debris(debris_particle &state) {
-  int constexpr spin{1500}, gravity{50}, drag_q10{50}, bounce_q10{450}, minimum_bounce{100};
+  int constexpr spin{1500};
+  int constexpr gravity{50};
+  int constexpr drag_q10{50};
+  int constexpr bounce_q10{450};
+  int constexpr minimum_bounce{100};
   state.angles.x = static_cast<uint16_t>(state.angles.x + spin);
   state.velocity.z = wrap_word(state.velocity.z - gravity);
   for(unsigned int axis{0}; axis != 2; ++axis) state.velocity[axis] = wrap_word(state.velocity[axis] - wrap_word((drag_q10 * state.velocity[axis] + 512) >> 10));
@@ -97,8 +104,13 @@ std::vector<debris_particle> create_debris_burst(debris_definition const &defini
     auto choice{random.bounded(definition.total_weight)};
     size_t index{0};
     // Equality stays in the preceding bucket in the original weighted selector.
-    while(definition.models.at(index).weight < choice) { choice = wrap_word(choice - definition.models[index].weight); ++index; }
-    int16_t constexpr elevation_range{24000}, elevation_origin{-10000}, launch_speed{400};
+    while(definition.models.at(index).weight < choice) {
+      choice = wrap_word(choice - definition.models[index].weight);
+      ++index;
+    }
+    int16_t constexpr elevation_range{24000};
+    int16_t constexpr elevation_origin{-10000};
+    int16_t constexpr launch_speed{400};
     auto const elevation{wrap_word(random.bounded(elevation_range) + elevation_origin)};
     auto const heading{static_cast<uint16_t>(random.next())};
     auto const horizontal{wrap_word((launch_speed * model_cosine(static_cast<uint16_t>(elevation)) + matrix_rounding) >> matrix_fraction_bits)};

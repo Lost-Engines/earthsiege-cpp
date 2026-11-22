@@ -39,7 +39,14 @@ int main(int const argc, char **argv) try {
     auto const mounts{earthsiege::read_weapon_mounts(resources.read("simvol0", "gl/" + name + ".GL"))};
     earthsiege::weapon_assembly assembly{owner.roots.front(), mounts, equipment, definitions, templates};
     std::vector<earthsiege::model_attachment> attachments;
-    for(auto const &part : assembly.parts()) attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});
+    for(auto const &part : assembly.parts()) {
+      attachments.push_back({
+        .body_part{part.body_part},
+        .geometry{part.geometry ? &*part.geometry : nullptr},
+        .cells{part.cell_frames},
+        .textures{weapon_textures}
+      });
+    }
     earthsiege::model_instance instance{std::get<earthsiege::shape_part>(owner.roots.front().content)};
     if(pose[0] >= 0) {
       instance.apply_frame(static_cast<unsigned int>(pose[0]), static_cast<unsigned int>(pose[1]), static_cast<unsigned int>(pose[2]), static_cast<unsigned int>(pose[3]), pose[4]);

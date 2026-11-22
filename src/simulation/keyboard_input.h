@@ -7,10 +7,21 @@
 namespace earthsiege {
 
 enum class held_key : size_t {
-  forward_left, forward, forward_right, left, right,
-  reverse_left, reverse, reverse_right,
-  aim_down, aim_left, aim_right, aim_up,
-  fire, enter, count,
+  forward_left,
+  forward,
+  forward_right,
+  left,
+  right,
+  reverse_left,
+  reverse,
+  reverse_right,
+  aim_down,
+  aim_left,
+  aim_right,
+  aim_up,
+  fire,
+  enter,
+  count,
 };
 
 inline size_t constexpr held_key_count{static_cast<size_t>(held_key::count)};
@@ -37,7 +48,9 @@ public:
   explicit keyboard_input(keyboard_latches initial = {});
   void event(held_key key, bool pressed, bool alt);
   keyboard_sample sample(bool alternate_movement = false);
-  void modifiers(bool alt) { current.alt = alt; }
+  void modifiers(bool alt) {
+    current.alt = alt;
+  }
   void clear();
   keyboard_latches const &state() const;
 };

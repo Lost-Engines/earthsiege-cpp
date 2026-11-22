@@ -33,9 +33,11 @@ void exchange_weapon_display(weapon_state &weapon, weapon_instrument_state &disp
     return;
   }
   if(auto *energy{weapon.energy()}) {
-    if(energy->controls.hud_changes & std::to_underlying(weapon_hud_change::setting))
+    if(energy->controls.hud_changes & std::to_underlying(weapon_hud_change::setting)) {
       display.requested_charge = energy->setting * 1024 / capacitor_maximum;
-    else energy->setting = wrap_word(wrap_long(static_cast<int64_t>(display.requested_charge) * capacitor_maximum) >> 10);
+    } else {
+      energy->setting = wrap_word(wrap_long(static_cast<int64_t>(display.requested_charge) * capacitor_maximum) >> 10);
+    }
     display.value = energy->charge * 1024 / capacitor_maximum;
   } else if(auto *ammunition{weapon.ammunition()}) {
     int32_t const actual{ammunition->rounds * 256};

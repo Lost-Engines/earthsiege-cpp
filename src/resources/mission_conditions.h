@@ -18,36 +18,36 @@ enum class flag_comparison : int16_t {
 };
 
 struct flag_test {
-  int16_t flag{};
+  int16_t flag{0};
   flag_comparison comparison{};
-  int16_t expected{};
+  int16_t expected{0};
 };
 
 struct random_draw {
-  int16_t limit{};
-  int16_t source_result{};
-  int16_t reserved{};
+  int16_t limit{0};
+  int16_t source_result{0};
+  int16_t reserved{0};
 };
 
 struct random_interval {
-  uint16_t first{};
-  uint16_t last{};
-  int16_t reserved{};
+  uint16_t first{0};
+  uint16_t last{0};
+  int16_t reserved{0};
 };
 
 struct random_group {
-  int16_t group{};
-  int16_t reserved{};
-  int16_t limit{};
+  int16_t group{0};
+  int16_t reserved{0};
+  int16_t limit{0};
 };
 
 using condition_rule = std::variant<flag_test, random_draw, random_interval, random_group>;
 
 struct mission_condition {
-  int16_t id{};
-  int16_t parent{};
+  int16_t id{0};
+  int16_t parent{0};
   condition_rule rule;
-  int16_t scratch{};
+  int16_t scratch{0};
   std::optional<int16_t> result;
 };
 

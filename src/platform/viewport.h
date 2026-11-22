@@ -8,8 +8,8 @@ namespace earthsiege {
 
 /// One transform for presentation, mouse input and cursor warps, including HiDPI.
 struct viewport {
-  int x{};
-  int y{};
+  int x{0};
+  int y{0};
   int width{1};
   int height{1};
 

@@ -1,11 +1,18 @@
 #pragma once
-#include "simulation/herc_tactics.h"
 #include "simulation/engagement.h"
+#include "simulation/herc_tactics.h"
 
 namespace earthsiege {
 
-struct herc_travel_state { int32_t search_remaining{0}; std::optional<size_t> threat; };
-struct herc_flee_state { int32_t turn_remaining{0}; bool turn_right{false}; std::optional<size_t> threat; };
+struct herc_travel_state {
+  int32_t search_remaining{0};
+  std::optional<size_t> threat;
+};
+struct herc_flee_state {
+  int32_t turn_remaining{0};
+  bool turn_right{false};
+  std::optional<size_t> threat;
+};
 struct herc_skirt_state {
   std::optional<behavior> previous;
   bool initialized{false};
@@ -13,7 +20,11 @@ struct herc_skirt_state {
   int32_t check_remaining{0};
   int32_t distance{0};
 };
-struct herc_ram_state { int32_t search_remaining{0}; bool bursting{false}; int16_t burst_remaining{0}; };
+struct herc_ram_state {
+  int32_t search_remaining{0};
+  bool bursting{false};
+  int16_t burst_remaining{0};
+};
 
 /// World consumers are invoked in original order; position is read again after
 /// movement preparation or ramming substeps, which can change the actor's heading.

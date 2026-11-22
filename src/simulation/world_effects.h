@@ -1,12 +1,12 @@
 #pragma once
-#include "simulation/sound_request.h"
 #include <functional>
 #include "render/scenery_renderer.h"
 #include "resources/model.h"
-#include "simulation/effect_state.h"
 #include "simulation/deployment.h"
+#include "simulation/effect_state.h"
 #include "simulation/model_instance.h"
 #include "simulation/object_pool.h"
+#include "simulation/sound_request.h"
 
 namespace earthsiege {
 
@@ -45,8 +45,15 @@ struct live_smoke_emitter {
 };
 
 struct live_deployment {
-  deployment_state state;std::optional<size_t> group;model_instance body,opening;
-  live_deployment(deployment_state s,std::optional<size_t> g,shape_part const &a,shape_part const &b):state{s},group{g},body{a},opening{b}{}
+  deployment_state state;
+  std::optional<size_t> group;
+  model_instance body;
+  model_instance opening;
+  live_deployment(deployment_state s, std::optional<size_t> g, shape_part const &a, shape_part const &b)
+    : state{s},
+      group{g},
+      body{a},
+      opening{b} {}
 };
 
 /// Own live effect geometry and state; phase-five collection remains explicit.
@@ -85,14 +92,14 @@ public:
   std::optional<size_t> add_puff(int16_t root, vec3<int32_t> const &position);
   std::optional<size_t> add_detached_weapon(debris_particle state);
   void advance(frame_ratio ratio);
-  bool add_deployment(std::optional<size_t> group,vec3<int32_t> const &destination,random_state &random);
-  void advance_deployments(frame_ratio ratio,std::function<bool(vec3<int32_t> const &)> const &impact,std::function<void(size_t,vec3<int32_t> const &)> const &release,vec3<int32_t> const &listener);
+  bool add_deployment(std::optional<size_t> group, vec3<int32_t> const &destination, random_state &random);
+  void advance_deployments(frame_ratio ratio, std::function<bool(vec3<int32_t> const &)> const &impact, std::function<void(size_t, vec3<int32_t> const &)> const &release, vec3<int32_t> const &listener);
   void collect();
   effect_lighting &lights();
   /// Draw views stay valid until the next simulation update or collection.
   void append_models(std::vector<scene_model> &models);
   std::vector<ground_flash> ground_flashes();
-  ground_flash ground_attachment(size_t shape,vec3<int32_t> &position,uint16_t heading);
+  ground_flash ground_attachment(size_t shape, vec3<int32_t> &position, uint16_t heading);
   object_pool<live_smoke_puff> const &live_smoke() const;
   object_pool<live_smoke_emitter> const &smoke_controllers() const;
   object_pool<live_explosion> const &live_explosions() const;

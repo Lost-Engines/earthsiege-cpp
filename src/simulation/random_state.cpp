@@ -21,7 +21,7 @@ random_state::random_state(int16_t advances) : current{
   .second{55},
 } {
   int const draws{advances == std::numeric_limits<int16_t>::min() ? 32768 : std::max(0, static_cast<int>(advances))};
-  for(int index{}; index < draws; ++index) next();
+  for(int index{0}; index < draws; ++index) next();
 }
 
 random_state::random_state(state const &initial) : current{initial} {
@@ -45,6 +45,8 @@ auto random_state::bounded(int16_t limit)->int16_t {
   return static_cast<int16_t>(value % limit);
 }
 
-auto random_state::snapshot() const->state const & { return current; }
+auto random_state::snapshot() const->state const & {
+  return current;
+}
 
 } // namespace earthsiege

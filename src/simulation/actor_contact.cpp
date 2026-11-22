@@ -11,7 +11,7 @@ int32_t weighted_speed(int32_t const value, int16_t const weight) {
   return wrap_long((static_cast<int64_t>(value) * weight + 512) >> 10);
 }
 
-} // namespace
+} // anonymous namespace
 
 std::optional<actor_contact> find_actor_contact(std::span<contact_actor const> const actors, size_t const moving) {
   if(moving >= actors.size()) throw std::out_of_range{"moving contact actor"};
@@ -21,7 +21,10 @@ std::optional<actor_contact> find_actor_contact(std::span<contact_actor const> c
     if(index == moving || b.waiting || b.radius == 0) continue;
     vec3<int32_t> const delta{wrap_long(static_cast<int64_t>(b.position.x) - a.position.x), wrap_long(static_cast<int64_t>(b.position.y) - a.position.y), wrap_long(static_cast<int64_t>(b.position.z) - a.position.z)};
     if(fast_distance(delta) >= a.radius + b.radius) continue;
-    actor_contact result{.other{index}, .position{0, 0, 0}};
+    actor_contact result{
+      .other{index},
+      .position{0, 0, 0}
+    };
     if(b.herc) {
       auto const other_world{rotate_vector(vec3<int32_t>{0, b.gait_rate, 0}, rotation_transform(b.angles))};
       auto const other_local{inverse_rotate_vector(other_world, rotation_transform(a.angles))};
@@ -34,7 +37,7 @@ std::optional<actor_contact> find_actor_contact(std::span<contact_actor const> c
         result.position = vec3<int32_t>{
           wrap_long(static_cast<int64_t>(a.position.x) + b.position.x) >> 1,
           wrap_long(static_cast<int64_t>(a.position.y) + b.position.y) >> 1,
-          std::min(a.impact_height, b.impact_height),                             // original contact uses the local articulated height without world Z
+          std::min(a.impact_height, b.impact_height),                          // original contact uses the local articulated height without world Z
         };
       }
     }

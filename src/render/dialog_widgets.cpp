@@ -8,7 +8,7 @@ void draw_dialog_button(framebuffer &frame, rectangle const &bounds, button_styl
     .right{bounds.right - 3},
     .bottom{bounds.bottom - 3},
   }, style.fill);
-  for(unsigned int index{}; index < style.borders.size(); ++index) {
+  for(unsigned int index{0}; index < style.borders.size(); ++index) {
     int const inset{static_cast<int>(index)};
     auto const &colour{style.borders[index]};
     int const left{bounds.left + inset};
@@ -26,8 +26,8 @@ void draw_dialog_button(framebuffer &frame, rectangle const &bounds, button_styl
   frame.image(corners.at(style.corners[3]), bounds.right - style.corner_width, bounds.bottom - style.corner_height, true);
 }
 
-std::array<button_style,4> read_button_styles(bytes source){
-  std::array<button_style,4> styles;
+std::array<button_style, 4> read_button_styles(bytes source) {
+  std::array<button_style, 4> styles;
   binary_reader appearance{source, "button styles"};
   if(appearance.integer<uint16_t>() != styles.size()) appearance.fail("unexpected shell style count");
   for(auto &style : styles) {

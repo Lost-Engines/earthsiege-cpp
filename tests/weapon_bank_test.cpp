@@ -16,7 +16,8 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESWBANK2") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
-  unsigned int updates{0}, reactor_updates{0};
+  unsigned int updates{0};
+  unsigned int reactor_updates{0};
   auto const shorts{[&]{
     std::vector<int16_t> values(file.integer<uint16_t>());
     for(auto &value : values) value = file.integer<int16_t>();
@@ -69,10 +70,15 @@ int main(int const argc, char **argv) try {
       if(changed >= 0) {
         auto *energy{bank.at(static_cast<size_t>(changed)).energy()};
         if(!energy) file.fail("charge setting for non-capacitor");
-        if(action == 1 || action == 2) earthsiege::change_capacitor_setting(*energy, action == 2);
-        else if(action == 3) earthsiege::default_capacitor_setting(*energy);
-        else if(action == 4) earthsiege::fast_charge_capacitor(*energy);
-        else file.fail("unknown charge action");
+        if(action == 1 || action == 2) {
+          earthsiege::change_capacitor_setting(*energy, action == 2);
+        } else if(action == 3) {
+          earthsiege::default_capacitor_setting(*energy);
+        } else if(action == 4) {
+          earthsiege::fast_charge_capacitor(*energy);
+        } else {
+          file.fail("unknown charge action");
+        }
       }
       if(disabled >= 0) bank.at(static_cast<size_t>(disabled)).controls().disabled = true;
       auto const result{bank.allocate(selected, budget, ratio, free)};
@@ -83,7 +89,9 @@ int main(int const argc, char **argv) try {
     auto const check_power{[&]{
       auto const &power{actor.power()};
       std::array<int16_t, 5> const actual{power.reserve, power.shields.front, power.shields.rear, power.shields.balance, power.shields.capacity};
-      for(auto const value : actual) if(value != file.integer<int16_t>()) file.fail(name + ": actor power differs");
+      for(auto const value : actual) {
+        if(value != file.integer<int16_t>()) file.fail(name + ": actor power differs");
+      }
     }};
     check_power();
     auto const reactor_steps{file.integer<uint16_t>()};
@@ -93,9 +101,11 @@ int main(int const argc, char **argv) try {
       actor.update_power(ratio, free);
       check_power();
       check(static_cast<int>(steps + step));
-      for(auto const &model : actor.body().weapons().parts()) for(auto const &weapon : bank.slots()) {
-        if(!weapon || weapon->equipment_slot != model.equipment_slot) continue;
-        if(model.disabled != weapon->controls().disabled || (!model.cell_frames.empty() && model.cell_frames.front() != weapon->controls().cell)) file.fail("live weapon model state differs");
+      for(auto const &model : actor.body().weapons().parts()) {
+        for(auto const &weapon : bank.slots()) {
+          if(!weapon || weapon->equipment_slot != model.equipment_slot) continue;
+          if(model.disabled != weapon->controls().disabled || (!model.cell_frames.empty() && model.cell_frames.front() != weapon->controls().cell)) file.fail("live weapon model state differs");
+        }
       }
       ++reactor_updates;
     }

@@ -11,10 +11,13 @@ bool weapon_mount::external() const {
 
 vec3<int16_t> weapon_mount_offset(weapon_mount const &mount, weapon_definition const &definition) {
   vec3<int16_t> offset{mount.position};
-  if(mount.orientation == 0) offset.z = wrap_word(offset.z + definition.side_muzzle_offset.z);
-  else if(mount.orientation == 1) offset.z = wrap_word(offset.z - definition.side_muzzle_offset.z);
-  else if(mount.orientation == 2) offset.x = wrap_word(offset.x - definition.side_muzzle_offset.x);
-  else if(mount.orientation == 3) offset.x = wrap_word(offset.x + definition.side_muzzle_offset.x);
+  if(mount.orientation == 0) {
+    offset.z = wrap_word(offset.z + definition.side_muzzle_offset.z);
+  } else if(mount.orientation == 1) {
+    offset.z = wrap_word(offset.z - definition.side_muzzle_offset.z);
+  } else if(mount.orientation == 2) {
+    offset.x = wrap_word(offset.x - definition.side_muzzle_offset.x);
+  } else if(mount.orientation == 3) offset.x = wrap_word(offset.x + definition.side_muzzle_offset.x);
   return offset;
 }
 

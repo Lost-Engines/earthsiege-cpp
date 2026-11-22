@@ -4,28 +4,37 @@
 
 namespace earthsiege {
 
-enum class control_release_action : uint8_t { none, stop, centre };
-enum class player_axis_pair : uint8_t { movement, aiming, separate };
+enum class control_release_action : uint8_t {
+  none,
+  stop,
+  centre
+};
+enum class player_axis_pair : uint8_t {
+  movement,
+  aiming,
+  separate
+};
 struct player_input {
   vec2<int16_t> movement{};
   vec2<int16_t> aiming{};
   vec2<int16_t> camera{};
-  vec2<int32_t> mouse{};                                                    // original logical cockpit coordinates
+  vec2<int32_t> mouse{};                                                       // original logical cockpit coordinates
   bool left{false};
   bool right{false};
   bool fire{false};
   bool enter{false};
   bool released{false};
-  bool cycle_weapon{false},toggle_radar{false};
-  uint16_t command{0};                                                    // original scan code and modifier bits
-  player_axis_pair camera_source{player_axis_pair::separate};               // original pointers can alias movement or aiming
+  bool cycle_weapon{false};
+  bool toggle_radar{false};
+  uint16_t command{0};                                                         // original scan code and modifier bits
+  player_axis_pair camera_source{player_axis_pair::separate};                  // original pointers can alias movement or aiming
   control_release_action release_action{control_release_action::none};
   vec2<int16_t> const &camera_input() const;
   void camera_input(vec2<int16_t> const &value);
 };
 struct player_input_target {
   vec3<int32_t> position{};
-  vec3<int16_t> offset{};                                                   // original virtual target offset, added in world axes
+  vec3<int16_t> offset{};                                                      // original virtual target offset, added in world axes
   bool dead{false};
 };
 struct player_input_context {
@@ -40,7 +49,12 @@ struct player_input_context {
   vec2<int32_t> viewport_max{320, 200};
   control_release_action release_action{control_release_action::none};
 };
-enum class player_aim_mode : uint8_t { none, manual, centre, target };
+enum class player_aim_mode : uint8_t {
+  none,
+  manual,
+  centre,
+  target
+};
 struct player_input_actions {
   vec2<int16_t> camera{};
   bool zoom{false};

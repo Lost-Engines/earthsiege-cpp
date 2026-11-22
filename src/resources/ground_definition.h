@@ -28,13 +28,19 @@ struct ground_profile {
   int16_t contact_radius{0};
   int16_t target_height{0};
   bool can_retaliate{false};
-  std::array<int16_t, 27> source{};                                          // remaining fields retained until their consumers are ported
+  std::array<int16_t, 27> source{};                                            // remaining fields retained until their consumers are ported
   std::array<int16_t, 7> expansion_sections{};
   bool collision_enabled{true};
   std::vector<collision_part> collision;
 };
 
-struct landing_weapon {int16_t pitch_limit{},yaw_limit{};int32_t range{};vec3<int32_t> muzzle;int16_t refire{};};
+struct landing_weapon {
+  int16_t pitch_limit{0};
+  int16_t yaw_limit{0};
+  int32_t range{0};
+  vec3<int32_t> muzzle;
+  int16_t refire{0};
+};
 /// Side-specific static/animated bases share a texture bank and destroyed models.
 class ground_catalogue {
   std::vector<ground_profile> definitions;
@@ -50,7 +56,9 @@ public:
   ground_profile const &profile(size_t type) const;
   model_part const &model(size_t type, uint8_t side, bool destroyed = false) const;
   std::span<bitmap const> textures() const;
-  auto const &landing_weapons()const{return landing_weapons_;}
+  auto const &landing_weapons() const {
+    return landing_weapons_;
+  }
 };
 
 } // namespace earthsiege

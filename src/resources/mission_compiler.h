@@ -1,8 +1,8 @@
 #pragma once
-#include "edition.h"
 #include <cstdint>
 #include <span>
 #include <vector>
+#include "edition.h"
 #include "resources/mission_conditions.h"
 #include "resources/mission_script.h"
 

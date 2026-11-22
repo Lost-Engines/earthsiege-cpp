@@ -7,11 +7,14 @@
 
 namespace {
 
-template<typename T> vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
+template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
 earthsiege::random_state::state random(earthsiege::binary_reader &file) {
   earthsiege::random_state::state result;
   for(auto &word : result.words) word = file.integer<uint16_t>();
-  result.first = file.integer<uint8_t>(); result.second = file.integer<uint8_t>();
+  result.first = file.integer<uint8_t>();
+  result.second = file.integer<uint8_t>();
   return result;
 }
 
@@ -20,14 +23,21 @@ earthsiege::random_state::state random(earthsiege::binary_reader &file) {
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
-  auto const bytes{earthsiege::read_file(argv[2])}; earthsiege::binary_reader file{bytes};
+  auto const bytes{earthsiege::read_file(argv[2])};
+  earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESFXRN01") file.fail("fixture version");
   std::array<int16_t, 10> header;
   for(auto &value : header) value = file.integer<int16_t>();
-  earthsiege::mission_header const mission{.terrain{static_cast<earthsiege::terrain_kind>(header[0])}, .zone{header[1]}, .world_variant{header[8]}, .palette_variant{header[9]}};
+  earthsiege::mission_header const mission{
+    .terrain{static_cast<earthsiege::terrain_kind>(header[0])},
+    .zone{header[1]},
+    .world_variant{header[8]},
+    .palette_variant{header[9]}
+  };
   auto const bindings{earthsiege::read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))};
-  size_t frames{0}, failed{0};
+  size_t frames{0};
+  size_t failed{0};
   auto const cases{file.integer<uint16_t>()};
   for(size_t row{0}; row != cases; ++row) {
     earthsiege::scenery_world terrain{resources, mission};
@@ -37,16 +47,24 @@ int main(int const argc, char **argv) try {
     earthsiege::random_state rng{random(file)};
     auto const requests{file.integer<uint16_t>()};
     for(size_t index{0}; index != requests; ++index) {
-      auto const kind{file.integer<int32_t>()}, selected{file.integer<int32_t>()};
+      auto const kind{file.integer<int32_t>()};
+      auto const selected{file.integer<int32_t>()};
       auto const position{vector<int32_t>(file)};
-      if(kind == 0) effects.add_explosion(static_cast<int16_t>(selected), position, rng);
-      else effects.add_debris(static_cast<int16_t>(selected), position, rng);
+      if(kind == 0) {
+        effects.add_explosion(static_cast<int16_t>(selected), position, rng);
+      } else {
+        effects.add_debris(static_cast<int16_t>(selected), position, rng);
+      }
     }
     auto const count{file.integer<uint16_t>()};
     for(size_t index{0}; index != count; ++index, ++frames) {
       auto const updates{file.integer<uint8_t>()};
-      for(size_t step{0}; step != updates; ++step) { effects.advance(256); effects.collect(); }
-      auto const position{vector<int32_t>(file)}; auto const angles{vector<uint16_t>(file)};
+      for(size_t step{0}; step != updates; ++step) {
+        effects.advance(256);
+        effects.collect();
+      }
+      auto const position{vector<int32_t>(file)};
+      auto const angles{vector<uint16_t>(file)};
       auto const expected{file.integer<uint32_t>()};
       std::vector<earthsiege::scene_model> models;
       effects.append_models(models);

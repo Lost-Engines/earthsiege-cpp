@@ -1,12 +1,12 @@
 #pragma once
 #include <optional>
 #include <span>
+#include "vectorstorm/vector/vector3.h"
 #include "resources/effects.h"
-#include "resources/weapon_mounts.h"
 #include "resources/model.h"
+#include "resources/weapon_mounts.h"
 #include "simulation/frame_time.h"
 #include "simulation/random_state.h"
-#include "vectorstorm/vector/vector3.h"
 
 namespace earthsiege {
 
@@ -28,14 +28,17 @@ struct debris_particle {
 };
 
 struct smoke_emitter_state {
-  int16_t family{}, remaining{}, timer{}, root{};
+  int16_t family{0};
+  int16_t remaining{0};
+  int16_t timer{0};
+  int16_t root{0};
 };
 struct smoke_puff_state {
-  int16_t root{};
+  int16_t root{0};
   vec3<int32_t> position;
-  vec3<int16_t> velocity;                                                 // original constructor retains the pool slot's words
+  vec3<int16_t> velocity;                                                      // original constructor retains the pool slot's words
   int32_t timer{200};
-  uint16_t cell{};
+  uint16_t cell{0};
 };
 smoke_emitter_state create_smoke_emitter(int16_t family, random_state &visual_random);
 std::optional<int16_t> advance_smoke_emitter(smoke_emitter_state &state, frame_ratio ratio);

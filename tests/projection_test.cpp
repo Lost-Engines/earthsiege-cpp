@@ -31,11 +31,13 @@ auto main(int const argc, char **argv)->int try {
     };
     auto const count{file.integer<uint16_t>()};
     std::vector<earthsiege::camera_vertex> vertices;
-    for(unsigned int index{0}; index != count; ++index) vertices.push_back({
-      .position{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()},
-      .texture{read_pair<int32_t>(file)},
-      .shade{file.integer<uint16_t>()},
-    });
+    for(unsigned int index{0}; index != count; ++index) {
+      vertices.push_back({
+        .position{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()},
+        .texture{read_pair<int32_t>(file)},
+        .shade{file.integer<uint16_t>()},
+      });
+    }
     auto const projected{earthsiege::project_polygon(vertices, view, source)};
     auto const size{file.integer<uint16_t>()};
     if(projected.size() != size) throw std::runtime_error{"clipped vertex count differs in row " + std::to_string(row)};

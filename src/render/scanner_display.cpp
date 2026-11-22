@@ -21,9 +21,12 @@ std::string padded_distance(int32_t const distance) {
 uint8_t contact_colour(scanner_contact const &contact) {
   if(contact.side == 0) return 50;
   switch(contact.kind) {
-    case combat_actor_kind::herc: return 53;
-    case combat_actor_kind::base: return 55;
-    case combat_actor_kind::flyer: return 59;
+  case combat_actor_kind::herc:
+    return 53;
+  case combat_actor_kind::base:
+    return 55;
+  case combat_actor_kind::flyer:
+    return 59;
   }
   return 62;
 }
@@ -33,7 +36,7 @@ void label(framebuffer &target, font const &face, std::string_view const text, r
   int const y{bounds.top + ((bounds.bottom - bounds.top + static_cast<int>(face.height)) >> 1)};
   target.text(face, text, x, y);
 }
-}
+} // anonymous namespace
 scanner_display::scanner_display(resource_store const &resources)
   : background{read_bitmaps(resources.read("simvol0", "dba/RADAR.DBA")).at(0)},
     fonts{read_font(resources.read("simvol0", "dfn/CPBLUE.DFN")),
@@ -47,11 +50,12 @@ void scanner_display::draw(framebuffer &target, rectangle const &bounds, scanner
   scoped_framebuffer_clip clip{target, nullptr};
   int32_t const scale{state.range / 21};
   if(scale == 0) throw std::invalid_argument{"scanner range is too small"};
-  int const x{bounds.left}, y{bounds.top};
+  int const x{bounds.left};
+  int const y{bounds.top};
   target.image(background, x, y, true);
   label(target, fonts[state.radar_active ? 1 : 2], activity_labels[state.radar_active ? 0 : 1], {x + 1, y + 2, x + 15, y + 7}, 2);
   std::optional<vec2<int32_t>> selected;
-  int32_t selected_distance{};
+  int32_t selected_distance{0};
   for(auto const &contact : state.contacts) {
     if(!contact.active) continue;
     auto position{contact.position};
@@ -69,7 +73,10 @@ void scanner_display::draw(framebuffer &target, rectangle const &bounds, scanner
     vec2<int32_t> const point{x + 34 + project_component(distance, model_cosine(angle)) / scale,
                               y + 22 + project_component(distance, model_cosine(static_cast<uint16_t>(angle - angle_quarter_turn))) / scale};
     target.pixel(point.x, point.y, contact_colour(contact));
-    if(contact.selected) { selected = point; selected_distance = distance < 0 ? -distance : distance; }
+    if(contact.selected) {
+      selected = point;
+      selected_distance = distance < 0 ? -distance : distance;
+    }
   }
   if(selected) {
     target.fill({selected->x - 2, selected->y - 2, selected->x + 2, selected->y - 2}, 59);

@@ -71,22 +71,22 @@ uint8_t light_intensity(std::span<light const> const lights, vec3<int32_t> const
       break;
     case light_kind::positional:
       {
-        vec3<int32_t> delta;
-        for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(source.position[axis]) - point[axis]);
-        auto const distance{fast_distance(delta)};
-        auto const facing{surface == lighting_surface::unoriented ? 1 : dot(delta)};
-        if(facing <= 0) break;
-        auto const denominator{wrap_long(static_cast<int64_t>(source.attenuation) + distance)};
-        if(distance == -1 || denominator == 0) throw std::domain_error{"positional light has zero attenuation denominator"};
-        int32_t const incidence{surface == lighting_surface::unoriented ? model_normal_one - 1 : facing / (distance + 1)};
-        auto const attenuation{wrap_long(static_cast<int64_t>(source.scale) * incidence) / denominator};
-        contribution = wrap_long(static_cast<int64_t>(source.intensity) * attenuation) >> 11;
-      }
+      vec3<int32_t> delta;
+      for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(source.position[axis]) - point[axis]);
+      auto const distance{fast_distance(delta)};
+      auto const facing{surface == lighting_surface::unoriented ? 1 : dot(delta)};
+      if(facing <= 0) break;
+      auto const denominator{wrap_long(static_cast<int64_t>(source.attenuation) + distance)};
+      if(distance == -1 || denominator == 0) throw std::domain_error{"positional light has zero attenuation denominator"};
+      int32_t const incidence{surface == lighting_surface::unoriented ? model_normal_one - 1 : facing / (distance + 1)};
+      auto const attenuation{wrap_long(static_cast<int64_t>(source.scale) * incidence) / denominator};
+      contribution = wrap_long(static_cast<int64_t>(source.intensity) * attenuation) >> 11;
+    }
       break;
     }
     total = wrap_long(static_cast<int64_t>(total) + contribution);
   }
-  return static_cast<uint8_t>(std::min(255, total));                               // native code has no lower clamp
+  return static_cast<uint8_t>(std::min(255, total));                           // native code has no lower clamp
 }
 
 } // namespace earthsiege

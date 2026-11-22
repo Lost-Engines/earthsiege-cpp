@@ -11,18 +11,18 @@ auto main(int argc, char *argv[])->int try {
   if(argc != 3) throw std::runtime_error{"expected assets and artwork fixture paths"};
   earthsiege::resource_store const store{argv[1]};
   std::ifstream fixture{argv[2]};
-  char kind{};
+  char kind{0};
   std::string volume;
   std::string name;
-  unsigned int index{};
-  unsigned int width{};
-  unsigned int height{};
-  uint32_t expected_crc{};
-  unsigned int checked{};
+  unsigned int index{0};
+  unsigned int width{0};
+  unsigned int height{0};
+  uint32_t expected_crc{0};
+  unsigned int checked{0};
   while(fixture >> kind >> volume >> name >> index >> width >> height >> std::hex >> expected_crc >> std::dec) {
     auto const source{store.read(volume, name)};
     std::vector<uint8_t> pixels;
-    bool valid{};
+    bool valid{false};
     if(kind == 'B') {
       auto const frames{earthsiege::read_bitmaps(source)};
       auto const &frame{frames.at(index)};
@@ -32,7 +32,7 @@ auto main(int argc, char *argv[])->int try {
       auto const palette{earthsiege::read_palette(source)};
       valid = palette.colours.size() == width && palette.shade_ramps.size() == height;
       for(auto const colour : palette.colours) {
-        for(unsigned int byte{}; byte < 4; ++byte) pixels.push_back(static_cast<uint8_t>(colour >> (byte * 8)));
+        for(unsigned int byte{0}; byte < 4; ++byte) pixels.push_back(static_cast<uint8_t>(colour >> (byte * 8)));
       }
     } else if(kind == 'F') {
       auto const font{earthsiege::read_font(source)};

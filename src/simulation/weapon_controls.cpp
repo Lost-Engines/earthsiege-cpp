@@ -21,7 +21,7 @@ int16_t priority(weapon_power_slot const &slot) {
   return slot.energy ? (slot.energy->fast ? 10000 : slot.energy->setting) : 0;
 }
 
-} // namespace
+} // anonymous namespace
 
 bool weapon_in_range(weapon_definition const &definition, int32_t const distance) {
   return definition.minimum_range < distance && distance < definition.range;
@@ -145,7 +145,9 @@ int16_t allocate_weapon_power(std::span<weapon_power_slot const> const slots, in
     auto const &slot{slots[next]};
     if(slot.energy) {
       budget = slot.elf ? advance_elf(*slot.energy, *slot.elf, inhibited, budget, ratio) : charge_capacitor(*slot.energy, inhibited, budget, ratio, slot.half_charge_rate);
-    } else advance_weapon_controls(*slot.ordinary, ratio);
+    } else {
+      advance_weapon_controls(*slot.ordinary, ratio);
+    }
     if(after_update) after_update(next);
     if(slot.energy && slot.energy->fast) inhibited = true;
   }

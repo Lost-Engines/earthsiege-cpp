@@ -19,7 +19,8 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESMIXED1") file.fail("fixture version");
   auto const worlds{file.integer<uint16_t>()};
-  unsigned int failed{0}, total{0};
+  unsigned int failed{0};
+  unsigned int total{0};
   for(unsigned int world_index{0}; world_index != worlds; ++world_index) {
     auto const demo{file.cstring()};
     auto const tape{earthsiege::read_input_tape(earthsiege::read_file(resources.root() / "TAPES" / (demo + ".TAP")))};
@@ -37,7 +38,7 @@ int main(int const argc, char **argv) try {
     auto const actor_count{file.integer<uint16_t>()};
     if(actor_count != actors.size()) file.fail("roster actor count differs");
     for(unsigned int actor{0}; actor != actor_count; ++actor) {
-      file.integer<uint16_t>();                                               // chassis already selects its original resources through the roster
+      file.integer<uint16_t>();                                                // chassis already selects its original resources through the roster
       if(actors[actor].native_class != file.integer<int16_t>()) file.fail("roster class differs");
       vec3<int32_t> const position{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
       vec3<uint16_t> const angles{file.integer<uint16_t>(), file.integer<uint16_t>(), file.integer<uint16_t>()};

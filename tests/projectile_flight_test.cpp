@@ -18,13 +18,15 @@ earthsiege::projectile_flight read_state(earthsiege::binary_reader &file) {
   earthsiege::projectile_flight state;
   state.position = {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
   state.angles = {file.integer<uint16_t>(), file.integer<uint16_t>(), file.integer<uint16_t>()};
-  state.speed = file.integer<int16_t>(); state.age = file.integer<int16_t>(); state.animation_remaining = file.integer<int16_t>();
+  state.speed = file.integer<int16_t>();
+  state.age = file.integer<int16_t>();
+  state.animation_remaining = file.integer<int16_t>();
   auto const cells{shorts(file)};
   for(auto const cell : cells) state.cells.push_back(static_cast<uint16_t>(cell));
   return state;
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
@@ -59,7 +61,8 @@ int main(int const argc, char **argv) try {
     std::vector<uint16_t> cell_counts;
     for(auto const n : counts) cell_counts.push_back(static_cast<uint16_t>(n));
     auto state{read_state(file)};
-    state.kind = kind; state.subtype = subtype;
+    state.kind = kind;
+    state.subtype = subtype;
     state.target_present = kind == earthsiege::projectile_kind::rocket && mode != "none";
     earthsiege::projectile_guidance input;
     auto const steps{file.integer<uint16_t>()};

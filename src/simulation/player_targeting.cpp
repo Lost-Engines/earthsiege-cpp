@@ -10,8 +10,8 @@ bool detectable_from_cockpit(cockpit_observer const &observer, cockpit_target co
   auto const distance{fast_distance(delta)};
   return (target.seen && distance < observer.visible_range) || (target.known && distance < observer.contact_range);
 }
-bool can_target_from_cockpit(cockpit_observer const &observer,cockpit_target const &target){
-  if(!detectable_from_cockpit(observer,target))return false;
+bool can_target_from_cockpit(cockpit_observer const &observer, cockpit_target const &target) {
+  if(!detectable_from_cockpit(observer, target)) return false;
   auto const error{wrap_word(bearing_angle(observer.position, target.position) - observer.heading + observer.torso)};
   return error >= -8999 && error <= 8999;
 }

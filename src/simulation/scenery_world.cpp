@@ -18,7 +18,7 @@ scenery_world::scenery_world(resource_store const &resources, mission_header con
   if(metadata_data.size() != terrain_data.roots.size()) throw std::runtime_error{"terrain metadata does not match shape count"};
   auto const filename{"dat/ZONE" + std::to_string(header.zone) + ".DAT"};
   /// The original mounted-volume search visits SIMVOL0 before ZONES
-  auto const volume{resources.contains("simvol0",filename) ? "simvol0" : "zones"};
+  auto const volume{resources.contains("simvol0", filename) ? "simvol0" : "zones"};
   auto const zone{read_zone(resources.read(volume, filename))};
   instances.reserve(zone.placements.size());
   collisions.reserve(zone.placements.size());
@@ -34,7 +34,11 @@ scenery_world::scenery_world(resource_store const &resources, mission_header con
       .model{model_instance{shape}},
       .metadata{metadata.used_by_instance() ? &metadata : nullptr},
     });
-    collisions.push_back(scenery_collider{.field{shape.collision ? &*shape.collision : nullptr}, .placement{placement}, .radius{root.header.radius}});
+    collisions.push_back(scenery_collider{
+      .field{shape.collision ? &*shape.collision : nullptr},
+      .placement{placement},
+      .radius{root.header.radius}
+    });
   }
 }
 

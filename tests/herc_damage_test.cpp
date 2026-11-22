@@ -9,7 +9,9 @@
 
 namespace {
 
-vec3<int32_t> point(earthsiege::binary_reader &file) { return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()}; }
+vec3<int32_t> point(earthsiege::binary_reader &file) {
+  return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
+}
 std::vector<int16_t> shorts(earthsiege::binary_reader &file) {
   std::vector<int16_t> result(file.integer<uint16_t>());
   for(auto &v : result) v = file.integer<int16_t>();
@@ -27,12 +29,16 @@ state read_state(earthsiege::binary_reader &file) {
   value.damage.consequences = {file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0};
   value.impacts = {file.integer<uint8_t>() != 0, file.integer<uint8_t>() != 0, file.integer<int16_t>(), file.integer<int32_t>()};
   for(auto &v : value.random.words) v = file.integer<uint16_t>();
-  value.random.first = file.integer<uint8_t>(); value.random.second = file.integer<uint8_t>();
-  value.damage.internal = shorts(file); value.damage.armour = shorts(file); value.damage.present = shorts(file); value.damage.cells = shorts(file);
+  value.random.first = file.integer<uint8_t>();
+  value.random.second = file.integer<uint8_t>();
+  value.damage.internal = shorts(file);
+  value.damage.armour = shorts(file);
+  value.damage.present = shorts(file);
+  value.damage.cells = shorts(file);
   return value;
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
@@ -42,13 +48,17 @@ int main(int const argc, char **argv) try {
   auto const explosions{earthsiege::read_explosions(resources.read("simvol0", "dat/EXPLOS.DAT"))};
   auto const debris{earthsiege::read_debris(resources.read("simvol0", "dat/DEBRIS.DAT"))};
   auto const effects{earthsiege::read_model(resources.read("simvol0", "dts/EXPLOS.DTS"))};
-  auto const bytes{earthsiege::read_file(argv[2])}; earthsiege::binary_reader file{bytes};
+  auto const bytes{earthsiege::read_file(argv[2])};
+  earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESHCOM01") file.fail("fixture version");
   auto const chassis{file.integer<uint16_t>()};
-  unsigned int total{0}, hits{0}, event_count{0};
+  unsigned int total{0};
+  unsigned int hits{0};
+  unsigned int event_count{0};
   for(unsigned int field{0}; field != chassis; ++field) {
-    auto const name{file.cstring()}; auto const equipment{shorts(file)};
+    auto const name{file.cstring()};
+    auto const equipment{shorts(file)};
     auto const definition{earthsiege::read_herc_definition(resources, name)};
     earthsiege::impact_payload payload;
     for(auto &v : payload.shield_effects) v = file.integer<int16_t>();
@@ -57,21 +67,37 @@ int main(int const argc, char **argv) try {
     auto const count{file.integer<uint16_t>()};
     for(unsigned int row{0}; row != count; ++row) {
       auto const label{name + '/' + std::to_string(row)};
-      auto const origin{point(file)}; auto const heading{file.integer<uint16_t>()};
+      auto const origin{point(file)};
+      auto const heading{file.integer<uint16_t>()};
       earthsiege::impact_request request;
-      request.transform = earthsiege::rotation_transform({0, 0, heading}); request.transform.translation = origin;
-      request.reach = file.integer<int32_t>(); request.radius = file.integer<int16_t>(); request.damage = payload;
-      request.damage.armour = file.integer<int16_t>(); request.damage.shield = file.integer<int16_t>(); request.damage.splash_q10 = file.integer<int16_t>();
+      request.transform = earthsiege::rotation_transform({0, 0, heading});
+      request.transform.translation = origin;
+      request.reach = file.integer<int32_t>();
+      request.radius = file.integer<int16_t>();
+      request.damage = payload;
+      request.damage.armour = file.integer<int16_t>();
+      request.damage.shield = file.integer<int16_t>();
+      request.damage.splash_q10 = file.integer<int16_t>();
       auto const signature{file.integer<int16_t>()};
       if(signature != 5) request.damage.missile_subtype = static_cast<uint8_t>(signature);
       earthsiege::impact_conditions conditions;
-      conditions.player = file.integer<uint8_t>() != 0; conditions.attacker_side = file.integer<uint8_t>(); conditions.difficulty = file.integer<int16_t>(); conditions.difficulty_override = file.integer<uint8_t>() != 0; conditions.side = file.integer<uint8_t>(); conditions.invulnerable = file.integer<uint8_t>() != 0;
-      auto const initial{read_state(file)}; auto const expected{read_state(file)};
+      conditions.player = file.integer<uint8_t>() != 0;
+      conditions.attacker_side = file.integer<uint8_t>();
+      conditions.difficulty = file.integer<int16_t>();
+      conditions.difficulty_override = file.integer<uint8_t>() != 0;
+      conditions.side = file.integer<uint8_t>();
+      conditions.invulnerable = file.integer<uint8_t>() != 0;
+      auto const initial{read_state(file)};
+      auto const expected{read_state(file)};
       auto const expected_distance{file.integer<int32_t>()};
       std::vector<std::vector<int32_t>> expected_events(file.integer<uint16_t>());
-      for(auto &event : expected_events) { event.resize(file.integer<uint8_t>()); for(auto &v : event) v = file.integer<int32_t>(); }
+      for(auto &event : expected_events) {
+        event.resize(file.integer<uint8_t>());
+        for(auto &v : event) v = file.integer<int32_t>();
+      }
       earthsiege::herc_actor actor{definition, weapons, templates, equipment, {0, 10000, 0}, {0, 0, 0}};
-      actor.power().shields = initial.shields; actor.impacts() = initial.impacts;
+      actor.power().shields = initial.shields;
+      actor.impacts() = initial.impacts;
       auto const check_damage{[&](earthsiege::damage_state const &target){
         auto const &actual{actor.damage()};
         if(actual.internal != target.internal) file.fail(label + " internal damage");
@@ -94,25 +120,37 @@ int main(int const argc, char **argv) try {
         events.push_back({2, group, position.x, position.y, position.z});
         earthsiege::create_debris_burst(debris.at(static_cast<size_t>(group)), position, rng);
       };
-      sinks.shield_warning = [&](){ events.push_back({3}); };
-      sinks.cockpit_damage = [&](size_t const section){ events.push_back({4, static_cast<int32_t>(section)}); };
-      sinks.attached_smoke = [&](int16_t const part, vec3<int16_t> const &position){ events.push_back({5, part, position.x, position.y, position.z}); };
-      sinks.body_damage = [&](size_t const section, int16_t const amount){ events.push_back({0, amount, static_cast<int32_t>(section)}); };
-      sinks.weapon_ejected = [&](size_t const slot){ events.push_back({6, definition.mounts.at(slot).equipment_slot}); };
-      sinks.salvage = [&](int16_t const id, int16_t const quality){ events.push_back({7, id, quality}); };
+      sinks.shield_warning = [&]{events.push_back({3});};
+      sinks.cockpit_damage = [&](size_t const section){events.push_back({4, static_cast<int32_t>(section)});};
+      sinks.attached_smoke = [&](int16_t const part, vec3<int16_t> const &position){events.push_back({5, part, position.x, position.y, position.z});};
+      sinks.body_damage = [&](size_t const section, int16_t const amount){events.push_back({0, amount, static_cast<int32_t>(section)});};
+      sinks.weapon_ejected = [&](size_t const slot){events.push_back({6, definition.mounts.at(slot).equipment_slot});};
+      sinks.salvage = [&](int16_t const id, int16_t const quality){events.push_back({7, id, quality});};
       auto const result{actor.receive_impact(request, conditions, random, sinks)};
       if((result ? result->distance : 0) != expected_distance) file.fail(label + " interception depth");
       if(events != expected_events) {
-        for(auto const &e : events) { std::cerr << "actual:"; for(auto v : e) std::cerr << ' ' << v; std::cerr << '\n'; }
-        for(auto const &e : expected_events) { std::cerr << "expected:"; for(auto v : e) std::cerr << ' ' << v; std::cerr << '\n'; }
+        for(auto const &e : events) {
+          std::cerr << "actual:";
+          for(auto v : e) std::cerr << ' ' << v;
+          std::cerr << '\n';
+        }
+        for(auto const &e : expected_events) {
+          std::cerr << "expected:";
+          for(auto v : e) std::cerr << ' ' << v;
+          std::cerr << '\n';
+        }
         file.fail(label + " effect/event order");
       }
       check_damage(expected.damage);
-      auto const &shield{actor.power().shields}; auto const &impact{actor.impacts()}; auto const &rng{random.snapshot()};
+      auto const &shield{actor.power().shields};
+      auto const &impact{actor.impacts()};
+      auto const &rng{random.snapshot()};
       if(shield.front != expected.shields.front || shield.rear != expected.shields.rear || shield.balance != expected.shields.balance || shield.capacity != expected.shields.capacity) file.fail(label + " shield absorption");
       if(impact.detectable != expected.impacts.detectable || impact.ecm_remaining != expected.impacts.ecm_remaining || impact.shield_warning != expected.impacts.shield_warning || impact.damage_received != expected.impacts.damage_received) file.fail(label + " impact state");
       if(rng.words != expected.random.words || rng.first != expected.random.first || rng.second != expected.random.second) file.fail(label + " final random state");
-      ++total; hits += result.has_value(); event_count += static_cast<unsigned int>(events.size());
+      ++total;
+      hits += result.has_value();
+      event_count += static_cast<unsigned int>(events.size());
     }
   }
   file.require_end();

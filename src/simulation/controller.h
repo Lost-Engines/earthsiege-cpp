@@ -7,19 +7,40 @@
 namespace earthsiege {
 
 enum class behavior : uint8_t {
-  herc_deciding, player, attacking, flanking, facing_off, attacking_base,
-  attacking_flyer, patrolling, travelling, bulldog_travel, search_destroy,
-  sleeping, skirting, guarding, driving_off_enemy, ramming, fleeing, in_limbo,
-  herc_dead, disabled,
-  flyer_deciding, flyer_attacking, flyer_patrolling, flyer_search_destroy,
-  flyer_sleeping, flyer_scouting, flyer_dead,
+  herc_deciding,
+  player,
+  attacking,
+  flanking,
+  facing_off,
+  attacking_base,
+  attacking_flyer,
+  patrolling,
+  travelling,
+  bulldog_travel,
+  search_destroy,
+  sleeping,
+  skirting,
+  guarding,
+  driving_off_enemy,
+  ramming,
+  fleeing,
+  in_limbo,
+  herc_dead,
+  disabled,
+  flyer_deciding,
+  flyer_attacking,
+  flyer_patrolling,
+  flyer_search_destroy,
+  flyer_sleeping,
+  flyer_scouting,
+  flyer_dead,
 };
 
 struct behavior_definition {
   std::string_view name;
   int32_t reconsider_period;
-  uint16_t properties;                                                      // original sixteen Boolean properties, packed in stored order
-  std::optional<int16_t> status;                                             // native HERC HUD status index; flyers have no entry
+  uint16_t properties;                                                         // original sixteen Boolean properties, packed in stored order
+  std::optional<int16_t> status;                                               // native HERC HUD status index; flyers have no entry
   bool holds_countdown() const;
   bool attacking() const;
 };

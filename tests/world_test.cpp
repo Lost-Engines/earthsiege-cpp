@@ -23,7 +23,8 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   require(std::string(magic.begin(), magic.end()) == "ESWORLD1", "world", "fixture version");
   auto const zones{file.integer<uint32_t>()};
-  unsigned int placements{0}, loaded_zones{0};
+  unsigned int placements{0};
+  unsigned int loaded_zones{0};
   for(unsigned int row{0}; row != zones; ++row) {
     auto const name{file.cstring()};
     auto const split{name.find('/')};
@@ -54,7 +55,10 @@ int main(int const argc, char **argv) try {
     bool const shadowed{volume == "zones" && resources.archives().at("simvol0").find(path)};
     if(shadowed) continue;
     auto const zone_number{std::stoi(path.substr(path.find_last_of('/') + 5))};
-    earthsiege::mission_header header{.terrain{static_cast<earthsiege::terrain_kind>(terrain)}, .zone{static_cast<int16_t>(zone_number)}};
+    earthsiege::mission_header header{
+      .terrain{static_cast<earthsiege::terrain_kind>(terrain)},
+      .zone{static_cast<int16_t>(zone_number)}
+    };
     earthsiege::scenery_world world{resources, header};
     require(world.objects().size() == count && world.colliders().size() == count, name, "owned instance count");
     for(size_t index{0}; index != count; ++index) {
@@ -93,7 +97,12 @@ int main(int const argc, char **argv) try {
     for(auto const value : environment.effect_parameters) require(value == file.integer<int16_t>(), name, "effect parameter");
     for(auto const value : environment.model_distance_offsets) require(value == file.integer<int32_t>(), name, "model distance offset");
     for(auto const &value : environment.resource_names) require(value == file.cstring(), name, "resource name");
-    earthsiege::mission_header header{.terrain{static_cast<earthsiege::terrain_kind>(index / 6)}, .zone{-1}, .world_variant{static_cast<int16_t>(index % 2)}, .palette_variant{static_cast<int16_t>((index % 6) / 2)}};
+    earthsiege::mission_header header{
+      .terrain{static_cast<earthsiege::terrain_kind>(index / 6)},
+      .zone{-1},
+      .world_variant{static_cast<int16_t>(index % 2)},
+      .palette_variant{static_cast<int16_t>((index % 6) / 2)}
+    };
     auto const selection{earthsiege::select_world(header)};
     require(selection.environment == static_cast<int>(index) && selection.palette == static_cast<int>(index - index % 2), name, "mission selection");
     earthsiege::scenery_world world{resources, header};

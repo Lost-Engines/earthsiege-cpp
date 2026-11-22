@@ -1,68 +1,104 @@
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 #include "resources/resource_store.h"
 #include "simulation/beam_effect.h"
 #include "simulation/weapon_display.h"
 #include "simulation/weapon_firing.h"
-#include <cstdlib>
-#include <iostream>
-#include <stdexcept>
-using namespace earthsiege;
+using earthsiege::advance_beam_effect;
+using earthsiege::advance_projectile;
+using earthsiege::beam_path;
+using earthsiege::binary_reader;
+using earthsiege::capacitor;
+using earthsiege::discharge_weapon;
+using earthsiege::game_edition;
+using earthsiege::make_beam_effect;
+using earthsiege::projectile_flight;
+using earthsiege::projectile_guidance;
+using earthsiege::projectile_kind;
+using earthsiege::projectile_motions;
+using earthsiege::projectile_result;
+using earthsiege::random_state;
+using earthsiege::read_beam_styles;
+using earthsiege::read_file;
+using earthsiege::read_model;
+using earthsiege::read_weapon_catalogue;
+using earthsiege::resource_store;
+using earthsiege::weapon_bank;
+using earthsiege::weapon_display_name;
+using earthsiege::weapon_mount;
+using earthsiege::weapon_state;
 namespace {
 void require(bool pass, std::string const &label) {
-  if (!pass)
+  if(!pass) {
     throw std::runtime_error{label};
+  }
 }
 template <class T> void eq(binary_reader &r, T actual, std::string const &label) {
   require(actual == r.integer<T>(), label);
 }
-vec3<int32_t> point(binary_reader &r) { return {r.integer<int32_t>(), r.integer<int32_t>(), r.integer<int32_t>()}; }
+vec3<int32_t> point(binary_reader &r) {
+  return {r.integer<int32_t>(), r.integer<int32_t>(), r.integer<int32_t>()};
+}
 random_state::state rng_state(binary_reader &r) {
   random_state::state s;
-  for (auto &v : s.words)
+  for(auto &v : s.words) {
     v = r.integer<uint16_t>();
+  }
   s.first = r.integer<uint8_t>();
   s.second = r.integer<uint8_t>();
   return s;
 }
-} // namespace
+} // anonymous namespace
 int main(int argc, char **argv) try {
-  if (argc != 4)
+  if(argc != 4) {
     return EXIT_FAILURE;
+  }
   resource_store resources{argv[1]};
   auto definitions{read_weapon_catalogue(resources)};
   auto const models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))};
-  weapon_mount mount{.orientation{4}, .equipment_slot{0}};
-  for (int16_t id{}; id < 22; ++id) {
-    std::array equipment{id}, values{int16_t{5}};
+  weapon_mount mount{
+    .orientation{4},
+    .equipment_slot{0}
+  };
+  for(int16_t id{0}; id < 22; ++id) {
+    std::array equipment{id};
+    std::array values{int16_t{5}};
     std::array mounts{mount};
     weapon_bank bank{definitions, models, mounts, equipment, values};
-    if (id == 17) {
+    if(id == 17) {
       require(!bank.slots().front(), "empty slot remains 17");
       continue;
     }
     auto const &w{bank.at(0)};
     // Enemy-only MISSL has no cockpit seeker label in the original table.
     if(id != 16) require(!weapon_display_name(w, definitions).empty(), "weapon instrument name");
-    if (id == 9 || id == 10 || id == 11)
+    if(id == 9 || id == 10 || id == 11) {
       require(w.projectile && definitions.projectiles[*w.projectile].kind == projectile_kind::rocket,
               "missile selector 34");
-    else if (id == 5 || id == 13)
+    } else if(id == 5 || id == 13) {
       require(!w.projectile, "non-projectile selectors");
-    else
+    } else {
       require(w.projectile == static_cast<size_t>(definitions.weapons[id].projectile), "projectile selector");
+    }
   }
   auto weapon_fixture{read_file(argv[2])};
   binary_reader f{weapon_fixture};
   auto m{f.take(8)};
   require(std::string(m.begin(), m.end()) == "ESEXWPN1", "weapon fixture");
   auto count{f.integer<uint16_t>()};
-  for (unsigned i{}; i < count; ++i) {
+  for(unsigned i{0}; i < count; ++i) {
     auto id{f.integer<int16_t>()};
     auto steps{f.integer<uint16_t>()};
     capacitor c;
     c.charge = 961;
     weapon_state state{
-        .definition{id}, .projectile{static_cast<size_t>(definitions.weapons[id].projectile)}, .mechanism{c}, .convergence{}};
-    for (unsigned j{}; j < steps; ++j) {
+        .definition{id},
+      .projectile{static_cast<size_t>(definitions.weapons[id].projectile)},
+      .mechanism{c},
+      .convergence{}
+    };
+    for(unsigned j{0}; j < steps; ++j) {
       auto shots{discharge_weapon(state, definitions, mount, {}, false)};
       eq(f, state.energy()->charge, "original EMP charge");
       eq(f, static_cast<uint8_t>(state.pending_second_shot), "original EMP second-shot latch");
@@ -73,7 +109,7 @@ int main(int argc, char **argv) try {
     }
   }
   auto lifetimes{f.integer<uint16_t>()};
-  for (unsigned i{}; i < lifetimes; ++i) {
+  for(unsigned i{0}; i < lifetimes; ++i) {
     auto expansion{f.integer<uint8_t>()};
     auto ratio{f.integer<int16_t>()};
     auto steps{f.integer<uint16_t>()};
@@ -83,7 +119,7 @@ int main(int argc, char **argv) try {
     projectile_flight flight;
     flight.position = {0, 0, 10000};
     projectile_guidance guidance;
-    for (unsigned j{}; j < steps; ++j) {
+    for(unsigned j{0}; j < steps; ++j) {
       auto result{advance_projectile(flight, motions, 1000, {}, ratio, guidance)};
       eq(f, flight.age, "original bullet age");
       eq(f, static_cast<uint8_t>(result == projectile_result::expired), "original bullet expiry");
@@ -96,7 +132,7 @@ int main(int argc, char **argv) try {
   require(std::string(bm.begin(), bm.end()) == "ESEXBEAM", "beam fixture");
   auto styles{read_beam_styles(resources.read("simvol0", "dat/BEAM.DAT"))};
   auto beams{b.integer<uint16_t>()};
-  for (unsigned i{}; i < beams; ++i) {
+  for(unsigned i{0}; i < beams; ++i) {
     auto type{b.integer<int16_t>()};
     beam_path path{point(b), point(b)};
     auto colour{b.integer<int16_t>()};
@@ -108,14 +144,15 @@ int main(int argc, char **argv) try {
                 rng.snapshot().second == expected.second,
             "beam random draws");
     eq(b, static_cast<uint16_t>(beam.points.size()), "beam vertices");
-    for (auto const &v : beam.points)
+    for(auto const &v : beam.points) {
       require(v == point(b), "original beam vertex " + std::to_string(i));
+    }
     eq(b, static_cast<uint16_t>(beam.faces.size()), "beam faces");
     auto strip{b.integer<uint16_t>()};
     require(strip == (type == 1 || type == 7), "ELF-II strip");
     eq(b, beam.remaining, "original beam lifetime");
     auto steps{b.integer<uint16_t>()};
-    for (unsigned j{}; j < steps; ++j) {
+    for(unsigned j{0}; j < steps; ++j) {
       auto ratio{b.integer<int16_t>()};
       auto done{advance_beam_effect(beam, ratio)};
       eq(b, beam.remaining, "beam remaining");
@@ -126,7 +163,7 @@ int main(int argc, char **argv) try {
   std::cout << "All expansion weapon selectors, " << count << " EMP sequences, " << lifetimes
             << " bullet lifetime traces and " << beams << " original beam geometry/random/lifetime traces agree\n";
   return EXIT_SUCCESS;
-} catch (std::exception const &e) {
+} catch(std::exception const &e) {
   std::cerr << e.what() << '\n';
   return EXIT_FAILURE;
 }

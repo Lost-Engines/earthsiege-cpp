@@ -1,36 +1,36 @@
 #pragma once
-#include "simulation/radio_queue.h"
 #include <map>
-#include "audio/combat_music.h"
 #include <memory>
 #include <vector>
+#include "audio/combat_music.h"
+#include "render/damage_display.h"
+#include "render/full_damage_display.h"
+#include "render/scanner_display.h"
 #include "render/scenery_renderer.h"
+#include "render/tactical_map.h"
 #include "render/target_instruments.h"
 #include "render/waypoint_instruments.h"
-#include "render/damage_display.h"
-#include "render/scanner_display.h"
-#include "render/tactical_map.h"
-#include "render/full_damage_display.h"
+#include "resources/mission_results.h"
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
-#include "resources/mission_results.h"
 #include "simulation/camera.h"
-#include "simulation/mission_activity.h"
-#include "simulation/wingmate_orders.h"
-#include "simulation/mission_objectives.h"
 #include "simulation/development_controls.h"
+#include "simulation/flyer_actor.h"
 #include "simulation/flyer_attack.h"
+#include "simulation/ground_actor.h"
 #include "simulation/herc_actor.h"
+#include "simulation/herc_fire_control.h"
+#include "simulation/herc_orders.h"
+#include "simulation/herc_reactions.h"
+#include "simulation/herc_sensors.h"
+#include "simulation/hit_dispatch.h"
+#include "simulation/mission_activity.h"
+#include "simulation/mission_objectives.h"
 #include "simulation/player_armament.h"
 #include "simulation/player_input.h"
-#include "simulation/herc_orders.h"
-#include "simulation/herc_sensors.h"
-#include "simulation/herc_reactions.h"
-#include "simulation/hit_dispatch.h"
-#include "simulation/herc_fire_control.h"
-#include "simulation/ground_actor.h"
-#include "simulation/flyer_actor.h"
+#include "simulation/radio_queue.h"
 #include "simulation/scenery_world.h"
+#include "simulation/wingmate_orders.h"
 #include "simulation/world_effects.h"
 #include "simulation/world_projectiles.h"
 
@@ -38,7 +38,16 @@ namespace earthsiege {
 
 class resource_store;
 
-enum class combat_notice_kind { attached_smoke, ejected_weapon, salvage, shield_warning, cockpit_damage, friendly_warning, under_attack, mission_event };
+enum class combat_notice_kind {
+  attached_smoke,
+  ejected_weapon,
+  salvage,
+  shield_warning,
+  cockpit_damage,
+  friendly_warning,
+  under_attack,
+  mission_event
+};
 struct combat_notice {
   combat_notice_kind kind;
   size_t actor{0};
@@ -49,7 +58,7 @@ struct combat_notice {
 
 
 struct player_rocket_launch {
-  uint64_t sequence{};
+  uint64_t sequence{0};
   std::optional<size_t> slot;
 };
 
@@ -115,7 +124,7 @@ class mission_session {
     herc_fire_state fire{};
     herc_sensor_state sensors{};
     herc_reaction_state reactions{};
-    std::array<int16_t,3> statistics{};
+    std::array<int16_t, 3> statistics{};
   };
   struct flyer_member {
     std::unique_ptr<flyer_actor> actor;
@@ -134,13 +143,15 @@ class mission_session {
     bool waiting{false};
   };
   mission_header settings;
-  bool falloff_preference{},recorded_playback{},world_frozen{};
+  bool falloff_preference{false};
+  bool recorded_playback{false};
+  bool world_frozen{false};
   development_controls development;
   std::vector<int16_t> deployment_modes;
   std::vector<bool> deployment_started;
   bool activate_group(size_t index);
-  void place_deployed(size_t actor,vec3<int32_t> const &position,std::optional<uint16_t> heading = {});
-  bool blast(projectile_owner const &, vec3<int32_t> const &centre, int16_t radius, int16_t amount);
+  void place_deployed(size_t actor, vec3<int32_t> const &position, std::optional<uint16_t> heading = {});
+  bool blast(projectile_owner const&, vec3<int32_t> const &centre, int16_t radius, int16_t amount);
   int16_t blast_radius(size_t actor) const;
   placement_catalogue layout;
   std::unique_ptr<mission_activity> activity;
@@ -197,28 +208,34 @@ class mission_session {
   random_state visual_random;
   std::vector<sound_request> sound_requests;
   sound_sink sound_player;
-  void emit_sound(sound_request const &event){if(sound_player)sound_player(event);else sound_requests.push_back(event);}
+  void emit_sound(sound_request const &event) {
+    if(sound_player) {
+      sound_player(event);
+    } else {
+      sound_requests.push_back(event);
+    }
+  }
   world_effects effects;
   world_projectiles projectiles;
   player_rocket_launch camera_rocket;
   std::vector<radio_event> radio_events;
-  std::array<bool,80> announced_contacts{};
-  int16_t contact_cooldown{};
-  void notice_contact(size_t observer,size_t target,frame_ratio ratio);
-  std::function<void(radio_event const &)> radio_handler;
+  std::array<bool, 80> announced_contacts{};
+  int16_t contact_cooldown{0};
+  void notice_contact(size_t observer, size_t target, frame_ratio ratio);
+  std::function<void(radio_event const&)> radio_handler;
   void announce_system(uint16_t message);
-  void announce(size_t actor,uint16_t message,bool allow_dead=false);
+  void announce(size_t actor, uint16_t message, bool allow_dead = false);
   std::unique_ptr<player_armament> player_weapons;
   std::vector<vec2<int32_t>> player_fire_line;
-  int32_t player_weapon_range{};
+  int32_t player_weapon_range{0};
   player_input_router input_router;
   std::optional<size_t> displayed_target;
   std::optional<size_t> instrument_target;
   bool advance_frame(player_input &input, frame_ratio ratio, std::function<bool()> const &prepare_player);
   std::vector<combat_notice> frame_notices;
   std::function<void()> cockpit_impact_handler;
-  std::vector<std::pair<int16_t,int16_t>> recovered_weapons;
-  void credit_defeat(size_t attacker,size_t victim);
+  std::vector<std::pair<int16_t, int16_t>> recovered_weapons;
+  void credit_defeat(size_t attacker, size_t victim);
   std::optional<int32_t> impact(projectile_owner const &owner, impact_request const &request);
   void fire_selected(bool pressed);
   void launch(size_t owner, weapon_shot const &shot);
@@ -230,10 +247,10 @@ class mission_session {
 
 public:
   mission_session(resource_store const &resources, mission_script const &script, player_roster const &roster, random_state initial_random = random_state{}, mission_counters initial_counters = {});
-  mission_session(mission_session const &) = delete;
-  mission_session(mission_session &&) = delete;
-  mission_session &operator=(mission_session const &) = delete;
-  mission_session &operator=(mission_session &&) = delete;
+  mission_session(mission_session const&) = delete;
+  mission_session(mission_session&&) = delete;
+  mission_session &operator=(mission_session const&) = delete;
+  mission_session &operator=(mission_session&&) = delete;
   scenery_world const &scenery() const;
   mission_counters const &mission_variables() const;
   mission_activity const &activity_state() const;
@@ -250,16 +267,20 @@ public:
   bool camera_ready() const;
   bool eo_selected() const;
   player_rocket_launch const &latest_player_rocket() const;
-  void bullet_falloff(bool enabled){falloff_preference=enabled;}
-  void playback(bool enabled){recorded_playback=enabled;}
+  void bullet_falloff(bool enabled) {
+    falloff_preference = enabled;
+  }
+  void playback(bool enabled) {
+    recorded_playback = enabled;
+  }
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);
   void cycle_weapon();
   void set_auto_tracking(bool enabled);
   void toggle_weapon_pair();
-  std::optional<player_input_actions> step_player(player_input input, frame_ratio ratio, bool external_control = false, rectangle aiming_viewport = {0, 0, 320, 200}, std::function<bool(player_input &)> const &dispatch_command = {}, std::function<void(player_input_actions const &)> const &camera_controls = {});
+  std::optional<player_input_actions> step_player(player_input input, frame_ratio ratio, bool external_control = false, rectangle aiming_viewport = {0, 0, 320, 200}, std::function<bool(player_input&)> const &dispatch_command = {}, std::function<void(player_input_actions const&)> const &camera_controls = {});
   void update_player_interface();
-  void refresh_target_instruments(bool visible,bool validate=false);
+  void refresh_target_instruments(bool visible, bool validate = false);
   void initialise_weapon_instruments();
   void exchange_weapon_instruments(frame_ratio ratio);
   void weapon_group_control(unsigned int button);
@@ -270,19 +291,29 @@ public:
   int16_t exchange_player_instruments(int16_t requested_throttle, std::optional<bool> shield_to_front = {});
   void clear_player_input();
   bool player_command(uint16_t code);
-  bool development_command(uint16_t code,std::optional<size_t> actor = {});
-  bool recording_paused()const{return world_frozen;}
+  bool development_command(uint16_t code, std::optional<size_t> actor = {});
+  bool recording_paused() const {
+    return world_frozen;
+  }
   wingmate_order_state order_state(size_t actor) const;
   bool transmit_order(uint16_t command);
   bool transmit_order(wingmate_order const &order, std::optional<size_t> recipient);
   std::vector<radio_event> take_radio_events();
-  void on_radio(std::function<void(radio_event const &)> handler){radio_handler=std::move(handler);}
-  void sound_output(sound_sink sink){sound_player=std::move(sink);}
+  void on_radio(std::function<void(radio_event const&)> handler) {
+    radio_handler = std::move(handler);
+  }
+  void sound_output(sound_sink sink) {
+    sound_player = std::move(sink);
+  }
   std::vector<sound_request> take_sounds();
-  music_contacts music_observations()const;
+  music_contacts music_observations() const;
   random_state &interface_random();
-  random_state const &interface_random()const{return visual_random;}
-  void on_cockpit_impact(std::function<void()> handler) { cockpit_impact_handler=std::move(handler); }
+  random_state const &interface_random() const {
+    return visual_random;
+  }
+  void on_cockpit_impact(std::function<void()> handler) {
+    cockpit_impact_handler = std::move(handler);
+  }
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;

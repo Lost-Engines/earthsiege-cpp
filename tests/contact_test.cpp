@@ -20,7 +20,7 @@ void require(bool const okay, std::string const &label) {
   if(!okay) throw std::runtime_error{label + " differs"};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 4) return EXIT_FAILURE;
@@ -78,10 +78,14 @@ int main(int const argc, char **argv) try {
         auto const position{point(scenery_file)};
         auto transform{earthsiege::rotation_transform(vec3<uint16_t>{0, 0, scenery_file.integer<uint16_t>()})};
         transform.translation = position;
-        objects.push_back({.field{&field}, .placement{transform}, .radius{model.header.radius}});
+        objects.push_back({
+          .field{&field},
+          .placement{transform},
+          .radius{model.header.radius}
+        });
       }
       auto const position{point(scenery_file)};
-      scenery_file.integer<int16_t>();                                          // body radius is unused by the original occupancy consumer
+      scenery_file.integer<int16_t>();                                         // body radius is unused by the original occupancy consumer
       auto const expected{scenery_file.integer<int32_t>()};
       require(earthsiege::scenery_contact_height(objects, position) == expected, name + '/' + std::to_string(root) + " contact " + std::to_string(sample));
       ++scenery_cases;

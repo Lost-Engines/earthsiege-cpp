@@ -9,7 +9,10 @@ herc_profile read_herc_profile(bytes const source) {
   auto const retained{file.take(result.source.size())};
   std::ranges::copy(retained, result.source.begin());
   file.require_end();
-  auto const word{[&](size_t const offset){ file.seek(offset); return file.integer<int16_t>(); }};
+  auto const word{[&](size_t const offset){
+    file.seek(offset);
+    return file.integer<int16_t>();
+  }};
   result.movement = {
     .steering_rate{word(0)},
     .reverse_rate{word(2)},
@@ -25,8 +28,14 @@ herc_profile read_herc_profile(bytes const source) {
     .turn_sequence{word(122)},
     .disabled_sequence{word(68)},
   };
-  for(size_t i{};i<5;++i) { result.attachment_types[i]=std::bit_cast<int8_t>(source[112+i]); result.attachment_parts[i]=std::bit_cast<int8_t>(source[117+i]); }
-  for(size_t i{};i<10;++i) { result.footstep_trigger[i]=word(150+i*2); result.footstep_rearm[i]=word(170+i*2); }
+  for(size_t i{0}; i < 5; ++i) {
+    result.attachment_types[i] = std::bit_cast<int8_t>(source[112 + i]);
+    result.attachment_parts[i] = std::bit_cast<int8_t>(source[117 + i]);
+  }
+  for(size_t i{0}; i < 10; ++i) {
+    result.footstep_trigger[i] = word(150 + i * 2);
+    result.footstep_rearm[i] = word(170 + i * 2);
+  }
   result.position_height = word(20);
   result.collision_radius = word(110);
   result.mass_factor = word(76);
@@ -42,8 +51,20 @@ herc_profile read_herc_profile(bytes const source) {
   result.camera_part = word(10);
   result.camera_offset = vec3<int16_t>{0, word(98), word(100)};
   result.camera_focus = vec3<int16_t>{0, word(102), word(104)};
-  result.torso = {.sequence{word(26)}, .rate{word(28)}, .acceleration{word(30)}, .minimum{static_cast<int16_t>(-word(32))}, .maximum{word(32)}};
-  result.elevation = {.sequence{word(34)}, .rate{word(36)}, .acceleration{word(38)}, .minimum{word(42)}, .maximum{word(40)}};
+  result.torso = {
+    .sequence{word(26)},
+    .rate{word(28)},
+    .acceleration{word(30)},
+    .minimum{static_cast<int16_t>(-word(32))},
+    .maximum{word(32)}
+  };
+  result.elevation = {
+    .sequence{word(34)},
+    .rate{word(36)},
+    .acceleration{word(38)},
+    .minimum{word(42)},
+    .maximum{word(40)}
+  };
   auto const texture{word(148)};
   if(texture < 0 || texture > 4) file.fail("unknown texture group");
   result.textures = static_cast<herc_texture_group>(texture);

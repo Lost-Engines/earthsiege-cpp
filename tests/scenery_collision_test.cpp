@@ -29,7 +29,10 @@ int main(int const argc, char **argv) try {
   if(std::string(magic.begin(), magic.end()) != "ESCOLL01") file.fail("fixture version");
   auto const fields{file.integer<uint32_t>()};
   std::map<std::string, earthsiege::model_resource> models;
-  unsigned int heights{0}, segments{0}, rays{0}, hits{0};
+  unsigned int heights{0};
+  unsigned int segments{0};
+  unsigned int rays{0};
+  unsigned int hits{0};
   for(unsigned int row{0}; row != fields; ++row) {
     auto const name{file.cstring()};
     auto const root{file.integer<uint16_t>()};
@@ -69,7 +72,11 @@ int main(int const argc, char **argv) try {
         auto const position{point(file)};
         auto placement{earthsiege::rotation_transform(vec3<uint16_t>{0, 0, file.integer<uint16_t>()})};
         placement.translation = vec3<int32_t>{position};
-        objects.push_back(earthsiege::scenery_collider{.field{&field}, .placement{placement}, .radius{model.header.radius}});
+        objects.push_back(earthsiege::scenery_collider{
+          .field{&field},
+          .placement{placement},
+          .radius{model.header.radius}
+        });
       }
       auto const selected{file.integer<int16_t>()};
       auto const distance{file.integer<int32_t>()};

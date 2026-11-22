@@ -26,7 +26,10 @@ struct movement_damage {
   bool heavy{false};
 };
 
-enum class movement_event { collapse_started, collapsed };
+enum class movement_event {
+  collapse_started,
+  collapsed
+};
 using movement_event_sink = std::function<void(movement_event)>;
 using movement_adjustment = std::function<void(int16_t &, int16_t &)>;
 

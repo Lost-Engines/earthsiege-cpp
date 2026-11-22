@@ -61,7 +61,13 @@ std::vector<projected_vertex> project_polygon(std::span<camera_vertex const> con
         .shade{static_cast<uint16_t>(interpolate(previous->shade, current.shade, numerator, denominator))},
       });
     }
-    if(current_inside) result.push_back({.position{project_point(current.position, view, source)}, .texture{vec2<int32_t>{current.texture}}, .shade{current.shade}});
+    if(current_inside) {
+      result.push_back({
+        .position{project_point(current.position, view, source)},
+        .texture{vec2<int32_t>{current.texture}},
+        .shade{current.shade}
+      });
+    }
     previous = &current;
     previous_inside = current_inside;
   }

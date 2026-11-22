@@ -24,28 +24,47 @@ template<typename T> class object_pool {
   size_t free_count{0};
 
 public:
-  explicit object_pool(size_t const capacity) : slots(capacity), free_head{capacity == 0 ? end : 0}, free_count{capacity} {
+  explicit object_pool(size_t const capacity)
+    : slots(capacity),
+      free_head{capacity == 0 ? end : 0},
+      free_count{capacity} {
     for(size_t i{0}; i < capacity; ++i) slots[i].next = i + 1 < capacity ? i + 1 : end;
   }
   object_pool(object_pool const &) = delete;
   object_pool &operator=(object_pool const &) = delete;
   object_pool(object_pool &&) = delete;
   object_pool &operator=(object_pool &&) = delete;
-  size_t available() const { return free_count; }
-  std::optional<size_t> next_free_slot() const { return free_head == end ? std::nullopt : std::optional<size_t>{free_head}; }
-  size_t size() const { return slots.size() - free_count; }
-  T &at(size_t const index) { return slots.at(index).value.value(); }
-  T const &at(size_t const index) const { return slots.at(index).value.value(); }
-  bool retiring(size_t const index) const { return slots.at(index).retiring; }
+  size_t available() const {
+    return free_count;
+  }
+  std::optional<size_t> next_free_slot() const {
+    return free_head == end ? std::nullopt : std::optional<size_t>{free_head};
+  }
+  size_t size() const {
+    return slots.size() - free_count;
+  }
+  T &at(size_t const index) {
+    return slots.at(index).value.value();
+  }
+  T const &at(size_t const index) const {
+    return slots.at(index).value.value();
+  }
+  bool retiring(size_t const index) const {
+    return slots.at(index).retiring;
+  }
 
   template<typename... Args> std::optional<size_t> emplace(Args &&...args) {
     if(free_head == end) return std::nullopt;
-    auto const index{free_head}; auto &entry{slots[index]};
+    auto const index{free_head};
+    auto &entry{slots[index]};
     entry.value.emplace(std::forward<Args>(args)...);
     free_head = entry.next;
-    entry.next = active_head; entry.previous = end; entry.retiring = false;
+    entry.next = active_head;
+    entry.previous = end;
+    entry.retiring = false;
     if(active_head != end) slots[active_head].previous = index;
-    active_head = index; --free_count;
+    active_head = index;
+    --free_count;
     return index;
   }
 
@@ -53,12 +72,17 @@ public:
   void erase(size_t const index) {
     auto &entry{slots.at(index)};
     if(!entry.value || entry.retiring) throw std::logic_error{"invalid direct pool release"};
-    if(entry.previous == end) active_head = entry.next;
-    else slots[entry.previous].next = entry.next;
+    if(entry.previous == end) {
+      active_head = entry.next;
+    } else {
+      slots[entry.previous].next = entry.next;
+    }
     if(entry.next != end) slots[entry.next].previous = entry.previous;
     entry.value.reset();
-    entry.next = free_head; entry.previous = end;
-    free_head = index; ++free_count;
+    entry.next = free_head;
+    entry.previous = end;
+    free_head = index;
+    ++free_count;
   }
 
   void defer_erase(size_t const index) {
@@ -76,7 +100,9 @@ public:
     }
     pending.clear();
   }
-  void collect() { collect([](size_t, T &){}); }
+  void collect() {
+    collect([](size_t, T &){});
+  }
 
   /// Visitors may queue removal; they must not erase or collect during traversal.
   template<typename Visitor> void for_each(Visitor &&visitor) {
@@ -87,7 +113,10 @@ public:
     auto index{active_head};
     if(index == end) return;
     while(slots[index].next != end) index = slots[index].next;
-    while(index != end) { visitor(index, *slots[index].value); index = slots[index].previous; }
+    while(index != end) {
+      visitor(index, *slots[index].value);
+      index = slots[index].previous;
+    }
   }
   template<typename Visitor> void for_each(Visitor &&visitor) const {
     for(auto index{active_head}; index != end; index = slots[index].next) visitor(index, *slots[index].value);

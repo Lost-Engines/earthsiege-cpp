@@ -22,7 +22,9 @@ public:
   bool contains(std::string_view volume, std::string_view name) const;
   auto read_original(std::string_view volume, std::string_view name) const->bytes;
   std::optional<std::filesystem::path> external(std::string_view name) const;
-  game_edition edition() const { return edition_; }
+  game_edition edition() const {
+    return edition_;
+  }
   auto archives() const->std::map<std::string, archive, std::less<>> const &;
   auto root() const->std::filesystem::path const &;
   static auto locate(std::filesystem::path const &program)->std::filesystem::path;

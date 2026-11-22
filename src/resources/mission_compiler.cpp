@@ -11,10 +11,10 @@ namespace earthsiege {
 namespace {
 
 struct source_selector {
-  int16_t id{};
-  int16_t condition{};
-  int16_t variant{};
-  int16_t reserved{};
+  int16_t id{0};
+  int16_t condition{0};
+  int16_t variant{0};
+  int16_t reserved{0};
 };
 
 template<typename T>
@@ -24,7 +24,7 @@ struct source_record {
 };
 
 struct source_point {
-  int16_t sum{};
+  int16_t sum{0};
   vec3<world_coordinate> position;
 };
 
@@ -32,7 +32,7 @@ template<typename T>
 auto reference(std::vector<source_record<T>> const &records, int16_t id, bool include_templates = false)->int16_t {
   /// Original lookups optionally count unnamed templates when forming an index.
   if(id == -1) return -1;
-  int16_t index{};
+  int16_t index{0};
   for(auto const &record : records) {
     if(record.selector.id == -1) {
       if(include_templates) ++index;
@@ -51,7 +51,7 @@ void update(T &target, T value, T sentinel) {
 
 template<typename T, size_t Count>
 void update(std::array<T, Count> &target, std::array<T, Count> const &source, T sentinel) {
-  for(unsigned int index{}; index < Count; ++index) update(target[index], source[index], sentinel);
+  for(unsigned int index{0}; index < Count; ++index) update(target[index], source[index], sentinel);
 }
 
 void merge(mission_trigger &target, mission_trigger const &source) {
@@ -156,7 +156,7 @@ class mission_compiler {
   }
 
   template<typename T>
-  auto variant(std::vector<source_record<T>> const &records, int16_t group)->T const & {
+  auto variant(std::vector<source_record<T>> const &records, int16_t group)->T const& {
     int16_t const condition{choose_variant(group)};
     for(auto const &record : records) {
       if(record.selector.condition == condition) return record.value;
@@ -169,7 +169,7 @@ class mission_compiler {
     auto const count{file.integer<uint16_t>()};
     if(count > std::numeric_limits<int16_t>::max()) file.fail("source table exceeds signed reference range");
     records.reserve(count);
-    for(unsigned int index{}; index < count; ++index) {
+    for(unsigned int index{0}; index < count; ++index) {
       source_selector selector{
         .id{file.integer<int16_t>()},
         .condition{file.integer<int16_t>()},
@@ -185,20 +185,27 @@ class mission_compiler {
       // Expansion GO 0x2ef70 and related lookups distinguish physical
       // template slots from exported indices. The base compiler does not.
       auto const duplicate{reference(records, selector.id, physical_index || edition == game_edition::expansion)};
-      if(duplicate == -1) records.push_back(std::move(entry));
-      else combine(records.at(static_cast<unsigned int>(duplicate)), entry);
+      if(duplicate == -1) {
+        records.push_back(std::move(entry));
+      } else {
+        combine(records.at(static_cast<unsigned int>(duplicate)), entry);
+      }
     }
   }
 
   template<typename T>
-  static void replace(source_record<T> &target, source_record<T> const &source) { target = source; }
+  static void replace(source_record<T> &target, source_record<T> const &source) {
+    target = source;
+  }
 
   template<typename T>
-  static void overlay(source_record<T> &target, source_record<T> const &source) { merge(target.value, source.value); }
+  static void overlay(source_record<T> &target, source_record<T> const &source) {
+    merge(target.value, source.value);
+  }
 
   void settings() {
     auto const count{file.integer<uint16_t>()};
-    for(unsigned int index{}; index < count; ++index) {
+    for(unsigned int index{0}; index < count; ++index) {
       auto const condition{file.integer<int16_t>()};
       std::array<int16_t, 10> patch{};
       for(auto &value : patch) value = file.integer<int16_t>();
@@ -230,30 +237,33 @@ class mission_compiler {
         if(first < 0 || second < 0) file.fail("point sum refers to an unavailable point");
         auto const &a{points.at(static_cast<unsigned int>(first)).value.position};
         auto const &b{points.at(static_cast<unsigned int>(second)).value.position};
-        auto const add{[](int32_t left, int32_t right){ return std::bit_cast<int32_t>(std::bit_cast<uint32_t>(left) + std::bit_cast<uint32_t>(right)); }};
+        auto const add{[](int32_t left, int32_t right){
+          return std::bit_cast<int32_t>(std::bit_cast<uint32_t>(left) + std::bit_cast<uint32_t>(right));
+        }};
         entry.value.position = vec3<world_coordinate>{add(a.x, b.x), add(a.y, b.y), add(a.z, b.z)};
       }
     }, replace<source_point>);
-    load(headings, true, [this]{ return file.integer<int16_t>(); }, [this](auto &entry){
+    load(headings, true, [this]{return file.integer<int16_t>();}, [this](auto &entry){
       if(entry.selector.variant != -1) entry.value = variant(headings, entry.selector.variant);
     }, replace<int16_t>);
-    load(routes, true, [this]{ return read_routes_record(file); }, [this](auto &entry){
+    load(routes, true, [this]{return read_routes_record(file);}, [this](auto &entry){
       for(auto &point : entry.value.points) point = reference(points, point);
       if(entry.selector.variant != -1) entry.value = variant(routes, entry.selector.variant);
     }, replace<mission_route>);
-    load(areas, false, [this]{ return read_areas_record(file); }, [this](auto &entry){
+    load(areas, false, [this]{return read_areas_record(file);}, [this](auto &entry){
       entry.value.first_point = reference(points, entry.value.first_point);
       if(entry.value.kind == 0) entry.value.second_point_or_radius = reference(points, entry.value.second_point_or_radius);
     }, replace<trigger_area>);
-    load(triggers, false, [this]{ return read_triggers_record(file); }, [this](auto &entry){
+    load(triggers, false, [this]{return read_triggers_record(file);}, [this](auto &entry){
       for(auto &area : entry.value.areas) area = reference(areas, area);
     }, overlay<mission_trigger>);
   }
 
   template<typename T>
   void actor(source_record<T> &entry, std::vector<source_record<T>> const &records) {
-    if(entry.selector.variant != -1) entry.value = variant(records, entry.selector.variant);
-    else {
+    if(entry.selector.variant != -1) {
+      entry.value = variant(records, entry.selector.variant);
+    } else {
       entry.value.position = reference(points, entry.value.position);
       entry.value.heading = reference(headings, entry.value.heading);
       entry.value.trigger_a = reference(triggers, entry.value.trigger_a);
@@ -262,36 +272,53 @@ class mission_compiler {
   }
 
   void actors() {
-    load(hercs, true, [this]{ return read_hercs_record(file); }, [this](auto &entry){ actor(entry, hercs); }, overlay<herc_spawn>, true);
-    load(flyers, true, [this]{ return read_flyers_record(file); }, [this](auto &entry){ actor(entry, flyers); }, overlay<flyer_spawn>, true);
-    load(bases, true, [this]{ return read_bases_record(file); }, [this](auto &entry){ actor(entry, bases); }, overlay<base_spawn>, true);
-    load(groups, false, [this]{ return read_groups_record(file); }, [this](auto &entry){
+    load(hercs, true, [this]{return read_hercs_record(file);}, [this](auto &entry){actor(entry, hercs);}, overlay<herc_spawn>, true);
+    load(flyers, true, [this]{return read_flyers_record(file);}, [this](auto &entry){actor(entry, flyers);}, overlay<flyer_spawn>, true);
+    load(bases, true, [this]{return read_bases_record(file);}, [this](auto &entry){actor(entry, bases);}, overlay<base_spawn>, true);
+    load(groups, false, [this]{return read_groups_record(file);}, [this](auto &entry){
       auto &value{entry.value};
       value.position = reference(points, value.position);
       value.heading = reference(headings, value.heading);
       value.route = reference(routes, value.route);
       value.trigger = reference(triggers, value.trigger);
       switch(value.target_type) {
-        case target_kind::none: break;
-        case target_kind::group: value.target = reference(groups, value.target); break;
-        case target_kind::herc: value.target = reference(hercs, value.target); break;
-        case target_kind::flyer: value.target = reference(flyers, value.target); break;
-        case target_kind::base: value.target = reference(bases, value.target); break;
+      case target_kind::none:
+        break;
+      case target_kind::group:
+        value.target = reference(groups, value.target);
+        break;
+      case target_kind::herc:
+        value.target = reference(hercs, value.target);
+        break;
+      case target_kind::flyer:
+        value.target = reference(flyers, value.target);
+        break;
+      case target_kind::base:
+        value.target = reference(bases, value.target);
+        break;
       }
       for(auto &member : value.members) {
         switch(value.kind) {
-          case actor_kind::herc: member = reference(hercs, member); break;
-          case actor_kind::flyer: member = reference(flyers, member); break;
-          case actor_kind::base: member = reference(bases, member); break;
+        case actor_kind::herc:
+          member = reference(hercs, member);
+          break;
+        case actor_kind::flyer:
+          member = reference(flyers, member);
+          break;
+        case actor_kind::base:
+          member = reference(bases, member);
+          break;
         }
       }
     }, overlay<group_spawn>);
   }
 
 public:
-  mission_compiler(bytes source, std::span<int16_t const> flags, random_state &generator, int16_t campaign_mode, game_edition version) :
+  mission_compiler(bytes source, std::span<int16_t const> flags, random_state &generator, int16_t campaign_mode, game_edition version)
+    :
     file{source, "source mission"},
-    random{generator}, edition{version} {
+    random{generator},
+      edition{version} {
     if(file.integer<uint16_t>() != 5) file.fail("unsupported source mission revision");
     auto const conditions{read_conditions(file)};
     active = evaluate_conditions(conditions, flags, random);

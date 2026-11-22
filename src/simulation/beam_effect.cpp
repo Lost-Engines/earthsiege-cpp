@@ -9,9 +9,15 @@ beam_effect make_beam_effect(int16_t const subtype, beam_path const &path, rando
   std::array<int16_t, 6> constexpr widths{60, 30, 120, 20, 25, 30};
   std::array<uint8_t, 6> constexpr colours{10, 102, 10, 88, 88, 88};
   auto const index{static_cast<size_t>(subtype)};
-  if(!styles.empty() && index>=styles.size()) throw std::out_of_range{"beam style"};
+  if(!styles.empty() && index >= styles.size()) throw std::out_of_range{"beam style"};
   auto const width{styles.empty() ? widths.at(index) : styles[index].width};
-  beam_effect result{.position{vec3<int32_t>{path.start}}, .points{}, .faces{}, .colour{styles.empty() ? colours.at(index) : styles[index].colour}, .remaining{static_cast<int16_t>(edition == game_edition::expansion ? 256 : 0)}};
+  beam_effect result{
+    .position{vec3<int32_t>{path.start}},
+    .points{},
+    .faces{},
+    .colour{styles.empty() ? colours.at(index) : styles[index].colour},
+    .remaining{static_cast<int16_t>(edition == game_edition::expansion ? 256 : 0)}
+  };
   if(subtype == 1 || (edition == game_edition::expansion && subtype == 7)) {
     vec3<int32_t> step;
     for(unsigned int axis{0}; axis != 3; ++axis) step[axis] = wrap_long(static_cast<int64_t>(path.end[axis]) - path.start[axis]);
@@ -25,10 +31,13 @@ beam_effect make_beam_effect(int16_t const subtype, beam_path const &path, rando
     auto centre{vec3<int32_t>{path.start}};
     for(int16_t segment{0}; segment <= segments; ++segment) {
       auto point{segment == segments ? vec3<int32_t>{path.end} : vec3<int32_t>{centre}};
-      if(segment != 0) for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(static_cast<int64_t>(point[axis]) + (random.next() & 127));
+      if(segment != 0) {
+        for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(static_cast<int64_t>(point[axis]) + (random.next() & 127));
+      }
       auto upper{vec3<int32_t>{point}};
       upper.z = wrap_long(static_cast<int64_t>(upper.z) + width);
-      result.points.push_back(upper); result.points.push_back(point);
+      result.points.push_back(upper);
+      result.points.push_back(point);
       if(segment < segments) {
         auto const first{static_cast<uint16_t>(segment * 2)};
         result.faces.push_back({static_cast<uint16_t>(first + 1), first, static_cast<uint16_t>(first + 2), static_cast<uint16_t>(first + 3)});
@@ -36,13 +45,17 @@ beam_effect make_beam_effect(int16_t const subtype, beam_path const &path, rando
       for(unsigned int axis{0}; axis != 3; ++axis) centre[axis] = wrap_long(static_cast<int64_t>(centre[axis]) + step[axis]);
     }
   } else {
-    for(unsigned int const axis : {2U, 0U}) for(auto const *point : {&path.start, &path.end}) for(int const sign : {1, -1}) {
-      auto vertex{vec3<int32_t>{*point}};
-      // Both ribbons end with vertical separation; only the second muzzle
-      // pair is horizontal in the original constructor.
-      auto const endpoint_axis{point == &path.end ? 2U : axis};
-      vertex[endpoint_axis] = wrap_long(static_cast<int64_t>(vertex[endpoint_axis]) + sign * width);
-      result.points.push_back(vertex);
+    for(unsigned int const axis : {2U, 0U}) {
+      for(auto const *point : {&path.start, &path.end}) {
+        for(int const sign : {1, -1}) {
+          auto vertex{vec3<int32_t>{*point}};
+          // Both ribbons end with vertical separation; only the second muzzle
+          // pair is horizontal in the original constructor.
+          auto const endpoint_axis{point == &path.end ? 2U : axis};
+          vertex[endpoint_axis] = wrap_long(static_cast<int64_t>(vertex[endpoint_axis]) + sign * width);
+          result.points.push_back(vertex);
+        }
+      }
     }
     result.faces = {{1, 0, 2, 3}, {5, 4, 6, 7}};
   }

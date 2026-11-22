@@ -17,14 +17,14 @@ void require(bool condition, unsigned int row, char const *field) {
   if(!condition) throw std::runtime_error{"native model math mismatch at case " + std::to_string(row) + ": " + field};
 }
 
-} // namespace
+} // anonymous namespace
 
 auto main(int argc, char **argv)->int try {
   if(argc != 2) return EXIT_FAILURE;
   auto const data{earthsiege::read_file(argv[1])};
   earthsiege::binary_reader file{data};
   unsigned int const count{file.integer<uint32_t>()};
-  for(unsigned int row{}; row < count; ++row) {
+  for(unsigned int row{0}; row < count; ++row) {
     auto const angles{vector<uint16_t>(file)};
     auto result{earthsiege::rotation_transform(angles)};
     for(unsigned int const index : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) {

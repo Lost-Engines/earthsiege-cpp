@@ -21,8 +21,14 @@ int main(int const argc, char **argv) try {
     bool const elevation{file.integer<uint8_t>() != 0};
     auto const ratio{file.integer<int16_t>()};
     auto const input{file.integer<int16_t>()};
-    earthsiege::aiming_state state{.rate{file.integer<int16_t>()}, .angle{file.integer<int16_t>()}};
-    earthsiege::aiming_state const expected{.rate{file.integer<int16_t>()}, .angle{file.integer<int16_t>()}};
+    earthsiege::aiming_state state{
+      .rate{file.integer<int16_t>()},
+      .angle{file.integer<int16_t>()}
+    };
+    earthsiege::aiming_state const expected{
+      .rate{file.integer<int16_t>()},
+      .angle{file.integer<int16_t>()}
+    };
     auto const &profile{profiles.at(name)};
     earthsiege::update_aim(state, elevation ? profile.elevation : profile.torso, input, ratio);
     if(state.rate != expected.rate || state.angle != expected.angle) throw std::runtime_error{"aim controller differs in " + name + " case " + std::to_string(row)};

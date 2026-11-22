@@ -7,7 +7,7 @@
 namespace earthsiege {
 
 struct herc_fire_state {
-  std::optional<size_t> retained_weapon;                                   // ELF keeps firing without a fresh ranking while ready/in range
+  std::optional<size_t> retained_weapon;                                       // ELF keeps firing without a fresh ranking while ready/in range
   bool skip_selection{false};
 };
 struct herc_fire_target {

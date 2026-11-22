@@ -35,7 +35,7 @@ void check(earthsiege::damage_state const &a, earthsiege::damage_state const &b,
   if(a.internal != b.internal || a.armour != b.armour || a.present != b.present || a.cells != b.cells || a.consequences != b.consequences) throw std::runtime_error{label + ": damage state differs"};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
@@ -96,11 +96,17 @@ int main(int const argc, char **argv) try {
         if(consumed != draws.size()) file.fail(label + ": component draw count differs");
         check(actor.damage(), expected, label);
         if(removed.size() != expected_removed.size()) file.fail(label + ": detachments differ");
-        for(size_t i{0}; i != removed.size(); ++i) if(removed[i] != static_cast<size_t>(expected_removed[i])) file.fail(label + ": detachment order differs");
+        for(size_t i{0}; i != removed.size(); ++i) {
+          if(removed[i] != static_cast<size_t>(expected_removed[i])) file.fail(label + ": detachment order differs");
+        }
         if(slots.size() != expected_disabled.size()) file.fail("weapon-slot fixture differs");
-        for(size_t i{0}; i != slots.size(); ++i) if(slots[i] >= 0 && static_cast<int16_t>(actor.damage().present.at(static_cast<size_t>(19 + slots[i])) == 0) != expected_disabled[i]) file.fail(label + ": weapon disable differs");
+        for(size_t i{0}; i != slots.size(); ++i) {
+          if(slots[i] >= 0 && static_cast<int16_t>(actor.damage().present.at(static_cast<size_t>(19 + slots[i])) == 0) != expected_disabled[i]) file.fail(label + ": weapon disable differs");
+        }
         auto const cells{actor.body().model().cell_frames()};
-        for(size_t i{0}; i != cells.size(); ++i) if(cells[i] != static_cast<uint16_t>(expected.cells[i])) file.fail(label + ": visible damage cells differ");
+        for(size_t i{0}; i != cells.size(); ++i) {
+          if(cells[i] != static_cast<uint16_t>(expected.cells[i])) file.fail(label + ": visible damage cells differ");
+        }
         for(auto const &weapon : actor.body().weapons().parts()) {
           if(weapon.weapon == earthsiege::empty_weapon_slot) continue;
           bool const disabled{expected.present.at(earthsiege::weapon_section_first + static_cast<size_t>(weapon.equipment_slot)) == 0};

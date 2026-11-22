@@ -1,6 +1,6 @@
 #include "combat.h"
-#include "resources/resource_store.h"
 #include <utility>
+#include "resources/resource_store.h"
 
 namespace earthsiege {
 namespace {
@@ -13,7 +13,12 @@ damage_component component(binary_reader &file) {
   result.parent = file.integer<int8_t>();
   result.flags = file.integer<uint8_t>();
   auto const count{file.integer<uint16_t>()};
-  for(unsigned int index{0}; index != count; ++index) result.dependents.push_back(damage_dependency{.weight{file.integer<int16_t>()}, .component{file.integer<int16_t>()}});
+  for(unsigned int index{0}; index != count; ++index) {
+    result.dependents.push_back(damage_dependency{
+      .weight{file.integer<int16_t>()},
+      .component{file.integer<int16_t>()}
+    });
+  }
   return result;
 }
 
@@ -21,7 +26,12 @@ collision_section collision(binary_reader &file) {
   collision_section result;
   result.section = file.integer<int16_t>();
   auto const count{file.integer<uint16_t>()};
-  for(unsigned int index{0}; index != count; ++index) result.spheres.push_back(collision_sphere{.centre{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()}, .radius{file.integer<int16_t>()}});
+  for(unsigned int index{0}; index != count; ++index) {
+    result.spheres.push_back(collision_sphere{
+      .centre{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()},
+      .radius{file.integer<int16_t>()}
+    });
+  }
   return result;
 }
 
@@ -87,7 +97,7 @@ weapon_catalogue read_weapon_catalogue(bytes const source, bytes const separate_
     weapon.projectile = file.integer<int16_t>();
     weapon.muzzle_offset = vector(file);
     weapon.side_muzzle_offset = vector(file);
-    weapon.side_muzzle_offset.y = 0;                                            // original loader clears tail word 19
+    weapon.side_muzzle_offset.y = 0;                                           // original loader clears tail word 19
     weapon.refire_delay = file.integer<int16_t>();
     weapon.combat_rating = file.integer<int16_t>();
     weapon.damage_icon = file.integer<int16_t>();

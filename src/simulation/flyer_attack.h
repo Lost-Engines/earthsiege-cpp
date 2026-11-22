@@ -4,7 +4,12 @@
 #include "simulation/weapon_firing.h"
 
 namespace earthsiege {
-enum class flyer_attack_phase : int16_t { departing, approaching, circling, levelling };
+enum class flyer_attack_phase : int16_t {
+  departing,
+  approaching,
+  circling,
+  levelling
+};
 struct flyer_attack_state {
   flyer_attack_phase phase{flyer_attack_phase::departing};
   int16_t requested_speed{0};
@@ -12,7 +17,7 @@ struct flyer_attack_state {
   int16_t refire_timer{0};
   int32_t manoeuvre_timer{0};
   bool firing_window{false};
-  uint8_t contact_state{0};                                                // original actor +0x8c, cleared at the end of the circling phase
+  uint8_t contact_state{0};                                                    // original actor +0x8c, cleared at the end of the circling phase
 };
 struct flyer_attack_target {
   vec3<int32_t> position;
