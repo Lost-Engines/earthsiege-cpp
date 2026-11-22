@@ -1,6 +1,6 @@
 #pragma once
-#include <span>
 #include <functional>
+#include <span>
 #include "resources/combat.h"
 #include "simulation/frame_time.h"
 
@@ -9,7 +9,7 @@ namespace earthsiege {
 inline int16_t constexpr capacitor_maximum{1200};
 inline int16_t constexpr capacitor_setting_step{80};
 inline int16_t constexpr capacitor_default_setting{820};
-inline int16_t constexpr capacitor_initial_charge{961};                         // original rounded Q10 product of 1200 and 820
+inline int16_t constexpr capacitor_initial_charge{961};                        // original rounded Q10 product of 1200 and 820
 inline int16_t constexpr capacitor_charge_per_update{20};
 inline int16_t constexpr capacitor_fast_charge_per_update{60};
 inline int16_t constexpr capacitor_discharge_per_update{5};

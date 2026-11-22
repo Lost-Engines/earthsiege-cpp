@@ -1,6 +1,6 @@
 #pragma once
-#include "shell/hangar_service.h"
 #include "resources/mission_results.h"
+#include "shell/hangar_service.h"
 #include "simulation/random_state.h"
 namespace earthsiege {
 struct campaign_debrief {

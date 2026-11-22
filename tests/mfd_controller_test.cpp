@@ -1,10 +1,16 @@
 #include <cstdlib>
 #include <iostream>
-#include "shell/mfd_controller.h"
 #include "resources/resource_store.h"
+#include "shell/mfd_controller.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::communications_choice;
+  using earthsiege::mfd_controller;
+  using earthsiege::mfd_enabled_buttons;
+  using earthsiege::mfd_page;
+  using earthsiege::mfd_paint;
+  using earthsiege::read_file;
   if(argc != 2) return EXIT_FAILURE;
   auto const source{read_file(argv[1])}; binary_reader file{source};
   auto const magic{file.take(8)};

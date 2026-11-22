@@ -3,16 +3,36 @@
 #include <iostream>
 #include <vector>
 #include "resources/binary_reader.h"
-#include "simulation/herc_orders.h"
 #include "simulation/fixed_math.h"
+#include "simulation/herc_orders.h"
 namespace {
-using namespace earthsiege;
+using earthsiege::behavior;
+using earthsiege::binary_reader;
+using earthsiege::controller_state;
+using earthsiege::enter_behavior;
+using earthsiege::flee_with_herc;
+using earthsiege::herc_combat_position;
+using earthsiege::herc_flee_state;
+using earthsiege::herc_order_callbacks;
+using earthsiege::herc_ram_state;
+using earthsiege::herc_skirt_state;
+using earthsiege::herc_travel_state;
+using earthsiege::movement_request;
+using earthsiege::ram_with_herc;
+using earthsiege::random_state;
+using earthsiege::read_file;
+using earthsiege::skirt_with_herc;
+using earthsiege::target_relationship;
+using earthsiege::target_selection_flags;
+using earthsiege::travel_with_herc;
 random_state::state read_random(binary_reader &file) {
   random_state::state state; for(auto &v : state.words) v = file.integer<uint16_t>();
   state.first = file.integer<uint8_t>(); state.second = file.integer<uint8_t>(); return state;
 }
-std::optional<size_t> target(bool value) { return value ? std::make_optional<size_t>(1) : std::nullopt; }
+std::optional<size_t> target(bool value) {
+  return value ? std::make_optional<size_t>(1) : std::nullopt;
 }
+} // anonymous namespace
 int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};
@@ -63,8 +83,7 @@ int main(int argc, char **argv) try {
       file.fail(label + " auxiliary events");
     }
     if(result != static_cast<bool>(expected_result) || targets[0].selected != final_selected || targets[0].changed != changed || targets[1].attackers != final_count || command != final_command || detectable != final_detectable || own.position != final_position || own.heading != final_heading) file.fail(label + " auxiliary state");
-    if(kind == 0) { if(travel.search_remaining != final_timer || travel.threat != target(file.integer<uint8_t>() != 0)) file.fail(label + " travel state"); }
-    else if(kind == 1) {
+    if(kind == 0) { if(travel.search_remaining != final_timer || travel.threat != target(file.integer<uint8_t>() != 0)) file.fail(label + " travel state"); } else if(kind == 1) {
       bool const choice{file.integer<uint8_t>() != 0}; auto const direction{file.integer<int16_t>()};
       if(flee.turn_remaining != final_timer || flee.turn_right != choice || (actual.front()[2] < 0 ? -1 : 1) != direction) file.fail(label + " flee scratch overlap");
     } else if(kind == 2) {

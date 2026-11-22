@@ -45,6 +45,8 @@ auto random_state::bounded(int16_t limit)->int16_t {
   return static_cast<int16_t>(value % limit);
 }
 
-auto random_state::snapshot() const->state const & { return current; }
+auto random_state::snapshot() const->state const & {
+  return current;
+}
 
 } // namespace earthsiege

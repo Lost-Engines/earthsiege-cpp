@@ -1,9 +1,9 @@
 #pragma once
-#include "simulation/fixed_math.h"
-#include "simulation/model_math.h"
 #include <array>
 #include <optional>
 #include <vector>
+#include "simulation/fixed_math.h"
+#include "simulation/model_math.h"
 
 namespace earthsiege {
 struct positional_audio_state {std::optional<uint8_t> gain;uint16_t pan{32768};};

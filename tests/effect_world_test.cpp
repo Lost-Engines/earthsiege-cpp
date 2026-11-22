@@ -8,7 +8,9 @@
 
 namespace {
 
-template<typename T> vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
+template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
 std::vector<uint16_t> words(earthsiege::binary_reader &file) {
   std::vector<uint16_t> result(file.integer<uint16_t>());
   for(auto &v : result) v = file.integer<uint16_t>();
@@ -27,7 +29,7 @@ template<typename T> std::vector<uint16_t> order(earthsiege::object_pool<T> cons
   return result;
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

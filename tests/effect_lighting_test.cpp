@@ -8,7 +8,9 @@
 namespace {
 
 template<typename T>
-vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
+vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
 
 earthsiege::light light(earthsiege::binary_reader &file) {
   return {.kind{static_cast<earthsiege::light_kind>(file.integer<uint8_t>())}, .intensity{file.integer<int32_t>()}, .position{vector<int32_t>(file)}, .direction{vector<int16_t>(file)}, .attenuation{file.integer<int32_t>()}, .scale{file.integer<int32_t>()}};

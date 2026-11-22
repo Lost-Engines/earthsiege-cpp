@@ -29,6 +29,8 @@ public:
  void change_view(unsigned previous_mode,cockpit_impact_view const &);
  void hit(uint32_t now,cockpit_impact_view const &,random_state &);
  bool update(uint32_t now,cockpit_impact_view const &,random_state &);
- state const &snapshot() const { return current; }
+ state const &snapshot() const {
+   return current;
+ }
 };
-}
+} // namespace earthsiege

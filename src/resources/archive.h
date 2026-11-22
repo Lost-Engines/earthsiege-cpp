@@ -25,8 +25,12 @@ class archive {
 public:
   explicit archive(std::filesystem::path const &path);
   explicit archive(std::vector<uint8_t> data, std::string label);
-  uint32_t usage_mask() const { return usage_; }
-  uint8_t priority() const { return priority_; }
+  uint32_t usage_mask() const {
+    return usage_;
+  }
+  uint8_t priority() const {
+    return priority_;
+  }
   auto entries() const->std::map<std::string, archive_entry, std::less<>> const &;
   auto find(std::string_view name) const->archive_entry const *;
   auto read(archive_entry const &entry) const->bytes;

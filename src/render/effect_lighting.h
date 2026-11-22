@@ -11,7 +11,7 @@ class effect_lighting {
   struct source {
     vec3<int32_t> position;
     int16_t intensity{255};
-    int32_t attenuation{0};                                               // stored in units of 32 world coordinates
+    int32_t attenuation{0};                                                    // stored in units of 32 world coordinates
     int32_t scale{0};
     std::optional<light> rendered;
   };
@@ -37,7 +37,9 @@ public:
   void intensity(size_t slot, int16_t value);
   void attenuation(size_t slot, int32_t scale, int32_t offset);
   std::span<light const> current();
-  std::span<light const * const> registered()const{return active.lights();}
+  std::span<light const * const> registered()const{
+    return active.lights();
+  }
   std::span<light const> select(vec3<int32_t> const &object, int32_t radius);
 };
 

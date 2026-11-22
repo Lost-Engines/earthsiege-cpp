@@ -33,10 +33,16 @@ class shell_animation {
  void restart();
 public:
  explicit shell_animation(presentation_program program,bool repeat=false);
- shell_animation_state const &state()const{return current;}
- std::vector<shell_animation_command> const &commands()const{return output;}
+ shell_animation_state const &state()const{
+   return current;
+ }
+ std::vector<shell_animation_command> const &commands()const{
+   return output;
+ }
  void select_page(uint16_t page);
  void advance(int16_t elapsed,random_state &random,shell_animation_sound *sound=nullptr);
- void mode(uint32_t value){current.mode=value;}
+ void mode(uint32_t value){
+   current.mode = value;
+ }
 };
-}
+} // namespace earthsiege

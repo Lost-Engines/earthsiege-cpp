@@ -31,7 +31,7 @@ auto buttons(host_joystick const *s)->uint8_t {
   }
   return result;
 }
-} // namespace
+} // anonymous namespace
 
 joystick_devices::joystick_devices(joystick_source input) : source{input ? std::move(input) : read_devices} {}
 auto joystick_devices::stick(size_t slot) const->host_joystick const * {

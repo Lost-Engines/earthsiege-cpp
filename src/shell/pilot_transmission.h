@@ -1,6 +1,6 @@
 #pragma once
-#include <optional>
 #include <functional>
+#include <optional>
 #include "resources/portrait_sync.h"
 #include "simulation/random_state.h"
 

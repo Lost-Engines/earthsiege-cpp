@@ -1,12 +1,12 @@
 #pragma once
-#include "simulation/sound_request.h"
 #include <functional>
 #include "render/scenery_renderer.h"
 #include "resources/model.h"
-#include "simulation/effect_state.h"
 #include "simulation/deployment.h"
+#include "simulation/effect_state.h"
 #include "simulation/model_instance.h"
 #include "simulation/object_pool.h"
+#include "simulation/sound_request.h"
 
 namespace earthsiege {
 

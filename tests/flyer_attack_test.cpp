@@ -7,7 +7,26 @@
 #include "simulation/projectile_instance.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::attack_with_flyer;
+using earthsiege::binary_reader;
+using earthsiege::flyer_attack_phase;
+using earthsiege::flyer_attack_state;
+using earthsiege::flyer_attack_target;
+using earthsiege::flyer_motion;
+using earthsiege::projectile_definition;
+using earthsiege::projectile_instance;
+using earthsiege::projectile_kind;
+using earthsiege::projectile_motions;
+using earthsiege::random_state;
+using earthsiege::read_bullet_motions;
+using earthsiege::read_file;
+using earthsiege::read_flyer_definition;
+using earthsiege::read_model;
+using earthsiege::read_rocket_motions;
+using earthsiege::read_weapon_catalogue;
+using earthsiege::resource_store;
+using earthsiege::shot_kind;
+using earthsiege::weapon_shot;
 flyer_motion read_state(binary_reader &file) {
   return {
     {file.integer<int32_t>(),file.integer<int32_t>(),file.integer<int32_t>()},
@@ -24,7 +43,7 @@ void compare(flyer_motion const &a, flyer_motion const &e, std::string const &la
     throw std::runtime_error{label + " flight state"};
   }
 }
-}
+} // anonymous namespace
 namespace {
 flyer_attack_state read_attack(binary_reader &file) {
   return {static_cast<flyer_attack_phase>(file.integer<int16_t>()),file.integer<int16_t>(),file.integer<int16_t>(),file.integer<int16_t>(),file.integer<int32_t>(),file.integer<uint8_t>() != 0,file.integer<uint8_t>()};
@@ -64,7 +83,7 @@ int main(int const argc, char **argv) try {
   auto const rocket{std::ranges::find_if(weapons.projectiles,[](projectile_definition const &p){ return p.kind == projectile_kind::rocket && p.subtype == 0; })};
   auto const launches{file.integer<uint16_t>()};
   for(unsigned int i{0}; i != launches; ++i) {
-    weapon_shot shot; shot.kind = shot_kind::rocket; shot.projectile = static_cast<size_t>(rocket-weapons.projectiles.begin()); shot.inherited_speed = file.integer<int16_t>(); auto const expected{file.integer<int16_t>()};
+    weapon_shot shot; shot.kind = shot_kind::rocket; shot.projectile = static_cast<size_t>(rocket - weapons.projectiles.begin()); shot.inherited_speed = file.integer<int16_t>(); auto const expected{file.integer<int16_t>()};
     projectile_instance projectile{shot,weapons,motions,bullets,rockets}; if(projectile.flight().speed != expected) file.fail("inherited rocket speed");
   }
   file.require_end(); if(paths != 192 || steps != 3072 || shots != 78 || launches != 6) file.fail("flyer attack coverage");

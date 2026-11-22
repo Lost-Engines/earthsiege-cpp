@@ -44,7 +44,7 @@ void flank(herc_attack_state &state, herc_target_geometry &geometry, herc_attack
   }
   callbacks.move(herc_range_movement(geometry, state.last_direction));
 }
-}
+} // anonymous namespace
 
 herc_target_geometry relative_herc_target(herc_combat_position const &actor, herc_combat_position const &target) {
   herc_target_geometry result;
@@ -77,8 +77,9 @@ bool attack_with_herc(behavior const type, herc_attack_state &state, int16_t &co
         geometry.direction = 32768 - geometry.bearing_magnitude < 4000 ? -1 : 1;
         auto const side{(geometry.bearing_error < 0) == (geometry.bearing_magnitude > 16384) ? 16384 : -16384};
         auto point{offset_point(input.target.position, 18000, static_cast<uint16_t>(input.target.heading + side))};
-        if(geometry.direction == -1)
+        if(geometry.direction == -1) {
           for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(2 * static_cast<int64_t>(input.actor.position[axis]) - point[axis]);
+        }
         geometry.bearing_error = wrap_word(bearing_angle(input.actor.position, point) - input.actor.heading);
       } else geometry.direction = geometry.bearing_magnitude < 8192 ? 0 : -1;
       callbacks.move(herc_range_movement(geometry, state.last_direction));

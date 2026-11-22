@@ -14,7 +14,7 @@ struct communications_display_state {
   size_t command() const;
 };
 class communications_display {
-  std::array<font, 4> fonts;                                                // green, yellow, red, disabled
+  std::array<font, 4> fonts;                                                   // green, yellow, red, disabled
   std::vector<interface_string> commands;
 public:
   explicit communications_display(resource_store const &resources);

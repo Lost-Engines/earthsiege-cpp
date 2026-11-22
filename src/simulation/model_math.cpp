@@ -59,7 +59,7 @@ uint16_t direction_angle(int32_t const x, int32_t const y) {
   /// Original octant lookup, including rounding without carry into the high word
   auto const ax{static_cast<uint64_t>(std::abs(static_cast<int64_t>(x)))};
   auto const ay{static_cast<uint64_t>(std::abs(static_cast<int64_t>(y)))};
-  auto const ratio_angle{[](uint64_t const small, uint64_t const large) {
+  auto const ratio_angle{[](uint64_t const small, uint64_t const large){
     if(small == 0) return 0;
     auto const product{small * 512};
     auto const rounded{(product & ~uint64_t{0xffffffff}) | static_cast<uint32_t>(product + (large >> 1))};

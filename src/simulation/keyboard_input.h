@@ -37,7 +37,9 @@ public:
   explicit keyboard_input(keyboard_latches initial = {});
   void event(held_key key, bool pressed, bool alt);
   keyboard_sample sample(bool alternate_movement = false);
-  void modifiers(bool alt) { current.alt = alt; }
+  void modifiers(bool alt) {
+    current.alt = alt;
+  }
   void clear();
   keyboard_latches const &state() const;
 };

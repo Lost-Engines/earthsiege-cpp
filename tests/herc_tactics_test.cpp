@@ -6,7 +6,16 @@
 #include "simulation/herc_tactics.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::attack_with_herc;
+using earthsiege::behavior;
+using earthsiege::binary_reader;
+using earthsiege::describe;
+using earthsiege::herc_attack_inputs;
+using earthsiege::herc_attack_state;
+using earthsiege::herc_target_geometry;
+using earthsiege::movement_request;
+using earthsiege::read_file;
+using earthsiege::relative_herc_target;
 herc_attack_state read_state(binary_reader &file) {
   return {file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>(), file.integer<uint8_t>() != 0};
 }
@@ -16,7 +25,7 @@ auto state_fields(herc_attack_state const &s) {
 auto geometry_fields(herc_target_geometry const &g) {
   return std::tuple{g.bearing, g.bearing_error, g.bearing_magnitude, g.facing_error, g.facing_magnitude, g.distance, g.direction, g.near_distance, g.far_distance};
 }
-}
+} // anonymous namespace
 int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};

@@ -8,7 +8,9 @@
 
 namespace {
 
-vec3<int32_t> point(earthsiege::binary_reader &file) { return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()}; }
+vec3<int32_t> point(earthsiege::binary_reader &file) {
+  return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
+}
 
 struct state {
   earthsiege::shield_power shields;
@@ -22,7 +24,7 @@ state read_state(earthsiege::binary_reader &file) {
   return value;
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
@@ -64,7 +66,7 @@ int main(int const argc, char **argv) try {
       earthsiege::herc_actor actor{definition, weapons, templates, equipment, {0, 10000, 0}, {0, 0, 0}};
       actor.power().shields = initial.shields; actor.impacts() = initial.impacts;
       unsigned int warning_count{0};
-      auto const result{actor.intercept(request, conditions, [&](){ ++warning_count; })};
+      auto const result{actor.intercept(request, conditions, [&]{ ++warning_count; })};
       if((result ? result->distance : 0) != expected_distance) file.fail(label + " interception depth");
       if(static_cast<bool>(result && result->body) != expected_body.has_value()) file.fail(label + " body-damage gate");
       if(expected_body && (result->body->section != expected_body->section || result->body->direct != expected_body->direct || result->body->radial != expected_body->radial)) file.fail(label + " body-damage request");

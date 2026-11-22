@@ -6,7 +6,14 @@
 #include "simulation/flyer_navigation.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::binary_reader;
+using earthsiege::flyer_motion;
+using earthsiege::follow_flyer_formation;
+using earthsiege::follow_flyer_route;
+using earthsiege::mission_route;
+using earthsiege::read_file;
+using earthsiege::read_flyer_definition;
+using earthsiege::resource_store;
 flyer_motion read_state(binary_reader &file) {
   return {
     {file.integer<int32_t>(),file.integer<int32_t>(),file.integer<int32_t>()},
@@ -23,7 +30,7 @@ void compare(flyer_motion const &a, flyer_motion const &e, std::string const &la
     throw std::runtime_error{label + " flight state"};
   }
 }
-}
+} // anonymous namespace
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; auto const definition{read_flyer_definition(resources,"SKIMMER")};

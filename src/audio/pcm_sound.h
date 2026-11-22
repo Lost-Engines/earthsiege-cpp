@@ -1,9 +1,9 @@
 #pragma once
-#include "resources/binary_reader.h"
 #include <array>
-#include <optional>
 #include <functional>
+#include <optional>
 #include <vector>
+#include "resources/binary_reader.h"
 
 namespace earthsiege {
 struct pcm_sound_state {
@@ -64,7 +64,7 @@ public:
   bool play(size_t slot);
   bool playing(size_t slot)const;
   void stop(size_t slot);
-  void suspend(size_t slot); // Original device stop which retains the handle.
+  void suspend(size_t slot);                                                   // Original device stop which retains the handle.
   void complete(size_t handle);
   void voice_volume(size_t handle,uint16_t volume);
   pcm_sound_state const &sound(size_t slot)const;

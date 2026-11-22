@@ -2,11 +2,27 @@
 #include <iostream>
 #include "resources/input_tape.h"
 #include "resources/resource_store.h"
-#include "simulation/mission_session.h"
 #include "simulation/herc_assessment.h"
+#include "simulation/mission_session.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::assess_herc_retreat;
+using earthsiege::binary_reader;
+using earthsiege::combat_actor_kind;
+using earthsiege::component_damage;
+using earthsiege::herc_combat_rating;
+using earthsiege::herc_retreat_action;
+using earthsiege::herc_retreat_inputs;
+using earthsiege::mission_session;
+using earthsiege::random_state;
+using earthsiege::read_file;
+using earthsiege::read_input_tape;
+using earthsiege::read_mission_script;
+using earthsiege::read_player_roster;
+using earthsiege::read_weapon_catalogue;
+using earthsiege::resource_store;
+using earthsiege::select_herc_aimed_component;
+using earthsiege::tape_file;
 random_state::state read_random(binary_reader &file) {
   random_state::state state; for(auto &v : state.words) v = file.integer<uint16_t>();
   state.first = file.integer<uint8_t>(); state.second = file.integer<uint8_t>(); return state;
@@ -14,7 +30,7 @@ random_state::state read_random(binary_reader &file) {
 std::vector<int16_t> read_words(binary_reader &file) {
   std::vector<int16_t> words(file.integer<uint16_t>()); for(auto &v : words) v = file.integer<int16_t>(); return words;
 }
-}
+} // anonymous namespace
 int main(int argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; auto const bytes{read_file(argv[2])}; binary_reader file{bytes}; auto const magic{file.take(8)};

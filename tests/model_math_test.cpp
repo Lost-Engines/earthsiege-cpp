@@ -17,7 +17,7 @@ void require(bool condition, unsigned int row, char const *field) {
   if(!condition) throw std::runtime_error{"native model math mismatch at case " + std::to_string(row) + ": " + field};
 }
 
-} // namespace
+} // anonymous namespace
 
 auto main(int argc, char **argv)->int try {
   if(argc != 2) return EXIT_FAILURE;

@@ -64,7 +64,7 @@ auto main(int const argc, char **argv)->int try {
       }
       auto const type{file.integer<uint8_t>()};
       require(!defined || transform.type == type, row, "matrix type");
-      file.integer<uint8_t>();                                                  // original unwritten padding
+      file.integer<uint8_t>();                                                 // original unwritten padding
       auto const translation{read_vector<int32_t>(file)};
       require(!defined || transform.translation == translation, row, "matrix translation");
     }

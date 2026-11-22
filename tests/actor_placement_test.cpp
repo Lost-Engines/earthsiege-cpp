@@ -3,9 +3,9 @@
 #include <stdexcept>
 #include <string>
 #include "resources/resource_store.h"
+#include "shell/mission_view.h"
 #include "simulation/actor_placement.h"
 #include "simulation/mission_session.h"
-#include "shell/mission_view.h"
 
 int main(int const argc, char **argv) try {
   if(argc < 3 || argc > 5) return EXIT_FAILURE;
@@ -28,10 +28,10 @@ int main(int const argc, char **argv) try {
       try {
         auto session{std::make_unique<earthsiege::mission_session>(resources,script,player)};
         earthsiege::mission_view view{resources,std::move(session)};
-        for(int frame{};frame<64;++frame){
-          earthsiege::tape_frame input;input.delta=256;
-          view.step_recorded(input,static_cast<uint32_t>(frame*50),false);
-          if(frame%16==0)view.draw();
+        for(int frame{};frame < 64;++frame){
+          earthsiege::tape_frame input;input.delta = 256;
+          view.step_recorded(input,static_cast<uint32_t>(frame * 50),false);
+          if(frame % 16 == 0)view.draw();
         }
       } catch(std::exception const &error) { throw std::runtime_error{name + ": " + error.what()}; }
     }

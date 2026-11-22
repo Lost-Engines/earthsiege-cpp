@@ -12,13 +12,29 @@ void player_input::camera_input(vec2<int16_t> const &value) {
   else camera = value;
 }
 
-void player_input_router::request_centre() { centering = true; }
-void player_input_router::clear_device_state() { mouse_latched = false; mouse_response = {}; enter_held = false; }
-bool player_input_router::centred() const { return centering; }
-bool player_input_router::enter_pressed() const { return enter_held; }
-bool player_input_router::aiming_with_mouse() const { return mouse_latched; }
-vec2<int32_t> player_input_router::origin() const { return vec2<int32_t>{mouse_origin}; }
-vec2<int32_t> player_input_router::response() const { return vec2<int32_t>{mouse_response}; }
+void player_input_router::request_centre() {
+  centering = true;
+}
+void player_input_router::clear_device_state() {
+  mouse_latched = false;
+  mouse_response = {};
+  enter_held = false;
+}
+bool player_input_router::centred() const {
+  return centering;
+}
+bool player_input_router::enter_pressed() const {
+  return enter_held;
+}
+bool player_input_router::aiming_with_mouse() const {
+  return mouse_latched;
+}
+vec2<int32_t> player_input_router::origin() const {
+  return vec2<int32_t>{mouse_origin};
+}
+vec2<int32_t> player_input_router::response() const {
+  return vec2<int32_t>{mouse_response};
+}
 
 player_input_actions player_input_router::route(player_input const &input, player_input_context const &context) {
   player_input_actions result;

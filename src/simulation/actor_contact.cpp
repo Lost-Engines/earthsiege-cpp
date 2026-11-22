@@ -11,7 +11,7 @@ int32_t weighted_speed(int32_t const value, int16_t const weight) {
   return wrap_long((static_cast<int64_t>(value) * weight + 512) >> 10);
 }
 
-} // namespace
+} // anonymous namespace
 
 std::optional<actor_contact> find_actor_contact(std::span<contact_actor const> const actors, size_t const moving) {
   if(moving >= actors.size()) throw std::out_of_range{"moving contact actor"};
@@ -34,7 +34,7 @@ std::optional<actor_contact> find_actor_contact(std::span<contact_actor const> c
         result.position = vec3<int32_t>{
           wrap_long(static_cast<int64_t>(a.position.x) + b.position.x) >> 1,
           wrap_long(static_cast<int64_t>(a.position.y) + b.position.y) >> 1,
-          std::min(a.impact_height, b.impact_height),                             // original contact uses the local articulated height without world Z
+          std::min(a.impact_height, b.impact_height),                          // original contact uses the local articulated height without world Z
         };
       }
     }

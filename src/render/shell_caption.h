@@ -1,8 +1,8 @@
 #pragma once
-#include "render/framebuffer.h"
-#include "resources/resource_store.h"
-#include "resources/artwork.h"
 #include <optional>
+#include "render/framebuffer.h"
+#include "resources/artwork.h"
+#include "resources/resource_store.h"
 namespace earthsiege {
 class shell_caption {
  font face;
@@ -16,10 +16,20 @@ public:
  void next();
  void previous();
  void draw(framebuffer &,uint8_t speech_preference)const;
- rectangle bounds()const{return area;}
- auto const &lines()const{return rows;}
- int page()const{return selected;}
- int page_count()const{return pages;}
- int page_rows()const{return rows_per_page;}
+ rectangle bounds()const{
+   return area;
+ }
+ auto const &lines()const{
+   return rows;
+ }
+ int page()const{
+   return selected;
+ }
+ int page_count()const{
+   return pages;
+ }
+ int page_rows()const{
+   return rows_per_page;
+ }
 };
-}
+} // namespace earthsiege

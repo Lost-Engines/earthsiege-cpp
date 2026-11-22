@@ -7,7 +7,14 @@
 #include "simulation/mission_session.h"
 
 int main(int const argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::mission_session;
+  using earthsiege::read_file;
+  using earthsiege::read_input_tape;
+  using earthsiege::read_mission_script;
+  using earthsiege::read_player_roster;
+  using earthsiege::resource_store;
+  using earthsiege::tape_file;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; auto const bytes{read_file(argv[2])}; binary_reader file{bytes}; auto const magic{file.take(8)};
   if(std::string(magic.begin(),magic.end()) != "ESFSTART") file.fail("fixture version");

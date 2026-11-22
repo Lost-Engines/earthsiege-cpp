@@ -5,7 +5,7 @@
 
 namespace earthsiege {
 struct tactical_contact {
-  int16_t kind{-1};                                                          // -1 waypoint, 0 HERC, 1 building, 2 flyer
+  int16_t kind{-1};                                                            // -1 waypoint, 0 HERC, 1 building, 2 flyer
   int16_t frame{}, size{};
   uint8_t side{};
   bool dead{}, hidden{}, detected{}, last_position_unavailable{true};

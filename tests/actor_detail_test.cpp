@@ -4,9 +4,9 @@
 #include <stdexcept>
 #include <string>
 #include "render/model_renderer.h"
-#include "resources/resource_store.h"
 #include "resources/herc_profile.h"
 #include "resources/model_bindings.h"
+#include "resources/resource_store.h"
 #include "simulation/model_math.h"
 #include "simulation/weapon_assembly.h"
 
@@ -19,7 +19,7 @@ int main(int const argc, char **argv) try {
   auto const bytes{earthsiege::read_file(argv[2])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
-  if(std::string(magic.begin(), magic.end()) != (argc==4?"ESSHPFR1":"ESDETAIL")) file.fail("fixture version");
+  if(std::string(magic.begin(), magic.end()) != (argc == 4?"ESSHPFR1":"ESDETAIL")) file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   auto const resource{[&](std::string const &name){
     auto const slash{name.find('/')};
@@ -40,7 +40,7 @@ int main(int const argc, char **argv) try {
     detail.bias = file.integer<uint16_t>();
     auto const expected_detail{file.integer<uint16_t>()};
     earthsiege::model_view view;
-    if(argc==4){view.detail.bias=file.integer<uint8_t>();view.weapon_detail_bias=file.integer<uint8_t>();}
+    if(argc == 4){view.detail.bias = file.integer<uint8_t>();view.weapon_detail_bias = file.integer<uint8_t>();}
     auto owner{earthsiege::read_model(resources.read("simvol0", "dts/" + name + ".DTS"))};
     auto const profile{earthsiege::read_herc_profile(resources.read("simvol0", "dat/" + name + ".DAT"))};
     earthsiege::bind_herc_detail_nodes(owner, profile.detail_part_ids);

@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
-#include "simulation/random_state.h"
 #include "vectorstorm/vector/vector3.h"
+#include "simulation/random_state.h"
 
 namespace earthsiege {
 

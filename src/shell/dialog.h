@@ -4,9 +4,9 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include "render/dialog_widgets.h"
 #include "render/framebuffer.h"
 #include "resources/artwork.h"
-#include "render/dialog_widgets.h"
 
 namespace earthsiege {
 
@@ -62,7 +62,9 @@ public:
   void cancel_press();
   auto current_palette() const->palette const &;
   auto id() const->unsigned int;
-  unsigned region()const{return region_number;}
+  unsigned region()const{
+    return region_number;
+  }
 };
 
 } // namespace earthsiege

@@ -21,7 +21,7 @@ std::vector<palette_band> split_gouraud_triangle(std::array<vec2<int32_t>, 3> co
   unsigned int high{0};
   unsigned int low{0};
   for(unsigned int index{0}; index != 3; ++index) {
-    if(colours[index] == maximum) high = index;                                 // native ties select the last vertex
+    if(colours[index] == maximum) high = index;                                // native ties select the last vertex
     if(colours[index] == minimum) low = index;
   }
   auto const middle{3U - high - low};

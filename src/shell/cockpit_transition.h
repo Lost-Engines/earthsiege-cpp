@@ -1,7 +1,7 @@
 #pragma once
+#include <array>
 #include <compare>
 #include <cstdint>
-#include <array>
 #include "render/framebuffer.h"
 
 namespace earthsiege {
@@ -22,7 +22,9 @@ private:
 public:
   cockpit_transition()=default;
   explicit cockpit_transition(state initial):value{initial}{}
-  state const &snapshot()const{return value;}
+  state const &snapshot()const{
+    return value;
+  }
   void request(int action);
   void present();
   /// Host inspection shortcuts bypass the original transition animation.

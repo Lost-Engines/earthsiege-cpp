@@ -7,7 +7,9 @@ mfd_controller::mfd_controller(size_t const player, uint32_t const ticks) {
   data.selected_actor = player;
   data.deadline = ticks + 30;
 }
-mfd_state const &mfd_controller::state() const { return data; }
+mfd_state const &mfd_controller::state() const {
+  return data;
+}
 void mfd_controller::select(mfd_page const page, size_t const player, std::optional<size_t> const target) {
   if(std::to_underlying(page) >= data.refresh.size()) throw std::out_of_range{"MFD page"};
   if(data.page == page) return;
@@ -17,8 +19,12 @@ void mfd_controller::select(mfd_page const page, size_t const player, std::optio
   if(page == mfd_page::status) data.selected_actor = player;
   else if(page == mfd_page::target) data.selected_actor = target;
 }
-void mfd_controller::repaint() { data.pending_paint = 2; }
-void mfd_controller::request_update() { data.refresh[std::to_underlying(data.page)] = true; }
+void mfd_controller::repaint() {
+  data.pending_paint = 2;
+}
+void mfd_controller::request_update() {
+  data.refresh[std::to_underlying(data.page)] = true;
+}
 void mfd_controller::select_choice(size_t const choice) {
   if(choice >= 6) throw std::out_of_range{"communications choice"};
   data.choice = choice;
@@ -28,10 +34,7 @@ mfd_action mfd_controller::button(size_t const index, size_t const player, std::
   if(index < 6) select(static_cast<mfd_page>(index), player, target);
   else if(index == 6) select(next_mfd_page(data.page), player, target);
   else if(index == 7 && data.page == mfd_page::scanner) return mfd_action::toggle_radar;
-  else if(index == 8) { data.range_index = next_mfd_range(data.range_index); request_update(); }
-  else if(index == 9) { request_update(); return mfd_action::cycle_target; }
-  else if(index == 10 && data.page == mfd_page::communications) { request_update(); return mfd_action::transmit; }
-  else if((index == 11 || index == 12) && data.page == mfd_page::communications) {
+  else if(index == 8) { data.range_index = next_mfd_range(data.range_index); request_update(); } else if(index == 9) { request_update(); return mfd_action::cycle_target; } else if(index == 10 && data.page == mfd_page::communications) { request_update(); return mfd_action::transmit; } else if((index == 11 || index == 12) && data.page == mfd_page::communications) {
     size_t candidate{data.choice};
     for(size_t count{}; count < choices.size(); ++count) {
       candidate = (candidate + (index == 12 ? 1 : 5)) % choices.size();
@@ -54,8 +57,7 @@ std::vector<mfd_paint> mfd_controller::advance(uint32_t const ticks, bool const 
     select(data.previous_page, player, target);
     data.allow_camera_switch = true;
   }
-  if(data.pending_paint == 2) { paints.push_back({data.page, true, failed ? (severity<2 ? uint16_t{1} : severity) : uint16_t{0}}); --data.pending_paint; }
-  else if(data.pending_paint == 1) { --data.pending_paint; request_update(); }
+  if(data.pending_paint == 2) { paints.push_back({data.page, true, failed ? (severity < 2 ? uint16_t{1} : severity) : uint16_t{0}}); --data.pending_paint; } else if(data.pending_paint == 1) { --data.pending_paint; request_update(); }
   auto const index{std::to_underlying(data.page)};
   if(data.refresh[index]) {
     bool paint{true};

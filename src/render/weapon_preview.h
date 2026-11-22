@@ -11,4 +11,4 @@ public:
  void advance(int16_t ticks,random_state &);
  void draw(framebuffer &,rectangle bounds)const;
 };
-}
+} // namespace earthsiege

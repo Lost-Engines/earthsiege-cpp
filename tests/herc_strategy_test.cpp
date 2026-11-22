@@ -5,13 +5,28 @@
 #include "resources/binary_reader.h"
 #include "simulation/herc_strategy.h"
 namespace {
-using namespace earthsiege;
+using earthsiege::assign_target;
+using earthsiege::behavior;
+using earthsiege::binary_reader;
+using earthsiege::combat_actor_kind;
+using earthsiege::compare_herc_strength;
+using earthsiege::engagement_state;
+using earthsiege::enter_behavior;
+using earthsiege::herc_strategy_policy;
+using earthsiege::initial_herc_behavior;
+using earthsiege::random_state;
+using earthsiege::read_file;
+using earthsiege::reconsider_herc_attack;
+using earthsiege::target_relationship;
+using earthsiege::target_selection_flags;
 random_state::state read_random(binary_reader &file) {
   random_state::state state; for(auto &v : state.words) v = file.integer<uint16_t>();
   state.first = file.integer<uint8_t>(); state.second = file.integer<uint8_t>(); return state;
 }
-std::optional<size_t> optional_actor(int16_t value) { return value < 0 ? std::nullopt : std::make_optional(static_cast<size_t>(value)); }
+std::optional<size_t> optional_actor(int16_t value) {
+  return value < 0 ? std::nullopt : std::make_optional(static_cast<size_t>(value));
 }
+} // anonymous namespace
 int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};

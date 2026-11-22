@@ -1,7 +1,7 @@
 #pragma once
-#include "hmp_player.h"
 #include <array>
 #include <utility>
+#include "hmp_player.h"
 namespace earthsiege {
 // HMI's normal game path disables channel remapping. Per-packet CC7 gain and
 // direct master/song updates intentionally use different integer expressions.
@@ -14,7 +14,11 @@ public:
   auto apply(midi_packet packet,uint8_t song_volume=127,bool muted=false)->midi_packet;
   auto set_master(uint8_t value)->std::vector<midi_packet>;
   auto set_song(uint8_t value,std::span<std::pair<size_t,uint8_t> const> active_tracks)const->std::vector<midi_packet>;
-  auto volumes()const->decltype(volumes_)const&{return volumes_;}
-  auto master()const->uint8_t{return master_;}
+  auto volumes()const->decltype(volumes_)const&{
+    return volumes_;
+  }
+  auto master()const->uint8_t{
+    return master_;
+  }
 };
-}
+} // namespace earthsiege

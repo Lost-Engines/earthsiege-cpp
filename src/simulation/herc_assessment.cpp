@@ -42,7 +42,7 @@ int16_t herc_combat_rating(herc_profile const &profile, damage_definition const 
 }
 
 int16_t select_herc_aimed_component(component_damage const &observer, size_t const observer_weapon_count, std::span<int16_t const> const target_present, bool const target_collapsed, random_state &random) {
-  auto const pick{random.next() & 127};                                    // consumed even for a collapsed target
+  auto const pick{random.next() & 127};                                        // consumed even for a collapsed target
   size_t const first{target_collapsed ? 0U : pick < 40 ? 7U : pick < 80 ? 19U : 0U};
   size_t const end{target_collapsed ? 1U : pick < 40 ? 19U : pick < 80 ? 19U + observer_weapon_count : 7U};
   if(end > target_present.size()) throw std::out_of_range{"combat component selection exceeds target sections"};

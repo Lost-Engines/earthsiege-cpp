@@ -28,7 +28,7 @@ struct ground_profile {
   int16_t contact_radius{0};
   int16_t target_height{0};
   bool can_retaliate{false};
-  std::array<int16_t, 27> source{};                                          // remaining fields retained until their consumers are ported
+  std::array<int16_t, 27> source{};                                            // remaining fields retained until their consumers are ported
   std::array<int16_t, 7> expansion_sections{};
   bool collision_enabled{true};
   std::vector<collision_part> collision;
@@ -50,7 +50,9 @@ public:
   ground_profile const &profile(size_t type) const;
   model_part const &model(size_t type, uint8_t side, bool destroyed = false) const;
   std::span<bitmap const> textures() const;
-  auto const &landing_weapons()const{return landing_weapons_;}
+  auto const &landing_weapons()const{
+    return landing_weapons_;
+  }
 };
 
 } // namespace earthsiege

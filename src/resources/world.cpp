@@ -21,7 +21,7 @@ zone_resource read_zone(bytes const source) {
 
 world_environment read_world_environment(bytes const source, game_edition const edition) {
   binary_reader file{source, "world environment"};
-  world_environment result;result.edition=edition;
+  world_environment result;result.edition = edition;
   result.background = background_style{
     .horizon_band_width{file.integer<int16_t>()},
     .sky_palette_start{file.integer<int16_t>()},
@@ -43,7 +43,7 @@ world_environment read_world_environment(bytes const source, game_edition const 
   result.shade_levels = file.integer<int16_t>();
   auto const count{file.integer<int16_t>()};
   if(count < 0) file.fail("negative palette range count");
-  auto const range{[&file] {
+  auto const range{[&file]{
     return palette_range{.first{file.integer<int16_t>()}, .count{file.integer<int16_t>()}};
   }};
   for(int index{0}; index != count; ++index) result.near_ranges.push_back(range());

@@ -20,7 +20,7 @@ earthsiege::model_transform transform(earthsiege::binary_reader &file) {
   return result;
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

@@ -37,7 +37,7 @@ void bind_part(model_part &part, std::span<int16_t const> const indices, size_t 
   children(part, [&](auto &child){ bind_part(child, indices, pose_count); });
 }
 
-} // namespace
+} // anonymous namespace
 
 void bind_herc_detail_nodes(model_resource &model, std::span<uint8_t const> const part_ids) {
   if(model.roots.size() < 2) return;

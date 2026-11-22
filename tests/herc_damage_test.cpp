@@ -9,7 +9,9 @@
 
 namespace {
 
-vec3<int32_t> point(earthsiege::binary_reader &file) { return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()}; }
+vec3<int32_t> point(earthsiege::binary_reader &file) {
+  return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
+}
 std::vector<int16_t> shorts(earthsiege::binary_reader &file) {
   std::vector<int16_t> result(file.integer<uint16_t>());
   for(auto &v : result) v = file.integer<int16_t>();
@@ -32,7 +34,7 @@ state read_state(earthsiege::binary_reader &file) {
   return value;
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
@@ -94,7 +96,7 @@ int main(int const argc, char **argv) try {
         events.push_back({2, group, position.x, position.y, position.z});
         earthsiege::create_debris_burst(debris.at(static_cast<size_t>(group)), position, rng);
       };
-      sinks.shield_warning = [&](){ events.push_back({3}); };
+      sinks.shield_warning = [&]{ events.push_back({3}); };
       sinks.cockpit_damage = [&](size_t const section){ events.push_back({4, static_cast<int32_t>(section)}); };
       sinks.attached_smoke = [&](int16_t const part, vec3<int16_t> const &position){ events.push_back({5, part, position.x, position.y, position.z}); };
       sinks.body_damage = [&](size_t const section, int16_t const amount){ events.push_back({0, amount, static_cast<int32_t>(section)}); };

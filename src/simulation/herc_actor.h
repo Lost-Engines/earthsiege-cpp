@@ -1,12 +1,12 @@
 #pragma once
 #include <utility>
-#include "simulation/herc_body.h"
-#include "simulation/player_input.h"
 #include "simulation/herc_aiming.h"
+#include "simulation/herc_body.h"
 #include "simulation/herc_impact.h"
 #include "simulation/herc_loadout.h"
 #include "simulation/herc_power.h"
 #include "simulation/hit_volumes.h"
+#include "simulation/player_input.h"
 #include "simulation/projectile_instance.h"
 #include "simulation/weapon_bank.h"
 #include "simulation/weapon_firing.h"
@@ -39,9 +39,13 @@ public:
   herc_actor &operator=(herc_actor const &) = delete;
   herc_actor &operator=(herc_actor &&) = delete;
   herc_body const &body() const;
-  void deploy(vec3<int32_t> const &position,vec3<uint16_t> const &angles){body_state.place(position,angles);}
+  void deploy(vec3<int32_t> const &position,vec3<uint16_t> const &angles){
+    body_state.place(position,angles);
+  }
   std::vector<uint16_t> footstep_sounds();
-  auto &ground_attachments(){return body_state.ground_attachments();}
+  auto &ground_attachments(){
+    return body_state.ground_attachments();
+  }
   herc_profile const &profile() const;
   int16_t combat_rating() const;
   int16_t total_damage_fraction() const;
@@ -50,7 +54,9 @@ public:
   void notify_damage_changes(std::function<void(damage_consequences const &, damage_consequences const &)> callback);
   void place(vec3<int32_t> const &position, vec3<uint16_t> const &angles);
   void align_disabled_player();
-  void movement_direction(int16_t mode){body_state.movement_direction(mode);}
+  void movement_direction(int16_t mode){
+    body_state.movement_direction(mode);
+  }
   damage_state const &damage() const;
   herc_power const &power() const;
   herc_power &power();

@@ -1,14 +1,14 @@
 #pragma once
-#include "shell/bay_animation_plan.h"
-#include "render/shell_animation_artwork.h"
 #include "render/hangar_artwork.h"
+#include "render/shell_animation_artwork.h"
+#include "shell/bay_animation_plan.h"
 namespace earthsiege {
 /// Resident GO service-bay programs, preserving their order and retained page.
 class bay_scene {
  struct entry {
   shell_animation player;
   shell_animation_artwork art;
-  entry(resource_store const &r,std::string const &path):player{read_presentation(r.read("shell0","res32/"+path))},art{r}{}
+  entry(resource_store const &r,std::string const &path):player{read_presentation(r.read("shell0","res32/" + path))},art{r}{}
  };
  std::vector<entry> programs;
  bay_animation_plan plan;
@@ -24,10 +24,21 @@ public:
  /// Mechanic dialogue shares the original retained page; only slots 3 and 6 stop.
  void speech_mode(bool active);
  void compose(framebuffer &front,framebuffer &back,int16_t elapsed,random_state &,shell_animation_sound *sound=nullptr);
- void retain(framebuffer const &front,framebuffer const &back){visible=front;background=back;}
- framebuffer const &image()const{return visible;}
- framebuffer const &retained()const{return background;}
- bay_animation_plan const &assignments()const{return plan;}
- shell_animation_state const &state(size_t index)const{return programs.at(index).player.state();}
+ void retain(framebuffer const &front,framebuffer const &back){
+   visible = front;
+   background = back;
+ }
+ framebuffer const &image()const{
+   return visible;
+ }
+ framebuffer const &retained()const{
+   return background;
+ }
+ bay_animation_plan const &assignments()const{
+   return plan;
+ }
+ shell_animation_state const &state(size_t index)const{
+   return programs.at(index).player.state();
+ }
 };
-}
+} // namespace earthsiege

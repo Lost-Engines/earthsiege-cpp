@@ -10,8 +10,8 @@ int main(int const argc, char **argv) try {
   auto const bytes{earthsiege::read_file(argv[1])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
-  bool const shell{std::string(magic.begin(),magic.end())=="ESSCLGO1"};
-  if(!shell&&std::string(magic.begin(), magic.end()) != "ESBITMAP") file.fail("fixture version");
+  bool const shell{std::string(magic.begin(),magic.end()) == "ESSCLGO1"};
+  if(!shell && std::string(magic.begin(), magic.end()) != "ESBITMAP") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   earthsiege::bitmap bitmap;
   bitmap.width = file.integer<uint16_t>();

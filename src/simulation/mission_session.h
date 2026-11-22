@@ -1,36 +1,36 @@
 #pragma once
-#include "simulation/radio_queue.h"
 #include <map>
-#include "audio/combat_music.h"
 #include <memory>
 #include <vector>
+#include "audio/combat_music.h"
+#include "render/damage_display.h"
+#include "render/full_damage_display.h"
+#include "render/scanner_display.h"
 #include "render/scenery_renderer.h"
+#include "render/tactical_map.h"
 #include "render/target_instruments.h"
 #include "render/waypoint_instruments.h"
-#include "render/damage_display.h"
-#include "render/scanner_display.h"
-#include "render/tactical_map.h"
-#include "render/full_damage_display.h"
+#include "resources/mission_results.h"
 #include "resources/mission_script.h"
 #include "resources/player_roster.h"
-#include "resources/mission_results.h"
 #include "simulation/camera.h"
-#include "simulation/mission_activity.h"
-#include "simulation/wingmate_orders.h"
-#include "simulation/mission_objectives.h"
 #include "simulation/development_controls.h"
+#include "simulation/flyer_actor.h"
 #include "simulation/flyer_attack.h"
+#include "simulation/ground_actor.h"
 #include "simulation/herc_actor.h"
+#include "simulation/herc_fire_control.h"
+#include "simulation/herc_orders.h"
+#include "simulation/herc_reactions.h"
+#include "simulation/herc_sensors.h"
+#include "simulation/hit_dispatch.h"
+#include "simulation/mission_activity.h"
+#include "simulation/mission_objectives.h"
 #include "simulation/player_armament.h"
 #include "simulation/player_input.h"
-#include "simulation/herc_orders.h"
-#include "simulation/herc_sensors.h"
-#include "simulation/herc_reactions.h"
-#include "simulation/hit_dispatch.h"
-#include "simulation/herc_fire_control.h"
-#include "simulation/ground_actor.h"
-#include "simulation/flyer_actor.h"
+#include "simulation/radio_queue.h"
 #include "simulation/scenery_world.h"
+#include "simulation/wingmate_orders.h"
 #include "simulation/world_effects.h"
 #include "simulation/world_projectiles.h"
 
@@ -197,7 +197,9 @@ class mission_session {
   random_state visual_random;
   std::vector<sound_request> sound_requests;
   sound_sink sound_player;
-  void emit_sound(sound_request const &event){if(sound_player)sound_player(event);else sound_requests.push_back(event);}
+  void emit_sound(sound_request const &event){
+    if(sound_player)sound_player(event);else sound_requests.push_back(event);
+  }
   world_effects effects;
   world_projectiles projectiles;
   player_rocket_launch camera_rocket;
@@ -250,8 +252,12 @@ public:
   bool camera_ready() const;
   bool eo_selected() const;
   player_rocket_launch const &latest_player_rocket() const;
-  void bullet_falloff(bool enabled){falloff_preference=enabled;}
-  void playback(bool enabled){recorded_playback=enabled;}
+  void bullet_falloff(bool enabled){
+    falloff_preference = enabled;
+  }
+  void playback(bool enabled){
+    recorded_playback = enabled;
+  }
   void step(herc_controls const &controls, int16_t time_ratio, bool fire = false);
   bool select_weapon(size_t slot);
   void cycle_weapon();
@@ -271,18 +277,28 @@ public:
   void clear_player_input();
   bool player_command(uint16_t code);
   bool development_command(uint16_t code,std::optional<size_t> actor = {});
-  bool recording_paused()const{return world_frozen;}
+  bool recording_paused()const{
+    return world_frozen;
+  }
   wingmate_order_state order_state(size_t actor) const;
   bool transmit_order(uint16_t command);
   bool transmit_order(wingmate_order const &order, std::optional<size_t> recipient);
   std::vector<radio_event> take_radio_events();
-  void on_radio(std::function<void(radio_event const &)> handler){radio_handler=std::move(handler);}
-  void sound_output(sound_sink sink){sound_player=std::move(sink);}
+  void on_radio(std::function<void(radio_event const &)> handler){
+    radio_handler = std::move(handler);
+  }
+  void sound_output(sound_sink sink){
+    sound_player = std::move(sink);
+  }
   std::vector<sound_request> take_sounds();
   music_contacts music_observations()const;
   random_state &interface_random();
-  random_state const &interface_random()const{return visual_random;}
-  void on_cockpit_impact(std::function<void()> handler) { cockpit_impact_handler=std::move(handler); }
+  random_state const &interface_random()const{
+    return visual_random;
+  }
+  void on_cockpit_impact(std::function<void()> handler) {
+    cockpit_impact_handler = std::move(handler);
+  }
   void cycle_target();
   void set_displayed_target(std::optional<size_t> target);
   std::optional<size_t> target_selection() const;

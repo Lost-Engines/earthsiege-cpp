@@ -55,19 +55,27 @@ projectile_instance::projectile_instance(weapon_shot const &shot, weapon_catalog
   flight_state.animation_remaining = source.kind == projectile_kind::rocket ? initial_rocket_clock : motions.bullets.at(flight_state.subtype).animation_period;
   flight_state.cells.resize(shape.cell_frame_counts.size(), 0);
   for(auto const count : shape.cell_frame_counts) cell_counts.push_back(static_cast<uint16_t>(count));
-  bool const expansion_bullet{source.kind==projectile_kind::bullet&&motions.edition==game_edition::expansion};
+  bool const expansion_bullet{source.kind == projectile_kind::bullet && motions.edition == game_edition::expansion};
   if(expansion_bullet){
     auto const &motion{motions.bullets.at(flight_state.subtype)};
-    if(random)for(auto axis:{0,2})flight_state.angles[axis]=static_cast<uint16_t>(flight_state.angles[axis]+((random->next()&(motion.spread<<1))-motion.spread));
-    if(motion.damage_falloff){if(motion.lifetime==0)throw std::runtime_error{"bullet falloff has zero lifetime"};flight_state.falloff_step=static_cast<int16_t>(1024/motion.lifetime);}
+    if(random)for(auto axis:{0,2})flight_state.angles[axis] = static_cast<uint16_t>(flight_state.angles[axis] + ((random->next() & (motion.spread << 1)) - motion.spread));
+    if(motion.damage_falloff){if(motion.lifetime == 0)throw std::runtime_error{"bullet falloff has zero lifetime"};flight_state.falloff_step = static_cast<int16_t>(1024 / motion.lifetime);}
   }
-  flight_state.target_present = target_present&&(source.kind == projectile_kind::rocket||(expansion_bullet&&source.subtype==9&&shot.kind==shot_kind::scaled));
+  flight_state.target_present = target_present && (source.kind == projectile_kind::rocket || (expansion_bullet && source.subtype == 9 && shot.kind == shot_kind::scaled));
 }
 
-projectile_flight const &projectile_instance::flight() const { return flight_state; }
-model_instance const &projectile_instance::model() const { return visual; }
-model_part const &projectile_instance::geometry() const { return geometry_source; }
-void projectile_instance::clear_target() { flight_state.target_present = false; }
+projectile_flight const &projectile_instance::flight() const {
+  return flight_state;
+}
+model_instance const &projectile_instance::model() const {
+  return visual;
+}
+model_part const &projectile_instance::geometry() const {
+  return geometry_source;
+}
+void projectile_instance::clear_target() {
+  flight_state.target_present = false;
+}
 
 model_transform projectile_instance::placement() const {
   auto result{rotation_transform(flight_state.angles)};
@@ -79,12 +87,12 @@ projectile_result projectile_instance::advance(frame_ratio const ratio, projecti
   auto const result{advance_projectile(flight_state, motions, source.speed, cell_counts, ratio, guidance, [&](model_transform const &transform, int16_t const reach, int16_t const radius){
     if(!hit)return false;
     auto damage{projectile_payload(source,damage_scale)};
-    damage.armour=wrap_word((damage.armour*flight_state.impact_strength+512)>>10);
-    damage.shield=wrap_word((damage.shield*flight_state.impact_strength+512)>>10);
-    if(motions.edition!=game_edition::expansion||source.kind!=projectile_kind::bullet||source.subtype!=9)return hit({transform,reach,radius,damage}).has_value();
-    auto direct{damage};direct.plasma_armour=damage.armour;direct.armour=direct.shield=direct.splash_q10=0;
-    bool const struck{guidance.proximity_burst||hit({transform,reach,radius,direct}).has_value()};
-    if(struck){damage.armour=wrap_word((damage.armour*guidance.area_damage_multiplier+512)>>10);hit({transform,0,0,damage,4000});}
+    damage.armour = wrap_word((damage.armour * flight_state.impact_strength + 512) >> 10);
+    damage.shield = wrap_word((damage.shield * flight_state.impact_strength + 512) >> 10);
+    if(motions.edition != game_edition::expansion || source.kind != projectile_kind::bullet || source.subtype != 9)return hit({transform,reach,radius,damage}).has_value();
+    auto direct{damage};direct.plasma_armour = damage.armour;direct.armour = direct.shield = direct.splash_q10 = 0;
+    bool const struck{guidance.proximity_burst || hit({transform,reach,radius,direct}).has_value()};
+    if(struck){damage.armour = wrap_word((damage.armour * guidance.area_damage_multiplier + 512) >> 10);hit({transform,0,0,damage,4000});}
     return struck;
   })};
   std::ranges::copy(flight_state.cells, visual.cell_frames().begin());

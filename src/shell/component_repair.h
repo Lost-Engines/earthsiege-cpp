@@ -24,10 +24,20 @@ public:
   void decrease(player_herc &,career_state &);
   void accept(player_herc &,career_state const &)const;
   void cancel(player_herc &,career_state &);
-  repair_group group()const{return group_;}
-  int16_t index()const{return index_;}
-  int16_t allocated()const{return allocated_;}
-  int16_t tier()const{return tier_;}
-  int16_t required()const{return quote_;}
+  repair_group group()const{
+    return group_;
+  }
+  int16_t index()const{
+    return index_;
+  }
+  int16_t allocated()const{
+    return allocated_;
+  }
+  int16_t tier()const{
+    return tier_;
+  }
+  int16_t required()const{
+    return quote_;
+  }
 };
-}
+} // namespace earthsiege

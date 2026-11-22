@@ -13,7 +13,7 @@ void label(framebuffer &target, font const &face, std::string_view const text, r
   int const y{bounds.top + ((bounds.bottom - bounds.top + static_cast<int>(face.height)) >> 1)};
   target.text(face, text, x, y);
 }
-}
+} // anonymous namespace
 std::array<bool, mfd_button_count> mfd_enabled_buttons(mfd_page const page) {
   std::array<bool, mfd_button_count> result{true, true, true, true, true, true};
   // Original 0x3a9ec reads seven flags per page at a thirteen-byte stride.

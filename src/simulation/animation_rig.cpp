@@ -10,7 +10,7 @@ animation_list const &require_animation(shape_part const &shape) {
   return *shape.animation;
 }
 
-} // namespace
+} // anonymous namespace
 
 animation_rig::animation_rig(shape_part const &shape) : source{require_animation(shape)}, model{shape} {
 }

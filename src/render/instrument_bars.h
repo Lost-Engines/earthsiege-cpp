@@ -10,7 +10,7 @@ namespace earthsiege {
 struct led_bar_style {
   rectangle bounds;
   bool vertical{false};
-  std::array<uint8_t, 2> colours{};          // alternating even/odd screen columns or rows
+  std::array<uint8_t, 2> colours{};                                            // alternating even/odd screen columns or rows
   uint8_t empty_colour{63};
 };
 

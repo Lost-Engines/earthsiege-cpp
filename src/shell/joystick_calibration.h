@@ -1,6 +1,6 @@
 #pragma once
-#include "simulation/joystick_input.h"
 #include <optional>
+#include "simulation/joystick_input.h"
 namespace earthsiege {
 struct joystick_calibration_write {unsigned slot;joystick_calibration calibration;};
 /// GO 0x7631/0x7ad7/0x7ef0. Host samples replace electrical gameport reads.
@@ -19,12 +19,24 @@ public:
  void activate(unsigned button);
  std::optional<joystick_calibration_write> sample(std::array<int32_t,4> const &raw);
  void cancel();
- bool active()const{return active_;}
- bool done()const{return done_;}
- unsigned selected_slot()const{return static_cast<unsigned>(slot-1);}
- int choice()const{return choice_;}
- int message()const{return message_;}
- joystick_calibration const &backup()const{return backup_;}
+ bool active()const{
+   return active_;
+ }
+ bool done()const{
+   return done_;
+ }
+ unsigned selected_slot()const{
+   return static_cast<unsigned>(slot - 1);
+ }
+ int choice()const{
+   return choice_;
+ }
+ int message()const{
+   return message_;
+ }
+ joystick_calibration const &backup()const{
+   return backup_;
+ }
  std::array<int32_t,12> state()const;
 };
-}
+} // namespace earthsiege

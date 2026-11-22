@@ -1,6 +1,6 @@
 #pragma once
-#include "simulation/radio_queue.h"
 #include <functional>
+#include "simulation/radio_queue.h"
 
 namespace earthsiege {
 struct radio_presentation_state {

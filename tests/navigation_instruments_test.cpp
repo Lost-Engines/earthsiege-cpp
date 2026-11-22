@@ -1,12 +1,18 @@
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include "render/navigation_instruments.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::navigation_instruments;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::resource_store;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const source{read_file(argv[2])}; binary_reader file{source}; auto const magic{file.take(8)};

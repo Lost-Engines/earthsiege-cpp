@@ -1,7 +1,7 @@
 #pragma once
-#include "midi_receiver.h"
 #include <filesystem>
 #include <memory>
+#include "midi_receiver.h"
 namespace earthsiege {
 class soundfont_synth final:public midi_receiver {
   struct implementation;
@@ -13,4 +13,4 @@ public:
   void sysex(std::span<uint8_t const>)override;
   void render(std::span<float>)override;
 };
-}
+} // namespace earthsiege

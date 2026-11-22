@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <string>
 #include "render/model_renderer.h"
-#include "resources/cockpit.h"
 #include "resources/binary_reader.h"
+#include "resources/cockpit.h"
 #include "resources/resource_store.h"
 #include "simulation/model_math.h"
 

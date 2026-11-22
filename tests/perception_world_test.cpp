@@ -6,7 +6,17 @@
 #include "simulation/perception.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::actor_awareness;
+using earthsiege::advance_perception;
+using earthsiege::binary_reader;
+using earthsiege::mission_script;
+using earthsiege::mission_trigger;
+using earthsiege::mission_triggers;
+using earthsiege::perception_actor;
+using earthsiege::perception_callbacks;
+using earthsiege::random_state;
+using earthsiege::read_file;
+using earthsiege::within_actor_view;
 std::vector<actor_awareness> read_state(binary_reader &file) {
   std::vector<actor_awareness> result;
   for(unsigned int i{0}; i != 8; ++i) {
@@ -31,7 +41,7 @@ struct input {
   int16_t counter,operation;
   bool latched;
 };
-}
+} // anonymous namespace
 int main(int const argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};

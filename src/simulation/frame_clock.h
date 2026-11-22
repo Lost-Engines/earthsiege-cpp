@@ -16,6 +16,8 @@ public:
  void advance(unsigned ticks);
  bool ready()const;
  std::optional<frame_ratio> take();
- frame_clock_state const &state()const{return state_;}
+ frame_clock_state const &state()const{
+   return state_;
+ }
 };
 }

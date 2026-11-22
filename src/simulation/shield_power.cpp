@@ -9,9 +9,9 @@ void change_shield_balance(shield_power &state, bool const toward_front) {
 }
 
 int16_t absorb_blast(shield_power &state,bool front,int16_t amount){
-  auto &shield{front?state.front:state.rear};shield=wrap_word(shield-wrap_word((1000*amount+512)>>10));
-  if(shield>=0)return 0;
-  auto remaining{wrap_word((-static_cast<int>(shield)*1024)/1000)};shield=0;return remaining;
+  auto &shield{front?state.front:state.rear};shield = wrap_word(shield - wrap_word((1000 * amount + 512) >> 10));
+  if(shield >= 0)return 0;
+  auto remaining{wrap_word((-static_cast<int>(shield) * 1024) / 1000)};shield = 0;return remaining;
 }
 
 int16_t recharge_shields(shield_power &state, int16_t const budget, int16_t const charge_limit) {

@@ -18,8 +18,8 @@ enum class behavior : uint8_t {
 struct behavior_definition {
   std::string_view name;
   int32_t reconsider_period;
-  uint16_t properties;                                                      // original sixteen Boolean properties, packed in stored order
-  std::optional<int16_t> status;                                             // native HERC HUD status index; flyers have no entry
+  uint16_t properties;                                                         // original sixteen Boolean properties, packed in stored order
+  std::optional<int16_t> status;                                               // native HERC HUD status index; flyers have no entry
   bool holds_countdown() const;
   bool attacking() const;
 };

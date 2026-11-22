@@ -6,10 +6,10 @@ namespace earthsiege {
 
 enum class weapon_instrument_kind : uint8_t { energy, ammunition, ecm };
 struct weapon_instrument_state {
-  int32_t value{};                                                         // Q10 capacitor charge, or displayed ammunition count
-  int32_t requested_charge{};                                              // Q10, owned by the slider unless a keyboard change is pending
+  int32_t value{};                                                             // Q10 capacitor charge, or displayed ammunition count
+  int32_t requested_charge{};                                                  // Q10, owned by the slider unless a keyboard change is pending
   bool disabled{};
-  bool selected{};                                                         // ECM uses this bit for its on/off state
+  bool selected{};                                                             // ECM uses this bit for its on/off state
   bool included{};
   bool ready{};
 };

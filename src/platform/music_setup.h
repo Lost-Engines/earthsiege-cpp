@@ -1,9 +1,9 @@
 #pragma once
 
 #include <optional>
-#include "resources/edition.h"
 #include <string_view>
 #include "audio/music_settings.h"
+#include "resources/edition.h"
 
 namespace earthsiege {
 class window;

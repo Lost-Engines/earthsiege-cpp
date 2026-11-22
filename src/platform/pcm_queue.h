@@ -25,7 +25,7 @@ public:
     if(paused) return;
     size_t const count{std::min(output.size(), samples.size())};
     std::copy_n(samples.begin(), count, output.begin());
-    samples.erase(samples.begin(), samples.begin() + static_cast<std::ptrdiff_t>(count));
+    samples.erase(samples.begin(), samples.begin() + static_cast<ptrdiff_t>(count));
   }
   void pause(bool value) {
     std::lock_guard guard{lock};

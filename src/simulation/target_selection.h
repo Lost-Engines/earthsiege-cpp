@@ -23,14 +23,14 @@ struct target_candidate {
   bool dead{false};
   bool removed{false};
   bool disabled{false};
-  bool unavailable{false};                                                   // original actor +0x9f; producer retained separately
-  bool objective_event{false};                                               // original actor +0x9a
+  bool unavailable{false};                                                     // original actor +0x9f; producer retained separately
+  bool objective_event{false};                                                 // original actor +0x9a
   bool player{false};
   bool ignore_hud_target{false};
   std::optional<size_t> target;
   int16_t attackers{0};
   std::optional<bool> controller_attacking;
-  bool compares_combat_strength{true};                                      // HERC override; ordinary actors always assess as comparable
+  bool compares_combat_strength{true};                                         // HERC override; ordinary actors always assess as comparable
 };
 
 struct target_objective {

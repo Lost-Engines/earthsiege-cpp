@@ -24,7 +24,7 @@ auto table(binary_reader &file, F read) {
   return result;
 }
 
-} // namespace
+} // anonymous namespace
 
 auto read_routes_record(binary_reader &file)->mission_route {
   mission_route route;
@@ -139,7 +139,7 @@ auto read_mission_script(bytes source)->mission_script {
   result.flyers = table(file, [&file]{ return read_flyers_record(file); });
   result.bases = table(file, [&file]{ return read_bases_record(file); });
   result.groups = table(file, [&file]{ return read_groups_record(file); });
-  result.consumed = file.position();                                          // the original writer leaves stale tails in existing files
+  result.consumed = file.position();                                           // the original writer leaves stale tails in existing files
   return result;
 }
 

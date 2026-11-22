@@ -1,13 +1,15 @@
-#include "resources/mission_script.h"
-#include "resources/player_roster.h"
-#include "resources/binary_writer.h"
 #include <stdexcept>
 #include <utility>
+#include "resources/binary_writer.h"
+#include "resources/mission_script.h"
+#include "resources/player_roster.h"
 namespace earthsiege {
 namespace {
-template<typename R> void words(binary_writer &file,R const &values){for(auto v:values)file.integer(v);}
+template<typename R> void words(binary_writer &file,R const &values){
+  for(auto v:values)file.integer(v);
+}
 template<typename R,typename F> void table(binary_writer &file,R const &values,F write){
-  if(values.size()>65535)throw std::runtime_error{"mission table exceeds original word count"};
+  if(values.size() > 65535)throw std::runtime_error{"mission table exceeds original word count"};
   file.integer<uint16_t>(static_cast<uint16_t>(values.size()));for(auto const &v:values)write(v);
 }
 }
@@ -26,17 +28,21 @@ std::vector<uint8_t> write_mission_script(mission_script const &s) {
   return std::move(f).finish();
 }
 std::vector<uint8_t> write_player_roster(player_roster const &roster) {
-  if(roster.hercs.size()>50)throw std::runtime_error{"player roster exceeds original pool"};
+  if(roster.hercs.size() > 50)throw std::runtime_error{"player roster exceeds original pool"};
   binary_writer f;f.integer(roster.selected);f.integer<int16_t>(static_cast<int16_t>(roster.hercs.size()));
-  for(auto const &h:roster.hercs){if(h.weapons.size()>12||h.weapons.size()!=h.weapon_values.size())throw std::runtime_error{"invalid roster weapons"};
+  for(auto const &h:roster.hercs){if(h.weapons.size() > 12 || h.weapons.size() != h.weapon_values.size())throw std::runtime_error{"invalid roster weapons"};
     f.integer(h.slot);f.integer(h.field);f.integer(h.chassis);f.integer<int16_t>(static_cast<int16_t>(h.weapons.size()));words(f,h.weapons);words(f,h.weapon_values);f.integer(h.extra);
     words(f,h.condition.armour);words(f,h.condition.internal);words(f,h.condition.equipment);
   }
   if(roster.edition == game_edition::expansion) {
-    if(roster.flags.size()>256) throw std::runtime_error{"player availability table too large"};
+    if(roster.flags.size() > 256) throw std::runtime_error{"player availability table too large"};
     f.integer<uint16_t>(static_cast<uint16_t>(roster.flags.size()));
-  } else if(roster.flags.size()!=17) throw std::runtime_error{"original roster needs 17 availability flags"};
+  } else if(roster.flags.size() != 17) throw std::runtime_error{"original roster needs 17 availability flags"};
   f.append(roster.flags);return std::move(f).finish();
 }
-std::vector<uint8_t> write_mission_counters(mission_counters const &counters){binary_writer f;words(f,counters);return std::move(f).finish();}
+std::vector<uint8_t> write_mission_counters(mission_counters const &counters){
+  binary_writer f;
+  words(f,counters);
+  return std::move(f).finish();
+}
 } // namespace earthsiege

@@ -1,10 +1,10 @@
 #pragma once
-#include "render/framebuffer.h"
-#include "resources/resource_store.h"
-#include "resources/artwork.h"
-#include "shell/shell_animation.h"
 #include <array>
 #include <optional>
+#include "render/framebuffer.h"
+#include "resources/artwork.h"
+#include "resources/resource_store.h"
+#include "shell/shell_animation.h"
 namespace earthsiege {
 struct shell_palette_frame {framebuffer image;palette colours;};
 /// GO brush banks and retained background updates, separate from scheduling.
@@ -21,8 +21,12 @@ class shell_animation_artwork {
  void submit(palette const &value);
 public:
  explicit shell_animation_artwork(resource_store const &r,std::string prefix="res32/"):resources{r},directory{std::move(prefix)}{}
- palette const &colours()const{return colours_;}
- std::vector<shell_palette_frame> const &palette_frames()const{return frames;}
+ palette const &colours()const{
+   return colours_;
+ }
+ std::vector<shell_palette_frame> const &palette_frames()const{
+   return frames;
+ }
  void apply(std::vector<shell_animation_command> const &commands,framebuffer &visible,framebuffer &background);
 };
-}
+} // namespace earthsiege

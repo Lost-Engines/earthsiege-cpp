@@ -18,15 +18,33 @@ herc_actor::herc_actor(herc_definition const &definition, weapon_catalogue const
     armament{weapons, templates, definition.mounts, equipment, weapon_values},
     salvage_excluded{definition.profile.salvage_value == 0} {}
 
-herc_body const &herc_actor::body() const { return body_state; }
-void herc_actor::place(vec3<int32_t> const &position, vec3<uint16_t> const &angles) { body_state.place(position, angles); }
-earthsiege::damage_state const &herc_actor::damage() const { return components.state(); }
-herc_power const &herc_actor::power() const { return power_state; }
-herc_power &herc_actor::power() { return power_state; }
-herc_impact_state const &herc_actor::impacts() const { return impact_state; }
-herc_impact_state &herc_actor::impacts() { return impact_state; }
-weapon_bank &herc_actor::weapons() { return armament; }
-weapon_bank const &herc_actor::weapons() const { return armament; }
+herc_body const &herc_actor::body() const {
+  return body_state;
+}
+void herc_actor::place(vec3<int32_t> const &position, vec3<uint16_t> const &angles) {
+  body_state.place(position, angles);
+}
+earthsiege::damage_state const &herc_actor::damage() const {
+  return components.state();
+}
+herc_power const &herc_actor::power() const {
+  return power_state;
+}
+herc_power &herc_actor::power() {
+  return power_state;
+}
+herc_impact_state const &herc_actor::impacts() const {
+  return impact_state;
+}
+herc_impact_state &herc_actor::impacts() {
+  return impact_state;
+}
+weapon_bank &herc_actor::weapons() {
+  return armament;
+}
+weapon_bank const &herc_actor::weapons() const {
+  return armament;
+}
 
 std::optional<herc_interception> herc_actor::intercept(impact_request const &request, impact_conditions const &conditions, std::function<void()> const &shield_warning) {
   auto const placement{body_state.placement()};
@@ -137,9 +155,13 @@ void herc_actor::detach_section(size_t const section, bool &large_explosion, ran
   events.debris(3, position, random);
 }
 
-bool herc_actor::allows_salvage() const { return !salvage_excluded; }
+bool herc_actor::allows_salvage() const {
+  return !salvage_excluded;
+}
 
-void herc_actor::restore_condition(herc_condition const &condition) { components.restore_condition(condition); }
+void herc_actor::restore_condition(herc_condition const &condition) {
+  components.restore_condition(condition);
+}
 
 void herc_actor::direct_damage(size_t const section, int16_t const amount, random_state &random, herc_damage_events const &events) {
   if(!events.explosion || !events.debris) throw std::invalid_argument{"damage requires synchronous effect emitters"};
@@ -149,9 +171,9 @@ void herc_actor::direct_damage(size_t const section, int16_t const amount, rando
 }
 
 void herc_actor::blast_damage(vec3<int32_t> const &centre,int16_t radius,int16_t amount,random_state &random,herc_damage_events const &events,bool invulnerable){
-  auto const bearing{wrap_word(static_cast<int32_t>(bearing_angle(body_state.movement().position,centre))-body_state.movement().angles.z)};
-  auto const remaining{absorb_blast(power_state.shields,std::abs(static_cast<int>(bearing))<16384,amount)};
-  if(remaining>0)radial_damage(centre,radius,remaining,random,events,invulnerable);
+  auto const bearing{wrap_word(static_cast<int32_t>(bearing_angle(body_state.movement().position,centre)) - body_state.movement().angles.z)};
+  auto const remaining{absorb_blast(power_state.shields,std::abs(static_cast<int>(bearing)) < 16384,amount)};
+  if(remaining > 0)radial_damage(centre,radius,remaining,random,events,invulnerable);
 }
 
 void herc_actor::radial_damage(vec3<int32_t> const &centre, int16_t const radius, int16_t const amount, random_state &random, herc_damage_events const &events, bool const invulnerable) {
@@ -323,11 +345,19 @@ std::vector<weapon_shot> herc_actor::discharge_slot(size_t const slot, vec2<int1
   return shots;
 }
 
-herc_loadout const &herc_actor::definition() const { return loadout; }
-herc_profile const &herc_actor::profile() const { return source.profile; }
-int16_t herc_actor::combat_rating() const { return cached_combat_rating; }
+herc_loadout const &herc_actor::definition() const {
+  return loadout;
+}
+herc_profile const &herc_actor::profile() const {
+  return source.profile;
+}
+int16_t herc_actor::combat_rating() const {
+  return cached_combat_rating;
+}
 
-void herc_actor::notify_damage_changes(std::function<void(damage_consequences const &, damage_consequences const &)> callback) { consequence_notification = std::move(callback); }
+void herc_actor::notify_damage_changes(std::function<void(damage_consequences const &, damage_consequences const &)> callback) {
+  consequence_notification = std::move(callback);
+}
 int16_t herc_actor::internal_damage_fraction(size_t const component) const {
   auto const value{components.state().internal.at(component)};
   if(value < 0) return 256;
@@ -335,7 +365,9 @@ int16_t herc_actor::internal_damage_fraction(size_t const component) const {
   if(capacity == 0) throw std::domain_error{"zero internal damage capacity"};
   return wrap_word(static_cast<int32_t>(value) * 256 / capacity);
 }
-int16_t herc_actor::total_damage_fraction() const { return components.total_fraction(); }
+int16_t herc_actor::total_damage_fraction() const {
+  return components.total_fraction();
+}
 int16_t herc_actor::choose_aimed_component(herc_actor const &target, random_state &random) const {
   return select_herc_aimed_component(components, armament.slots().size(), target.damage().present, target.body().movement().collapsed, random);
 }
@@ -358,14 +390,20 @@ bool herc_actor::step(herc_controls const &controls, frame_ratio const ratio, st
   return body_state.step(controls, ratio, contact, events);
 }
 
-void herc_actor::align_disabled_player() { body_state.align_disabled_player(); }
+void herc_actor::align_disabled_player() {
+  body_state.align_disabled_player();
+}
 
-void herc_actor::begin_frame() { body_state.begin_frame(); }
+void herc_actor::begin_frame() {
+  body_state.begin_frame();
+}
 void herc_actor::prepare_player(herc_controls const &controls, frame_ratio const ratio, movement_event_sink const &events) {
   body_state.prepare_player_movement(controls.throttle, controls.steering, ratio, events);
   apply_aim({{}, {controls.torso, controls.elevation}, 0}, ratio);
 }
-int16_t herc_actor::exchange_throttle(int16_t const requested) { return body_state.exchange_throttle(requested); }
+int16_t herc_actor::exchange_throttle(int16_t const requested) {
+  return body_state.exchange_throttle(requested);
+}
 void herc_actor::apply_player_controls(player_input_actions const &actions, frame_ratio const ratio, movement_event_sink const &events) {
   if(actions.reset_aim) body_state.reset_aim_angles();
   if(actions.movement && !actions.move_flyer) body_state.prepare_player_movement(actions.movement->y, actions.movement->x, ratio, events);
@@ -377,11 +415,19 @@ void herc_actor::apply_player_controls(player_input_actions const &actions, fram
   }
   if(actions.stop) body_state.stop_throttle();
 }
-void herc_actor::prepare_requested(int16_t const speed, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) { body_state.prepare_requested(speed, steering, ratio, events, avoidance); }
-bool herc_actor::advance(frame_ratio const ratio, std::function<bool(herc_body const &)> const &contact, std::function<void()> const &blocked) { return body_state.advance(ratio, contact, blocked); }
+void herc_actor::prepare_requested(int16_t const speed, int16_t const steering, frame_ratio const ratio, movement_event_sink const &events, movement_adjustment const &avoidance) {
+  body_state.prepare_requested(speed, steering, ratio, events, avoidance);
+}
+bool herc_actor::advance(frame_ratio const ratio, std::function<bool(herc_body const &)> const &contact, std::function<void()> const &blocked) {
+  return body_state.advance(ratio, contact, blocked);
+}
 
-void herc_actor::recover_from_collision(int32_t const duration, bool const reverse) { body_state.recover_from_collision(duration, reverse); }
+void herc_actor::recover_from_collision(int32_t const duration, bool const reverse) {
+  body_state.recover_from_collision(duration, reverse);
+}
 
-std::vector<uint16_t> herc_actor::footstep_sounds() { return body_state.footstep_sounds(); }
+std::vector<uint16_t> herc_actor::footstep_sounds() {
+  return body_state.footstep_sounds();
+}
 
 } // namespace earthsiege

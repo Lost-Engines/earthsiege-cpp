@@ -28,7 +28,7 @@ earthsiege::collision_sphere sphere(earthsiege::binary_reader &file) {
   return {{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()}, file.integer<int16_t>()};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

@@ -1,8 +1,8 @@
 #pragma once
-#include "simulation/controller.h"
-#include "simulation/fixed_math.h"
 #include <span>
 #include <vector>
+#include "simulation/controller.h"
+#include "simulation/fixed_math.h"
 
 namespace earthsiege {
 struct wingmate_order_state {

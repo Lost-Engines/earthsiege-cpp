@@ -1,10 +1,22 @@
 #include <cstdlib>
 #include <iostream>
-#include "resources/resource_store.h"
 #include "resources/herc_definition.h"
+#include "resources/resource_store.h"
 #include "simulation/herc_weapon_selection.h"
 namespace {
-using namespace earthsiege;
+using earthsiege::binary_reader;
+using earthsiege::combat_actor_kind;
+using earthsiege::herc_weapon_selection_state;
+using earthsiege::random_state;
+using earthsiege::read_file;
+using earthsiege::read_herc_definition;
+using earthsiege::read_model;
+using earthsiege::read_weapon_catalogue;
+using earthsiege::resource_store;
+using earthsiege::select_herc_weapon;
+using earthsiege::weapon_bank;
+using earthsiege::weapon_excluded_from_combat;
+using earthsiege::weapon_lock_channel;
 random_state::state read_random(binary_reader &file) {
   random_state::state state; for(auto &v : state.words) v = file.integer<uint16_t>();
   state.first = file.integer<uint8_t>(); state.second = file.integer<uint8_t>(); return state;
@@ -12,7 +24,7 @@ random_state::state read_random(binary_reader &file) {
 std::vector<int16_t> read_words(binary_reader &file) {
   std::vector<int16_t> words(file.integer<uint16_t>()); for(auto &v : words) v = file.integer<int16_t>(); return words;
 }
-}
+} // anonymous namespace
 int main(int argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; auto const bytes{read_file(argv[2])}; binary_reader file{bytes}; auto const magic{file.take(8)};

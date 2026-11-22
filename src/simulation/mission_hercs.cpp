@@ -1,7 +1,7 @@
-#include "mission_session.h"
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
+#include "mission_session.h"
 #include "simulation/fixed_math.h"
 #include "simulation/herc_assessment.h"
 #include "simulation/herc_guard.h"
@@ -10,7 +10,9 @@
 
 namespace earthsiege {
 namespace {
-bool incapacitated(engagement_state const &state) { return state.dead || state.disabled || state.unavailable; }
+bool incapacitated(engagement_state const &state) {
+  return state.dead || state.disabled || state.unavailable;
+}
 int32_t distance(vec3<int32_t> const &a, vec3<int32_t> const &b) {
   return fast_distance({wrap_long(static_cast<int64_t>(a.x) - b.x), wrap_long(static_cast<int64_t>(a.y) - b.y), wrap_long(static_cast<int64_t>(a.z) - b.z)});
 }
@@ -22,8 +24,8 @@ herc_combat_position mission_session::combat_position(size_t const index) const 
     auto const &body{crew[index].actor->body()};
     return {vec3<int32_t>{body.movement().position}, body.movement().angles.z, body.torso().angle};
   }
-  if(index < base_id(0)) {auto const &actor{*flyers[index-flyer_id(0)].actor}; return {vec3<int32_t>{actor.motion().position}, actor.angles().z, 0};}
-  auto const &actor{*bases.at(index-base_id(0)).actor};
+  if(index < base_id(0)) {auto const &actor{*flyers[index - flyer_id(0)].actor}; return {vec3<int32_t>{actor.motion().position}, actor.angles().z, 0};}
+  auto const &actor{*bases.at(index - base_id(0)).actor};
   return {vec3<int32_t>{actor.placement().translation}, transform_angles(actor.placement()).z, actor.is_turret() ? actor.turret_aim().angles[1] : int16_t{0}};
 }
 
@@ -114,10 +116,12 @@ void mission_session::advance_herc(size_t const index, frame_ratio const ratio, 
       // a removed rammer underground before later victims are visited.
       auto const &centre{actor.body().movement().position};
       if(weapon_definitions.edition == game_edition::expansion) blast({.actor{activity->size()}, .target{}}, centre, 3000, 2000);
-      else for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && distance(centre, crew[i].actor->body().movement().position) < 3000)
+      else for(size_t i{0}; i != crew.size(); ++i) if(!crew[i].waiting && distance(centre, crew[i].actor->body().movement().position) < 3000) {
         crew[i].actor->radial_damage(centre, 3000, 2000, random, damage_events(i), i == player_index && settings.player_is_invulnerable(weapon_definitions.edition));
-      if(index != player_index || !settings.player_is_invulnerable(weapon_definitions.edition)) for(size_t section{0}; section != actor.damage().present.size(); ++section)
+      }
+      if(index != player_index || !settings.player_is_invulnerable(weapon_definitions.edition)) for(size_t section{0}; section != actor.damage().present.size(); ++section) {
         if(actor.damage().present[section]) actor.direct_damage(section, 32000, random, damage_events(index));
+      }
     }
     return;
   }
@@ -201,8 +205,9 @@ bool mission_session::target_path_blocked(size_t const index) const {
   // Their sampled height-field ray runs from this actor toward the target.
   auto const start{combat_position(index).position}, end{combat_position(target).position};
   std::vector<scenery_collider> buildings;
-  for(auto const &member : bases) if(member.side == crew[index].side)
+  for(auto const &member : bases) if(member.side == crew[index].side) {
     if(auto const shape{member.actor->obstruction()}) buildings.push_back(*shape);
+  }
   if(intersect_scenery_segment(buildings, start, end)) return true;
   return intersect_scenery_segment(terrain.colliders(), start, end).has_value();
 }
@@ -253,7 +258,7 @@ void mission_session::reconsider_herc(size_t const index) {
     .retreat{[&]{
       auto const selected{activity->targets()[index].selected.value()};
       herc_retreat_inputs input{.incapacitated{incapacitated(activity->decisions()[index])}, .target_kind{combat_kind(activity->actor(selected).kind)},
-        .target_can_retaliate{selected >= base_id(0) && bases[selected-base_id(0)].actor->profile().can_retaliate},
+        .target_can_retaliate{selected >= base_id(0) && bases[selected - base_id(0)].actor->profile().can_retaliate},
         .caution{actor.total_damage_fraction()}, .internal_damage{}, .attackers{activity->targets()[index].attackers}, .strength{actor.combat_rating()}};
       for(size_t i{0}; i != retreat_components.size(); ++i) input.internal_damage[i] = actor.internal_damage_fraction(retreat_components[i]);
       auto const result{assess_herc_retreat(input, member.aim_tolerance, [&]{
@@ -289,7 +294,7 @@ void mission_session::aim_herc(size_t const index, size_t const target, int16_t 
           auto const &shield{crew[target].actor->power().shields};
           // Original 18e50 passes a boolean to the angle-taking 10e6c getter.
           // Both 0 and 1 therefore select the front shield, even from behind.
-          return angle>=-16384 && angle<16384 ? shield.front : shield.rear;
+          return angle >= -16384 && angle < 16384 ? shield.front : shield.rear;
         },
         [&]{if(auto const trigger{activity->actor(index).hit_trigger}) activity->activate(*trigger);})};
       actor.impacts().detectable = state.detectable; decision.unavailable = state.unavailable;
@@ -311,8 +316,9 @@ void mission_session::update_herc_sensors(size_t const index, frame_ratio const 
       input.ecm_active = input.player ? ecm->enabled : actor.impacts().detectable;
       input.ecm_pulse = ecm->pulse;
     }
-    if(auto const channel{weapon_lock_channel(*slot, weapon_definitions)})
+    if(auto const channel{weapon_lock_channel(*slot, weapon_definitions)}) {
       if(auto const supply{slot->ammunition()}) input.missile_counts[*channel] = wrap_word(input.missile_counts[*channel] + supply->rounds);
+    }
   }
   if(auto const selected{weapon_selection()}; input.player && selected) input.selected_channel = weapon_lock_channel(actor.weapons().slots()[*selected].value(), weapon_definitions);
   auto &relationship{activity->targets()[index]};
@@ -337,7 +343,7 @@ void mission_session::dispatch_herc(size_t const index, frame_ratio const ratio)
     if(enter_skirting(index)) return false;
     auto const target{activity->targets()[index].selected.value()};
     return attack_with_herc(type, member.attack, state.command,
-      {combat_position(index), combat_position(target), actor.impacts().damage_received, incapacitated(state), incapacitated(activity->decisions()[target]), herc_target_completed(index), target >= base_id(0) && bases[target-base_id(0)].actor->profile().can_retaliate, weapon_definitions.edition == game_edition::expansion}, ratio, {
+      {combat_position(index), combat_position(target), actor.impacts().damage_received, incapacitated(state), incapacitated(activity->decisions()[target]), herc_target_completed(index), target >= base_id(0) && bases[target - base_id(0)].actor->profile().can_retaliate, weapon_definitions.edition == game_edition::expansion}, ratio, {
       .move{[&](movement_request const &request){move_herc(index, request, ratio);}},
       .aim{[&](int16_t facing){aim_herc(index, target, facing, ratio);}},
       .completed{[&, target, type]{

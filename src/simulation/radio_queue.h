@@ -1,8 +1,8 @@
 #pragma once
-#include "simulation/fixed_math.h"
 #include <array>
 #include <cstdint>
 #include <optional>
+#include "simulation/fixed_math.h"
 
 namespace earthsiege {
 struct radio_event {

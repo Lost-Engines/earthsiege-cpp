@@ -60,7 +60,7 @@ void model_instance::update() {
     changed[node] = true;
   }
   std::ranges::fill(changed, false);
-  if(!world.empty()) world[0] = model_transform{};                               // root motion is accumulated separately
+  if(!world.empty()) world[0] = model_transform{};                             // root motion is accumulated separately
 }
 
 std::span<animation_pose const> model_instance::poses() const {

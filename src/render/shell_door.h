@@ -1,7 +1,7 @@
 #pragma once
-#include "resources/lpf_animation.h"
 #include "render/framebuffer.h"
 #include "resources/artwork.h"
+#include "resources/lpf_animation.h"
 namespace earthsiege {
 /// Short menu transition; no input is delivered through it.
 class shell_door {
@@ -14,8 +14,14 @@ class shell_door {
 public:
  shell_door(bytes data,framebuffer const &base,palette const &colours);
  void advance();
- void draw(framebuffer &target)const{target.image(frame,0,0);}
- palette const &colours()const{return palette_;}
- bool finished()const{return done;}
+ void draw(framebuffer &target)const{
+   target.image(frame,0,0);
+ }
+ palette const &colours()const{
+   return palette_;
+ }
+ bool finished()const{
+   return done;
+ }
 };
-}
+} // namespace earthsiege

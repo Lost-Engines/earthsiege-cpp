@@ -5,7 +5,19 @@
 #include "render/mfd_instruments.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::mfd_button_count;
+  using earthsiege::mfd_enabled_buttons;
+  using earthsiege::mfd_instruments;
+  using earthsiege::mfd_page;
+  using earthsiege::mfd_ranges;
+  using earthsiege::next_mfd_range;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::rectangle;
+  using earthsiege::resource_store;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const source{read_file(argv[2])}; binary_reader file{source};
@@ -25,10 +37,11 @@ int main(int argc, char **argv) try {
     for(auto const value : enabled) if(value != bool(file.integer<uint8_t>())) file.fail("MFD enabled buttons differ");
     std::array<unsigned int, mfd_button_count> faces;
     for(auto &face : faces) face = file.integer<uint8_t>();
-    auto const check_bounds{[&](rectangle const &bounds) {
+    auto const check_bounds{[&](rectangle const &bounds){
       if(file.integer<int32_t>() != bounds.left + x || file.integer<int32_t>() != bounds.top + y ||
-         file.integer<int32_t>() != bounds.right + x || file.integer<int32_t>() != bounds.bottom + y)
+         file.integer<int32_t>() != bounds.right + x || file.integer<int32_t>() != bounds.bottom + y) {
         file.fail(name + " MFD control bounds differ");
+      }
     }};
     for(auto const &bounds : display->button_bounds()) check_bounds(bounds);
     check_bounds(display->display_bounds());
@@ -43,8 +56,9 @@ int main(int argc, char **argv) try {
   auto const ranges{file.integer<uint32_t>()};
   for(uint32_t i{}; i < ranges; ++i) {
     auto const before{file.integer<int32_t>()}, returned{file.integer<int32_t>()}, after{file.integer<int32_t>()}, distance{file.integer<int32_t>()};
-    if(static_cast<int32_t>(next_mfd_range(static_cast<size_t>(before))) != after || returned != after || mfd_ranges.at(static_cast<size_t>(after)) != distance)
+    if(static_cast<int32_t>(next_mfd_range(static_cast<size_t>(before))) != after || returned != after || mfd_ranges.at(static_cast<size_t>(after)) != distance) {
       file.fail("MFD range cycle differs");
+    }
   }
   file.require_end(); std::cout << count << " original MFD button frames and " << ranges << " range cycles match\n";
   return EXIT_SUCCESS;

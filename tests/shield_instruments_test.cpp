@@ -4,7 +4,15 @@
 #include "render/shield_instruments.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::palette;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::resource_store;
+  using earthsiege::shield_instruments;
+  using earthsiege::update_shield_colours;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const bytes{read_file(argv[2])}; binary_reader file{bytes};
@@ -13,8 +21,9 @@ int main(int argc, char **argv) try {
   auto const count{file.integer<uint32_t>()}; unsigned int failed{};
   palette colours;
   auto const check_palette{[&]{
-    for(size_t slot{80}; slot < 86; ++slot) for(auto component : colours.dac_colours[slot])
+    for(size_t slot{80}; slot < 86; ++slot) for(auto component : colours.dac_colours[slot]) {
       if(component != file.integer<uint8_t>()) file.fail("shield DAC value differs");
+    }
   }};
   for(unsigned int i{}; i < count; ++i) {
     auto const name{file.cstring()}; auto const front{file.integer<int32_t>()}, rear{file.integer<int32_t>()}, balance{file.integer<int32_t>()};

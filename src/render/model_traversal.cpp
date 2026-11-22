@@ -8,7 +8,9 @@
 namespace earthsiege {
 namespace {
 
-auto wrap(int64_t value)->int32_t { return std::bit_cast<int32_t>(static_cast<uint32_t>(value)); }
+auto wrap(int64_t value)->int32_t {
+  return std::bit_cast<int32_t>(static_cast<uint32_t>(value));
+}
 
 class bsp_walker {
   bsp_part const &part;
@@ -71,7 +73,7 @@ auto projected_radius(int16_t radius, vec3<int32_t> const &eye, model_detail con
   return projected;
 }
 
-} // namespace
+} // anonymous namespace
 
 auto bsp_draw_order(bsp_part const &part, vec3<int32_t> const &eye, std::span<model_transform const> transforms)->std::vector<uint16_t> {
   return bsp_walker{part, eye, transforms}.run();

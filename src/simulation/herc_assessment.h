@@ -1,10 +1,10 @@
 #pragma once
 #include <array>
 #include <functional>
+#include "resources/herc_profile.h"
 #include "simulation/component_damage.h"
 #include "simulation/target_selection.h"
 #include "simulation/weapon_bank.h"
-#include "resources/herc_profile.h"
 
 namespace earthsiege {
 
@@ -20,7 +20,7 @@ struct herc_retreat_inputs {
   combat_actor_kind target_kind{combat_actor_kind::herc};
   bool target_can_retaliate{false};
   int16_t caution{0};
-  std::array<int16_t, 6> internal_damage{};                                  // Q8 damage; a destroyed component is 256
+  std::array<int16_t, 6> internal_damage{};                                    // Q8 damage; a destroyed component is 256
   int16_t attackers{0};
   int16_t strength{0};
 };

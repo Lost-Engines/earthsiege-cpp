@@ -1,7 +1,7 @@
 #pragma once
-#include "shell/mission_view.h"
-#include "shell/mission_options_dialog.h"
 #include "shell/mission_alert.h"
+#include "shell/mission_options_dialog.h"
+#include "shell/mission_view.h"
 
 namespace earthsiege {
 /// Attract-mode tape owner. Modal input is consumed at its original call site,
@@ -17,7 +17,7 @@ private:
   save_store saves;
   std::array<joystick_calibration,2> calibrations{};
   size_t next{},simulation_frames{},modal_packets{};
-  uint64_t elapsed_units{}; // milliseconds * 256, retaining fractional tape periods
+  uint64_t elapsed_units{};                                                    // milliseconds * 256, retaining fractional tape periods
   uint16_t last_delta{};
   bool finished{},suppressed{};
   unsigned advance(uint16_t delta);
@@ -27,12 +27,24 @@ private:
 public:
   demo_playback(resource_store const &,unsigned demo,preferences const &,
                 std::filesystem::path save_directory,music_settings const &music={});
-  mission_view &view(){return view_;}
-  bool done()const{return finished;}
-  size_t packets_read()const{return next;}
-  size_t packet_count()const{return tape.frames.size();}
-  size_t frames_played()const{return simulation_frames;}
-  size_t modal_packets_read()const{return modal_packets;}
+  mission_view &view(){
+    return view_;
+  }
+  bool done()const{
+    return finished;
+  }
+  size_t packets_read()const{
+    return next;
+  }
+  size_t packet_count()const{
+    return tape.frames.size();
+  }
+  size_t frames_played()const{
+    return simulation_frames;
+  }
+  size_t modal_packets_read()const{
+    return modal_packets;
+  }
   void step(presenter const &);
 };
 }

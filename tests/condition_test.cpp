@@ -37,7 +37,7 @@ auto native_words(earthsiege::mission_condition const &condition)->std::array<in
   return result;
 }
 
-} // namespace
+} // anonymous namespace
 
 auto main(int argc, char *argv[])->int try {
   if(argc != 4) throw std::runtime_error{"expected assets and original condition/RNG fixtures"};
@@ -66,7 +66,7 @@ auto main(int argc, char *argv[])->int try {
       for(auto &word : expected) fixture >> word;
       expected_complete.push_back(expected);
       auto actual{native_words(active[index])};
-      if(expected[2] == 3) actual[6] = expected[6];                        // group scratch binds during later table compilation
+      if(expected[2] == 3) actual[6] = expected[6];                            // group scratch binds during later table compilation
       if(actual != expected) throw std::runtime_error{"condition differs from original: " + name};
     }
     earthsiege::random_state complete_random{initial};

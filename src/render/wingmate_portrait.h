@@ -1,9 +1,9 @@
 #pragma once
+#include <span>
+#include "render/framebuffer.h"
+#include "resources/artwork.h"
 #include "resources/interface_strings.h"
 #include "resources/resource_store.h"
-#include "resources/artwork.h"
-#include "render/framebuffer.h"
-#include <span>
 
 namespace earthsiege {
 /// The original idle damage/order labels, pilot name and five static frames.

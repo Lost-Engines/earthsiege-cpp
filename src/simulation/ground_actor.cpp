@@ -1,15 +1,19 @@
 #include "ground_actor.h"
-#include <type_traits>
 #include <algorithm>
 #include <stdexcept>
-#include "simulation/hit_volumes.h"
+#include <type_traits>
 #include "resources/model_tree.h"
-#include "simulation/impact_damage.h"
 #include "simulation/fixed_math.h"
+#include "simulation/hit_volumes.h"
+#include "simulation/impact_damage.h"
 #include "simulation/model_math.h"
 
 namespace earthsiege {
-void ground_actor::deploy(vec3<int32_t> const &position,vec3<uint16_t> const &angles){original_angles=angles;transform=rotation_transform(angles);transform.translation=position;}
+void ground_actor::deploy(vec3<int32_t> const &position,vec3<uint16_t> const &angles){
+  original_angles = angles;
+  transform = rotation_transform(angles);
+  transform.translation = position;
+}
 
 namespace {
 
@@ -25,35 +29,48 @@ std::variant<model_instance, animation_rig> make_body(ground_catalogue const &ca
   return rig;
 }
 
-} // namespace
+} // anonymous namespace
 
 ground_actor::ground_actor(ground_catalogue const &resources, size_t const selected, uint8_t const selected_side, int16_t const condition, vec3<int32_t> const &position, vec3<uint16_t> const &angles)
   : catalogue{resources}, type{selected}, side{selected_side}, intact{make_body(resources, selected, selected_side)},
     wreck{std::get<shape_part>(resources.model(selected, selected_side, true).content)}, transform{rotation_transform(angles)},original_angles{angles} {
   transform.translation = position;
   cell_timer = profile().cell_period;
-  if(condition == 0) { accumulated_damage = profile().damage_capacity; destroyed = wreck_ready = true; }
-  else if(condition > 0) accumulated_damage = wrap_word((100 - condition) * profile().damage_capacity / 100);
-  section_damage[0]=accumulated_damage;
+  if(condition == 0) { accumulated_damage = profile().damage_capacity; destroyed = wreck_ready = true; } else if(condition > 0) accumulated_damage = wrap_word((100 - condition) * profile().damage_capacity / 100);
+  section_damage[0] = accumulated_damage;
 }
 
-ground_profile const &ground_actor::profile() const { return catalogue.profile(type); }
-int16_t ground_actor::damage() const { return accumulated_damage; }
-bool ground_actor::dead() const { return destroyed; }
-bool ground_actor::is_detectable() const { return !destroyed && (type == 5 || type == 6); }
-bool ground_actor::is_turret() const { return type == 8; }
-vec3<int32_t> ground_actor::target_position() const { return transform_point({0, 0, profile().target_height}, transform); }
+ground_profile const &ground_actor::profile() const {
+  return catalogue.profile(type);
+}
+int16_t ground_actor::damage() const {
+  return accumulated_damage;
+}
+bool ground_actor::dead() const {
+  return destroyed;
+}
+bool ground_actor::is_detectable() const {
+  return !destroyed && (type == 5 || type == 6);
+}
+bool ground_actor::is_turret() const {
+  return type == 8;
+}
+vec3<int32_t> ground_actor::target_position() const {
+  return transform_point({0, 0, profile().target_height}, transform);
+}
 std::optional<scenery_collider> ground_actor::obstruction() const {
   return wreck_ready || profile().collision.empty() ? std::optional<scenery_collider>{heightfield()} : std::nullopt;
 }
 model_instance const &ground_actor::instance() const {
   if(wreck_ready) return wreck;
-  return std::visit([](auto const &body) -> model_instance const & {
+  return std::visit([](auto const &body)->model_instance const & {
     if constexpr(std::is_same_v<std::decay_t<decltype(body)>, animation_rig>) return body.instance();
     else return body;
   }, intact);
 }
-model_transform const &ground_actor::placement() const { return transform; }
+model_transform const &ground_actor::placement() const {
+  return transform;
+}
 scene_model ground_actor::model() const {
   auto const &root{catalogue.model(type, side, wreck_ready)};
   return {std::span{&root, 1}, instance(), model_transform{transform}, 5, catalogue.textures(), {}, {}, {}};
@@ -68,29 +85,36 @@ scenery_collider ground_actor::heightfield() const {
   return scenery_collider{shape.collision ? &*shape.collision : nullptr, model_transform{transform}, root.header.radius};
 }
 
-bool ground_actor::is_wreck() const { return wreck_ready; }
-int16_t ground_actor::remaining_bursts() const { return destruction_steps; }
-int16_t ground_actor::burst_timer() const { return destruction_timer; }
-int16_t ground_actor::cell_clock() const { return cell_timer; }
+bool ground_actor::is_wreck() const {
+  return wreck_ready;
+}
+int16_t ground_actor::remaining_bursts() const {
+  return destruction_steps;
+}
+int16_t ground_actor::burst_timer() const {
+  return destruction_timer;
+}
+int16_t ground_actor::cell_clock() const {
+  return cell_timer;
+}
 model_instance &ground_actor::intact_instance() {
-  return std::visit([](auto &body) -> model_instance & {
+  return std::visit([](auto &body)->model_instance & {
     if constexpr(std::is_same_v<std::decay_t<decltype(body)>, animation_rig>) return body.instance();
     else return body;
   }, intact);
 }
 
 void ground_actor::section_hit(size_t section,int16_t amount,random_state &random,ground_damage_events const &events){
-  if(section==0){direct_damage(amount,random,events);return;}
-  auto &damage{section_damage.at(section)};auto capacity{profile().expansion_sections.at(section-1)};
-  if(static_cast<int>(damage)+amount>capacity){damage=capacity;section_present[section]=0;}
-  else damage=wrap_word(damage+amount);
+  if(section == 0){direct_damage(amount,random,events);return;}
+  auto &damage{section_damage.at(section)};auto capacity{profile().expansion_sections.at(section - 1)};
+  if(static_cast<int>(damage) + amount > capacity){damage = capacity;section_present[section] = 0;} else damage = wrap_word(damage + amount);
 }
 void ground_actor::direct_damage(int16_t const amount, random_state &random, ground_damage_events const &events) {
   if(!events.debris) throw std::invalid_argument{"ground damage requires a synchronous debris emitter"};
-  bool const exceeded{profile().edition==game_edition::expansion?static_cast<int>(accumulated_damage)+amount>profile().damage_capacity:wrap_word(accumulated_damage+amount)>profile().damage_capacity};
-  accumulated_damage = wrap_word(accumulated_damage + amount);section_damage[0]=accumulated_damage;
-  if(!exceeded) return;                   // equality survives in the original
-  accumulated_damage = profile().damage_capacity;section_damage[0]=accumulated_damage;
+  bool const exceeded{profile().edition == game_edition::expansion?static_cast<int>(accumulated_damage) + amount > profile().damage_capacity:wrap_word(accumulated_damage + amount) > profile().damage_capacity};
+  accumulated_damage = wrap_word(accumulated_damage + amount);section_damage[0] = accumulated_damage;
+  if(!exceeded) return;                                                        // equality survives in the original
+  accumulated_damage = profile().damage_capacity;section_damage[0] = accumulated_damage;
   if(events.kill_credit) events.kill_credit();
   destroyed = true;
   events.debris(3, transform.translation, random);
@@ -102,7 +126,7 @@ std::optional<int32_t> ground_actor::receive_impact(impact_request const &reques
   if(!events.explosion || !events.debris) throw std::invalid_argument{"ground impact requires synchronous effect emitters"};
   std::optional<int32_t> distance;
   int16_t struck_section{};
-  bool const heightfield_hit{wreck_ready||(profile().edition==game_edition::expansion?!profile().collision_enabled:profile().channels==0)};
+  bool const heightfield_hit{wreck_ready || (profile().edition == game_edition::expansion?!profile().collision_enabled:profile().channels == 0)};
   if(heightfield_hit) {
     std::array const candidates{heightfield()};
     if(auto const hit{intersect_scenery(candidates, request.transform, request.reach, request.radius)}) distance = wrap_long(static_cast<int64_t>(hit->distance) + 1);
@@ -113,14 +137,14 @@ std::optional<int32_t> ground_actor::receive_impact(impact_request const &reques
     if(fast_distance(delta) > wrap_long(static_cast<int64_t>(request.reach) + request.radius + root.header.radius)) return std::nullopt;
     auto const actor_to_ray{compose_transforms(transform, inverse_transform(request.transform))};
     std::array<int16_t,1> const original_present{1};
-    auto present{profile().edition==game_edition::expansion?std::span<int16_t const>{section_present}:std::span<int16_t const>{original_present}};
-    if(auto const hit{intersect_components(profile().collision, present, root, instance().transforms(), actor_to_ray, request.reach, request.radius)}) {distance = wrap_long(static_cast<int64_t>(hit->distance) + 2);struck_section=hit->section;} // sphere consumer and base method each add one
+    auto present{profile().edition == game_edition::expansion?std::span<int16_t const>{section_present}:std::span<int16_t const>{original_present}};
+    if(auto const hit{intersect_components(profile().collision, present, root, instance().transforms(), actor_to_ray, request.reach, request.radius)}) {distance = wrap_long(static_cast<int64_t>(hit->distance) + 2);struck_section = hit->section;} // sphere consumer and base method each add one
   }
   if(!distance) return std::nullopt;
   auto position{rotate_vector({0, *distance, 0}, request.transform)};
   for(unsigned int axis{0}; axis != 3; ++axis) position[axis] = wrap_long(static_cast<int64_t>(position[axis]) + request.transform.translation[axis]);
   if(!destroyed) {
-    auto raw{heightfield_hit&&request.damage.armour==0&&request.damage.shield==0?request.damage.plasma_armour.value_or(0):request.damage.armour};
+    auto raw{heightfield_hit && request.damage.armour == 0 && request.damage.shield == 0?request.damage.plasma_armour.value_or(0):request.damage.armour};
     auto amount{adjust_impact_damage(raw, conditions,profile().edition)};
     auto const weak_point{transform_point(profile().weak_point, transform)};
     vec3<int32_t> delta;
@@ -162,7 +186,7 @@ void ground_actor::advance(frame_ratio const ratio, random_state &random, ground
       }
     }
   }
-  if(destroyed||type==10) return;
+  if(destroyed || type == 10) return;
   if(type == 8) {
     advance_turret_cells(ratio);
     return;
@@ -176,7 +200,9 @@ void ground_actor::advance(frame_ratio const ratio, random_state &random, ground
   }
 }
 
-turret_aim_state const &ground_actor::turret_aim() const { return aiming; }
+turret_aim_state const &ground_actor::turret_aim() const {
+  return aiming;
+}
 
 vec3<int16_t> ground_actor::track_point(vec3<int32_t> const &position) {
   if(type != 8 || destroyed) throw std::logic_error{"tracking requires a live gun turret"};
@@ -209,7 +235,9 @@ vec3<int16_t> ground_actor::track_point(vec3<int32_t> const &position) {
   return vec3<int16_t>{error};
 }
 
-turret_fire_state const &ground_actor::turret_fire() const { return firing; }
+turret_fire_state const &ground_actor::turret_fire() const {
+  return firing;
+}
 
 void ground_actor::advance_turret_cells(frame_ratio const ratio) {
   // The unlit frame stops its own timer; firing restarts it.
@@ -229,7 +257,7 @@ void ground_actor::advance_turret(frame_ratio const ratio, weapon_catalogue cons
     firing.target_timer = 10000;
   }
   advance_turret_cells(ratio);
-  if(!firing.target) return;                                                  // burst/refire clocks freeze without a target
+  if(!firing.target) return;                                                   // burst/refire clocks freeze without a target
   auto const target{callbacks.target(*firing.target)};
   vec3<int32_t> delta;
   for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(target.position[axis]) - transform.translation[axis]);
@@ -265,26 +293,25 @@ void ground_actor::advance_turret(frame_ratio const ratio, weapon_catalogue cons
 }
 
 void ground_actor::advance_landing_craft(frame_ratio ratio,weapon_catalogue const &weapons,random_state &random,landing_callbacks const &callbacks){
-  if(type!=10||destroyed)throw std::logic_error{"landing craft control requires a live landing craft"};
-  auto tick=[&](int16_t &value){value=std::max<int16_t>(0,wrap_word(value-ratio));return value==0;};
-  auto heading{static_cast<uint16_t>(original_angles.z+0x1555)};
-  for(size_t b{};b<3;++b,heading=static_cast<uint16_t>(heading+0x5554)){
+  if(type != 10 || destroyed)throw std::logic_error{"landing craft control requires a live landing craft"};
+  auto tick=[&](int16_t &value){value = std::max<int16_t>(0,wrap_word(value - ratio));return value == 0;};
+  auto heading{static_cast<uint16_t>(original_angles.z + 0x1555)};
+  for(size_t b{};b < 3;++b,heading = static_cast<uint16_t>(heading + 0x5554)){
     auto &bank{landing_banks_[b]};
-    if(tick(bank.target_timer)){bank.target=callbacks.select(heading);bank.target_timer=10000;}
+    if(tick(bank.target_timer)){bank.target = callbacks.select(heading);bank.target_timer = 10000;}
     if(!bank.target)continue;
     auto const target{callbacks.target(*bank.target)};vec3<int32_t> delta,aim;
-    for(unsigned a{};a<3;++a){delta[a]=wrap_long(static_cast<int64_t>(target.position[a])-transform.translation[a]);aim[a]=wrap_long(static_cast<int64_t>(target.position[a])+target.offset[a]-transform.translation[a]);}
-    auto distance{fast_distance(delta)};auto pitch{wrap_word(direction_angle(fast_distance_2d({aim.x,aim.y}),aim.z))};auto yaw{wrap_word(static_cast<int32_t>(direction_angle(aim.x,aim.y))-angle_quarter_turn-heading)};
-    for(size_t w{};w<3;++w){auto section{b*2+1+(w!=0)};auto capacity{profile().expansion_sections.at(section-1)};
-      if(section_damage[section]==capacity){if(w==0)intact_instance().cell_frames()[b==2?1:b+2]=1;continue;}
-      auto &state{bank.weapons[w]};if(tick(state.phase_timer)){state.phase=!state.phase;state.phase_timer=wrap_word(5000+random.bounded(5000));}
+    for(unsigned a{};a < 3;++a){delta[a] = wrap_long(static_cast<int64_t>(target.position[a]) - transform.translation[a]);aim[a] = wrap_long(static_cast<int64_t>(target.position[a]) + target.offset[a] - transform.translation[a]);}
+    auto distance{fast_distance(delta)};auto pitch{wrap_word(direction_angle(fast_distance_2d({aim.x,aim.y}),aim.z))};auto yaw{wrap_word(static_cast<int32_t>(direction_angle(aim.x,aim.y)) - angle_quarter_turn - heading)};
+    for(size_t w{};w < 3;++w){auto section{b * 2 + 1 + (w != 0)};auto capacity{profile().expansion_sections.at(section - 1)};
+      if(section_damage[section] == capacity){if(w == 0)intact_instance().cell_frames()[b == 2?1:b + 2] = 1;continue;}
+      auto &state{bank.weapons[w]};if(tick(state.phase_timer)){state.phase = !state.phase;state.phase_timer = wrap_word(5000 + random.bounded(5000));}
       auto const &definition{catalogue.landing_weapons()[w]};
-      if(!tick(state.refire)||!state.phase||static_cast<uint16_t>(yaw+definition.yaw_limit)>=static_cast<uint16_t>(definition.yaw_limit*2)||static_cast<uint16_t>(pitch+definition.pitch_limit)>=static_cast<uint16_t>(definition.pitch_limit*2)||distance>=definition.range)continue;
-      auto placement{rotation_transform({0,0,heading})};placement.translation=transform.translation;
-      auto position{rotate_vector(definition.muzzle,placement)};for(unsigned a{};a<3;++a)position[a]=wrap_long(static_cast<int64_t>(position[a])+transform.translation[a]);vec3<uint16_t> angles{0,0,heading};weapon_shot shot;
-      if(w==0){shot.kind=shot_kind::rocket;auto found{std::ranges::find_if(weapons.projectiles,[](auto const &p){return p.kind==projectile_kind::rocket&&p.subtype==3;})};if(found==weapons.projectiles.end())throw std::runtime_error{"landing craft missile definition"};shot.projectile=static_cast<size_t>(found-weapons.projectiles.begin());}
-      else {for(unsigned a{};a<3;++a)aim[a]=wrap_long(static_cast<int64_t>(target.position[a])+target.offset[a]-position[a]);angles={direction_angle(fast_distance_2d({aim.x,aim.y}),aim.z),0,static_cast<uint16_t>(direction_angle(aim.x,aim.y)-angle_quarter_turn)};placement=rotation_transform(angles);placement.translation=position;shot.kind=shot_kind::beam;shot.projectile=static_cast<size_t>(weapons.weapons.at(6).projectile);shot.charge=weapons.weapons.at(6).energy_thresholds[1];shot.range=weapons.weapons.at(6).range;}
-      shot.muzzle={model_transform{placement},vec3<int32_t>{position},vec3<uint16_t>{angles}};callbacks.fire(shot,*bank.target);state.refire=definition.refire;
+      if(!tick(state.refire) || !state.phase || static_cast<uint16_t>(yaw + definition.yaw_limit) >= static_cast<uint16_t>(definition.yaw_limit * 2) || static_cast<uint16_t>(pitch + definition.pitch_limit) >= static_cast<uint16_t>(definition.pitch_limit * 2) || distance >= definition.range)continue;
+      auto placement{rotation_transform({0,0,heading})};placement.translation = transform.translation;
+      auto position{rotate_vector(definition.muzzle,placement)};for(unsigned a{};a < 3;++a)position[a] = wrap_long(static_cast<int64_t>(position[a]) + transform.translation[a]);vec3<uint16_t> angles{0,0,heading};weapon_shot shot;
+      if(w == 0){shot.kind = shot_kind::rocket;auto found{std::ranges::find_if(weapons.projectiles,[](auto const &p){return p.kind == projectile_kind::rocket && p.subtype == 3;})};if(found == weapons.projectiles.end())throw std::runtime_error{"landing craft missile definition"};shot.projectile = static_cast<size_t>(found - weapons.projectiles.begin());} else {for(unsigned a{};a < 3;++a)aim[a] = wrap_long(static_cast<int64_t>(target.position[a]) + target.offset[a] - position[a]);angles = {direction_angle(fast_distance_2d({aim.x,aim.y}),aim.z),0,static_cast<uint16_t>(direction_angle(aim.x,aim.y) - angle_quarter_turn)};placement = rotation_transform(angles);placement.translation = position;shot.kind = shot_kind::beam;shot.projectile = static_cast<size_t>(weapons.weapons.at(6).projectile);shot.charge = weapons.weapons.at(6).energy_thresholds[1];shot.range = weapons.weapons.at(6).range;}
+      shot.muzzle = {model_transform{placement},vec3<int32_t>{position},vec3<uint16_t>{angles}};callbacks.fire(shot,*bank.target);state.refire = definition.refire;
     }
   }
 }

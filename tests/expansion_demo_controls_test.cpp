@@ -1,16 +1,17 @@
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
-#include "resources/resource_store.h"
 #include "resources/mission_script.h"
-#include "simulation/aim_control.h"
+#include "resources/resource_store.h"
 #include "shell/tactical_controller.h"
+#include "simulation/aim_control.h"
 #include "simulation/component_damage.h"
 #include "simulation/navigation.h"
 #include "simulation/shield_power.h"
 #include "simulation/weapon_controls.h"
 
 int main(int argc, char **argv) try {
-  if(argc != 2) return 1;
+  if(argc != 2) return EXIT_FAILURE;
   auto const bytes{earthsiege::read_file(argv[1])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
@@ -69,8 +70,9 @@ int main(int argc, char **argv) try {
     if(controller.state().pan.x != expected) file.fail("expansion map pan " + std::to_string(row));
   }
   auto const definitions{file.integer<uint32_t>()};
-  for(uint32_t row{}; row < definitions; ++row)
+  for(uint32_t row{}; row < definitions; ++row) {
     if(earthsiege::describe(static_cast<earthsiege::behavior>(row), true).properties != file.integer<uint16_t>()) file.fail("expansion controller flags " + std::to_string(row));
+  }
   auto const invulnerability{file.integer<uint32_t>()};
   for(uint32_t row{}; row < invulnerability; ++row) {
     earthsiege::mission_header mission;
@@ -79,5 +81,5 @@ int main(int argc, char **argv) try {
   }
   file.require_end();
   std::cout << aims << " tracking controls, " << shields << " shield recharges, " << avoidance << " firing-line avoidance cases, " << accumulators << " damage accumulators, " << capacitors << " EMP recharges and " << pans << " map pans agree with original instructions\n";
-  return 0;
-} catch(std::exception const &error) {std::cerr << error.what() << '\n'; return 1;}
+  return EXIT_SUCCESS;
+} catch(std::exception const &error) {std::cerr << error.what() << '\n'; return EXIT_FAILURE;}

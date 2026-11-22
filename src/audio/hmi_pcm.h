@@ -1,7 +1,7 @@
 #pragma once
-#include "resources/binary_reader.h"
 #include <array>
 #include <optional>
+#include "resources/binary_reader.h"
 
 namespace earthsiege {
 struct midi_sample {
@@ -29,7 +29,11 @@ public:
   hmi_pcm(bytes bank,pcm_midi_backend &output);
   void midi(bytes message);
   void complete(int32_t handle);
-  auto voices()const->decltype(slots)const&{return slots;}
-  auto state()const->std::array<uint32_t,5>{return {head_,tail_,count_,volume_,pan_};}
+  auto voices()const->decltype(slots)const&{
+    return slots;
+  }
+  auto state()const->std::array<uint32_t,5>{
+    return {head_,tail_,count_,volume_,pan_};
+  }
 };
-}
+} // namespace earthsiege

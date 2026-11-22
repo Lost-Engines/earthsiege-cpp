@@ -1,6 +1,6 @@
 #pragma once
-#include "shell/campaign_return.h"
 #include "resources/resource_store.h"
+#include "shell/campaign_return.h"
 namespace earthsiege {
 technology_state read_technology(bytes source, game_edition edition=game_edition::original, int16_t battle_set=0);
 crew_member make_crew_member(random_state *random=nullptr);

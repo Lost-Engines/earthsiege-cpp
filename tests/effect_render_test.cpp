@@ -7,7 +7,9 @@
 
 namespace {
 
-template<typename T> vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
+template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
 earthsiege::random_state::state random(earthsiege::binary_reader &file) {
   earthsiege::random_state::state result;
   for(auto &word : result.words) word = file.integer<uint16_t>();

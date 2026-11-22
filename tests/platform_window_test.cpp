@@ -1,8 +1,9 @@
-#include "platform/window.h"
-#include "resources/artwork.h"
 #include <array>
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include "platform/window.h"
+#include "resources/artwork.h"
 
 namespace {
 void require(bool value, char const *message) {
@@ -61,5 +62,5 @@ int main() try {
   std::cout << "GLFW events and OpenGL framebuffer checks pass\n";
 } catch(std::exception const &error) {
   std::cerr << error.what() << '\n';
-  return 1;
+  return EXIT_FAILURE;
 }

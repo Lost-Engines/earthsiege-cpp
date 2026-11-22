@@ -14,8 +14,12 @@ class save_store {
   std::filesystem::path path(std::string_view name) const;
 public:
   explicit save_store(std::filesystem::path root,game_edition edition=game_edition::original):directory{std::move(root)},edition_{edition}{}
-  void battle_set(int16_t value){battle_set_=value;}
-  std::filesystem::path const &root()const{return directory;}
+  void battle_set(int16_t value){
+    battle_set_ = value;
+  }
+  std::filesystem::path const &root()const{
+    return directory;
+  }
   std::optional<std::vector<uint8_t>> read(std::string_view name)const;
   void write(std::string_view name,bytes data)const;
   career_index index()const;
@@ -26,4 +30,4 @@ public:
   preferences load_preferences()const;
   void save_preferences(preferences const &settings)const;
 };
-}
+} // namespace earthsiege

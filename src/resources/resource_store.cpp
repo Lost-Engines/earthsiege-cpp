@@ -1,6 +1,6 @@
 #include "resource_store.h"
-#include <array>
 #include <algorithm>
+#include <array>
 #include <stdexcept>
 
 namespace earthsiege {
@@ -16,7 +16,7 @@ auto volume_directory(std::filesystem::path const &root)->std::filesystem::path 
   return {};
 }
 
-} // namespace
+} // anonymous namespace
 
 resource_store::resource_store(std::filesystem::path const &root) : root_path{root} {
   /// Accept the bundled assets or an existing DOS installation's VOL directory.
@@ -61,10 +61,11 @@ auto resource_store::try_read(std::string_view volume, std::string_view name) co
 }
 bool resource_store::contains(std::string_view volume,std::string_view name)const {
   auto const found{volumes.find(normalise_path(volume))};
-  if(found==volumes.end())return false;
-  if(edition_==game_edition::expansion)for(auto const *candidate:overrides)
-    if((candidate->usage_mask()&found->second.usage_mask())&&candidate->find(name))return true;
-  return found->second.find(name)!=nullptr;
+  if(found == volumes.end())return false;
+  if(edition_ == game_edition::expansion)for(auto const *candidate:overrides) {
+    if((candidate->usage_mask() & found->second.usage_mask()) && candidate->find(name))return true;
+  }
+  return found->second.find(name) != nullptr;
 }
 
 auto resource_store::read_original(std::string_view volume, std::string_view name) const->bytes {
@@ -78,20 +79,24 @@ auto resource_store::read_original(std::string_view volume, std::string_view nam
 std::optional<std::filesystem::path> resource_store::external(std::string_view name) const {
   auto relative{std::filesystem::path{normalise_path(name)}};
   if(relative.is_absolute())throw std::runtime_error{"absolute game resource path"};
-  for(auto const &part:relative)if(part=="..")throw std::runtime_error{"parent in game resource path"};
-  auto directory{root_path};if(normalise_path(directory.filename().string())=="vol")directory=directory.parent_path();
+  for(auto const &part:relative)if(part == "..")throw std::runtime_error{"parent in game resource path"};
+  auto directory{root_path};if(normalise_path(directory.filename().string()) == "vol")directory = directory.parent_path();
   for(auto const &part:relative){
     if(!std::filesystem::is_directory(directory))return {};
     bool found{};
-    for(auto const &entry:std::filesystem::directory_iterator{directory})if(normalise_path(entry.path().filename().string())==part.string()){directory=entry.path();found=true;break;}
+    for(auto const &entry:std::filesystem::directory_iterator{directory})if(normalise_path(entry.path().filename().string()) == part.string()){directory = entry.path();found = true;break;}
     if(!found)return {};
   }
   if(std::filesystem::is_regular_file(directory))return directory;
   return {};
 }
 
-auto resource_store::archives() const->std::map<std::string, archive, std::less<>> const & { return volumes; }
-auto resource_store::root() const->std::filesystem::path const & { return root_path; }
+auto resource_store::archives() const->std::map<std::string, archive, std::less<>> const & {
+  return volumes;
+}
+auto resource_store::root() const->std::filesystem::path const & {
+  return root_path;
+}
 
 auto resource_store::locate(std::filesystem::path const &program)->std::filesystem::path {
   for(auto const &candidate : {std::filesystem::path{"assets"}, program.parent_path() / "assets", program.parent_path().parent_path() / "assets"}) {

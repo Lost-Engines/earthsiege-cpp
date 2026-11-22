@@ -1,8 +1,8 @@
 #pragma once
-#include "audio/pcm_mixer.h"
-#include "audio/music_audio.h"
-#include "audio/combat_music.h"
 #include "audio/audio_controls.h"
+#include "audio/combat_music.h"
+#include "audio/music_audio.h"
+#include "audio/pcm_mixer.h"
 #include "audio/spatial_audio.h"
 #include "resources/resource_store.h"
 #include "simulation/sound_request.h"
@@ -43,8 +43,8 @@ public:
   explicit mission_audio(resource_store const &resources,music_settings const &settings={});
   void configure_music(music_settings const &settings){
     if(music)music->configure(settings);
-    else music=std::make_unique<music_audio>(resources,bank,settings);
-    music_config=settings;
+    else music = std::make_unique<music_audio>(resources,bank,settings);
+    music_config = settings;
   }
   void battle_set(bool expansion);
   bool preferences(bool music,bool effects,bool speech);
@@ -63,6 +63,8 @@ public:
   std::vector<uint8_t> take_samples();
   std::vector<int16_t> take_output();
   pcm_sound_bank const &state()const;
-  combat_music_state const &music_status()const{return music_state;}
+  combat_music_state const &music_status()const{
+    return music_state;
+  }
 };
 } // namespace earthsiege

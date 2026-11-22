@@ -7,11 +7,12 @@
 namespace earthsiege {
 namespace {
 int16_t approach(int16_t value, int16_t const target, int16_t const step) {
-  if(target < value) { value = wrap_word(value - step); if(value <= target) value = target; }
-  else if(value < target) { value = wrap_word(value + step); if(target <= value) value = target; }
+  if(target < value) { value = wrap_word(value - step); if(value <= target) value = target; } else if(value < target) { value = wrap_word(value + step); if(target <= value) value = target; }
   return value;
 }
-int16_t scaled(int32_t const value, int16_t const scale, unsigned int const bits) { return wrap_word(wrap_long((static_cast<int64_t>(value) * scale + (1 << (bits - 1))) >> bits)); }
+int16_t scaled(int32_t const value, int16_t const scale, unsigned int const bits) {
+  return wrap_word(wrap_long((static_cast<int64_t>(value) * scale + (1 << (bits - 1))) >> bits));
+}
 }
 model_transform flyer_placement(flyer_motion const &state) {
   auto result{rotation_transform(state.angles)}; result.translation = state.position; return result;

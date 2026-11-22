@@ -33,7 +33,9 @@ mission_triggers::mission_triggers(mission_script const &script) {
   }
 }
 
-bool mission_triggers::latched(size_t const index) const { return triggers.at(index).latched; }
+bool mission_triggers::latched(size_t const index) const {
+  return triggers.at(index).latched;
+}
 
 void mission_triggers::activate(size_t const index, std::span<int16_t> const counters) {
   auto &entry{triggers.at(index)};

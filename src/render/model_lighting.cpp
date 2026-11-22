@@ -86,7 +86,7 @@ uint8_t light_intensity(std::span<light const> const lights, vec3<int32_t> const
     }
     total = wrap_long(static_cast<int64_t>(total) + contribution);
   }
-  return static_cast<uint8_t>(std::min(255, total));                               // native code has no lower clamp
+  return static_cast<uint8_t>(std::min(255, total));                           // native code has no lower clamp
 }
 
 } // namespace earthsiege

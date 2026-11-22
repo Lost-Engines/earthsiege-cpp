@@ -1,7 +1,9 @@
 #include "communications_display.h"
 
 namespace earthsiege {
-size_t communications_display_state::command() const { return selected + (choices.at(selected).alternate ? 3 : 0); }
+size_t communications_display_state::command() const {
+  return selected + (choices.at(selected).alternate ? 3 : 0);
+}
 communications_display::communications_display(resource_store const &resources)
   : fonts{read_font(resources.read("simvol0", "dfn/CPGREEN.DFN")),
           read_font(resources.read("simvol0", "dfn/CPYLW.DFN")),

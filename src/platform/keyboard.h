@@ -1,6 +1,6 @@
 #pragma once
-#include <optional>
 #include <cstdint>
+#include <optional>
 #include "simulation/keyboard_input.h"
 namespace earthsiege {
 // GLFW keys use the original PC set-1 command numbers. Shift changes text,

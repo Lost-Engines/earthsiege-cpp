@@ -1,8 +1,8 @@
 #pragma once
+#include <span>
 #include "resources/resource_store.h"
 #include "simulation/radio_queue.h"
 #include "simulation/random_state.h"
-#include <span>
 
 namespace earthsiege {
 struct radio_speaker {size_t actor{}; uint8_t voice{1}; bool leader{};};

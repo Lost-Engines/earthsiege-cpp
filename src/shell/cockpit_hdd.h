@@ -1,9 +1,9 @@
 #pragma once
-#include "shell/tactical_controller.h"
-#include "shell/pointer_controls.h"
-#include "simulation/mission_session.h"
-#include "simulation/instrument_failure.h"
 #include "resources/cockpit.h"
+#include "shell/pointer_controls.h"
+#include "shell/tactical_controller.h"
+#include "simulation/instrument_failure.h"
+#include "simulation/mission_session.h"
 
 namespace earthsiege {
 /// Separate original page clocks; a full restore occupies both VGA pages.
@@ -11,15 +11,17 @@ struct hdd_refresh_state {
   uint32_t map_deadline{30},damage_deadline{30};
   bool blink_phase{true};
   unsigned int restore_pages{2};
-  void prepare() { restore_pages=2; }
+  void prepare() {
+    restore_pages = 2;
+  }
   bool advance(bool map_page,uint32_t ticks) {
-    bool const partial{restore_pages==0};
+    bool const partial{restore_pages == 0};
     if(restore_pages)--restore_pages;
-    if(map_page&&!partial)return false;
+    if(map_page && !partial)return false;
     auto &deadline{map_page?map_deadline:damage_deadline};
-    if(ticks<=deadline)return false;
-    deadline=ticks+30;
-    if(map_page)blink_phase=!blink_phase;
+    if(ticks <= deadline)return false;
+    deadline = ticks + 30;
+    if(map_page)blink_phase = !blink_phase;
     return true;
   }
 };
@@ -35,7 +37,7 @@ class cockpit_hdd {
   tactical_map_state map_state;
   std::vector<size_t> wingmates;
   std::vector<bitmap> button_art;
-  std::array<font,4> fonts; // green, yellow, red, blue
+  std::array<font,4> fonts;                                                    // green, yellow, red, blue
   interface_strings strings;
   std::array<std::string,3> pilot_names;
   std::array<std::string,9> weapon_label_pool;
@@ -77,7 +79,11 @@ public:
   std::vector<uint16_t> take_sounds();
   std::optional<vec2<int32_t>> take_warp();
   tactical_control_state const &state()const;
-  hdd_refresh_state const &refresh_state()const { return refresh; }
-  void clock_input(std::function<uint32_t(uint32_t)> source){map_clock=std::move(source);}
+  hdd_refresh_state const &refresh_state()const {
+    return refresh;
+  }
+  void clock_input(std::function<uint32_t(uint32_t)> source){
+    map_clock = std::move(source);
+  }
 };
 } // namespace earthsiege

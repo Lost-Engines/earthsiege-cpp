@@ -31,22 +31,24 @@ component_damage::component_damage(damage_definition const &source, damage_state
   if(current.internal.size() < definition.hit_points.size() || current.armour.size() != definition.components.size() || current.present.size() != definition.components.size()) throw std::invalid_argument{"damage state does not match its definition"};
 }
 
-damage_state const &component_damage::state() const { return current; }
+damage_state const &component_damage::state() const {
+  return current;
+}
 
 int16_t component_damage::total_fraction() const {
   int32_t damage{0}, capacity{0};
-  for(size_t i{0};i!=current.armour.size();++i) {
+  for(size_t i{0};i != current.armour.size();++i) {
     auto const maximum{definition.components.at(i).armour};
-    capacity+=maximum;damage+=current.armour[i]<0 ? maximum : current.armour[i];
+    capacity += maximum;damage += current.armour[i] < 0 ? maximum : current.armour[i];
   }
   // Keep the defined hit-point array; an extra original internal-state slot may
   // have no corresponding capacity in some authored chassis definitions.
-  for(size_t i{0};i!=definition.hit_points.size();++i) {
+  for(size_t i{0};i != definition.hit_points.size();++i) {
     auto const maximum{definition.hit_points[i]};
-    capacity+=maximum;damage+=current.internal[i]<0 ? maximum : current.internal[i];
+    capacity += maximum;damage += current.internal[i] < 0 ? maximum : current.internal[i];
   }
-  if(capacity==0)throw std::domain_error{"zero component damage capacity"};
-  return wrap_word(wrap_long(static_cast<int64_t>(damage)*256)/capacity);
+  if(capacity == 0)throw std::domain_error{"zero component damage capacity"};
+  return wrap_word(wrap_long(static_cast<int64_t>(damage) * 256) / capacity);
 }
 
 void component_damage::restore_condition(herc_condition const &condition) {

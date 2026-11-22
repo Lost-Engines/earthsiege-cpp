@@ -19,10 +19,18 @@ class shell_mouth {
 public:
  shell_mouth(std::vector<shell_mouth_frame>,uint16_t pages);
  void update(uint16_t clock);
- size_t cursor()const{return cursor_;}
- uint16_t page()const{return page_;}
- bool active()const{return active_;}
- bool pending_stop()const{return pending_;}
+ size_t cursor()const{
+   return cursor_;
+ }
+ uint16_t page()const{
+   return page_;
+ }
+ bool active()const{
+   return active_;
+ }
+ bool pending_stop()const{
+   return pending_;
+ }
  void stop();
 };
-}
+} // namespace earthsiege

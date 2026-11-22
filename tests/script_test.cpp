@@ -22,7 +22,9 @@ struct fixture_values {
     data.push_back(static_cast<uint8_t>(static_cast<uint16_t>(value) >> 8));
   }
   template<typename R>
-  void words(R const &values) { for(auto const value : values) word(value); }
+  void words(R const &values) {
+    for(auto const value : values) word(value);
+  }
   void dword(int32_t value) {
     for(unsigned int byte{}; byte < 4; ++byte) data.push_back(static_cast<uint8_t>(static_cast<uint32_t>(value) >> (byte * 8)));
   }
@@ -85,7 +87,7 @@ auto signatures(earthsiege::mission_script const &script)->std::array<uint32_t, 
   return result;
 }
 
-} // namespace
+} // anonymous namespace
 
 auto main(int argc, char *argv[])->int try {
   if(argc != 3) throw std::runtime_error{"expected fixture and asset roots"};

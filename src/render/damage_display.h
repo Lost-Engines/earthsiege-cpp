@@ -26,7 +26,7 @@ class damage_display {
   std::vector<chassis_artwork> chassis;
   std::vector<bitmap> bases;
   std::vector<bitmap> flyers;
-  std::array<font, 3> fonts;                                                 // blue, green, red
+  std::array<font, 3> fonts;                                                   // blue, green, red
   interface_strings strings;
   size_t name_font{2};
 public:

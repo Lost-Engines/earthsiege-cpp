@@ -63,7 +63,9 @@ archive::archive(std::vector<uint8_t> input, std::string label) : data{std::move
   }
 }
 
-auto archive::entries() const->std::map<std::string, archive_entry, std::less<>> const & { return catalogue; }
+auto archive::entries() const->std::map<std::string, archive_entry, std::less<>> const & {
+  return catalogue;
+}
 
 auto archive::find(std::string_view name) const->archive_entry const * {
   auto const found{catalogue.find(normalise_path(name))};

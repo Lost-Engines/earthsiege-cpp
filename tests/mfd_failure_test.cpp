@@ -1,11 +1,20 @@
 #include <cstdlib>
 #include <iostream>
+#include "resources/resource_store.h"
 #include "shell/mfd_controller.h"
 #include "simulation/instrument_failure.h"
-#include "resources/resource_store.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::advance_instrument_failure;
+  using earthsiege::binary_reader;
+  using earthsiege::communications_choice;
+  using earthsiege::instrument_failure_state;
+  using earthsiege::mfd_controller;
+  using earthsiege::mfd_enabled_buttons;
+  using earthsiege::mfd_page;
+  using earthsiege::mfd_paint;
+  using earthsiege::random_state;
+  using earthsiege::read_file;
   if(argc != 2) return EXIT_FAILURE;
   auto const source{read_file(argv[1])}; binary_reader file{source};
   auto const magic{file.take(8)};
@@ -27,8 +36,8 @@ int main(int argc, char **argv) try {
     if(!same) file.fail("MFD state differs at step " + std::to_string(step));
   }};
   compare(-1);
-  auto const read_failure{[&]{instrument_failure_state s;s.duration=file.integer<uint16_t>();s.window=file.integer<uint32_t>();s.next_flip=file.integer<uint32_t>();s.failed=file.integer<uint8_t>()!=0;s.repaint=file.integer<uint8_t>();return s;}};
-  auto const read_random{[&]{random_state::state s;for(auto &v:s.words)v=file.integer<uint16_t>();s.first=file.integer<uint8_t>();s.second=file.integer<uint8_t>();return s;}};
+  auto const read_failure{[&]{instrument_failure_state s;s.duration = file.integer<uint16_t>();s.window = file.integer<uint32_t>();s.next_flip = file.integer<uint32_t>();s.failed = file.integer<uint8_t>() != 0;s.repaint = file.integer<uint8_t>();return s;}};
+  auto const read_random{[&]{random_state::state s;for(auto &v:s.words)v = file.integer<uint16_t>();s.first = file.integer<uint8_t>();s.second = file.integer<uint8_t>();return s;}};
   auto failure{read_failure()};random_state random{read_random()};
   for(unsigned int i{}; i < count; ++i) {
     auto const now{file.integer<uint32_t>()}; auto const mode{file.integer<int32_t>()};
@@ -46,22 +55,22 @@ int main(int argc, char **argv) try {
     if(mode >= 0) controller.select(static_cast<mfd_page>(mode), 1, target);
     if(flags & 16) controller.button(8, 1, target, choices);
     if(scroll) controller.button(scroll > 0 ? 12 : 11, 1, target, choices);
-    failure.repaint=controller.state().pending_paint;
+    failure.repaint = controller.state().pending_paint;
     bool sound{};
-    if(!(flags&4)) {
-      sound=advance_instrument_failure(failure,severity,now,random);
-      if(failure.repaint==2)controller.repaint();
+    if(!(flags & 4)) {
+      sound = advance_instrument_failure(failure,severity,now,random);
+      if(failure.repaint == 2)controller.repaint();
     }
     auto const actual{controller.advance(now, !(flags & 2), flags & 4, flags & 1, 1, target, failure.failed, severity)};
-    failure.repaint=controller.state().pending_paint;
+    failure.repaint = controller.state().pending_paint;
     if(actual != expected) file.fail("MFD child dispatch differs at step " + std::to_string(i));
     compare(static_cast<int>(i));
     auto const expected_failure{read_failure()};
-    if(failure.duration!=expected_failure.duration || failure.window!=expected_failure.window || failure.next_flip!=expected_failure.next_flip || failure.failed!=expected_failure.failed || failure.repaint!=expected_failure.repaint) file.fail("failure state at "+std::to_string(i));
-    if(sound!=(file.integer<uint8_t>()!=0))file.fail("failure sound");
+    if(failure.duration != expected_failure.duration || failure.window != expected_failure.window || failure.next_flip != expected_failure.next_flip || failure.failed != expected_failure.failed || failure.repaint != expected_failure.repaint) file.fail("failure state at " + std::to_string(i));
+    if(sound != (file.integer<uint8_t>() != 0))file.fail("failure sound");
   }
   auto const expected_random{read_random()};auto const &actual_random{random.snapshot()};
-  if(actual_random.words!=expected_random.words || actual_random.first!=expected_random.first || actual_random.second!=expected_random.second)file.fail("final UI RNG");
+  if(actual_random.words != expected_random.words || actual_random.first != expected_random.first || actual_random.second != expected_random.second)file.fail("final UI RNG");
   file.require_end(); std::cout << count << " original combined MFD failure, state and dispatch transitions match\n";
   return EXIT_SUCCESS;
 } catch(std::exception const &e) { std::cerr << e.what() << '\n'; return EXIT_FAILURE; }

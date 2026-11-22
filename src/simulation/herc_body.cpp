@@ -19,8 +19,8 @@ herc_body::herc_body(herc_definition const &definition, weapon_catalogue const &
   // Equipping the original actor evaluates all channels at time zero before
   // binding weapon geometry. Some enemy chassis differ from the raw defaults.
   rig.update_pose();
-  for(size_t i{};i<ground.size()&&source.profile.attachment_types[i]>=0;++i){
-    ground[i].shape=source.profile.attachment_types[i];ground[i].active=true;
+  for(size_t i{};i < ground.size() && source.profile.attachment_types[i] >= 0;++i){
+    ground[i].shape = source.profile.attachment_types[i];ground[i].active = true;
   }
 }
 
@@ -29,7 +29,9 @@ void herc_body::place(vec3<int32_t> const &position, vec3<uint16_t> const &angle
   movement_state.angles = angles;
 }
 
-void herc_body::mark_collapsed() { movement_state.collapsed = true; }
+void herc_body::mark_collapsed() {
+  movement_state.collapsed = true;
+}
 
 void herc_body::apply_damage(damage_consequences const &consequences) {
   damage = {consequences.disabled, consequences.movement_light, consequences.movement_heavy};
@@ -42,26 +44,33 @@ void herc_body::apply_damage(damage_state const &state) {
   armament.disable_missing_sections(state.present);
   apply_damage(state.consequences);
   // 13250 permanently removes each destroyed leg's flat attachment.
-  for(int i{};i<source.profile.legs;++i){
-    auto const part{static_cast<size_t>(i<2?i:i+8)};
+  for(int i{};i < source.profile.legs;++i){
+    auto const part{static_cast<size_t>(i < 2?i:i + 8)};
     auto const amount{state.internal.at(part)};
     auto const capacity{source.damage.hit_points.at(part)};
-    if(amount<0||(capacity&&amount*256/capacity==256))ground.at(static_cast<size_t>(i)).active=false;
+    if(amount < 0 || (capacity && amount * 256 / capacity == 256))ground.at(static_cast<size_t>(i)).active = false;
   }
-  if(state.consequences.dead&&source.profile.remove_when_destroyed)
-    for(auto &attachment:ground)attachment.active=false;
+  if(state.consequences.dead && source.profile.remove_when_destroyed) {
+    for(auto &attachment:ground)attachment.active = false;
+  }
 }
 
-void herc_body::update_weapons(weapon_bank const &bank) { armament.update_cells(bank); }
+void herc_body::update_weapons(weapon_bank const &bank) {
+  armament.update_cells(bank);
+}
 
 void herc_body::recover_from_collision(int32_t const duration, bool const reverse) {
   movement_state.collision_recovery = duration;
   movement_state.reverse_recovery = reverse;
 }
 
-std::span<movement_event const> herc_body::movement_events() const { return frame_movement_events; }
+std::span<movement_event const> herc_body::movement_events() const {
+  return frame_movement_events;
+}
 
-void herc_body::begin_frame() { frame_movement_events.clear(); }
+void herc_body::begin_frame() {
+  frame_movement_events.clear();
+}
 
 void herc_body::prepare_player(herc_controls const &controls, frame_ratio const ratio, movement_event_sink const &events) {
   prepare_player_movement(controls.throttle, controls.steering, ratio, events);
@@ -71,7 +80,10 @@ void herc_body::prepare_player_movement(int16_t const throttle, int16_t const st
   auto const notify{[&](movement_event const event){ frame_movement_events.push_back(event); if(events) events(event); }};
   if(update_player_movement(movement_state, source.profile.movement, rig.channel(body_channel), throttle, steering, damage, ratio, notify, expansion, direction_mode)) throttle_command_pending = true;
 }
-void herc_body::reset_aim_angles() { torso_state.angle = 0; elevation_state.angle = 0; }
+void herc_body::reset_aim_angles() {
+  torso_state.angle = 0;
+  elevation_state.angle = 0;
+}
 void herc_body::align_disabled_player() {
   // Use the evaluated camera transform, including fixed-point angle extraction.
   // Adding the torso angle would miss animation offsets and quantisation.
@@ -83,7 +95,10 @@ void herc_body::align_disabled_player() {
   advance_root_animation(movement_state, rig.channel(body_channel), 1);
   rig.update_pose();
 }
-void herc_body::stop_throttle() { movement_state.throttle = 0; throttle_command_pending = true; }
+void herc_body::stop_throttle() {
+  movement_state.throttle = 0;
+  throttle_command_pending = true;
+}
 int16_t herc_body::exchange_throttle(int16_t const requested) {
   if(!throttle_command_pending) movement_state.throttle = requested;
   throttle_command_pending = false;
@@ -194,10 +209,10 @@ contact_actor herc_body::contact_geometry() const {
 
 void herc_body::update_ground_attachments() {
   auto const world{placement()};
-  for(size_t i{};i<ground.size();++i){
+  for(size_t i{};i < ground.size();++i){
     if(!ground[i].active)continue;
     auto const *part{find_model_part(source.models.roots.front(),source.profile.attachment_parts[i])};
-    if(!part||part->header.transform<0)continue;
+    if(!part || part->header.transform < 0)continue;
     auto const &local{rig.instance().transforms()[static_cast<size_t>(part->header.transform)].translation};
     place_ground_attachment(ground[i],local,world,movement_state.angles.z);
   }
@@ -206,9 +221,9 @@ void herc_body::update_ground_attachments() {
 std::vector<uint16_t> herc_body::footstep_sounds() {
   std::vector<footstep_attachment> attachments;
   auto const &profile{source.profile}; auto const world{placement()};
-  for(size_t i{};i<profile.attachment_types.size() && profile.attachment_types[i]>=0;++i) {
+  for(size_t i{};i < profile.attachment_types.size() && profile.attachment_types[i] >= 0;++i) {
     auto const *part{find_model_part(source.models.roots.front(),profile.attachment_parts[i])};
-    bool const active{ground[i].active && part && part->header.transform>=0};
+    bool const active{ground[i].active && part && part->header.transform >= 0};
     if(!active) { attachments.push_back({profile.attachment_types[i],false,0,0}); continue; }
     auto const &transform{rig.instance().transforms()[static_cast<size_t>(part->header.transform)]};
     attachments.push_back({profile.attachment_types[i],true,transform.translation.y,compose_transforms(transform,world).translation.z});

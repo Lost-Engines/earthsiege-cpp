@@ -9,7 +9,9 @@
 
 namespace {
 
-template<typename T> vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
+template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
 
 void check_packet(earthsiege::binary_reader &file, earthsiege::impact_request const &request, std::string const &label) {
   auto const require{[&](bool const correct, char const *field){ if(!correct) file.fail(label + ": " + field); }};
@@ -26,7 +28,7 @@ void check_packet(earthsiege::binary_reader &file, earthsiege::impact_request co
   require(request.damage.missile_subtype.value_or(5) == file.integer<int16_t>(), "missile signature");
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
@@ -62,7 +64,7 @@ int main(int const argc, char **argv) try {
     earthsiege::projectile_instance projectile{shot, definitions, motions, bullets, rockets};
     earthsiege::projectile_guidance guidance;
     unsigned int queries{0};
-    auto const outcome{projectile.advance(ratio, guidance, [&](earthsiege::impact_request const &request) -> std::optional<int32_t> {
+    auto const outcome{projectile.advance(ratio, guidance, [&](earthsiege::impact_request const &request)->std::optional<int32_t> {
       ++queries; check_packet(file, request, "flight " + std::to_string(row));
       return hit ? std::optional<int32_t>{100} : std::nullopt;
     })};
@@ -82,7 +84,7 @@ int main(int const argc, char **argv) try {
     shot.kind = earthsiege::shot_kind::beam; shot.projectile = lookup(earthsiege::projectile_kind::beam, subtype); shot.charge = charge; shot.range = reach;
     shot.muzzle.transform = earthsiege::rotation_transform(angles); shot.muzzle.transform.translation = position; shot.muzzle.position = position; shot.muzzle.angles = angles;
     unsigned int queries{0};
-    auto const path{earthsiege::dispatch_beam(shot, definitions, [&](earthsiege::impact_request const &request) -> std::optional<int32_t> {
+    auto const path{earthsiege::dispatch_beam(shot, definitions, [&](earthsiege::impact_request const &request)->std::optional<int32_t> {
       ++queries; check_packet(file, request, "beam " + std::to_string(row));
       return depth ? std::optional<int32_t>{depth - 1} : std::nullopt;
     })};

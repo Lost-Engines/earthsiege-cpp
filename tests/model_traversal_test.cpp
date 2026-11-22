@@ -31,7 +31,7 @@ auto part_at(earthsiege::model_resource const &model, std::string const &source)
   return *part;
 }
 
-} // namespace
+} // anonymous namespace
 
 auto main(int argc, char **argv)->int try {
   if(argc != 3) return EXIT_FAILURE;

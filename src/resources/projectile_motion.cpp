@@ -6,10 +6,10 @@ std::vector<beam_style> read_beam_styles(bytes const source) {
   binary_reader file{source,"beam styles"};
   std::vector<beam_style> result(file.integer<uint16_t>());
   for(auto &style : result) {
-    style.width=file.integer<int16_t>();
+    style.width = file.integer<int16_t>();
     auto const colour{file.integer<int16_t>()};
-    if(style.width<0 || colour<0 || colour>255) file.fail("invalid beam style");
-    style.colour=static_cast<uint8_t>(colour);
+    if(style.width < 0 || colour < 0 || colour > 255) file.fail("invalid beam style");
+    style.colour = static_cast<uint8_t>(colour);
   }
   file.require_end();return result;
 }

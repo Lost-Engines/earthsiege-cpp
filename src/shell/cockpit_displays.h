@@ -1,11 +1,11 @@
 #pragma once
-#include "shell/mfd_controller.h"
-#include "simulation/instrument_failure.h"
-#include "shell/pointer_controls.h"
 #include "render/damage_display.h"
-#include "render/scanner_display.h"
-#include "render/navigation_display.h"
 #include "render/missile_display.h"
+#include "render/navigation_display.h"
+#include "render/scanner_display.h"
+#include "shell/mfd_controller.h"
+#include "shell/pointer_controls.h"
+#include "simulation/instrument_failure.h"
 #include "simulation/mission_session.h"
 
 namespace earthsiege {

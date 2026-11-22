@@ -1,8 +1,8 @@
 #include "effect_state.h"
 #include <algorithm>
 #include <stdexcept>
-#include "simulation/fixed_math.h"
 #include "resources/combat.h"
+#include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
 
 namespace earthsiege {

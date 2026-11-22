@@ -1,7 +1,7 @@
 #pragma once
-#include "resources/resource_store.h"
-#include "vectorstorm/vector/vector2.h"
 #include <array>
+#include "vectorstorm/vector/vector2.h"
+#include "resources/resource_store.h"
 namespace earthsiege {
 struct shell_herc {
  int16_t chassis{};
@@ -12,4 +12,4 @@ struct shell_herc {
  std::string loadout_diagram,damage_diagram;
 };
 std::vector<shell_herc> read_shell_hercs(resource_store const &);
-}
+} // namespace earthsiege

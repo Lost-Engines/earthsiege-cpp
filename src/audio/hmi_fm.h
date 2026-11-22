@@ -1,7 +1,7 @@
 #pragma once
-#include "resources/binary_reader.h"
 #include <array>
 #include <vector>
+#include "resources/binary_reader.h"
 
 namespace earthsiege {
 struct opl_write {uint16_t reg{};uint8_t value{};bool operator==(opl_write const&)const=default;};
@@ -43,6 +43,8 @@ public:
   hmi_fm(bool opl3,bytes melodic_bank,bytes drum_bank);
   void midi(bytes message);
   auto take_writes()->std::vector<opl_write>;
-  auto state()const->fm_driver_state const& {return state_;}
+  auto state()const->fm_driver_state const& {
+    return state_;
+  }
 };
-}
+} // namespace earthsiege

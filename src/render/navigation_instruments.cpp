@@ -1,7 +1,7 @@
 #include "navigation_instruments.h"
 #include <algorithm>
-#include "simulation/fixed_math.h"
 #include "resources/interface_strings.h"
+#include "simulation/fixed_math.h"
 
 namespace earthsiege {
 namespace {
@@ -23,7 +23,7 @@ int indicator_position(int16_t const value, int const minimum, int const maximum
   int const fraction{static_cast<uint16_t>(value - minimum)};
   return fraction * length / (maximum - minimum) + (value < 0 ? 1 : 0);
 }
-} // namespace
+} // anonymous namespace
 
 navigation_instruments::navigation_instruments(resource_store const &resources, cockpit_layout const &layout)
   : heading_bounds{relative(layout.bounds(0x460), layout.bounds(0x450))},
@@ -67,8 +67,12 @@ void navigation_instruments::update(int16_t const heading, int16_t const torso, 
     previous_pitch = pitch;
   }
 }
-uint16_t navigation_instruments::display_heading() const { return static_cast<uint16_t>(previous_heading); }
-std::array<int16_t, 2> navigation_instruments::indicator_angles() const { return {torso_indicator, pitch_indicator}; }
+uint16_t navigation_instruments::display_heading() const {
+  return static_cast<uint16_t>(previous_heading);
+}
+std::array<int16_t, 2> navigation_instruments::indicator_angles() const {
+  return {torso_indicator, pitch_indicator};
+}
 
 void navigation_instruments::draw(framebuffer &target, int const offset_x, int const offset_y, bool const tracking) const {
   scoped_framebuffer_clip clip{target, nullptr};

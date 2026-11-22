@@ -1,6 +1,6 @@
 #pragma once
-#include "audio/pcm_mixer.h"
 #include "audio/music_audio.h"
+#include "audio/pcm_mixer.h"
 #include "shell/shell_animation.h"
 namespace earthsiege {
 /// GO music and TTM PCM objects sharing the original digital mixer.
@@ -28,18 +28,24 @@ public:
  explicit shell_audio(resource_store const &r,music_settings const &settings={}):resources{r},music_config{settings}{}
  void configure_music(music_settings const &settings){
     if(music)music->configure(settings);
-    else music=std::make_unique<music_audio>(resources,bank,settings);
-    music_config=settings;
+    else music = std::make_unique<music_audio>(resources,bank,settings);
+    music_config = settings;
   }
  void song(int id);
  void film(bool active);
  void film_sample(std::string_view name);
- void battle_set(int16_t value){if(battle_set_==value)return;battle_set_=value;if(wanted>=0)start_song();}
+ void battle_set(int16_t value){
+   if(battle_set_ == value)return;
+   battle_set_ = value;
+   if(wanted >= 0)start_song();
+ }
  void region(unsigned id);
  void enabled(bool music,bool effects);
  void suspend();
  void resume();
- shell_animation_sound *effects(){return effects_enabled&&!suspended?this:nullptr;}
+ shell_animation_sound *effects(){
+   return effects_enabled && !suspended?this:nullptr;
+ }
  bool load(std::string_view name)override;
  void volume(uint8_t value)override;
  void play()override;
@@ -49,9 +55,17 @@ public:
  void door(bool closing);
  void advance(unsigned timer_ticks=1);
  std::vector<int16_t> take_output();
- int song_id()const{return track;}
- int requested_song()const{return wanted;}
- int song_gain()const{return gain;}
- pcm_sound_bank const &samples()const{return bank;}
+ int song_id()const{
+   return track;
+ }
+ int requested_song()const{
+   return wanted;
+ }
+ int song_gain()const{
+   return gain;
+ }
+ pcm_sound_bank const &samples()const{
+   return bank;
+ }
 };
 }

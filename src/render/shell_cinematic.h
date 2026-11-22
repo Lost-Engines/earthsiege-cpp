@@ -1,7 +1,7 @@
 #pragma once
-#include "render/shell_animation_artwork.h"
 #include <deque>
 #include <memory>
+#include "render/shell_animation_artwork.h"
 #include "resources/dfl_movie.h"
 namespace earthsiege {
 /// Nonblocking owner for the original blocking TTM sequences. Palette writes
@@ -20,10 +20,20 @@ class shell_cinematic {
 public:
  shell_cinematic(resource_store const &,std::string const &path,random_state &);
  void advance(random_state &);
- bool finished()const{return film?film->finished():pending.empty()&&player->state().mode==2;}
- bool is_film()const{return film!=nullptr;}
- std::vector<std::string> take_samples(){return film?film->take_samples():std::vector<std::string>{};}
- framebuffer const &image()const{return shown;}
- palette const &colours()const{return colours_;}
+ bool finished()const{
+   return film?film->finished():pending.empty() && player->state().mode == 2;
+ }
+ bool is_film()const{
+   return film != nullptr;
+ }
+ std::vector<std::string> take_samples(){
+   return film?film->take_samples():std::vector<std::string>{};
+ }
+ framebuffer const &image()const{
+   return shown;
+ }
+ palette const &colours()const{
+   return colours_;
+ }
 };
-}
+} // namespace earthsiege

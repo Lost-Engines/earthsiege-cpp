@@ -24,7 +24,7 @@ earthsiege::projectile_flight read_state(earthsiege::binary_reader &file) {
   return state;
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

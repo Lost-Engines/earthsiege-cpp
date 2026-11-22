@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
-#include "vectorstorm/vector/vector2.h"
 #include <functional>
 #include <optional>
 #include <span>
+#include "vectorstorm/vector/vector2.h"
 #include "resources/mission_script.h"
 #include "simulation/actor_contact.h"
 

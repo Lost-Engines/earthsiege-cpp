@@ -2,7 +2,14 @@
 #include <iostream>
 #include "resources/binary_reader.h"
 #include "simulation/herc_sensors.h"
-using namespace earthsiege;
+using earthsiege::advance_herc_sensors;
+using earthsiege::binary_reader;
+using earthsiege::herc_impact_state;
+using earthsiege::herc_sensor_inputs;
+using earthsiege::herc_sensor_state;
+using earthsiege::herc_sensor_target;
+using earthsiege::random_state;
+using earthsiege::read_file;
 int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};

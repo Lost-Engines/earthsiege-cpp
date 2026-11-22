@@ -2,8 +2,8 @@
 #include <functional>
 #include <optional>
 #include <span>
-#include "resources/mission_script.h"
 #include "vectorstorm/vector/vector2.h"
+#include "resources/mission_script.h"
 #include "simulation/frame_time.h"
 
 namespace earthsiege {

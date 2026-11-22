@@ -5,7 +5,18 @@
 #include "simulation/mission_session.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::combat_actor_kind;
+  using earthsiege::damage_display_kind;
+  using earthsiege::mission_session;
+  using earthsiege::random_state;
+  using earthsiege::read_file;
+  using earthsiege::read_input_tape;
+  using earthsiege::read_mission_counters;
+  using earthsiege::read_mission_script;
+  using earthsiege::read_player_roster;
+  using earthsiege::resource_store;
+  using earthsiege::tape_file;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const data{read_file(argv[2])}; binary_reader file{data};
@@ -25,7 +36,7 @@ int main(int argc, char **argv) try {
     size_t contact{};
     for(uint32_t i{}; i < count; ++i) {
       auto const prefix{"demo " + std::to_string(demo) + " actor " + std::to_string(i) + " "};
-      auto const check{[&](std::string const &name, auto expected, auto actual) {
+      auto const check{[&](std::string const &name, auto expected, auto actual){
         if(expected != actual) { std::cerr << prefix << name << ": expected " << +expected << ", actual " << +actual << '\n'; file.fail(name); }
       }};
       auto const state{session.instrument_damage(i)};

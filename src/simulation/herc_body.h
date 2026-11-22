@@ -5,8 +5,8 @@
 #include "simulation/actor_contact.h"
 #include "simulation/aim_control.h"
 #include "simulation/animation_rig.h"
-#include "simulation/locomotion.h"
 #include "simulation/footsteps.h"
+#include "simulation/locomotion.h"
 #include "simulation/sound_request.h"
 #include "simulation/weapon_assembly.h"
 
@@ -60,14 +60,18 @@ public:
   /// Original 13250: preserve the player cockpit heading when the legs fail.
   void align_disabled_player();
   void stop_throttle();
-  void movement_direction(int16_t mode){direction_mode=mode;}
+  void movement_direction(int16_t mode){
+    direction_mode = mode;
+  }
   /// Keyboard/stop commands take precedence over the cockpit slider until exchanged.
   int16_t exchange_throttle(int16_t requested);
   void prepare_requested(int16_t speed, int16_t steering, frame_ratio ratio, movement_event_sink const &events = {}, movement_adjustment const &avoidance = {});
   void prepare_aim(vec2<int16_t> const &input, frame_ratio ratio, std::optional<vec2<int16_t>> target = {});
   bool advance(frame_ratio ratio, std::function<bool(herc_body const &)> const &contact = {}, std::function<void()> const &blocked = {});
   std::vector<uint16_t> footstep_sounds();
-  auto &ground_attachments(){return ground;}
+  auto &ground_attachments(){
+    return ground;
+  }
   model_transform aiming_pivot() const;
   /// Advance player controls; return whether either contact probe blocked motion
   bool step(herc_controls const &controls, int16_t time_ratio, std::function<bool(herc_body const &)> const &contact = {}, movement_event_sink const &events = {});

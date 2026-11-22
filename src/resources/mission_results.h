@@ -1,7 +1,7 @@
 #pragma once
+#include <utility>
 #include "resources/edition.h"
 #include "resources/player_roster.h"
-#include <utility>
 namespace earthsiege {
 struct returned_herc {herc_condition condition;std::array<int16_t,3> statistics{};};
 struct mission_results {

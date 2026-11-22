@@ -35,7 +35,7 @@ void compare_damage(earthsiege::binary_reader &file, std::string const &label, e
   if(actual.consequences != expected.consequences) file.fail(label + " consequences");
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

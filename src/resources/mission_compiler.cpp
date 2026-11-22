@@ -191,10 +191,14 @@ class mission_compiler {
   }
 
   template<typename T>
-  static void replace(source_record<T> &target, source_record<T> const &source) { target = source; }
+  static void replace(source_record<T> &target, source_record<T> const &source) {
+    target = source;
+  }
 
   template<typename T>
-  static void overlay(source_record<T> &target, source_record<T> const &source) { merge(target.value, source.value); }
+  static void overlay(source_record<T> &target, source_record<T> const &source) {
+    merge(target.value, source.value);
+  }
 
   void settings() {
     auto const count{file.integer<uint16_t>()};

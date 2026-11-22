@@ -12,8 +12,8 @@ struct herc_aim_selection {
 herc_aim_selection select_herc_aim_point(combat_actor_kind target_kind, vec3<int32_t> const &origin, uint16_t heading, int16_t torso_limit, vec3<int32_t> const &target_position, int16_t component);
 
 struct herc_aim_request {
-  vec3<int16_t> errors;                                                   // pitch, roll (always zero), yaw in the articulated aiming frame
-  vec2<int16_t> controls;                                                 // torso, elevation; Q8 full deflection is 256
+  vec3<int16_t> errors;                                                        // pitch, roll (always zero), yaw in the articulated aiming frame
+  vec2<int16_t> controls;                                                      // torso, elevation; Q8 full deflection is 256
   int32_t convergence_distance{0};
 };
 

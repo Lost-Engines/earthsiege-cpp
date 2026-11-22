@@ -1,6 +1,6 @@
 #pragma once
-#include "simulation/random_state.h"
 #include <cstdint>
+#include "simulation/random_state.h"
 
 namespace earthsiege {
 uint16_t instrument_damage_band(int32_t damage_fraction);

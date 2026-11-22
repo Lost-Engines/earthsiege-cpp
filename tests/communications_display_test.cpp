@@ -4,7 +4,14 @@
 #include "render/communications_display.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::communications_display;
+  using earthsiege::communications_display_state;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::read_file;
+  using earthsiege::rectangle;
+  using earthsiege::resource_store;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; communications_display display{resources};
   auto const source{read_file(argv[2])}; binary_reader file{source};

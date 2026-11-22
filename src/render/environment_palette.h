@@ -12,8 +12,12 @@ class environment_palette {
   bool ready{};
 public:
   explicit environment_palette(world_environment const &);
-  void override_band(int16_t value) { override_value=value; }
-  int16_t pending_override() const { return override_value; }
+  void override_band(int16_t value) {
+    override_value = value;
+  }
+  int16_t pending_override() const {
+    return override_value;
+  }
   void update(palette &,uint16_t pitch,bool enabled=true,bool impact=false);
 };
-}
+} // namespace earthsiege

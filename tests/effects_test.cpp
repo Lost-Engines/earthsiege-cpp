@@ -3,13 +3,15 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include "resources/resource_store.h"
 #include "resources/model.h"
+#include "resources/resource_store.h"
 #include "simulation/effect_state.h"
 
 namespace {
 
-template<typename T> vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
+template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
 std::vector<int16_t> shorts(earthsiege::binary_reader &file) {
   std::vector<int16_t> result(file.integer<uint16_t>());
   for(auto &v : result) v = file.integer<int16_t>();
@@ -31,7 +33,7 @@ void check_state(earthsiege::binary_reader &file, earthsiege::explosion_state co
   if(state.remaining != timer || !std::ranges::equal(state.cells, cells) || (state.secondary_cell ? static_cast<int>(*state.secondary_cell) : -1) != secondary || state.light_intensity.value_or(-1) != light) file.fail("explosion animation state differs");
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

@@ -1,8 +1,8 @@
 #include "perception.h"
-#include <stdexcept>
 #include <algorithm>
-#include "simulation/model_math.h"
+#include <stdexcept>
 #include "simulation/fixed_math.h"
+#include "simulation/model_math.h"
 
 namespace earthsiege {
 
@@ -36,20 +36,20 @@ bool cached_visibility(actor_awareness &observer, actor_awareness const &target,
 }
 
 bool within_actor_view(uint16_t const heading, int16_t const bearing) {
-  auto const difference{static_cast<int32_t>(bearing)-wrap_word(heading)};
+  auto const difference{static_cast<int32_t>(bearing) - wrap_word(heading)};
   return difference >= -14336 && difference < 14336;
 }
 
 void advance_perception(std::span<perception_actor const> const actors, int16_t const ratio, int32_t const detection_range, random_state &random, mission_triggers &triggers, std::span<int16_t> const counters, perception_callbacks const &callbacks) {
   if(!callbacks.line_of_sight || !callbacks.orientation_offset || !callbacks.within_view) throw std::invalid_argument{"perception callbacks are incomplete"};
-  auto const delta{[](vec3<int32_t> const &a, vec3<int32_t> const &b){ return vec3<int32_t>{wrap_long(static_cast<int64_t>(a.x)-b.x),wrap_long(static_cast<int64_t>(a.y)-b.y),wrap_long(static_cast<int64_t>(a.z)-b.z)}; }};
-  auto const tick{[&](int16_t &clock){ clock = std::max<int16_t>(0,wrap_word(clock-ratio)); return clock == 0; }};
+  auto const delta{[](vec3<int32_t> const &a, vec3<int32_t> const &b){ return vec3<int32_t>{wrap_long(static_cast<int64_t>(a.x) - b.x),wrap_long(static_cast<int64_t>(a.y) - b.y),wrap_long(static_cast<int64_t>(a.z) - b.z)}; }};
+  auto const tick{[&](int16_t &clock){ clock = std::max<int16_t>(0,wrap_word(clock - ratio)); return clock == 0; }};
   auto const visible{[&](size_t observer, size_t target){ return cached_visibility(actors[observer].awareness,actors[target].awareness,target,random,[&]{return callbacks.line_of_sight(observer,target);}); }};
   for(size_t index{0}; index != actors.size(); ++index) {
     auto const &observer{actors[index]}; if(observer.waiting) continue;
     auto &knowledge{observer.awareness}; tick(knowledge.visibility_remaining);
     if(!tick(knowledge.refresh_remaining)) continue;
-    knowledge.refresh_remaining = static_cast<int16_t>(10000+random.bounded(1000));
+    knowledge.refresh_remaining = static_cast<int16_t>(10000 + random.bounded(1000));
     knowledge.seen = false;
     for(size_t other{0}; other != actors.size(); ++other) {
       auto const &target{actors[other]};
@@ -73,12 +73,12 @@ void advance_perception(std::span<perception_actor const> const actors, int16_t 
       if(distance >= detection_range) continue;
       if(!knowledge.known.at(other) || !contacts.known.at(index)) {
         auto const bearing{bearing_angle(observer.position,target.position)};
-        if(callbacks.within_view(index,wrap_word(bearing+callbacks.orientation_offset(index))) && visible(index,other)) {
+        if(callbacks.within_view(index,wrap_word(bearing + callbacks.orientation_offset(index))) && visible(index,other)) {
           if(callbacks.noticed) callbacks.noticed(index,other);
           if(observer.player) knowledge.known[other] = 1;
           else share_contact(actors,index,other,triggers,counters);
         }
-        if(callbacks.within_view(other,wrap_word(bearing+callbacks.orientation_offset(other)-32768)) && visible(index,other)) {
+        if(callbacks.within_view(other,wrap_word(bearing + callbacks.orientation_offset(other) - 32768)) && visible(index,other)) {
           // Reverse recognition still reuses the observer's visibility query.
           share_contact(actors,other,index,triggers,counters);
         }

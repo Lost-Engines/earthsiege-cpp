@@ -19,7 +19,9 @@ class control_settings_artwork {
  int field_x{},field_y{};
 public:
  explicit control_settings_artwork(resource_store const &,bool in_flight=false);
- rectangle button(unsigned i)const{return buttons.at(i);}
+ rectangle button(unsigned i)const{
+   return buttons.at(i);
+ }
  void draw(framebuffer &,std::span<uint8_t const,5> state,std::span<uint8_t const,7> appearance)const;
 };
-}
+} // namespace earthsiege

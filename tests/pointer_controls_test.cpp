@@ -8,7 +8,15 @@
 #include "simulation/shield_power.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::change_shield_balance;
+  using earthsiege::pointer_controls;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::resource_store;
+  using earthsiege::shield_instruments;
+  using earthsiege::shield_power;
+  using earthsiege::throttle_gauge;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; auto const bytes{read_file(argv[2])}; binary_reader file{bytes};
   auto const magic{file.take(8)};
@@ -23,14 +31,14 @@ int main(int argc, char **argv) try {
     int request{}; shield_power shield{.front{5000}, .rear{5000}, .balance{512}, .capacity{10000}};
     auto const cases{file.integer<uint32_t>()};
     for(unsigned int i{}; i < cases; ++i) {
-      auto const ticks{file.integer<uint32_t>()};bool const double_click{file.integer<uint8_t>()!=0};
+      auto const ticks{file.integer<uint32_t>()};bool const double_click{file.integer<uint8_t>() != 0};
       auto const x{file.integer<int32_t>()}, y{file.integer<int32_t>()}; auto const buttons{file.integer<uint8_t>()};
       if(auto const action{pointer.event(x, y, (buttons & 1) != 0, (buttons & 2) != 0,ticks)}) {
         if(action->index == 0) request = throttle.slider_layout().vertical ? -action->value : action->value;
         else if(action->value & 1) change_shield_balance(shield, action->index == 1);
       }
       pointer.painted(0);
-      bool matches{pointer.is_double_click()==double_click};
+      bool matches{pointer.is_double_click() == double_click};
       auto const check{[&](auto actual, auto expected){ if(actual != expected) matches = false; }};
       check(pointer.active() ? static_cast<int>(*pointer.active()) : -1, file.integer<int16_t>());
       check(pointer.is_dragging(), file.integer<uint8_t>() != 0);

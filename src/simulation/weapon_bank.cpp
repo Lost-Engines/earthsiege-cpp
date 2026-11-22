@@ -22,7 +22,7 @@ std::variant<capacitor, elf_capacitor, ammunition_weapon, grenade_weapon, ecm_we
 }
 
 template<typename State> decltype(auto) get_controls(State &state) {
-  return std::visit([](auto &value) -> decltype(auto) {
+  return std::visit([](auto &value)->decltype(auto) {
     using type = std::remove_cvref_t<decltype(value)>;
     if constexpr(std::is_same_v<type, elf_capacitor>) return (value.power.controls);
     else if constexpr(std::is_same_v<type, grenade_weapon>) return (value.supply.controls);
@@ -42,14 +42,32 @@ template<typename State> auto get_ammunition(State &state) {
 
 } // anonymous namespace
 
-weapon_controls &weapon_state::controls() { return get_controls(*this); }
-weapon_controls const &weapon_state::controls() const { return get_controls(*this); }
-capacitor *weapon_state::energy() { return get_energy(*this); }
-capacitor const *weapon_state::energy() const { return get_energy(*this); }
-ammunition_weapon *weapon_state::ammunition() { return get_ammunition(*this); }
-ammunition_weapon const *weapon_state::ammunition() const { return get_ammunition(*this); }
-elf_trigger *weapon_state::elf() { auto *value{std::get_if<elf_capacitor>(&mechanism)}; return value ? &value->trigger : nullptr; }
-elf_trigger const *weapon_state::elf() const { auto const *value{std::get_if<elf_capacitor>(&mechanism)}; return value ? &value->trigger : nullptr; }
+weapon_controls &weapon_state::controls() {
+  return get_controls(*this);
+}
+weapon_controls const &weapon_state::controls() const {
+  return get_controls(*this);
+}
+capacitor *weapon_state::energy() {
+  return get_energy(*this);
+}
+capacitor const *weapon_state::energy() const {
+  return get_energy(*this);
+}
+ammunition_weapon *weapon_state::ammunition() {
+  return get_ammunition(*this);
+}
+ammunition_weapon const *weapon_state::ammunition() const {
+  return get_ammunition(*this);
+}
+elf_trigger *weapon_state::elf() {
+  auto *value{std::get_if<elf_capacitor>(&mechanism)};
+  return value ? &value->trigger : nullptr;
+}
+elf_trigger const *weapon_state::elf() const {
+  auto const *value{std::get_if<elf_capacitor>(&mechanism)};
+  return value ? &value->trigger : nullptr;
+}
 
 bool weapon_state::ready(weapon_definition const &definition_data) const {
   if(auto const *value{energy()}) return elf() ? capacitor_charged(definition_data, *value) : energy_ready(definition_data, *value);
@@ -84,8 +102,12 @@ weapon_bank::weapon_bank(weapon_catalogue const &definitions, model_resource con
   }
 }
 
-std::span<std::optional<weapon_state> const> weapon_bank::slots() const { return weapons; }
-weapon_state &weapon_bank::at(size_t const slot) { return weapons.at(slot).value(); }
+std::span<std::optional<weapon_state> const> weapon_bank::slots() const {
+  return weapons;
+}
+weapon_state &weapon_bank::at(size_t const slot) {
+  return weapons.at(slot).value();
+}
 
 void weapon_bank::disable_missing_sections(std::span<int16_t const> const presence) {
   for(auto &weapon : weapons) if(weapon) {

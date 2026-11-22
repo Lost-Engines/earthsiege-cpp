@@ -23,7 +23,7 @@ struct engagement_state {
   bool unavailable{false};
   bool disabled{false};
   bool dead{false};
-  bool attack_requested{false};                                              // original +0xa6 before HERC strategy entry
+  bool attack_requested{false};                                                // original +0xa6 before HERC strategy entry
 };
 
 struct engagement_callbacks {

@@ -6,7 +6,19 @@
 #include "simulation/flyer_motion.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::advance_flyer;
+using earthsiege::aim_flyer_pitch;
+using earthsiege::avoidance_probe;
+using earthsiege::binary_reader;
+using earthsiege::flyer_leader_turn;
+using earthsiege::flyer_motion;
+using earthsiege::hold_flyer_altitude;
+using earthsiege::hold_flyer_bank;
+using earthsiege::read_file;
+using earthsiege::read_flyer_definition;
+using earthsiege::resource_store;
+using earthsiege::steer_flyer;
+using earthsiege::turn_flyer;
 flyer_motion read_state(binary_reader &file, bool expansion) {
   flyer_motion state{
     {file.integer<int32_t>(),file.integer<int32_t>(),file.integer<int32_t>()},
@@ -25,7 +37,7 @@ void compare(flyer_motion const &a, flyer_motion const &e, std::string const &la
     throw std::runtime_error{label + " flight state"};
   }
 }
-}
+} // anonymous namespace
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; auto const definition{read_flyer_definition(resources,"SKIMMER")};

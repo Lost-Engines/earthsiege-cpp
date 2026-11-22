@@ -15,4 +15,4 @@ public:
  rectangle button(unsigned)const;
  void draw(framebuffer &,std::span<uint8_t const,7> values,std::span<uint8_t const,9> faces)const;
 };
-}
+} // namespace earthsiege

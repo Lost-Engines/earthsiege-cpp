@@ -9,7 +9,9 @@ namespace {
 int32_t distance(vec3<int32_t> const &a, vec3<int32_t> const &b) {
   return fast_distance_2d({wrap_long(static_cast<int64_t>(a.x) - b.x), wrap_long(static_cast<int64_t>(a.y) - b.y)});
 }
-bool incapacitated(engagement_state const &actor) { return actor.dead || actor.disabled || actor.unavailable; }
+bool incapacitated(engagement_state const &actor) {
+  return actor.dead || actor.disabled || actor.unavailable;
+}
 }
 void guard_with_herc(std::span<engagement_state> const actors, std::span<target_relationship> const targets, size_t const actor, std::span<size_t const> const candidates, herc_guard_policy const &policy, bool &detectable, frame_ratio const ratio, herc_guard_callbacks const &callbacks) {
   auto &state{actors[actor]};

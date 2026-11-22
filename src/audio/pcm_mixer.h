@@ -1,6 +1,6 @@
 #pragma once
-#include "audio/pcm_sound.h"
 #include <span>
+#include "audio/pcm_sound.h"
 
 namespace earthsiege {
 /// Archived tr8m/tr8st arithmetic: quantize gain, signed byte intermediate,

@@ -35,7 +35,7 @@ void check(earthsiege::damage_state const &a, earthsiege::damage_state const &b,
   if(a.internal != b.internal || a.armour != b.armour || a.present != b.present || a.cells != b.cells || a.consequences != b.consequences) throw std::runtime_error{label + ": damage state differs"};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

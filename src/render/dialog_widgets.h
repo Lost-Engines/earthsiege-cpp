@@ -12,4 +12,4 @@ struct button_style {
 
 std::array<button_style,4> read_button_styles(bytes source);
 void draw_dialog_button(framebuffer &frame,rectangle const &bounds,button_style const &style,std::vector<bitmap> const &corners);
-}
+} // namespace earthsiege

@@ -9,8 +9,12 @@
 
 namespace {
 
-template<typename T> vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
-earthsiege::debris_particle particle(earthsiege::binary_reader &file) { return {0, vector<int32_t>(file), vector<uint16_t>(file), vector<int16_t>(file)}; }
+template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
+earthsiege::debris_particle particle(earthsiege::binary_reader &file) {
+  return {0, vector<int32_t>(file), vector<uint16_t>(file), vector<int16_t>(file)};
+}
 std::vector<size_t> indices(earthsiege::binary_reader &file) {
   std::vector<size_t> result(file.integer<uint16_t>());
   for(auto &v : result) v = file.integer<uint16_t>();
@@ -20,7 +24,7 @@ void header(earthsiege::binary_reader &file, std::string const &name) {
   auto const magic{file.take(8)}; if(std::string(magic.begin(), magic.end()) != name) file.fail("fixture version");
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

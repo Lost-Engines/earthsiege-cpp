@@ -1,7 +1,7 @@
 #pragma once
-#include "resources/player_roster.h"
 #include <array>
 #include <optional>
+#include "resources/player_roster.h"
 
 namespace earthsiege {
 
@@ -12,16 +12,36 @@ class armory {
 public:
   armory() = default;
   explicit armory(size_t count) : types(count) {}
-  auto size() const { return types.size(); }
-  void resize(size_t count) { types.resize(count); }
-  auto begin() { return types.begin(); }
-  auto end() { return types.end(); }
-  auto begin() const { return types.begin(); }
-  auto end() const { return types.end(); }
-  auto &operator[](size_t i) { return types[i]; }
-  auto const &operator[](size_t i) const { return types[i]; }
-  auto &at(size_t i) { return types.at(i); }
-  auto const &at(size_t i) const { return types.at(i); }
+  auto size() const {
+    return types.size();
+  }
+  void resize(size_t count) {
+    types.resize(count);
+  }
+  auto begin() {
+    return types.begin();
+  }
+  auto end() {
+    return types.end();
+  }
+  auto begin() const {
+    return types.begin();
+  }
+  auto end() const {
+    return types.end();
+  }
+  auto &operator[](size_t i) {
+    return types[i];
+  }
+  auto const &operator[](size_t i) const {
+    return types[i];
+  }
+  auto &at(size_t i) {
+    return types.at(i);
+  }
+  auto const &at(size_t i) const {
+    return types.at(i);
+  }
   bool operator==(armory const &) const = default;
 };
 armory read_armory(binary_reader &file);
@@ -56,7 +76,9 @@ struct technology_state {
   size_t chassis_slots{8}, chassis_count{8}, weapon_count{17};
   game_edition edition{game_edition::original};
   int16_t battle_set{};
-  bool weapon_available(size_t id) const { return entries.at(chassis_slots+id).available; }
+  bool weapon_available(size_t id) const {
+    return entries.at(chassis_slots + id).available;
+  }
 };
 struct career_state {
   uint8_t valid{},current{};

@@ -6,18 +6,34 @@
 #include "simulation/world_effects.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::crc32;
+  using earthsiege::default_world_light;
+  using earthsiege::framebuffer;
+  using earthsiege::ground_flash;
+  using earthsiege::missile_camera_explosion;
+  using earthsiege::missile_camera_object;
+  using earthsiege::missile_camera_tracker;
+  using earthsiege::missile_display;
+  using earthsiege::missile_picture;
+  using earthsiege::mission_header;
+  using earthsiege::read_file;
+  using earthsiege::rectangle;
+  using earthsiege::resource_store;
+  using earthsiege::scenery_world;
+  using earthsiege::terrain_kind;
+  using earthsiege::world_effects;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const source{read_file(argv[2])}; binary_reader file{source};
   auto const magic{file.take(8)};
-  bool const with_ground{std::string(magic.begin(),magic.end())=="ESMIS002"};
+  bool const with_ground{std::string(magic.begin(),magic.end()) == "ESMIS002"};
   if(!with_ground && std::string(magic.begin(), magic.end()) != "ESMIS001") file.fail("fixture version");
   std::array<int16_t, 10> header;
   for(auto &value : header) value = file.integer<int16_t>();
   mission_header const mission{.terrain{static_cast<terrain_kind>(header[0])}, .zone{header[1]}, .world_variant{header[8]}, .palette_variant{header[9]}};
   scenery_world world{resources, mission}; framebuffer frame;
-  world_effects effects{resources,{},world.environment().atmosphere_parameters[1]!=0};
+  world_effects effects{resources,{},world.environment().atmosphere_parameters[1] != 0};
   missile_display display{resources, frame, world}; missile_camera_tracker tracker;
   auto const slot{[&]()->std::optional<size_t>{ auto const value{file.integer<int32_t>()}; return value < 0 ? std::nullopt : std::optional<size_t>{value}; }};
   auto const position{[&]{ return vec3<int32_t>{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()}; }};
@@ -39,7 +55,7 @@ int main(int argc, char **argv) try {
     std::vector<ground_flash> ground;
     if(with_ground){
       auto const size{file.integer<uint16_t>()};ground_positions.reserve(size);
-      for(unsigned j{};j<size;++j){
+      for(unsigned j{};j < size;++j){
         auto const shape{file.integer<uint16_t>()};ground_positions.push_back(position());
         auto const heading{file.integer<uint16_t>()};expected_positions.push_back(position());
         ground.push_back(effects.ground_attachment(shape,ground_positions.back(),heading));
@@ -50,7 +66,7 @@ int main(int argc, char **argv) try {
                     state.bright == bright && tracker.watched() == watched && tracker.flashing_explosion() == explosion};
     frame.clear(123); display.draw(bounds, state, ready, locked, now, std::array{default_world_light()}, {}, nullptr, ground);
     bool const raster{crc32(frame.pixels()) == crc};
-    bool const placements{ground_positions==expected_positions};
+    bool const placements{ground_positions == expected_positions};
     if(!same || !raster || !placements) {
       if(!failures) {
         std::ofstream output{"/tmp/es-missile-difference.raw", std::ios::binary};

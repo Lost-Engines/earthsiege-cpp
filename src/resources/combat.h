@@ -2,9 +2,9 @@
 #include <array>
 #include <cstdint>
 #include <vector>
+#include "vectorstorm/vector/vector3.h"
 #include "resources/binary_reader.h"
 #include "resources/edition.h"
-#include "vectorstorm/vector/vector3.h"
 
 namespace earthsiege {
 

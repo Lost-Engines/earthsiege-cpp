@@ -17,14 +17,16 @@ struct audio_output::implementation {
     config.sampleRate = 44100;
     config.periodSizeInFrames = 256;
     config.pUserData = this;
-    config.dataCallback = [](ma_device *device, void *output, void const *, ma_uint32 frames) {
+    config.dataCallback = [](ma_device *device, void *output, void const *, ma_uint32 frames){
       auto &self{*static_cast<implementation *>(device->pUserData)};
       self.samples.read({static_cast<int16_t *>(output), static_cast<size_t>(frames) * 2});
     };
     auto const result{ma_device_init(nullptr, &config, &device)};
     if(result != MA_SUCCESS) throw std::runtime_error{std::string{"cannot open PCM output: "} + ma_result_description(result)};
   }
-  ~implementation() { ma_device_uninit(&device); }
+  ~implementation() {
+    ma_device_uninit(&device);
+  }
 };
 
 audio_output::audio_output() : state{std::make_unique<implementation>()} {
@@ -32,8 +34,14 @@ audio_output::audio_output() : state{std::make_unique<implementation>()} {
   if(result != MA_SUCCESS) throw std::runtime_error{std::string{"cannot start PCM output: "} + ma_result_description(result)};
 }
 audio_output::~audio_output() = default;
-void audio_output::queue(std::span<int16_t const> samples) { state->samples.queue(samples); }
-void audio_output::pause(bool paused) { state->samples.pause(paused); }
-void audio_output::clear() { state->samples.clear(); }
+void audio_output::queue(std::span<int16_t const> samples) {
+  state->samples.queue(samples);
+}
+void audio_output::pause(bool paused) {
+  state->samples.pause(paused);
+}
+void audio_output::clear() {
+  state->samples.clear();
+}
 
 } // namespace earthsiege

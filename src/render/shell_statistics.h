@@ -1,8 +1,8 @@
 #pragma once
-#include "resources/packed_strings.h"
 #include "render/framebuffer.h"
 #include "resources/artwork.h"
 #include "resources/career.h"
+#include "resources/packed_strings.h"
 #include "resources/resource_store.h"
 namespace earthsiege {
 struct return_presentation;
@@ -15,4 +15,4 @@ public:
  void career(framebuffer &,rectangle const &,career_state const &,std::string const &name)const;
  void debrief(framebuffer &,rectangle const &,career_state const &,return_presentation const &)const;
 };
-}
+} // namespace earthsiege

@@ -36,7 +36,7 @@ public:
 class missile_display {
   framebuffer &target;
   scenery_renderer scenery;
-  std::array<font, 3> fonts;                                                 // red, blue, yellow
+  std::array<font, 3> fonts;                                                   // red, blue, yellow
   interface_strings strings;
 public:
   missile_display(resource_store const &resources, framebuffer &target, scenery_world const &world);

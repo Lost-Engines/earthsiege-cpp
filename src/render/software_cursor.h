@@ -1,6 +1,6 @@
 #pragma once
-#include "resources/artwork.h"
 #include "render/framebuffer.h"
+#include "resources/artwork.h"
 namespace earthsiege {
 /// Original DCI bitmap and signed hotspot, drawn over the presented page.
 class software_cursor {

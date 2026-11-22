@@ -17,7 +17,7 @@ earthsiege::random_state::state random(earthsiege::binary_reader &file) {
   result.first = file.integer<uint8_t>(); result.second = file.integer<uint8_t>();
   return result;
 }
-}
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

@@ -1,12 +1,12 @@
 #pragma once
 #include <optional>
 #include <span>
+#include "vectorstorm/vector/vector3.h"
 #include "resources/effects.h"
-#include "resources/weapon_mounts.h"
 #include "resources/model.h"
+#include "resources/weapon_mounts.h"
 #include "simulation/frame_time.h"
 #include "simulation/random_state.h"
-#include "vectorstorm/vector/vector3.h"
 
 namespace earthsiege {
 
@@ -33,7 +33,7 @@ struct smoke_emitter_state {
 struct smoke_puff_state {
   int16_t root{};
   vec3<int32_t> position;
-  vec3<int16_t> velocity;                                                 // original constructor retains the pool slot's words
+  vec3<int16_t> velocity;                                                      // original constructor retains the pool slot's words
   int32_t timer{200};
   uint16_t cell{};
 };

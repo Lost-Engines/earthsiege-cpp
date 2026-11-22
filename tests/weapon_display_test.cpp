@@ -4,7 +4,17 @@
 #include "simulation/weapon_display.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::ammunition_weapon;
+  using earthsiege::binary_reader;
+  using earthsiege::capacitor;
+  using earthsiege::ecm_weapon;
+  using earthsiege::exchange_weapon_display;
+  using earthsiege::frame_ratio;
+  using earthsiege::read_file;
+  using earthsiege::weapon_controls;
+  using earthsiege::weapon_instrument_kind;
+  using earthsiege::weapon_instrument_state;
+  using earthsiege::weapon_state;
   if(argc != 2) return EXIT_FAILURE;
   auto const source{read_file(argv[1])}; binary_reader file{source}; auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESWPND01") file.fail("fixture version");
@@ -22,11 +32,11 @@ int main(int argc, char **argv) try {
     else weapon.mechanism = ecm_weapon{controls,false,false};
     weapon_instrument_state state{.requested_charge{requested}, .disabled{kind == weapon_instrument_kind::ecm && disabled}, .selected{kind == weapon_instrument_kind::ecm && enabled != 0}};
     exchange_weapon_display(weapon,state,ready,included,selected,static_cast<frame_ratio>(ratio));
-    for(int const value : {state.value,state.requested_charge,int(state.disabled),int(state.selected),int(state.included),int(state.ready)})
+    for(int const value : {state.value,state.requested_charge,int(state.disabled),int(state.selected),int(state.included),int(state.ready)}) {
       if(value != file.integer<int32_t>()) file.fail("weapon display state differs at case " + std::to_string(i));
+    }
     auto const expected_setting{file.integer<int32_t>()}, expected_displayed{file.integer<int32_t>()}, expected_pulse{file.integer<int32_t>()};
-    if(auto const *power{weapon.energy()}) { if(power->setting != expected_setting) file.fail("energy setting differs"); }
-    else if(auto const *ammo{weapon.ammunition()}) {
+    if(auto const *power{weapon.energy()}) { if(power->setting != expected_setting) file.fail("energy setting differs"); } else if(auto const *ammo{weapon.ammunition()}) {
       if(ammo->rounds != expected_setting || ammo->displayed_rounds != expected_displayed) file.fail("ammo countdown differs");
     } else {
       auto const &ecm{std::get<ecm_weapon>(weapon.mechanism)};

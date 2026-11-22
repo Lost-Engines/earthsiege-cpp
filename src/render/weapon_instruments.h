@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <functional>
+#include <string>
 #include "render/instrument_bars.h"
 #include "simulation/weapon_display.h"
 

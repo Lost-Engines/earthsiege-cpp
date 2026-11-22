@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <stdexcept>
 #include <utility>
-#include "simulation/fixed_math.h"
 #include "resources/model_tree.h"
+#include "simulation/fixed_math.h"
 #include "simulation/hit_volumes.h"
 #include "simulation/impact_damage.h"
 #include "simulation/model_math.h"
@@ -19,19 +19,45 @@ flyer_actor::flyer_actor(flyer_definition const &source, vec3<int32_t> const &po
   : definition{source}, visual{std::get<shape_part>(source.models.roots.at(0).content)},
     components{source.damage, initial_damage(std::get<shape_part>(source.models.roots.at(0).content)), source.profile.edition},
     flight{vec3<int32_t>{position},vec3<uint16_t>{angles},{0,source.profile.forward_step,0},{}} {}
-flyer_profile const &flyer_actor::profile() const { return definition.profile; }
-model_instance const &flyer_actor::instance() const { return visual; }
-model_transform flyer_actor::placement() const { return flyer_placement(flight); }
-flyer_motion &flyer_actor::motion() { return flight; }
-flyer_motion const &flyer_actor::motion() const { return flight; }
-vec3<uint16_t> const &flyer_actor::angles() const { return flight.angles; }
-vec3<int16_t> const &flyer_actor::local_velocity() const { return flight.velocity; }
-vec3<int16_t> const &flyer_actor::angular_velocity() const { return flight.angular_step; }
-damage_state const &flyer_actor::damage() const { return components.state(); }
-int16_t flyer_actor::total_damage_fraction() const { return components.total_fraction(); }
-bool flyer_actor::dead() const { return destroyed; }
-bool flyer_actor::is_detectable() const { return detectable; }
-void flyer_actor::set_detectable(bool const value) { detectable = value; }
+flyer_profile const &flyer_actor::profile() const {
+  return definition.profile;
+}
+model_instance const &flyer_actor::instance() const {
+  return visual;
+}
+model_transform flyer_actor::placement() const {
+  return flyer_placement(flight);
+}
+flyer_motion &flyer_actor::motion() {
+  return flight;
+}
+flyer_motion const &flyer_actor::motion() const {
+  return flight;
+}
+vec3<uint16_t> const &flyer_actor::angles() const {
+  return flight.angles;
+}
+vec3<int16_t> const &flyer_actor::local_velocity() const {
+  return flight.velocity;
+}
+vec3<int16_t> const &flyer_actor::angular_velocity() const {
+  return flight.angular_step;
+}
+damage_state const &flyer_actor::damage() const {
+  return components.state();
+}
+int16_t flyer_actor::total_damage_fraction() const {
+  return components.total_fraction();
+}
+bool flyer_actor::dead() const {
+  return destroyed;
+}
+bool flyer_actor::is_detectable() const {
+  return detectable;
+}
+void flyer_actor::set_detectable(bool const value) {
+  detectable = value;
+}
 bool flyer_actor::direct_damage(int16_t const amount, random_state &random, flyer_damage_events const &events, bool const player_locked_target) {
   if(!events.explosion || !events.debris) throw std::invalid_argument{"flyer damage requires synchronous effect emitters"};
   auto const transform{placement()};
@@ -61,7 +87,7 @@ bool flyer_actor::direct_damage(int16_t const amount, random_state &random, flye
   if(events.kill_credit) events.kill_credit();
   destroyed = true;
   detectable = false;
-  flight.position.z = -100000;                                       // original removal position; no falling/wreck phase for flyers
+  flight.position.z = -100000;                                                 // original removal position; no falling/wreck phase for flyers
   if(events.destroyed) events.destroyed();
   return true;
 }
@@ -76,7 +102,7 @@ std::optional<int32_t> flyer_actor::receive_impact(impact_request const &request
   auto const hit{intersect_components(definition.collision,components.state().present,root,visual.transforms(),actor_to_ray,request.reach,request.radius)};
   if(!hit) return std::nullopt;
   auto effect{request.damage.armour_effects[static_cast<size_t>(random.next() & 3)]};
-  auto const distance{wrap_long(static_cast<int64_t>(hit->distance) + 2)};       // component query and actor method each add one
+  auto const distance{wrap_long(static_cast<int64_t>(hit->distance) + 2)};     // component query and actor method each add one
   bool const killed{direct_damage(adjust_impact_damage(request.damage.armour,conditions,definition.profile.edition),random,events,player_locked_target)};
   if(killed) effect = 10;
   auto position{rotate_vector({0,distance,0},request.transform)};
@@ -85,5 +111,7 @@ std::optional<int32_t> flyer_actor::receive_impact(impact_request const &request
   events.debris(killed ? 3 : 1,position,random);
   return distance;
 }
-scene_model flyer_actor::model() const { return {definition.models.roots,visual,placement(),6,definition.textures,{},{},{}}; }
+scene_model flyer_actor::model() const {
+  return {definition.models.roots,visual,placement(),6,definition.textures,{},{},{}};
+}
 } // namespace earthsiege

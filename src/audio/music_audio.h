@@ -1,7 +1,7 @@
 #pragma once
+#include "midi_receiver.h"
 #include "music_player.h"
 #include "music_settings.h"
-#include "midi_receiver.h"
 #include "pcm_sound.h"
 #include "resources/resource_store.h"
 namespace earthsiege {

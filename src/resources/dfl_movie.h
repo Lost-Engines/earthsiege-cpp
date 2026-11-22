@@ -1,6 +1,6 @@
 #pragma once
-#include "artwork.h"
 #include <string>
+#include "artwork.h"
 namespace earthsiege {
 // The CD player's word-copy delta stream. A guard word bounds two malformed
 // writes in the localized original intro without exposing it as image data.
@@ -22,9 +22,15 @@ class dfl_movie {
 public:
  explicit dfl_movie(bytes);
  bool advance();
- bool finished()const{return done;}
- bytes pixels()const{return {raster.data(),64000};}
- palette const &colours()const{return colours_;}
+ bool finished()const{
+   return done;
+ }
+ bytes pixels()const{
+   return {raster.data(),64000};
+ }
+ palette const &colours()const{
+   return colours_;
+ }
  std::vector<std::string> take_samples();
 };
-}
+} // namespace earthsiege

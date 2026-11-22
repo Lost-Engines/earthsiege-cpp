@@ -21,7 +21,7 @@ int16_t priority(weapon_power_slot const &slot) {
   return slot.energy ? (slot.energy->fast ? 10000 : slot.energy->setting) : 0;
 }
 
-} // namespace
+} // anonymous namespace
 
 bool weapon_in_range(weapon_definition const &definition, int32_t const distance) {
   return definition.minimum_range < distance && distance < definition.range;

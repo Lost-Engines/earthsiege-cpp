@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <stdexcept>
 #include <utility>
-#include "render/scene_order.h"
 #include "render/polygon_raster.h"
+#include "render/scene_order.h"
 #include "simulation/fixed_math.h"
 #include "simulation/model_math.h"
 
@@ -116,9 +116,9 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
       auto const root{actor.roots.size() == 1 ? 0 : actor_detail_index(actor.roots.size(), actor.detail_thresholds, radius, eye, detail)};
       auto actor_view{view};
       if(shapes){
-        actor_view.weapon_detail_bias=shapes->weapon;
-        if(actor.native_class==7)actor_view.detail.bias=shapes->herc;
-        else if(actor.native_class==6)actor_view.detail.bias=shapes->ordinary;
+        actor_view.weapon_detail_bias = shapes->weapon;
+        if(actor.native_class == 7)actor_view.detail.bias = shapes->herc;
+        else if(actor.native_class == 6)actor_view.detail.bias = shapes->ordinary;
       }
       if(observe)observe({vec3<int32_t>{placement.translation},actor.native_class,distance,radius,root,object_lights});
       models.draw(actor.roots[root], actor.instance, placement, actor_view, actor.textures, object_lights, actor.attachments);

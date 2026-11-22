@@ -18,7 +18,7 @@ int32_t horizontal_distance(vec3<int32_t> const &a, vec3<int32_t> const &b) {
   return fast_distance_2d(vec2<int32_t>{delta.x, delta.y});
 }
 
-} // namespace
+} // anonymous namespace
 
 movement_request follow_route(vec3<int32_t> const &position, uint16_t const heading, int16_t const requested_speed, mission_route const &route, std::span<vec3<int32_t> const> const points, int16_t &cursor) {
   int const next{cursor + 1};
@@ -59,7 +59,7 @@ movement_request follow_formation(vec3<int32_t> const &position, uint16_t const 
 
 void avoid_obstacles(movement_request &control, avoidance_state const &state, std::span<contact_actor const> const actors, avoidance_query const &query, avoidance_policy const &policy) {
   if((state.current_speed == 0 && control.speed == 0) || (control.speed < 0 && state.collision_countdown == 0)) return;
-  if((control.flags & 1) && !policy.expansion) return;                                                 // ramming bypasses both scenery probes and actor clearance
+  if((control.flags & 1) && !policy.expansion) return;                         // ramming bypasses both scenery probes and actor clearance
   int32_t constexpr clear_distance{22000};
   std::array<int32_t, 2> clearance{clear_distance, clear_distance};
   if(!(control.flags & 1)) {
@@ -88,14 +88,15 @@ void avoid_obstacles(movement_request &control, avoidance_state const &state, st
   std::array<bool, 2> firing_line{};
   if(policy.expansion) {
     for(auto const &point : policy.friendly_fire_line) {
-      auto const range{wrap_long((static_cast<int64_t>(fast_distance_2d({wrap_long(static_cast<int64_t>(point.x)-state.position.x), wrap_long(static_cast<int64_t>(point.y)-state.position.y)})) * 1000 + 512) >> 10)};
+      auto const range{wrap_long((static_cast<int64_t>(fast_distance_2d({wrap_long(static_cast<int64_t>(point.x) - state.position.x), wrap_long(static_cast<int64_t>(point.y) - state.position.y)})) * 1000 + 512) >> 10)};
       auto const angle{wrap_word(bearing_angle(state.position, {point.x,point.y,state.position.z}) - state.heading)};
       if(std::min(std::abs(static_cast<int>(angle)),32767) >= 12288) continue;
       auto const side{angle < 0 ? 1U : 0U};
       if(range < clearance[side]) {clearance[side] = range; firing_line[side] = true;}
     }
-    if(state.forward_collision && clearance[0] == clear_distance && clearance[1] == clear_distance)
+    if(state.forward_collision && clearance[0] == clear_distance && clearance[1] == clear_distance) {
       clearance[state.collision_bias < 1 ? 1 : 0] = 16500;
+    }
   }
   if(clearance[0] >= clear_distance && clearance[1] >= clear_distance) return;
   if(state.forward_collision && clearance[0] < clear_distance && clearance[1] < clear_distance) clearance[0] = wrap_long(static_cast<int64_t>(clearance[0]) + state.collision_bias);

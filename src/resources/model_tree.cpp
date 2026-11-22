@@ -28,7 +28,7 @@ model_part clone_model_part(model_part const &source) {
   model_part result;
   result.kind = source.kind;
   result.header = source.header;
-  std::visit([&](auto const &content) {
+  std::visit([&](auto const &content){
     using type = std::decay_t<decltype(content)>;
     if constexpr(requires { content.children; }) {
       type copy;

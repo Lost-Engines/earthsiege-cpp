@@ -5,7 +5,14 @@
 #include "simulation/herc_actor.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::herc_actor;
+  using earthsiege::read_file;
+  using earthsiege::read_herc_definition;
+  using earthsiege::read_model;
+  using earthsiege::read_weapon_catalogue;
+  using earthsiege::resource_store;
+  using earthsiege::weapon_shot;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const definitions{read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))};

@@ -10,6 +10,8 @@ class mission_preferences {
 public:
  mission_preferences(preferences &p,bool radio=true):prefs{p},persisted_{p.current()},radio_available{radio}{}
  mission_preference_action activate(unsigned index,bool reverse=false);
- preferences::values const &persisted()const{return persisted_;}
+ preferences::values const &persisted()const{
+   return persisted_;
+ }
 };
-}
+} // namespace earthsiege

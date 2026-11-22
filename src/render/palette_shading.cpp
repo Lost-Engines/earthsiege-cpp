@@ -34,7 +34,7 @@ texture_shade_maps make_texture_shades(palette const &source) {
       bool shaded{false};
       for(auto const &ramp : source.shade_ramps) {
         if(std::ranges::find(ramp, index) == ramp.end()) continue;
-        shaded = true;                                                        // last containing ramp wins
+        shaded = true;                                                         // last containing ramp wins
         auto const reference{((ramp.size() - 1) * 650 + 512) >> 10};
         auto const shade{(ramp.size() - 1) * level / (texture_shade_count - 1)};
         auto const &reference_colour{source.dac_colours.at(ramp[reference])};

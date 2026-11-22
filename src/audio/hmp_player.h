@@ -1,6 +1,6 @@
 #pragma once
-#include <optional>
 #include <functional>
+#include <optional>
 #include "resources/hmp.h"
 namespace earthsiege {
 struct midi_packet {

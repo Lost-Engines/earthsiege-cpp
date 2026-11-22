@@ -5,9 +5,21 @@
 #include "resources/binary_reader.h"
 #include "simulation/herc_guard.h"
 namespace {
-using namespace earthsiege;
-std::optional<size_t> optional_actor(int16_t value) { return value < 0 ? std::nullopt : std::make_optional(static_cast<size_t>(value)); }
+using earthsiege::behavior;
+using earthsiege::binary_reader;
+using earthsiege::drive_off_enemy;
+using earthsiege::engagement_state;
+using earthsiege::enter_behavior;
+using earthsiege::guard_with_herc;
+using earthsiege::herc_combat_position;
+using earthsiege::herc_guard_policy;
+using earthsiege::movement_request;
+using earthsiege::read_file;
+using earthsiege::target_relationship;
+std::optional<size_t> optional_actor(int16_t value) {
+  return value < 0 ? std::nullopt : std::make_optional(static_cast<size_t>(value));
 }
+} // anonymous namespace
 int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};

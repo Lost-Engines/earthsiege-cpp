@@ -16,7 +16,7 @@ world_projectiles::world_projectiles(resource_store const &resources, weapon_cat
     bullet_models{read_model(resources.read("simvol0", "dts/BULLETS.DTS"))},
     rocket_models{read_model(resources.read("simvol0", "dts/ROCKETS.DTS"))},
     bullet_textures{read_bitmaps(resources.read("simvol0", "dba/BULLETS.DBA"))},
-    beam_styles{resources.edition()==game_edition::expansion ? read_beam_styles(resources.read("simvol0","dat/BEAM.DAT")) : std::vector<beam_style>{}} {}
+    beam_styles{resources.edition() == game_edition::expansion ? read_beam_styles(resources.read("simvol0","dat/BEAM.DAT")) : std::vector<beam_style>{}} {}
 
 std::optional<size_t> world_projectiles::launch(projectile_owner const owner, weapon_shot const &shot, random_state &random, world_impact_query const &hit) {
   if(shot.kind == shot_kind::beam) {
@@ -35,7 +35,7 @@ std::optional<size_t> world_projectiles::launch(projectile_owner const owner, we
   auto const created{projectiles.emplace(owner, shot, definitions, motions, bullet_models, rocket_models, retained_rocket_clocks[*slot], random)};
   auto const subtype{static_cast<size_t>(definitions.projectiles.at(shot.projectile).subtype)};
   auto const noise{shot.kind == shot_kind::rocket ? motions.rockets.at(subtype).shot_noise : motions.bullets.at(subtype).shot_noise};
-  if(sounds) sounds(sample_sound_request{sound_action::positioned,static_cast<uint16_t>(noise+10),shot.muzzle.position});
+  if(sounds) sounds(sample_sound_request{sound_action::positioned,static_cast<uint16_t>(noise + 10),shot.muzzle.position});
   return created;
 }
 
@@ -60,7 +60,9 @@ void world_projectiles::collect() {
     if(auto const *flight{std::get_if<projectile_instance>(&projectile.state)}; flight && flight->flight().kind == projectile_kind::rocket) retained_rocket_clocks[slot] = flight->flight().animation_remaining;
   });
 }
-object_pool<live_projectile> const &world_projectiles::live() const { return projectiles; }
+object_pool<live_projectile> const &world_projectiles::live() const {
+  return projectiles;
+}
 
 void world_projectiles::append_objects(std::vector<scene_object> &objects) {
   projectiles.for_each_oldest([&](size_t, live_projectile const &projectile){

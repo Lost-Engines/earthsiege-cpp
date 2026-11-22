@@ -35,16 +35,16 @@ int constexpr heavy_damage_speed_q10{400};
 } // anonymous namespace
 
 bool update_player_throttle(int16_t &throttle, int16_t input, int16_t &steering, int16_t const direction) {
-  if(direction<0)input=wrap_word(-input);
-  bool const forward{std::abs(input)>throttle_direction_threshold ? input<=0 : throttle>=0};
-  if(forward)steering=wrap_word(-steering);
+  if(direction < 0)input = wrap_word(-input);
+  bool const forward{std::abs(input) > throttle_direction_threshold ? input <= 0 : throttle >= 0};
+  if(forward)steering = wrap_word(-steering);
   auto const change{scale(-input,throttle_change_scale)};
-  if(change!=0){
-    auto const next{wrap_word(throttle+change)};
-    bool const crosses_neutral{(throttle&4095)!=0&&(next<0)!=(throttle<0)};
-    throttle=crosses_neutral?0:static_cast<int16_t>(std::clamp<int>(next,direction>0?0:-throttle_limit,direction<0?0:throttle_limit));
+  if(change != 0){
+    auto const next{wrap_word(throttle + change)};
+    bool const crosses_neutral{(throttle & 4095) != 0 && (next < 0) != (throttle < 0)};
+    throttle = crosses_neutral?0:static_cast<int16_t>(std::clamp<int>(next,direction > 0?0:-throttle_limit,direction < 0?0:throttle_limit));
   }
-  return change!=0;
+  return change != 0;
 }
 
 bool update_player_movement(locomotion_state &state, movement_profile const &profile, animation_channel &channel, int16_t const throttle_input, int16_t steering_input, movement_damage const &damage, frame_ratio const ratio, movement_event_sink const &events, bool const reset_recovery, int16_t const direction) {

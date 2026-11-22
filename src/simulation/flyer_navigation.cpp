@@ -7,7 +7,7 @@
 namespace earthsiege {
 namespace {
 vec3<int32_t> difference(vec3<int32_t> const &a, vec3<int32_t> const &b) {
-  return {wrap_long(static_cast<int64_t>(a.x)-b.x),wrap_long(static_cast<int64_t>(a.y)-b.y),wrap_long(static_cast<int64_t>(a.z)-b.z)};
+  return {wrap_long(static_cast<int64_t>(a.x) - b.x),wrap_long(static_cast<int64_t>(a.y) - b.y),wrap_long(static_cast<int64_t>(a.z) - b.z)};
 }
 void add(vec3<int32_t> &to, vec3<int32_t> const &offset) {
   for(unsigned int axis{0}; axis != 3; ++axis) to[axis] = wrap_long(static_cast<int64_t>(to[axis]) + offset[axis]);
@@ -23,7 +23,7 @@ void follow_flyer_route(flyer_motion &flight, flyer_profile const &profile, miss
     auto const delta{difference(destination,flight.position)};
     if(fast_distance_2d({delta.x,delta.y}) < 15000) {
       cursor = static_cast<int16_t>(next);
-      if(route.points.size() > 1 && next == route.points.size()-1 && route.points.front() == route.points.back()) cursor = 0;
+      if(route.points.size() > 1 && next == route.points.size() - 1 && route.points.front() == route.points.back()) cursor = 0;
     }
   }
   auto const error{wrap_word(bearing_angle(flight.position,destination) - flight.angles.z)};
@@ -35,7 +35,7 @@ void follow_flyer_formation(flyer_motion &flight, flyer_profile const &profile, 
   auto destination{leader.position};
   add(destination,rotate_vector({0,8192,0},rotation_transform({0,0,leader.angles.z})));
   auto offset{rotate_vector({formation_offset.x,formation_offset.y,0},flyer_placement(leader))};
-  offset.z = formation_offset.z;                                            // formation uses the leader's horizontal matrix block, with unrotated altitude
+  offset.z = formation_offset.z;                                               // formation uses the leader's horizontal matrix block, with unrotated altitude
   add(destination,offset);
   auto const distance{fast_distance(difference(destination,flight.position))};
   auto bearing{wrap_word(bearing_angle(flight.position,destination) - flight.angles.z)};

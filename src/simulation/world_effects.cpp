@@ -31,15 +31,15 @@ world_effects::world_effects(resource_store const &resources, sound_sink sink, b
     detached_weapon_models{read_model(resources.read("simvol0", "dts/MECHWPN2.DTS"))},
     smoke_textures{read_bitmaps(resources.read("simvol0", "dba/SMOKE.DBA"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))} {
-  if(resources.edition()==game_edition::expansion){deployment_models=read_model(resources.read("simvol0","dts/METEOR.DTS"));deployment_textures=read_bitmaps(resources.read("simvol0","dba/IMPACT.DBA"));craters.reserve(150);}
-  if(resources.edition()==game_edition::expansion)flat_textures=read_bitmaps(resources.read("simvol0",alternate_ground_models?"dba/FLAT2.DBA":"dba/FLAT.DBA"));
+  if(resources.edition() == game_edition::expansion){deployment_models = read_model(resources.read("simvol0","dts/METEOR.DTS"));deployment_textures = read_bitmaps(resources.read("simvol0","dba/IMPACT.DBA"));craters.reserve(150);}
+  if(resources.edition() == game_edition::expansion)flat_textures = read_bitmaps(resources.read("simvol0",alternate_ground_models?"dba/FLAT2.DBA":"dba/FLAT.DBA"));
   for(auto const &root:flat_models.roots)flat_instances.emplace_back(std::get<shape_part>(root.content));
-  explosion_textures.resize(resources.edition()==game_edition::expansion?10:9);
+  explosion_textures.resize(resources.edition() == game_edition::expansion?10:9);
   for(size_t bank{0}; bank != explosion_textures.size(); ++bank) explosion_textures[bank] = read_bitmaps(resources.read("simvol0", "dba/EXPLO" + std::to_string(bank) + ".DBA"));
 }
 
 std::optional<size_t> world_effects::add_explosion(int16_t const selected, vec3<int32_t> const &position, random_state &random) {
-  if(explosions.available() == 0) return std::nullopt;                            // original allocation failure precedes its random draw
+  if(explosions.available() == 0) return std::nullopt;                         // original allocation failure precedes its random draw
   auto const &definition{explosion_definitions.at(static_cast<size_t>(selected))};
   auto const &shape{std::get<shape_part>(explosion_models.roots.at(static_cast<size_t>(definition.model)).content)};
   auto const &secondary{std::get<shape_part>(flat_models.roots.at(1).content)};
@@ -121,9 +121,9 @@ void world_effects::advance_deployments(frame_ratio const ratio,std::function<bo
     auto const frames{std::get<shape_part>(deployment_models.roots.at(1).content).cell_frame_counts.front()};
     if(advance_deployment(pod.state,static_cast<uint16_t>(frames),ratio,{
       .sound{[&](uint16_t id){if(sounds)sounds(sample_sound_request{sound_action::positioned,id,listener});}},.impact{impact},
-      .finish{[&](vec3<int32_t> const &position,bool clear){if(pod.group){if(clear)release(*pod.group,position);if(craters.size()<150)craters.push_back(position);}}}
+      .finish{[&](vec3<int32_t> const &position,bool clear){if(pod.group){if(clear)release(*pod.group,position);if(craters.size() < 150)craters.push_back(position);}}}
     }))deployments.defer_erase(slot);
-    pod.opening.cell_frames().front()=pod.state.cell;
+    pod.opening.cell_frames().front() = pod.state.cell;
   });
 }
 void world_effects::collect() {
@@ -135,11 +135,13 @@ void world_effects::collect() {
   emitters.collect();
 }
 
-effect_lighting &world_effects::lights() { return lighting; }
+effect_lighting &world_effects::lights() {
+  return lighting;
+}
 
 void world_effects::append_models(std::vector<scene_model> &models) {
   deployments.for_each_oldest([&](size_t,live_deployment &pod){
-    auto placement{rotation_transform(pod.state.angles)};placement.translation=pod.state.position;
+    auto placement{rotation_transform(pod.state.angles)};placement.translation = pod.state.position;
     size_t const root{pod.state.landed?1u:0u};
     models.push_back({.roots{&deployment_models.roots.at(root),1},.instance{pod.state.landed?pod.opening:pod.body},.placement{placement},.native_class{1},.textures{deployment_textures},.attachments{},.detail_thresholds{},.detail{}});
   });
@@ -182,9 +184,17 @@ std::vector<ground_flash> world_effects::ground_flashes() {
   return result;
 }
 
-object_pool<live_smoke_puff> const &world_effects::live_smoke() const { return puffs; }
-object_pool<live_smoke_emitter> const &world_effects::smoke_controllers() const { return emitters; }
-object_pool<live_explosion> const &world_effects::live_explosions() const { return explosions; }
-object_pool<live_debris> const &world_effects::live_particles() const { return debris; }
+object_pool<live_smoke_puff> const &world_effects::live_smoke() const {
+  return puffs;
+}
+object_pool<live_smoke_emitter> const &world_effects::smoke_controllers() const {
+  return emitters;
+}
+object_pool<live_explosion> const &world_effects::live_explosions() const {
+  return explosions;
+}
+object_pool<live_debris> const &world_effects::live_particles() const {
+  return debris;
+}
 
 } // namespace earthsiege

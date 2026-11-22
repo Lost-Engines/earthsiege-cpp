@@ -4,22 +4,26 @@
 #include <stdexcept>
 #ifdef _WIN32
 #include <GL/glext.h>
-#endif
-#include "viewport.h"
-#include "resources/artwork.h"
+#endif // _WIN32
 #include "render/software_cursor.h"
+#include "resources/artwork.h"
+#include "viewport.h"
 
 namespace earthsiege {
 
 glfw_context::glfw_context() {
-  glfwSetErrorCallback([](int const code, char const *message) {
+  glfwSetErrorCallback([](int const code, char const *message){
     std::cerr << "GLFW " << code << ": " << message << '\n';
   });
   glfwInitHint(GLFW_JOYSTICK_HAT_BUTTONS, GLFW_FALSE);
   if(!glfwInit()) throw std::runtime_error{"cannot initialise GLFW"};
 }
-glfw_context::~glfw_context() { glfwTerminate(); }
-auto window::self(GLFWwindow *handle)->window & { return *static_cast<window *>(glfwGetWindowUserPointer(handle)); }
+glfw_context::~glfw_context() {
+  glfwTerminate();
+}
+auto window::self(GLFWwindow *handle)->window & {
+  return *static_cast<window *>(glfwGetWindowUserPointer(handle));
+}
 
 window::window(unsigned int scale) {
   bool const automatic{scale == 0};
@@ -68,16 +72,16 @@ window::window(unsigned int scale) {
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
   glfwSetWindowUserPointer(handle.get(), this);
   glfwSetInputMode(handle.get(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-  glfwSetWindowCloseCallback(handle.get(), [](GLFWwindow *w) { self(w).events.push_back({.type = event_type::close}); });
-  glfwSetWindowFocusCallback(handle.get(), [](GLFWwindow *w, int active) {
+  glfwSetWindowCloseCallback(handle.get(), [](GLFWwindow *w){ self(w).events.push_back({.type = event_type::close}); });
+  glfwSetWindowFocusCallback(handle.get(), [](GLFWwindow *w, int active){
     self(w).events.push_back({.type = event_type::focus, .focused = active != 0});
     glfwSetInputMode(w, GLFW_CURSOR, active ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
   });
-  glfwSetKeyCallback(handle.get(), [](GLFWwindow *w, int key, int, int action, int mods) {
+  glfwSetKeyCallback(handle.get(), [](GLFWwindow *w, int key, int, int action, int mods){
     self(w).events.push_back({.type = action == GLFW_RELEASE ? event_type::key_up : event_type::key_down,
       .key = key, .modifiers = mods, .repeat = action == GLFW_REPEAT});
   });
-  glfwSetCharCallback(handle.get(), [](GLFWwindow *w, unsigned int character) {
+  glfwSetCharCallback(handle.get(), [](GLFWwindow *w, unsigned int character){
     std::string utf8;
     if(character < 0x80) utf8 += static_cast<char>(character);
     else {
@@ -91,12 +95,12 @@ window::window(unsigned int scale) {
     }
     self(w).events.push_back({.type = event_type::text, .text = std::move(utf8)});
   });
-  glfwSetCursorPosCallback(handle.get(), [](GLFWwindow *w, double x, double y) {
+  glfwSetCursorPosCallback(handle.get(), [](GLFWwindow *w, double x, double y){
     auto &owner{self(w)};
     auto const p{owner.logical_position(x, y)};
     owner.events.push_back({.type = event_type::motion, .x = p[0], .y = p[1]});
   });
-  glfwSetMouseButtonCallback(handle.get(), [](GLFWwindow *w, int button, int action, int mods) {
+  glfwSetMouseButtonCallback(handle.get(), [](GLFWwindow *w, int button, int action, int mods){
     auto &owner{self(w)};
     auto const p{owner.pointer_position()};
     owner.events.push_back({.type = action == GLFW_RELEASE ? event_type::button_up : event_type::button_down,
@@ -158,7 +162,9 @@ void window::warp_mouse(int x, int y) {
   auto const p{viewport::fit(bw, bh).cursor(x, y, width, height, bw, bh)};
   glfwSetCursorPos(handle.get(), p[0], p[1]);
 }
-void window::pump_events() { glfwPollEvents(); }
+void window::pump_events() {
+  glfwPollEvents();
+}
 auto window::poll(window_event &event)->bool {
   if(events.empty()) pump_events();
   if(events.empty()) {
@@ -170,10 +176,14 @@ auto window::poll(window_event &event)->bool {
   events.pop_front();
   return true;
 }
-auto window::focused() const->bool { return glfwGetWindowAttrib(handle.get(), GLFW_FOCUSED) != 0; }
-auto window::get() const->GLFWwindow * { return handle.get(); }
+auto window::focused() const->bool {
+  return glfwGetWindowAttrib(handle.get(), GLFW_FOCUSED) != 0;
+}
+auto window::get() const->GLFWwindow * {
+  return handle.get();
+}
 auto window::modifiers() const->int {
-  auto down{[&](int key) { return glfwGetKey(handle.get(), key) == GLFW_PRESS; }};
+  auto down{[&](int key){ return glfwGetKey(handle.get(), key) == GLFW_PRESS; }};
   return ((down(GLFW_KEY_LEFT_CONTROL) || down(GLFW_KEY_RIGHT_CONTROL)) ? GLFW_MOD_CONTROL : 0)
     | ((down(GLFW_KEY_LEFT_SHIFT) || down(GLFW_KEY_RIGHT_SHIFT)) ? GLFW_MOD_SHIFT : 0)
     | ((down(GLFW_KEY_LEFT_ALT) || down(GLFW_KEY_RIGHT_ALT)) ? GLFW_MOD_ALT : 0);

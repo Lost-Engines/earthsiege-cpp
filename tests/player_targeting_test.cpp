@@ -11,7 +11,7 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)}; if(std::string(magic.begin(), magic.end()) != "ESPTAR01") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   auto const integer{[&]{return file.integer<int32_t>();}};
-  auto const index{[&]() -> std::optional<size_t> {auto const value{integer()}; return value < 0 ? std::nullopt : std::optional<size_t>{static_cast<size_t>(value)};}};
+  auto const index{[&]()->std::optional<size_t> {auto const value{integer()}; return value < 0 ? std::nullopt : std::optional<size_t>{static_cast<size_t>(value)};}};
   for(uint32_t row{0}; row != count; ++row) {
     earthsiege::cockpit_observer observer;
     observer.position = {integer(), integer(), integer()}; observer.heading = static_cast<uint16_t>(integer()); observer.torso = static_cast<int16_t>(integer()); observer.side = static_cast<uint8_t>(integer());

@@ -5,7 +5,16 @@
 #include "render/weapon_instruments.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::rectangle;
+  using earthsiege::resource_store;
+  using earthsiege::weapon_instrument_kind;
+  using earthsiege::weapon_instrument_state;
+  using earthsiege::weapon_instruments;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const bytes{read_file(argv[2])}; binary_reader file{bytes};
@@ -26,8 +35,9 @@ int main(int argc, char **argv) try {
     auto const layout{read_cockpit_layout(resources.read("simvol0", "gau/" + chassis + ".GAU"))};
     weapon_instruments instruments{resources, layout};
     auto const bounds{instruments.button_bounds(slot, kind)};
-    if(bounds.left != button.left || bounds.top != button.top || (!state.disabled && (bounds.right != button.right || bounds.bottom != button.bottom)))
+    if(bounds.left != button.left || bounds.top != button.top || (!state.disabled && (bounds.right != button.right || bounds.bottom != button.bottom))) {
       file.fail("weapon input bounds differ");
+    }
     framebuffer frame; frame.clear(123); instruments.draw(frame, slot, kind, name, state, face);
     if(crc32(frame.pixels()) != expected) {
       ++failed;

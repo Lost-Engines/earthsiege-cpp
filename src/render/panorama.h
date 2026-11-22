@@ -1,7 +1,7 @@
 #pragma once
+#include <span>
 #include "render/background_bands.h"
 #include "resources/artwork.h"
-#include <span>
 
 namespace earthsiege {
 struct panorama_placement {

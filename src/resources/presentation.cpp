@@ -12,8 +12,7 @@ void read_chunks(bytes source, presentation_program &program, std::optional<uint
     auto const size{file.integer<uint32_t>()}; auto const payload{file.take(size & 0x7fffffff)};
     if(size & 0x80000000) { read_chunks(payload, program, pages, depth + 1); continue; }
     binary_reader body{payload, tag};
-    if(tag == "PAG:") { pages = body.integer<uint16_t>(); body.require_end(); }
-    else if(tag == "TAG:") {
+    if(tag == "PAG:") { pages = body.integer<uint16_t>(); body.require_end(); } else if(tag == "TAG:") {
       auto const count{body.integer<uint16_t>()};
       for(unsigned int i{}; i < count; ++i) program.labels.push_back({body.integer<uint16_t>(), body.cstring()});
       body.require_end();
@@ -33,13 +32,14 @@ void read_chunks(bytes source, presentation_program &program, std::optional<uint
     }
   }
 }
-} // namespace
+} // anonymous namespace
 
 uint8_t presentation_program::label_page(int16_t const number) const {
   for(size_t i{}; i < pages.size(); ++i) {
     auto const &page{pages[i]};
-    if(!page.empty() && (page.front().opcode == 0x1101 || page.front().opcode == 0x1111) && page.front().arguments.front() == number)
+    if(!page.empty() && (page.front().opcode == 0x1101 || page.front().opcode == 0x1111) && page.front().arguments.front() == number) {
       return static_cast<uint8_t>(i);
+    }
   }
   return 0;
 }

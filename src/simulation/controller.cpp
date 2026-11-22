@@ -6,8 +6,12 @@
 
 namespace earthsiege {
 
-bool behavior_definition::holds_countdown() const { return (properties & 1U) != 0; }
-bool behavior_definition::attacking() const { return (properties & 2U) != 0; }
+bool behavior_definition::holds_countdown() const {
+  return (properties & 1U) != 0;
+}
+bool behavior_definition::attacking() const {
+  return (properties & 2U) != 0;
+}
 
 behavior_definition const &describe(behavior const type, bool const expansion) {
   static std::array<behavior_definition, 27> constexpr definitions{{
@@ -23,7 +27,7 @@ behavior_definition const &describe(behavior const type, bool const expansion) {
     {"sleeping", 500, 1, std::nullopt}, {"scouting", 5000, 0, std::nullopt}, {"dead", 500, 1, std::nullopt},
   }};
   // Expansion table b693c keeps a HERC attacking while it skirts an obstacle.
-  static constexpr behavior_definition expansion_skirting{"skirting", 10, 3, 0};
+  static behavior_definition constexpr expansion_skirting{"skirting", 10, 3, 0};
   if(expansion && type == behavior::skirting) return expansion_skirting;
   return definitions.at(static_cast<size_t>(type));
 }

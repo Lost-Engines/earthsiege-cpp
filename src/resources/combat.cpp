@@ -1,6 +1,6 @@
 #include "combat.h"
-#include "resources/resource_store.h"
 #include <utility>
+#include "resources/resource_store.h"
 
 namespace earthsiege {
 namespace {
@@ -87,7 +87,7 @@ weapon_catalogue read_weapon_catalogue(bytes const source, bytes const separate_
     weapon.projectile = file.integer<int16_t>();
     weapon.muzzle_offset = vector(file);
     weapon.side_muzzle_offset = vector(file);
-    weapon.side_muzzle_offset.y = 0;                                            // original loader clears tail word 19
+    weapon.side_muzzle_offset.y = 0;                                           // original loader clears tail word 19
     weapon.refire_delay = file.integer<int16_t>();
     weapon.combat_rating = file.integer<int16_t>();
     weapon.damage_icon = file.integer<int16_t>();

@@ -6,9 +6,15 @@
 #include "simulation/model_math.h"
 
 namespace earthsiege {
-void missile_camera_tracker::watch(std::optional<size_t> const slot) { projectile = slot; }
-std::optional<size_t> missile_camera_tracker::watched() const { return projectile; }
-std::optional<size_t> missile_camera_tracker::flashing_explosion() const { return explosion; }
+void missile_camera_tracker::watch(std::optional<size_t> const slot) {
+  projectile = slot;
+}
+std::optional<size_t> missile_camera_tracker::watched() const {
+  return projectile;
+}
+std::optional<size_t> missile_camera_tracker::flashing_explosion() const {
+  return explosion;
+}
 missile_camera_frame missile_camera_tracker::advance(std::span<missile_camera_object const> missiles, std::span<missile_camera_explosion const> explosions) {
   auto const result{[&](missile_picture const picture){ return missile_camera_frame{picture, vec3<int32_t>{position}, vec3<uint16_t>{angles}, bright}; }};
   if(explosion) {

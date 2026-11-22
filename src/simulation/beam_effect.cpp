@@ -9,7 +9,7 @@ beam_effect make_beam_effect(int16_t const subtype, beam_path const &path, rando
   std::array<int16_t, 6> constexpr widths{60, 30, 120, 20, 25, 30};
   std::array<uint8_t, 6> constexpr colours{10, 102, 10, 88, 88, 88};
   auto const index{static_cast<size_t>(subtype)};
-  if(!styles.empty() && index>=styles.size()) throw std::out_of_range{"beam style"};
+  if(!styles.empty() && index >= styles.size()) throw std::out_of_range{"beam style"};
   auto const width{styles.empty() ? widths.at(index) : styles[index].width};
   beam_effect result{.position{vec3<int32_t>{path.start}}, .points{}, .faces{}, .colour{styles.empty() ? colours.at(index) : styles[index].colour}, .remaining{static_cast<int16_t>(edition == game_edition::expansion ? 256 : 0)}};
   if(subtype == 1 || (edition == game_edition::expansion && subtype == 7)) {

@@ -2,15 +2,15 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include "resources/resource_store.h"
-#include "simulation/herc_body.h"
-#include "simulation/component_damage.h"
-
 #include "herc_body_reference.h"
+#include "resources/resource_store.h"
+#include "simulation/component_damage.h"
+#include "simulation/herc_body.h"
 
 
 int main(int const argc, char **argv) try {
-  using namespace herc_reference;
+  using herc_reference::check;
+  using herc_reference::read_state;
   if(argc != 3) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
   auto const weapons{earthsiege::read_weapon_catalogue(resources.read("simvol0", "dat/WEAPONS.DAT"))};

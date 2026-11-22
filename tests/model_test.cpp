@@ -22,7 +22,9 @@ enum class field : unsigned int {
 class fingerprint {
   std::array<std::vector<uint8_t>, std::to_underlying(field::count)> buckets;
 
-  void byte(field target, uint8_t value) { buckets[std::to_underlying(target)].push_back(value); }
+  void byte(field target, uint8_t value) {
+    buckets[std::to_underlying(target)].push_back(value);
+  }
   void word(field target, int32_t value) {
     byte(target, static_cast<uint8_t>(value));
     byte(target, static_cast<uint8_t>(static_cast<uint32_t>(value) >> 8));
@@ -31,10 +33,18 @@ class fingerprint {
     for(unsigned int index{}; index < 4; ++index) byte(target, static_cast<uint8_t>(static_cast<uint32_t>(value) >> (index * 8)));
   }
   template<typename R>
-  void words(field target, R const &values) { for(auto const value : values) word(target, value); }
+  void words(field target, R const &values) {
+    for(auto const value : values) word(target, value);
+  }
   template<typename T>
-  void vector(field target, vec3<T> const &point) { word(target, point.x); word(target, point.y); word(target, point.z); }
-  void tag(earthsiege::model_kind kind) { dword(field::tags, static_cast<int32_t>(std::to_underlying(kind))); }
+  void vector(field target, vec3<T> const &point) {
+    word(target, point.x);
+    word(target, point.y);
+    word(target, point.z);
+  }
+  void tag(earthsiege::model_kind kind) {
+    dword(field::tags, static_cast<int32_t>(std::to_underlying(kind)));
+  }
 
   void animation(earthsiege::animation_list const &source) {
     tag(earthsiege::model_kind::animation_list);
@@ -63,7 +73,10 @@ class fingerprint {
     for(auto const &relation : source.relations) { word(field::relations, relation.parent); word(field::relations, relation.node); }
   }
 
-  void material(earthsiege::material_slot const &slot) { word(field::materials, slot.value); word(field::materials, slot.flags); }
+  void material(earthsiege::material_slot const &slot) {
+    word(field::materials, slot.value);
+    word(field::materials, slot.flags);
+  }
 
 public:
   void visit(earthsiege::model_part const &part) {
@@ -126,10 +139,12 @@ public:
     for(unsigned int index{}; index < result.size(); ++index) result[index] = earthsiege::crc32(buckets[index]);
     return result;
   }
-  auto objects() const->size_t { return buckets[std::to_underlying(field::tags)].size() / 4; }
+  auto objects() const->size_t {
+    return buckets[std::to_underlying(field::tags)].size() / 4;
+  }
 };
 
-} // namespace
+} // anonymous namespace
 
 auto main(int argc, char *argv[])->int try {
   if(argc != 3) throw std::runtime_error{"expected assets and native model fingerprints"};

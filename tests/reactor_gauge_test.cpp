@@ -4,7 +4,13 @@
 #include "render/instrument_bars.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::reactor_gauge;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::resource_store;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const bytes{read_file(argv[2])}; binary_reader file{bytes};

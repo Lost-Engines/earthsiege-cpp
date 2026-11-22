@@ -17,7 +17,7 @@ struct ammunition_weapon {
   weapon_controls controls;
   int16_t rounds{0};
   bool available{true};
-  int32_t displayed_rounds{0};                                              // Q8 HUD countdown is distinct from actual ammunition
+  int32_t displayed_rounds{0};                                                 // Q8 HUD countdown is distinct from actual ammunition
 };
 
 struct grenade_weapon {
@@ -38,7 +38,7 @@ struct weapon_state {
   std::optional<size_t> projectile;
   std::variant<capacitor, elf_capacitor, ammunition_weapon, grenade_weapon, ecm_weapon> mechanism;
   bool pending_second_shot{false};
-  vec3<int16_t> convergence;                                               // independent pitch/yaw corrections for this mount
+  vec3<int16_t> convergence;                                                   // independent pitch/yaw corrections for this mount
   weapon_controls &controls();
   weapon_controls const &controls() const;
   capacitor *energy();

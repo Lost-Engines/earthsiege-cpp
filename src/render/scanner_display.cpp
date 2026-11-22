@@ -33,7 +33,7 @@ void label(framebuffer &target, font const &face, std::string_view const text, r
   int const y{bounds.top + ((bounds.bottom - bounds.top + static_cast<int>(face.height)) >> 1)};
   target.text(face, text, x, y);
 }
-}
+} // anonymous namespace
 scanner_display::scanner_display(resource_store const &resources)
   : background{read_bitmaps(resources.read("simvol0", "dba/RADAR.DBA")).at(0)},
     fonts{read_font(resources.read("simvol0", "dfn/CPBLUE.DFN")),

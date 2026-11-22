@@ -42,7 +42,7 @@ std::vector<weapon_shot> discharge_weapon(weapon_state &state, weapon_catalogue 
   if(auto *grenade{std::get_if<grenade_weapon>(&state.mechanism)}) {
     if(!free_ammunition) grenade->supply.rounds = wrap_word(grenade->supply.rounds - 1);
     grenade->holding = false;
-    return shots;                                                             // original 0x7b44 grenade creation is a no-op
+    return shots;                                                              // original 0x7b44 grenade creation is a no-op
   }
   if(!state.projectile) throw std::logic_error{"firing weapon has no projectile"};
   auto const &projectile{definitions.projectiles.at(*state.projectile)};

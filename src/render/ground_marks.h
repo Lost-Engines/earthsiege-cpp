@@ -16,9 +16,17 @@ public:
   explicit ground_marks(world_environment const &environment);
   void draw(framebuffer &,vec3<int32_t> const &position,vec3<uint16_t> const &angles,
             camera_projection const &,rectangle bounds,uint8_t detail,random_state &);
-  std::span<vec3<int32_t> const> points() const { return field; }
-  vec3<int32_t> const &anchor() const { return previous; }
-  int16_t active_count() const { return active; }
-  bool initialized() const { return ready; }
+  std::span<vec3<int32_t> const> points() const {
+    return field;
+  }
+  vec3<int32_t> const &anchor() const {
+    return previous;
+  }
+  int16_t active_count() const {
+    return active;
+  }
+  bool initialized() const {
+    return ready;
+  }
 };
-}
+} // namespace earthsiege

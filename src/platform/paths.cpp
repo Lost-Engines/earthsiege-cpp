@@ -8,7 +8,7 @@
 #include <windows.h>
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
-#endif
+#endif // _WIN32
 
 namespace earthsiege {
 
@@ -26,7 +26,7 @@ auto executable_path(char const *argument)->std::filesystem::path {
   std::error_code error;
   auto const path{std::filesystem::read_symlink("/proc/self/exe", error)};
   if(!error) return path;
-#endif
+#endif // _WIN32
   return std::filesystem::absolute(argument);
 }
 auto user_save_directory()->std::filesystem::path {
@@ -39,12 +39,12 @@ auto user_save_directory()->std::filesystem::path {
     base = std::filesystem::path{home} / "Library/Application Support";
 #else
     base = std::filesystem::path{home} / ".local/share";
-#endif
+#endif // __APPLE__
   }
 #ifndef __APPLE__
   if(auto const *xdg{std::getenv("XDG_DATA_HOME")}; xdg && std::filesystem::path{xdg}.is_absolute()) base = xdg;
-#endif
-#endif
+#endif // __APPLE__
+#endif // _WIN32
   if(base.empty()) throw std::runtime_error{"cannot locate user data directory; use --save-dir"};
   auto const result{base / "lost-engines/earthsiege"};
   std::filesystem::create_directories(result);

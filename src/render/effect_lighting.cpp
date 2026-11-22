@@ -33,12 +33,15 @@ void effect_lighting::remove(size_t const slot) {
   auto &entry{sources.at(slot)};
   if(!entry) return;
   release(*entry);
-  auto const found{std::find(order.begin(), order.begin() + static_cast<std::ptrdiff_t>(count), slot)};
+  auto const found{std::find(order.begin(), order.begin() + static_cast<ptrdiff_t>(count), slot)};
   *found = order[--count];
   entry.reset();
 }
 
-void effect_lighting::intensity(size_t const slot, int16_t const value) { sources.at(slot).value().intensity = value; selection_intensity[slot] = value; }
+void effect_lighting::intensity(size_t const slot, int16_t const value) {
+  sources.at(slot).value().intensity = value;
+  selection_intensity[slot] = value;
+}
 
 void effect_lighting::attenuation(size_t const slot, int32_t const scale, int32_t const offset) {
   auto &entry{sources.at(slot).value()};
@@ -70,7 +73,7 @@ std::span<light const> effect_lighting::select(vec3<int32_t> const &object, int3
     if(!entry.rendered || entry.rendered->kind != value.kind) {
       release(entry);
       entry.rendered = value;
-      active.add(*entry.rendered);                                         // full list rejects this allocation; no retry until it is released
+      active.add(*entry.rendered);                                             // full list rejects this allocation; no retry until it is released
     } else {
       *entry.rendered = value;
     }

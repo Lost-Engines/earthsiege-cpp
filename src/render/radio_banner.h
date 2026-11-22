@@ -1,8 +1,8 @@
 #pragma once
+#include <optional>
+#include "render/framebuffer.h"
 #include "resources/artwork.h"
 #include "resources/resource_store.h"
-#include "render/framebuffer.h"
-#include <optional>
 
 namespace earthsiege {
 class radio_banner {

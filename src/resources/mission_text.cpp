@@ -80,7 +80,7 @@ auto read_mission_text(bytes source)->mission_text {
       });
     } else if(tag == mission_text_kind::objectives) {
       binary_reader objectives{data, "mission objectives"};
-      objectives.take(2);                                                    // maximum concatenated text allocation in the original
+      objectives.take(2);                                                      // maximum concatenated text allocation in the original
       auto const count{objectives.integer<uint16_t>()};
       std::vector<objective_text> entries;
       entries.reserve(count);

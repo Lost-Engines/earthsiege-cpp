@@ -10,7 +10,25 @@
 #include "simulation/model_math.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::binary_reader;
+using earthsiege::crc32;
+using earthsiege::default_world_light;
+using earthsiege::flyer_actor;
+using earthsiege::flyer_damage_events;
+using earthsiege::framebuffer;
+using earthsiege::impact_conditions;
+using earthsiege::impact_request;
+using earthsiege::random_state;
+using earthsiege::read_distance_shade_bindings;
+using earthsiege::read_file;
+using earthsiege::read_flyer_definition;
+using earthsiege::read_input_tape;
+using earthsiege::read_mission_script;
+using earthsiege::resource_store;
+using earthsiege::rotation_transform;
+using earthsiege::scenery_renderer;
+using earthsiege::scenery_world;
+using earthsiege::tape_file;
 struct state {
   std::array<std::vector<int16_t>,4> damage;
   bool dead, removed, detectable;
@@ -42,7 +60,7 @@ using event = std::array<int32_t,5>;
 std::vector<event> read_events(binary_reader &file) {
   std::vector<event> result(file.integer<uint16_t>()); for(auto &row : result) for(auto &v : row) v = file.integer<int32_t>(); return result;
 }
-}
+} // anonymous namespace
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]}; auto const definition{read_flyer_definition(resources,"SKIMMER")};

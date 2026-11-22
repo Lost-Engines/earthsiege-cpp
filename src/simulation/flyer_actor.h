@@ -2,8 +2,8 @@
 #include "render/scenery_renderer.h"
 #include "resources/flyer_definition.h"
 #include "simulation/component_damage.h"
-#include "simulation/herc_impact.h"
 #include "simulation/flyer_motion.h"
+#include "simulation/herc_impact.h"
 #include "simulation/projectile_instance.h"
 
 namespace earthsiege {

@@ -3,8 +3,8 @@
 #include <optional>
 #include "simulation/model_instance.h"
 #include "simulation/projectile_flight.h"
-#include "simulation/weapon_firing.h"
 #include "simulation/random_state.h"
+#include "simulation/weapon_firing.h"
 
 namespace earthsiege {
 
@@ -16,7 +16,7 @@ struct impact_payload {
   std::array<int16_t, 4> ground_effects{};
   std::array<int16_t, 4> armour_effects{};
   std::optional<uint8_t> missile_subtype;
-  std::optional<int16_t> plasma_armour{}; // retained direct-hit damage for fixed structures
+  std::optional<int16_t> plasma_armour{};                                      // retained direct-hit damage for fixed structures
 };
 
 struct impact_request {
@@ -24,7 +24,7 @@ struct impact_request {
   int32_t reach{0};
   int16_t radius{0};
   impact_payload damage;
-  int16_t area_radius{}; // nonzero dispatches the original radial damage pass
+  int16_t area_radius{};                                                       // nonzero dispatches the original radial damage pass
 };
 
 /// Returns the retained world-hit distance; an empty result means no impact

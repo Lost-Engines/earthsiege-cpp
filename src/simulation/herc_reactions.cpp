@@ -36,8 +36,7 @@ void react_to_herc_hit(herc_reaction_state &state, engagement_state &decision, s
   } else if(!(behavior.properties & 8)) {
     auto const old{targets[observer].selected};
     assign_target(targets, observer, callbacks.select());
-    if(targets[observer].selected) {decision.attack_requested = true; callbacks.strategy();}
-    else if(old) callbacks.resume_orders();
+    if(targets[observer].selected) {decision.attack_requested = true; callbacks.strategy();} else if(old) callbacks.resume_orders();
   }
 }
 } // namespace earthsiege

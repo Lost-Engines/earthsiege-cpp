@@ -5,7 +5,9 @@
 
 namespace earthsiege {
 namespace {
-int health_percent(int const damage) { return (256 - damage) * 100 >> 8; }
+int health_percent(int const damage) {
+  return (256 - damage) * 100 >> 8;
+}
 size_t health_grade(int const damage) {
   int const health{health_percent(damage)};
   return health >= 90 ? 0U : health >= 74 ? 1U : health >= 51 ? 2U : health >= 1 ? 3U : 4U;
@@ -61,7 +63,7 @@ size_t herc_status(damage_display_state const &state) {
   if(*most > 0) return 2;
   return state.shield_warning ? 1U : 0U;
 }
-}
+} // anonymous namespace
 
 damage_display::damage_display(resource_store const &resources)
   : bases{read_bitmaps(resources.read("simvol0", "dba/BASES.DBA"))},
@@ -70,15 +72,16 @@ damage_display::damage_display(resource_store const &resources)
           read_font(resources.read("simvol0", "dfn/CPGREEN.DFN")),
           read_font(resources.read("simvol0", "dfn/CPRED.DFN"))},
     strings{read_interface_strings(resources.read("simvol0", "str/STRINGS0.STR"))} {
-  for(auto const &name : read_resource_names(resources.read("simvol0", "nam/MECHS.NAM")))
+  for(auto const &name : read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))) {
     chassis.push_back({read_paper_doll(resources.read("simvol0", "pdg/" + name + ".PDG")),
                        read_bitmaps(resources.read("simvol0", "dba/" + name + ".DBA"))});
+  }
 }
 
 void damage_display::draw(framebuffer &target, rectangle const &bounds, damage_display_state const &state) {
   scoped_framebuffer_clip clip{target, nullptr};
   target.fill(bounds, 63);
-  auto const label{[&](size_t const index, std::string_view const text, size_t const font_index = 2) {
+  auto const label{[&](size_t const index, std::string_view const text, size_t const font_index = 2){
     auto const &face{fonts.at(font_index)};
     int const top{bounds.top + std::array{0, 8, 21, 28, 35}.at(index)};
     int const x{bounds.left + 45 - ((face.text_width(text) - 1) >> 1)};
@@ -86,7 +89,7 @@ void damage_display::draw(framebuffer &target, rectangle const &bounds, damage_d
     target.text(face, text, x, y);
   }};
   auto const text{[&](size_t const group, size_t const item = 0)->std::string const & { return strings.at(group).at(item).text; }};
-  auto const status{[&](size_t const grade) {
+  auto const status{[&](size_t const grade){
     label(3, text(24, grade));
     if(state.friendly) label(4, "[ " + std::to_string(health_percent(state.total_damage)) + "% ]");
   }};

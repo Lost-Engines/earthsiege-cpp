@@ -1,9 +1,9 @@
 #pragma once
+#include <memory>
 #include "hmi_fm.h"
 #include "hmi_pcm.h"
 #include "midi_gain.h"
 #include "music_loops.h"
-#include <memory>
 namespace earthsiege {
 // Complete HMI music protocol, with explicit chip and digital-output boundaries.
 class music_player {
@@ -26,10 +26,12 @@ public:
   void set_loops(uint16_t count);
   void play();
   void stop();
-  bool playing()const{return playing_;}
+  bool playing()const{
+    return playing_;
+  }
   void tick();
   void set_master(uint8_t value);
   void complete_sample(int32_t handle);
   auto take_registers()->std::vector<opl_write>;
 };
-}
+} // namespace earthsiege

@@ -1,8 +1,8 @@
 #pragma once
-#include "resources/binary_reader.h"
-#include "resources/edition.h"
 #include <array>
 #include <optional>
+#include "resources/binary_reader.h"
+#include "resources/edition.h"
 
 namespace earthsiege {
 struct preference_change {uint8_t index{},value{};bool operator==(preference_change const &)const=default;};
@@ -18,9 +18,15 @@ private:
   void changed(size_t index,bool live);
 public:
   explicit preferences(bytes source={},bool live=true,game_edition edition=game_edition::original);
-  values const &current()const{return current_;}
-  values const &saved()const{return saved_;}
-  values const &previous()const{return previous_;}
+  values const &current()const{
+    return current_;
+  }
+  values const &saved()const{
+    return saved_;
+  }
+  values const &previous()const{
+    return previous_;
+  }
   void set(size_t index,uint8_t value,bool live=true);
   void toggle(size_t index,bool live=true);
   void increase(size_t index,uint8_t amount,bool live=true);

@@ -33,13 +33,13 @@ keyboard_sample keyboard_input::sample(bool const alternate_movement) {
     auto const &direction{directions[index]};
     if(index >= 8) {
       result.aiming = vec2<int32_t>{direction.x * step, direction.y * step};
-      break;                                                                 // only the first dedicated aim key contributes
+      break;                                                                   // only the first dedicated aim key contributes
     }
     bool const diagonal{direction.x != 0 && direction.y != 0};
     if(diagonal) result.movement = vec2<int32_t>{0, 0};
     result.movement.x += direction.x * step;
     result.movement.y += direction.y * step;
-    if(diagonal) index = 7;                                                   // diagonals override preceding movement keys
+    if(diagonal) index = 7;                                                    // diagonals override preceding movement keys
   }
   result.fire = current.held[static_cast<size_t>(held_key::fire)] != 0;
   result.enter = current.held[static_cast<size_t>(held_key::enter)] != 0;

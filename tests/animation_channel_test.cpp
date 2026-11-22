@@ -19,7 +19,7 @@ void require(bool const condition, unsigned int const row, int const step, std::
 void check_transform(earthsiege::binary_reader &file, earthsiege::model_transform const &transform, unsigned int const row, int const step, std::string const &name) {
   for(unsigned int const index : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) require(transform.basis.data[index] == file.integer<int16_t>(), row, step, name + " basis");
   require(transform.type == file.integer<uint8_t>(), row, step, name + " type");
-  file.integer<uint8_t>();                                                      // unwritten original matrix padding
+  file.integer<uint8_t>();                                                     // unwritten original matrix padding
   for(unsigned int axis{0}; axis != 3; ++axis) require(transform.translation[axis] == file.integer<int32_t>(), row, step, name + " translation");
 }
 

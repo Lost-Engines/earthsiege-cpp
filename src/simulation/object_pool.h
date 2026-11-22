@@ -31,12 +31,24 @@ public:
   object_pool &operator=(object_pool const &) = delete;
   object_pool(object_pool &&) = delete;
   object_pool &operator=(object_pool &&) = delete;
-  size_t available() const { return free_count; }
-  std::optional<size_t> next_free_slot() const { return free_head == end ? std::nullopt : std::optional<size_t>{free_head}; }
-  size_t size() const { return slots.size() - free_count; }
-  T &at(size_t const index) { return slots.at(index).value.value(); }
-  T const &at(size_t const index) const { return slots.at(index).value.value(); }
-  bool retiring(size_t const index) const { return slots.at(index).retiring; }
+  size_t available() const {
+    return free_count;
+  }
+  std::optional<size_t> next_free_slot() const {
+    return free_head == end ? std::nullopt : std::optional<size_t>{free_head};
+  }
+  size_t size() const {
+    return slots.size() - free_count;
+  }
+  T &at(size_t const index) {
+    return slots.at(index).value.value();
+  }
+  T const &at(size_t const index) const {
+    return slots.at(index).value.value();
+  }
+  bool retiring(size_t const index) const {
+    return slots.at(index).retiring;
+  }
 
   template<typename... Args> std::optional<size_t> emplace(Args &&...args) {
     if(free_head == end) return std::nullopt;
@@ -76,7 +88,9 @@ public:
     }
     pending.clear();
   }
-  void collect() { collect([](size_t, T &){}); }
+  void collect() {
+    collect([](size_t, T &){});
+  }
 
   /// Visitors may queue removal; they must not erase or collect during traversal.
   template<typename Visitor> void for_each(Visitor &&visitor) {

@@ -1,7 +1,7 @@
 #pragma once
-#include "shell/mission_preferences.h"
-#include "shell/controls_dialog.h"
 #include "render/mission_preferences_artwork.h"
+#include "shell/controls_dialog.h"
+#include "shell/mission_preferences.h"
 namespace earthsiege {
 /// PRF_ALRT modal ownership, shared by host input and recorded input.
 class mission_options_dialog {
@@ -20,10 +20,18 @@ class mission_options_dialog {
  std::function<void()> click;
 public:
  mission_options_dialog(resource_store const &,preferences &,save_store const &,std::array<joystick_calibration,2> &);
- void feedback(std::function<void()> callback){click=std::move(callback);}
- bool done()const{return done_;}
- bool child_active()const{return controls!=nullptr;}
- int focused()const{return focus;}
+ void feedback(std::function<void()> callback){
+   click = std::move(callback);
+ }
+ bool done()const{
+   return done_;
+ }
+ bool child_active()const{
+   return controls != nullptr;
+ }
+ int focused()const{
+   return focus;
+ }
  void key(uint16_t);
  void mouse_down(int x,int y,bool right=false);
  void mouse_up(int x,int y,bool right=false);
@@ -32,4 +40,4 @@ public:
  std::optional<vec2<int32_t>> take_warp();
  void draw(framebuffer &)const;
 };
-}
+} // namespace earthsiege

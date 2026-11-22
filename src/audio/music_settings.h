@@ -1,8 +1,8 @@
 #pragma once
+#include <cstdint>
 #include <filesystem>
 #include <string_view>
 #include <vector>
-#include <cstdint>
 namespace earthsiege {
 enum class music_device { opl2, opl3, mt32, mt32_mpu, sc55, scc1a, soundfont };
 struct music_settings {

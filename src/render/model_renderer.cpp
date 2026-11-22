@@ -33,20 +33,20 @@ class model_light_cache {
   }
 public:
   model_light_cache(std::span<light const> lights,model_transform const &object,size_t transforms)
-    :sources{lights},first(transforms+1){
+    :sources{lights},first(transforms + 1){
     transform(inverse_transform(object));
-    first[0]=local.empty()?light{}:local.front();
+    first[0] = local.empty()?light{}:local.front();
   }
   std::span<light const> select(int16_t index,model_transform const &inverse){
-    if(index==current)return local;
-    auto &saved{first.at(static_cast<size_t>(index+1))};
+    if(index == current)return local;
+    auto &saved{first.at(static_cast<size_t>(index + 1))};
     if(saved){
-      if(!local.empty())local.front()=*saved;
+      if(!local.empty())local.front() = *saved;
     }else{
       transform(inverse);
-      saved=local.empty()?light{}:local.front();
+      saved = local.empty()?light{}:local.front();
     }
-    current=index;
+    current = index;
     return local;
   }
 };
@@ -80,7 +80,7 @@ class model_draw {
     auto const camera{compose_transforms(world, view.camera)};
     part_view result{.transform{camera}, .eye{inverse_transform(camera).translation}, .lights{}};
     auto const inverse{inverse_transform(world)};
-    auto const selected{light_cache.select(transform_index<0?-1:transform_index,inverse)};
+    auto const selected{light_cache.select(transform_index < 0?-1:transform_index,inverse)};
     result.lights.assign(selected.begin(),selected.end());
     return result;
   }
@@ -212,17 +212,17 @@ public:
   }
 
   void part(model_part const &source) {
-    if(source.kind==model_kind::null)return;
+    if(source.kind == model_kind::null)return;
     {
       auto const found{std::ranges::find(attachments, source.header.id, &model_attachment::body_part)};
       if(found != attachments.end()) {
         if(found->geometry){
           auto weapon_view{view};
-          if(view.weapon_detail_bias)weapon_view.detail.bias=*view.weapon_detail_bias;
+          if(view.weapon_detail_bias)weapon_view.detail.bias = *view.weapon_detail_bias;
           model_draw{target, colours, texture_shades, instance, object, weapon_view, found->textures, lights, found->cells, {},light_cache}.part(*found->geometry);
           // The original weapon wrapper restores the global bias to zero,
           // rather than restoring the enclosing HERC's value.
-          if(view.weapon_detail_bias)active_detail.bias=0;
+          if(view.weapon_detail_bias)active_detail.bias = 0;
         }
         return;
       }
@@ -250,30 +250,30 @@ public:
 int classify_model_bounds(part_header const &header, model_transform const &transform,
   camera_projection const &projection, rectangle const &bounds, bool const rectangular_clip) {
   auto point{transform_point(header.centre,transform)};
-  if(wrap_long(static_cast<int64_t>(point.y)+header.radius)<=projection.near_distance)return 0;
+  if(wrap_long(static_cast<int64_t>(point.y) + header.radius) <= projection.near_distance)return 0;
   int32_t width{projection.centre.x};
-  if(width<0)width=wrap_long(static_cast<int64_t>(bounds.right)+bounds.left-projection.centre.x);
-  auto const cosine{model_cosine(direction_angle(1<<projection.perspective_shift,width))};
+  if(width < 0)width = wrap_long(static_cast<int64_t>(bounds.right) + bounds.left - projection.centre.x);
+  auto const cosine{model_cosine(direction_angle(1 << projection.perspective_shift,width))};
   if(!cosine)throw std::domain_error{"model bound projection outside native range"};
-  auto const factor{(1<<24)/cosine};
-  int64_t const product{static_cast<int64_t>(factor)*header.radius};
-  uint32_t const rounding{(product==static_cast<int32_t>(product)?0U:~0U)^512U};
-  auto const radius{wrap_long((product+rounding)>>10)};
-  if(!point.y)point.y=1;
-  auto extent{wrap_long(static_cast<int64_t>(radius)*(int64_t{1}<<projection.perspective_shift)+(point.y>>1))/point.y};
-  if(extent<0)extent=wrap_long(-static_cast<int64_t>(extent));
+  auto const factor{(1 << 24) / cosine};
+  int64_t const product{static_cast<int64_t>(factor) * header.radius};
+  uint32_t const rounding{(product == static_cast<int32_t>(product)?0U:~0U) ^ 512U};
+  auto const radius{wrap_long((product + rounding) >> 10)};
+  if(!point.y)point.y = 1;
+  auto extent{wrap_long(static_cast<int64_t>(radius) * (int64_t{1} << projection.perspective_shift) + (point.y >> 1)) / point.y};
+  if(extent < 0)extent = wrap_long(-static_cast<int64_t>(extent));
   auto const centre{project_point(point,projection,projection_source::model)};
-  rectangle box{wrap_long(static_cast<int64_t>(centre.x)-extent-3),wrap_long(static_cast<int64_t>(centre.y)-extent-3),
-    wrap_long(static_cast<int64_t>(centre.x)+extent+3),wrap_long(static_cast<int64_t>(centre.y)+extent+3)};
-  if(box.right<bounds.left||box.bottom<bounds.top||box.left>bounds.right||box.top>bounds.bottom)return 0;
-  return rectangular_clip&&box.left>bounds.left&&box.top>bounds.top&&box.right<bounds.right&&box.bottom<bounds.bottom?2:1;
+  rectangle box{wrap_long(static_cast<int64_t>(centre.x) - extent - 3),wrap_long(static_cast<int64_t>(centre.y) - extent - 3),
+    wrap_long(static_cast<int64_t>(centre.x) + extent + 3),wrap_long(static_cast<int64_t>(centre.y) + extent + 3)};
+  if(box.right < bounds.left || box.bottom < bounds.top || box.left > bounds.right || box.top > bounds.bottom)return 0;
+  return rectangular_clip && box.left > bounds.left && box.top > bounds.top && box.right < bounds.right && box.bottom < bounds.bottom?2:1;
 }
 
 model_renderer::model_renderer(framebuffer &buffer, palette const &palette_data) : target{buffer}, colours{palette_data}, texture_shades{make_texture_shades(palette_data)} {
 }
 
 void model_renderer::draw(model_part const &source, model_instance const &instance, model_transform const &object, model_view const &view, std::span<bitmap const> const textures, std::span<light const> const lights, std::span<model_attachment const> const attachments) {
-  if(view.cull_bounds&&!classify_model_bounds(source.header,compose_transforms(object,view.camera),view.projection,view.bounds,false))return;
+  if(view.cull_bounds && !classify_model_bounds(source.header,compose_transforms(object,view.camera),view.projection,view.bounds,false))return;
   model_light_cache cache{lights,object,instance.transforms().size()};
   model_draw{target, colours, texture_shades, instance, object, view, textures, lights, instance.cell_frames(), attachments,cache}.part(source);
 }

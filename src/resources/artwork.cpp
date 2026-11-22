@@ -64,8 +64,8 @@ auto read_bitmaps(bytes data)->std::vector<bitmap> {
 }
 
 auto display_colour(std::array<uint8_t,3> const &dac)->uint32_t {
-  auto expand=[](uint8_t c)->uint32_t{return (static_cast<uint32_t>(c)<<2)|(c>>4);};
-  return 0xff000000u|(expand(dac[0])<<16)|(expand(dac[1])<<8)|expand(dac[2]);
+  auto expand=[](uint8_t c)->uint32_t{return (static_cast<uint32_t>(c) << 2) | (c >> 4);};
+  return 0xff000000u | (expand(dac[0]) << 16) | (expand(dac[1]) << 8) | expand(dac[2]);
 }
 
 auto read_palette(bytes data)->palette {

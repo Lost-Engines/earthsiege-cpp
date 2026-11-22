@@ -5,7 +5,10 @@
 
 namespace earthsiege {
 namespace {
-int16_t tick(int16_t &timer, frame_ratio ratio) { timer = std::max<int16_t>(0, wrap_word(timer - ratio)); return timer; }
+int16_t tick(int16_t &timer, frame_ratio ratio) {
+  timer = std::max<int16_t>(0, wrap_word(timer - ratio));
+  return timer;
+}
 }
 void advance_herc_sensors(herc_sensor_state &state, herc_impact_state &impact, bool &target_changed, herc_sensor_inputs const &input, frame_ratio const ratio, random_state &random, std::function<void()> const &notify_target, std::function<void()> const &update_hud) {
   tick(impact.ecm_remaining, ratio);

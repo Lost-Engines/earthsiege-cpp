@@ -43,8 +43,12 @@ class briefing_map {
  int32_t pan_step{20000};
 public:
  briefing_map(resource_store const &,mission_script const &,int player_count,std::vector<std::string> objectives={});
- briefing_map_geometry const &geometry()const{return data_;}
- briefing_map_state const &state()const{return state_;}
+ briefing_map_geometry const &geometry()const{
+   return data_;
+ }
+ briefing_map_state const &state()const{
+   return state_;
+ }
  // Opening uses the two ten-tick pauses and one tick per grid line.
  void start_tour(bool opening=false);
  void skip_tour();

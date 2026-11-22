@@ -52,7 +52,9 @@ std::array<int32_t, 2> cockpit_window::projection_centre() const {
   return {bounds.left - projection_origin[0] - instrument_origin[0], bounds.top - projection_origin[1] - instrument_origin[1]};
 }
 
-unsigned int cockpit_layout::weapon_count() const { return static_cast<unsigned int>(words[4]); }
+unsigned int cockpit_layout::weapon_count() const {
+  return static_cast<unsigned int>(words[4]);
+}
 rectangle cockpit_layout::bounds(size_t byte_offset) const {
   if(byte_offset % 4) throw std::invalid_argument{"unaligned cockpit layout field"};
   size_t const i{byte_offset / 4};
@@ -108,22 +110,23 @@ void cockpit_artwork::draw(framebuffer &target, cockpit_view view,int displaceme
   auto const index{static_cast<unsigned int>(view)};
   auto const &panel{panels.at(std::min(index, 2U))};
   if(view != cockpit_view::left) target.image(panel, 0, -displacement);
-  else for(unsigned int y{}; y < panel.height; ++y) for(unsigned int x{}; x < panel.width; ++x)
-    target.pixel(static_cast<int>(x), static_cast<int>(y)-displacement, panel.pixels[y * panel.width + panel.width - 1 - x]);
+  else for(unsigned int y{}; y < panel.height; ++y) for(unsigned int x{}; x < panel.width; ++x) {
+    target.pixel(static_cast<int>(x), static_cast<int>(y) - displacement, panel.pixels[y * panel.width + panel.width - 1 - x]);
+  }
   // Front/lower artwork shares a vertically stacked VGA surface. A hit exposes
   // a few rows of the neighbouring panel. Side views explicitly clear that strip
   // to index 63 before moving the page (DBSIM 243d4).
-  if(displacement)for(int y{};y<200;++y){
-    int const source_y{y+displacement};
-    if(source_y>=0&&source_y<200)continue;
-    for(int x{};x<320;++x){
+  if(displacement)for(int y{};y < 200;++y){
+    int const source_y{y + displacement};
+    if(source_y >= 0 && source_y < 200)continue;
+    for(int x{};x < 320;++x){
       uint8_t colour{63};
-      if(view==cockpit_view::forward){
-        int const sy{source_y-windows[1].instrument_origin[1]};
-        if(sy>=0&&sy<static_cast<int>(panels[1].height))colour=panels[1].pixels[static_cast<size_t>(sy*320+x)];
-      }else if(view==cockpit_view::lower){
-        int const sy{source_y+windows[1].instrument_origin[1]};
-        if(sy>=0&&sy<static_cast<int>(panels[0].height))colour=panels[0].pixels[static_cast<size_t>(sy*320+x)];
+      if(view == cockpit_view::forward){
+        int const sy{source_y - windows[1].instrument_origin[1]};
+        if(sy >= 0 && sy < static_cast<int>(panels[1].height))colour = panels[1].pixels[static_cast<size_t>(sy * 320 + x)];
+      }else if(view == cockpit_view::lower){
+        int const sy{source_y + windows[1].instrument_origin[1]};
+        if(sy >= 0 && sy < static_cast<int>(panels[0].height))colour = panels[0].pixels[static_cast<size_t>(sy * 320 + x)];
       }
       target.pixel(x,y,colour);
     }
@@ -134,10 +137,10 @@ void cockpit_artwork::draw_composed(framebuffer &target,cockpit_view view,int di
   draw(target,view,displacement);
   // Original page preparation blits DB1 at the lower view's authored offset,
   // then DB0 above it. Their overlap belongs to DB0 (three rows for HERCULES).
-  if(view==cockpit_view::lower)for(int y{};y<200;++y){
-    int const sy{y+displacement+windows[1].instrument_origin[1]};
-    if(sy<0||sy>=static_cast<int>(panels[0].height))continue;
-    for(int x{};x<320;++x)target.pixel(x,y,panels[0].pixels[static_cast<size_t>(sy*320+x)]);
+  if(view == cockpit_view::lower)for(int y{};y < 200;++y){
+    int const sy{y + displacement + windows[1].instrument_origin[1]};
+    if(sy < 0 || sy >= static_cast<int>(panels[0].height))continue;
+    for(int x{};x < 320;++x)target.pixel(x,y,panels[0].pixels[static_cast<size_t>(sy * 320 + x)]);
   }
 }
 
@@ -153,7 +156,7 @@ void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int 
     copy(32 + i, chassis * (expansion ? 16 : 32) + i);
     if(!expansion) copy(64 + i, chassis * 32 + 16 + i);
   }
-  constexpr std::array<unsigned int, 9> highlights{44, 37, 45, 39, 45, 45, 45, 40, 40};
+  std::array<unsigned int, 9> constexpr highlights{44, 37, 45, 39, 45, 45, 45, 40, 40};
   world.colours[64] = world.colours[highlights[chassis]];
   world.dac_colours[64] = world.dac_colours[highlights[chassis]];
 }

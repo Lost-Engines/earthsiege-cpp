@@ -13,7 +13,7 @@ void require(bool const condition, std::string const &name, unsigned int const r
   if(!condition) throw std::runtime_error{name + " layered pose " + std::to_string(row) + " differs: " + field};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;

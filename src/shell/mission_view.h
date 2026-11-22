@@ -1,33 +1,33 @@
 #pragma once
 #include <deque>
 #include <map>
-#include "audio/mission_audio.h"
 #include <memory>
-#include "render/scenery_renderer.h"
+#include "audio/mission_audio.h"
+#include "render/clock_instrument.h"
+#include "render/cockpit_pan.h"
 #include "render/environment_renderer.h"
+#include "render/external_view.h"
 #include "render/instrument_bars.h"
+#include "render/navigation_instruments.h"
+#include "render/palette_device.h"
+#include "render/presentation_player.h"
+#include "render/scenery_renderer.h"
 #include "render/shield_instruments.h"
 #include "render/weapon_instruments.h"
-#include "render/navigation_instruments.h"
-#include "render/clock_instrument.h"
-#include "render/external_view.h"
-#include "render/presentation_player.h"
 #include "resources/cockpit.h"
-#include "resources/input_tape.h"
-#include "simulation/keyboard_input.h"
-#include "simulation/frame_clock.h"
-#include "simulation/joystick_routing.h"
 #include "resources/input_options.h"
-#include "shell/preferences.h"
-#include "shell/pointer_controls.h"
+#include "resources/input_tape.h"
+#include "shell/cockpit_displays.h"
+#include "shell/cockpit_hdd.h"
 #include "shell/cockpit_impact.h"
+#include "shell/cockpit_radio.h"
 #include "shell/cockpit_startup.h"
 #include "shell/cockpit_transition.h"
-#include "render/cockpit_pan.h"
-#include "render/palette_device.h"
-#include "shell/cockpit_displays.h"
-#include "shell/cockpit_radio.h"
-#include "shell/cockpit_hdd.h"
+#include "shell/pointer_controls.h"
+#include "shell/preferences.h"
+#include "simulation/frame_clock.h"
+#include "simulation/joystick_routing.h"
+#include "simulation/keyboard_input.h"
 #include "simulation/mission_session.h"
 
 namespace earthsiege {
@@ -100,7 +100,9 @@ class mission_view {
   std::map<size_t,camera_state> actor_cameras;
   void select_camera_actor(size_t actor);
   void next_camera_actor();
-  bool camera_control()const{return external_camera_control||(viewed_actor&&*viewed_actor!=session->player_id());}
+  bool camera_control()const{
+    return external_camera_control || (viewed_actor &&*viewed_actor != session->player_id());
+  }
   std::optional<camera_state> options_camera;
   int options_view{};
   bool suppress_interface{};
@@ -115,7 +117,7 @@ class mission_view {
   void hat_view(std::array<uint8_t,4> const &);
   bool paused{false};
   bool external_camera_control{true};
-  bool external_view_active{},external_view_requested{}; // 5894c applies prepared views after input.
+  bool external_view_active{},external_view_requested{};                       // 5894c applies prepared views after input.
   player_input pointer;
   pointer_controls instruments;
   std::array<size_t,3> edge_controls;
@@ -139,15 +141,30 @@ public:
   mission_view(resource_store const &resources, unsigned int demo,music_settings const &music={});
   mission_view(resource_store const &resources, input_tape const &tape,music_settings const &music={});
   mission_view(resource_store const &resources, std::unique_ptr<mission_session> mission,music_settings const &music={});
-  void configure_music(music_settings const &settings){audio.configure_music(settings);}
-  mission_results results() const { return session->results(); }
-  mission_counters const &mission_variables() const { return session->mission_variables(); }
-  mission_status status(bool requested=false) const { return session->mission_state(requested); }
-  std::optional<mission_status> take_mission_prompt() { return session->take_mission_prompt(); }
+  void configure_music(music_settings const &settings){
+    audio.configure_music(settings);
+  }
+  mission_results results() const {
+    return session->results();
+  }
+  mission_counters const &mission_variables() const {
+    return session->mission_variables();
+  }
+  mission_status status(bool requested=false) const {
+    return session->mission_state(requested);
+  }
+  std::optional<mission_status> take_mission_prompt() {
+    return session->take_mission_prompt();
+  }
   void apply_preferences(preferences const &);
   void configure_input(preferences const &,std::array<joystick_calibration,2> const &);
-  void devices(std::array<joystick_hardware,2> const &value,int16_t lever){hardware=value;device_throttle=lever;}
-  void key_modifiers(bool alt) { keyboard.modifiers(alt); }
+  void devices(std::array<joystick_hardware,2> const &value,int16_t lever){
+    hardware = value;
+    device_throttle = lever;
+  }
+  void key_modifiers(bool alt) {
+    keyboard.modifiers(alt);
+  }
   void key(held_key key, bool pressed, bool alt);
   void command(uint16_t code);
   void mouse_position(int x, int y);
@@ -156,43 +173,81 @@ public:
   void mouse_button(bool right, bool pressed);
   void clear_input();
   void toggle_pause();
-  auto const &cockpit_clock()const{return clock;}
-  auto cockpit_origin()const{return instrument_origin();}
-  auto const &lamp_state()const{return lamps.state();}
-  auto const &map_refresh()const{return hdd->refresh_state();}
-  void map_clock_input(std::function<uint32_t(uint32_t)> source){hdd->clock_input(std::move(source));}
-  auto const &cloud_state()const{return environment.cloud_state();}
-  auto active_lights()const{return session->visual_effects().lights().registered();}
-  void observe_scene(scene_draw_observer callback){renderer.observe=std::move(callback);}
-  camera_state const &view_camera()const{return camera;}
-  size_t camera_actor()const{return viewed_actor.value_or(session->player_id());}
+  auto const &cockpit_clock()const{
+    return clock;
+  }
+  auto cockpit_origin()const{
+    return instrument_origin();
+  }
+  auto const &lamp_state()const{
+    return lamps.state();
+  }
+  auto const &map_refresh()const{
+    return hdd->refresh_state();
+  }
+  void map_clock_input(std::function<uint32_t(uint32_t)> source){
+    hdd->clock_input(std::move(source));
+  }
+  auto const &cloud_state()const{
+    return environment.cloud_state();
+  }
+  auto active_lights()const{
+    return session->visual_effects().lights().registered();
+  }
+  void observe_scene(scene_draw_observer callback){
+    renderer.observe = std::move(callback);
+  }
+  camera_state const &view_camera()const{
+    return camera;
+  }
+  size_t camera_actor()const{
+    return viewed_actor.value_or(session->player_id());
+  }
   void change_camera(camera_mode mode);
   void change_cockpit_view(cockpit_view view);
   void advance_time(unsigned milliseconds);
   /// Start the original nearby-friendly-base lift, or its ordinary initial draw.
   void begin_startup();
-  cockpit_transition::state const &presentation_state()const{return transitions.snapshot();}
-  bool starting()const{return startup.has_value();}
+  cockpit_transition::state const &presentation_state()const{
+    return transitions.snapshot();
+  }
+  bool starting()const{
+    return startup.has_value();
+  }
   /// Separate clocks retain original draw / fade / presentation ownership.
   void draw_startup(uint32_t slow_clock);
   void finish_startup_frame(uint32_t palette_clock,uint32_t end_clock);
   bool step_startup();
   bool step(bool control, bool zoom,mission_dialog_handlers const &dialogs={});
   /// Recorded axes are already device-mapped. The host supplies the separate 60 Hz presentation clock.
-  void radio_input(radio_input_source source){radio->input_source(std::move(source));}
+  void radio_input(radio_input_source source){
+    radio->input_source(std::move(source));
+  }
   bool step_recorded(tape_frame const &,uint32_t slow_clock,bool suppress_camera=false,mission_dialog_handlers const &dialogs={});
-  mission_session const &simulation()const{return *session;}
+  mission_session const &simulation()const{
+    return *session;
+  }
   void begin_options();
   bool step_options();
   void step_options_recorded();
   void end_options();
   void draw();
-  void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) { detail={horizon,cloud,ground,true}; }
+  void environment_detail(bool horizon,uint8_t cloud,uint8_t ground) {
+    detail = {horizon,cloud,ground,true};
+  }
   std::vector<int16_t> take_audio();
-  void click_sound(){audio.play(17);}
-  void audio_clock(uint64_t ticks){audio.advance_to(ticks);}
-  void audio_observer(audio_event_sink sink){audio.observe=std::move(sink);}
-  pcm_sound_bank const &audio_state()const{return audio.state();}
+  void click_sound(){
+    audio.play(17);
+  }
+  void audio_clock(uint64_t ticks){
+    audio.advance_to(ticks);
+  }
+  void audio_observer(audio_event_sink sink){
+    audio.observe = std::move(sink);
+  }
+  pcm_sound_bank const &audio_state()const{
+    return audio.state();
+  }
   std::optional<vec2<int32_t>> take_pointer_warp();
   std::vector<framebuffer> take_pan_frames();
   framebuffer const &image() const;

@@ -1,23 +1,23 @@
 #pragma once
-#include "resources/packed_strings.h"
-#include "shell/dialog.h"
-#include "render/shell_cinematic.h"
-#include "render/shell_door.h"
 #include <deque>
 #include "audio/shell_audio.h"
-#include "shell/bay_scene.h"
-#include "render/weapon_preview.h"
 #include "render/briefing_map.h"
-#include "render/shell_speech_scene.h"
-#include "shell/game_state.h"
-#include "shell/save_store.h"
-#include "render/hangar_artwork.h"
+#include "render/construction_artwork.h"
 #include "render/crew_artwork.h"
+#include "render/hangar_artwork.h"
+#include "render/shell_cinematic.h"
+#include "render/shell_door.h"
+#include "render/shell_speech_scene.h"
 #include "render/shell_statistics.h"
+#include "render/weapon_preview.h"
+#include "resources/packed_strings.h"
+#include "shell/bay_scene.h"
 #include "shell/component_repair.h"
 #include "shell/controls_dialog.h"
+#include "shell/dialog.h"
+#include "shell/game_state.h"
 #include "shell/mission_options_dialog.h"
-#include "render/construction_artwork.h"
+#include "shell/save_store.h"
 namespace earthsiege {
 /// Application-level shell flow. Window input is translated before it reaches
 /// this owner, so scripted tests exercise the same transitions as the UI.
@@ -93,7 +93,9 @@ class game_shell {
   void choose_armament();
   int single_kind{},battle_set{};
  uint8_t career_difficulty{1};
- bool expansion_battle()const{return resources.edition()==game_edition::expansion&&battle_set!=0;}
+ bool expansion_battle()const{
+   return resources.edition() == game_edition::expansion && battle_set != 0;
+ }
   unsigned int options_owner{1000},last_screen{1000};
   int text_scroll{};
   std::vector<size_t> history_slots;
@@ -108,35 +110,69 @@ class game_shell {
   void draw_text(framebuffer &frame,std::string const &text,rectangle const &bounds,int scroll=0)const;
 public:
   game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17,music_settings const &music={});
-  void configure_music(music_settings const &settings){audio.configure_music(settings);}
-  unsigned int screen()const{return cinematic?0:speech?speech_screen:controls?1320:menu->id();}
-  bool presentation_active()const{return speech!=nullptr||cinematic!=nullptr||door_motion!=nullptr;}
-  bool transition_active()const{return door_motion!=nullptr;}
-  bool quit_requested()const{return quitting;}
-  bool ready_to_launch()const{return launch_requested;}
-  void request_demo(){demo_requested=true;}
+  void configure_music(music_settings const &settings){
+    audio.configure_music(settings);
+  }
+  unsigned int screen()const{
+    return cinematic?0:speech?speech_screen:controls?1320:menu->id();
+  }
+  bool presentation_active()const{
+    return speech != nullptr || cinematic != nullptr || door_motion != nullptr;
+  }
+  bool transition_active()const{
+    return door_motion != nullptr;
+  }
+  bool quit_requested()const{
+    return quitting;
+  }
+  bool ready_to_launch()const{
+    return launch_requested;
+  }
+  void request_demo(){
+    demo_requested = true;
+  }
   bool take_demo_request();
   void demo_return();
-  preferences const &settings()const{return preferences_;}
-  dialog const &current_dialog()const{return *menu;}
-  game_state const &state()const{return game;}
+  preferences const &settings()const{
+    return preferences_;
+  }
+  dialog const &current_dialog()const{
+    return *menu;
+  }
+  game_state const &state()const{
+    return game;
+  }
   void startup(bool enabled=true);
   void action(uint16_t id);
   void key(uint16_t scan);
-  void text_input(std::string_view text){if(!presentation_active()&&!controls)menu->text_input(text);}
+  void text_input(std::string_view text){
+    if(!presentation_active() && !controls)menu->text_input(text);
+  }
   void mouse_move(int x,int y);
   void mouse_down(int x,int y,bool right=false);
   void mouse_up(int x,int y,bool right=false);
-  void cancel_press(){pressed_mount.reset();menu->cancel_press();if(controls)controls->cancel_press();}
+  void cancel_press(){
+    pressed_mount.reset();
+    menu->cancel_press();
+    if(controls)controls->cancel_press();
+  }
   void devices(std::array<joystick_hardware,2> const &);
-  std::array<joystick_calibration,2> const &device_calibrations()const{return calibrations;}
+  std::array<joystick_calibration,2> const &device_calibrations()const{
+    return calibrations;
+  }
   std::optional<vec2<int32_t>> take_pointer_warp();
-  std::unique_ptr<mission_options_dialog> flight_options(){return std::make_unique<mission_options_dialog>(resources,preferences_,saves,calibrations);}
+  std::unique_ptr<mission_options_dialog> flight_options(){
+    return std::make_unique<mission_options_dialog>(resources,preferences_,saves,calibrations);
+  }
   std::unique_ptr<mission_session> launch();
   void mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed=17);
   void advance(unsigned timer_ticks=3);
-  std::vector<int16_t> take_audio(){return audio.take_output();}
+  std::vector<int16_t> take_audio(){
+    return audio.take_output();
+  }
   void draw(framebuffer &target)const;
-  palette const &colours()const{return door_motion?door_motion->colours():cinematic?cinematic->colours():speech?speech_palette:menu->current_palette();}
+  palette const &colours()const{
+    return door_motion?door_motion->colours():cinematic?cinematic->colours():speech?speech_palette:menu->current_palette();
+  }
 };
 }

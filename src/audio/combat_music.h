@@ -1,7 +1,7 @@
 #pragma once
-#include "simulation/random_state.h"
 #include <span>
 #include <vector>
+#include "simulation/random_state.h"
 namespace earthsiege {
 struct music_contact {int32_t distance{};uint8_t side{};bool disabled{},dead{},waiting{},visible{};};
 struct combat_music_state {int16_t track{-1};bool battle{};uint32_t deadline{};bool fading{};};

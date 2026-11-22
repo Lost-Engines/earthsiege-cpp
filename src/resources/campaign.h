@@ -1,8 +1,8 @@
 #pragma once
-#include "resources/binary_reader.h"
-#include "resources/edition.h"
 #include <string>
 #include <vector>
+#include "resources/binary_reader.h"
+#include "resources/edition.h"
 
 namespace earthsiege {
 using mission_choices=std::vector<std::string>;

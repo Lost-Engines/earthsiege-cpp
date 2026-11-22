@@ -1,6 +1,6 @@
 #pragma once
-#include "simulation/herc_tactics.h"
 #include "simulation/engagement.h"
+#include "simulation/herc_tactics.h"
 
 namespace earthsiege {
 struct herc_guard_policy {

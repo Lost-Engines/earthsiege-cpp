@@ -12,4 +12,4 @@ struct device_input_sample {
 };
 /// DBSIM 0x4cb14 after keyboard accumulation and electrical polling.
 device_input_sample route_devices(device_routing_options &,joystick_sample keyboard,joystick_sample device,int16_t throttle);
-}
+} // namespace earthsiege

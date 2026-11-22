@@ -1,8 +1,8 @@
 #pragma once
-#include "resources/packed_strings.h"
 #include "render/framebuffer.h"
-#include "resources/resource_store.h"
 #include "resources/artwork.h"
+#include "resources/packed_strings.h"
+#include "resources/resource_store.h"
 #include "shell/construction_menu.h"
 namespace earthsiege {
 class construction_artwork {

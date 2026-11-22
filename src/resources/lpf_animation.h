@@ -7,10 +7,18 @@ class lpf_animation {
  uint16_t width_{},height_{},fps_{};
 public:
  explicit lpf_animation(bytes);
- unsigned width()const{return width_;}
- unsigned height()const{return height_;}
- unsigned frames()const{return static_cast<unsigned>(records.size());}
- unsigned frames_per_second()const{return fps_;}
+ unsigned width()const{
+   return width_;
+ }
+ unsigned height()const{
+   return height_;
+ }
+ unsigned frames()const{
+   return static_cast<unsigned>(records.size());
+ }
+ unsigned frames_per_second()const{
+   return fps_;
+ }
  /// Skip spans retain the prior frame. Written zero pixels use the saved
  /// screen when supplied, as in the original menu-transition span writers.
  void decode(unsigned frame,std::span<uint8_t> target,bytes saved={})const;

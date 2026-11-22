@@ -9,7 +9,11 @@
 #include "simulation/model_math.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::binary_reader;
+using earthsiege::game_edition;
+using earthsiege::ground_actor;
+using earthsiege::model_transform;
+using earthsiege::random_state;
 struct state {
   int16_t damage; bool dead, wreck; int16_t bursts, burst_timer, cell_timer;
   std::vector<uint16_t> cells;
@@ -29,7 +33,7 @@ state read_state(binary_reader &file,bool expansion) {
     m.translation = vec3<int32_t>{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
   }
   for(auto &v : s.random.words) v = file.integer<uint16_t>();
-  s.random.first = file.integer<uint8_t>(); s.random.second = file.integer<uint8_t>();if(expansion){s.sections.resize(8);s.present.resize(8);for(auto &v:s.sections)v=file.integer<int16_t>();for(auto &v:s.present)v=file.integer<int16_t>();}return s;
+  s.random.first = file.integer<uint8_t>(); s.random.second = file.integer<uint8_t>();if(expansion){s.sections.resize(8);s.present.resize(8);for(auto &v:s.sections)v = file.integer<int16_t>();for(auto &v:s.present)v = file.integer<int16_t>();}return s;
 }
 void compare(ground_actor const &actor, random_state const &rng, state const &expected, std::string const &label) {
   if(actor.damage() != expected.damage || actor.dead() != expected.dead || actor.is_wreck() != expected.wreck || actor.remaining_bursts() != expected.bursts || actor.burst_timer() != expected.burst_timer || actor.cell_clock() != expected.cell_timer) throw std::runtime_error{label + " actor state"};
@@ -43,7 +47,7 @@ void compare(ground_actor const &actor, random_state const &rng, state const &ex
       for(unsigned int x{0}; x != 3; ++x) for(unsigned int y{0}; y != 3; ++y) if(a.basis.at(x,y) != e.basis.at(x,y)) throw std::runtime_error{label + " matrix basis " + std::to_string(i)};
     }
   }
-  if(!expected.sections.empty()&&(!std::ranges::equal(actor.sections(),expected.sections)||!std::ranges::equal(actor.present_sections(),expected.present)))throw std::runtime_error{label+" damage sections"};
+  if(!expected.sections.empty() && (!std::ranges::equal(actor.sections(),expected.sections) || !std::ranges::equal(actor.present_sections(),expected.present)))throw std::runtime_error{label + " damage sections"};
   auto const &a{rng.snapshot()}; auto const &e{expected.random};
   if(a.words != e.words || a.first != e.first || a.second != e.second) throw std::runtime_error{label + " random state"};
 }
@@ -51,13 +55,13 @@ using event = std::array<int32_t, 5>;
 std::vector<event> read_events(binary_reader &file) {
   std::vector<event> result(file.integer<uint16_t>()); for(auto &e : result) for(auto &v : e) v = file.integer<int32_t>(); return result;
 }
-}
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]}; earthsiege::ground_catalogue catalogue{resources};
   auto const bytes{earthsiege::read_file(argv[2])}; earthsiege::binary_reader file{bytes}; auto const magic{file.take(8)};
-  bool const expansion{resources.edition()==game_edition::expansion};
+  bool const expansion{resources.edition() == game_edition::expansion};
   if(std::string(magic.begin(),magic.end()) != (expansion?"ESEXGRD1":"ESGCOMB1")) file.fail("fixture version");
   unsigned int operations{0}, rays{0}, hits{0};
   auto const count{file.integer<uint16_t>()};

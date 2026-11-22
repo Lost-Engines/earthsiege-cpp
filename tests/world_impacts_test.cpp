@@ -11,7 +11,9 @@
 
 namespace {
 
-vec3<int32_t> point(earthsiege::binary_reader &file) { return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()}; }
+vec3<int32_t> point(earthsiege::binary_reader &file) {
+  return {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
+}
 
 earthsiege::random_state seeded() {
   earthsiege::random_state::state state;
@@ -20,7 +22,7 @@ earthsiege::random_state seeded() {
   return earthsiege::random_state{state};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
@@ -66,7 +68,7 @@ int main(int const argc, char **argv) try {
         actor.waiting = file.integer<uint8_t>() != 0; actor.dead = file.integer<uint8_t>() != 0;
         actor.disabled = file.integer<uint8_t>() != 0; actor.inactive = file.integer<uint8_t>() != 0; actor.quiet = file.integer<uint8_t>() != 0;
         bool const kill{file.integer<uint8_t>() != 0}; auto const depth{file.integer<int32_t>()}; actor.trigger = index - 1;
-        actor.hit = [&, index, kill, depth](earthsiege::impact_request const &ray) -> std::optional<int32_t> {
+        actor.hit = [&, index, kill, depth](earthsiege::impact_request const &ray)->std::optional<int32_t> {
           bool const hit{depth > 0 && depth < ray.reach};
           events.push_back({0, static_cast<int32_t>(index - 1), ray.reach, hit ? depth : 0});
           if(hit && kill) actors[index].dead = true;

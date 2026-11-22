@@ -1,8 +1,8 @@
 #pragma once
 #include <array>
-#include "resources/edition.h"
 #include <cstdint>
 #include <string_view>
+#include "resources/edition.h"
 namespace earthsiege {
 struct keyjoy_options {
  bool tilt_reverse{},backturn_reverse{},missile_reverse{},invalid_token{},pedals_reverse{};

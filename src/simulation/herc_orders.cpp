@@ -6,8 +6,12 @@
 
 namespace earthsiege {
 namespace {
-void count_down(int32_t &value, frame_ratio ratio) { value = std::max(0, wrap_long(static_cast<int64_t>(value) - ratio)); }
-void count_down(int16_t &value, frame_ratio ratio) { value = std::max<int16_t>(0, wrap_word(value - ratio)); }
+void count_down(int32_t &value, frame_ratio ratio) {
+  value = std::max(0, wrap_long(static_cast<int64_t>(value) - ratio));
+}
+void count_down(int16_t &value, frame_ratio ratio) {
+  value = std::max<int16_t>(0, wrap_word(value - ratio));
+}
 }
 void travel_with_herc(herc_travel_state &state, std::span<target_relationship> const targets, size_t const actor, bool const persistent_signature, bool &detectable, frame_ratio const ratio, herc_order_callbacks const &callbacks) {
   callbacks.follow_route();
@@ -66,7 +70,7 @@ void skirt_with_herc(herc_skirt_state &state, size_t const actor, vec3<int32_t> 
     if(!callbacks.path_blocked()) {
       if(!state.previous) throw std::logic_error{"skirting HERC has no previous behavior"};
       callbacks.enter(*state.previous);
-      state = {};                                                           // original entry clears scratch before the remaining movement below
+      state = {};                                                              // original entry clears scratch before the remaining movement below
       obstruction = false;
     }
   }

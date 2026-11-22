@@ -28,4 +28,4 @@ struct joystick_sample {
 joystick_sample sample_joystick(joystick_profile const &,joystick_calibration const &,std::array<int32_t,4> const &raw,uint8_t buttons);
 std::array<joystick_profile,2> joystick_profiles(uint8_t model,bool pedals);
 void combine_joystick(joystick_sample &,joystick_sample const &);
-}
+} // namespace earthsiege

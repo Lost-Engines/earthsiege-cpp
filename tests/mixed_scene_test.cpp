@@ -37,7 +37,7 @@ int main(int const argc, char **argv) try {
     auto const actor_count{file.integer<uint16_t>()};
     if(actor_count != actors.size()) file.fail("roster actor count differs");
     for(unsigned int actor{0}; actor != actor_count; ++actor) {
-      file.integer<uint16_t>();                                               // chassis already selects its original resources through the roster
+      file.integer<uint16_t>();                                                // chassis already selects its original resources through the roster
       if(actors[actor].native_class != file.integer<int16_t>()) file.fail("roster class differs");
       vec3<int32_t> const position{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
       vec3<uint16_t> const angles{file.integer<uint16_t>(), file.integer<uint16_t>(), file.integer<uint16_t>()};

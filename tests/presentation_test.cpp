@@ -1,13 +1,19 @@
 #include <algorithm>
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include "render/presentation_player.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::presentation_player;
+  using earthsiege::read_file;
+  using earthsiege::read_presentation;
+  using earthsiege::resource_store;
   if(argc != 4) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const raw{read_file(argv[2])}; binary_reader programs{raw}; auto const magic{programs.take(8)};
@@ -38,8 +44,9 @@ int main(int argc, char **argv) try {
     auto const random{file.integer<uint32_t>()}, expected{file.integer<uint32_t>()};
     if(label) player->select_label(label);
     player->advance(elapsed); auto const &state{player->state()};
-    if(state.page != page || state.mode != mode || state.wait_latched != latch || state.remaining != remaining || state.period != period || state.jump != jump || state.random != random)
+    if(state.page != page || state.mode != mode || state.wait_latched != latch || state.remaining != remaining || state.period != period || state.jump != jump || state.random != random) {
       file.fail(name + " animation state differs at " + std::to_string(i));
+    }
     framebuffer frame; frame.clear(123); player->draw(frame);
     if(crc32(frame.pixels()) != expected) {
       std::ofstream output{"/tmp/es-ttm-difference.raw", std::ios::binary}; output.write(reinterpret_cast<char const *>(frame.pixels().data()), frame.pixels().size());

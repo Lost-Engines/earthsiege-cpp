@@ -4,8 +4,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "resources/mission_script.h"
 #include "resources/edition.h"
+#include "resources/mission_script.h"
 
 namespace earthsiege {
 
@@ -16,7 +16,7 @@ struct zone_placement {
 };
 
 struct zone_resource {
-  uint16_t stored_terrain{0};                                                   // original loader reads this but selects terrain from the mission instead
+  uint16_t stored_terrain{0};                                                  // original loader reads this but selects terrain from the mission instead
   std::vector<zone_placement> placements;
 };
 
@@ -44,7 +44,7 @@ struct world_environment {
   std::array<std::vector<int32_t>, 2> distance_bands;
   int16_t shade_levels{0};
   std::vector<palette_range> near_ranges;
-  int16_t stored_far_range_count{0};                                            // original uses the near count for both arrays
+  int16_t stored_far_range_count{0};                                           // original uses the near count for both arrays
   std::vector<palette_range> far_ranges;
   std::array<palette_range, 2> blend_ranges;
   std::array<int16_t, 2> effect_parameters{};
@@ -53,7 +53,7 @@ struct world_environment {
 };
 
 struct terrain_metadata {
-  std::array<vec3<int32_t>, 2> sort_endpoints;                                  // local segment used by the whole-scene painter tree
+  std::array<vec3<int32_t>, 2> sort_endpoints;                                 // local segment used by the whole-scene painter tree
   bool used_by_instance() const;
 };
 

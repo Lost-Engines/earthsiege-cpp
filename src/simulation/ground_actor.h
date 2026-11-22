@@ -85,10 +85,18 @@ public:
   bool dead() const;
   bool is_detectable() const;
   bool is_turret() const;
-  bool is_landing_craft()const{return type==10;}
-  auto const &landing_banks()const{return landing_banks_;}
-  auto const &sections()const{return section_damage;}
-  auto const &present_sections()const{return section_present;}
+  bool is_landing_craft()const{
+    return type == 10;
+  }
+  auto const &landing_banks()const{
+    return landing_banks_;
+  }
+  auto const &sections()const{
+    return section_damage;
+  }
+  auto const &present_sections()const{
+    return section_present;
+  }
   vec3<int32_t> target_position() const;
   bool is_wreck() const;
   int16_t remaining_bursts() const;

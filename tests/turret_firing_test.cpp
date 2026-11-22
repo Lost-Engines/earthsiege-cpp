@@ -24,7 +24,7 @@ int main(int const argc, char **argv) try {
       input.angles = vec3<uint16_t>{file.integer<uint16_t>(),file.integer<uint16_t>(),file.integer<uint16_t>()}; input.speed = file.integer<int16_t>();
       using event = std::array<int32_t,8>; std::vector<event> actual;
       earthsiege::turret_callbacks callbacks;
-      callbacks.select = [&]() -> std::optional<size_t> { actual.push_back({0,available,0,0,0,0,0,0}); return available ? std::optional<size_t>{0} : std::nullopt; };
+      callbacks.select = [&]()->std::optional<size_t> { actual.push_back({0,available,0,0,0,0,0,0}); return available ? std::optional<size_t>{0} : std::nullopt; };
       callbacks.target = [&](size_t id){ if(id != 0) file.fail("target identity"); return earthsiege::turret_target{input}; };
       callbacks.fire = [&](earthsiege::weapon_shot const &shot){
         if(shot.kind != earthsiege::shot_kind::bullet || shot.projectile != static_cast<size_t>(projectile) || shot.charge != -1) file.fail("turret projectile definition");

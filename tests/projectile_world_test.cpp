@@ -8,7 +8,9 @@
 
 namespace {
 
-template<typename T> vec3<T> vector(earthsiege::binary_reader &file) { return {file.integer<T>(), file.integer<T>(), file.integer<T>()}; }
+template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
+  return {file.integer<T>(), file.integer<T>(), file.integer<T>()};
+}
 std::vector<uint16_t> words(earthsiege::binary_reader &file) {
   std::vector<uint16_t> result(file.integer<uint16_t>());
   for(auto &v : result) v = file.integer<uint16_t>();
@@ -48,7 +50,7 @@ int main(int const argc, char **argv) try {
       auto const before{words(file)}, retired{words(file)};
       require(order(world.live(), false) == before, "update order");
       size_t hits{0};
-      earthsiege::world_impact_query const hit{[&](earthsiege::projectile_owner const &owner, earthsiege::impact_request const &) -> std::optional<int32_t> {
+      earthsiege::world_impact_query const hit{[&](earthsiege::projectile_owner const &owner, earthsiege::impact_request const &)->std::optional<int32_t> {
         require(owner.actor == 0 && !owner.target, "owner"); ++hits;
         return depth ? std::optional<int32_t>{depth - 1} : std::nullopt;
       }};

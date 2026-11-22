@@ -2,12 +2,33 @@
 #include <iostream>
 #include <stdexcept>
 #include "render/weapon_instruments.h"
-#include "shell/mission_view.h"
 #include "resources/name_table.h"
+#include "shell/mission_view.h"
 #include "simulation/player_armament.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::camera_mode;
+  using earthsiege::cockpit_view;
+  using earthsiege::crc32;
+  using earthsiege::framebuffer;
+  using earthsiege::mission_session;
+  using earthsiege::mission_view;
+  using earthsiege::model_resource;
+  using earthsiege::player_armament;
+  using earthsiege::read_cockpit_layout;
+  using earthsiege::read_file;
+  using earthsiege::read_herc_definition;
+  using earthsiege::read_input_tape;
+  using earthsiege::read_mission_script;
+  using earthsiege::read_player_roster;
+  using earthsiege::read_resource_names;
+  using earthsiege::resource_store;
+  using earthsiege::tape_file;
+  using earthsiege::tape_frame;
+  using earthsiege::weapon_bank;
+  using earthsiege::weapon_catalogue;
+  using earthsiege::weapon_instruments;
   if(argc != 3) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   auto const source{read_file(argv[2])}; binary_reader file{source}; auto const magic{file.take(8)};
@@ -19,8 +40,9 @@ int main(int argc, char **argv) try {
     auto const expected{file.integer<uint32_t>()};
     auto const layout{read_cockpit_layout(resources.read("simvol0", "gau/" + name + ".GAU"))};
     weapon_instruments instruments{resources,layout};
-    for(auto const &bounds : instruments.group_bounds()) for(auto const value : {bounds.left,bounds.top,bounds.right,bounds.bottom})
+    for(auto const &bounds : instruments.group_bounds()) for(auto const value : {bounds.left,bounds.top,bounds.right,bounds.bottom}) {
       if(value != file.integer<int32_t>()) file.fail("group control rectangle differs");
+    }
     framebuffer frame; frame.clear(123); instruments.draw_groups(frame,group,faces);
     if(crc32(frame.pixels()) != expected) file.fail(name + " group paint differs: " + std::to_string(crc32(frame.pixels())) + " expected " + std::to_string(expected));
   }
@@ -49,15 +71,15 @@ int main(int argc, char **argv) try {
   file.require_end();
   // The original 38034/380c4 handler links immediately, unlike the mouse
   // button's pending request. Exercise the cockpit dispatch, not just the bank.
-  auto const tape{read_input_tape(read_file(resources.root()/"TAPES"/"DEMO1.TAP"))};
+  auto const tape{read_input_tape(read_file(resources.root() / "TAPES" / "DEMO1.TAP"))};
   auto const script{read_mission_script(tape.starting_files[std::to_underlying(tape_file::script)])};
   auto roster{read_player_roster(tape.starting_files[std::to_underlying(tape_file::player)])};
   auto &herc{roster.hercs.at(static_cast<size_t>(roster.selected))};
-  std::fill(herc.weapons.begin(),herc.weapons.end(),6); // Matching lasers in paired mounts.
+  std::fill(herc.weapons.begin(),herc.weapons.end(),6);                        // Matching lasers in paired mounts.
   auto const names{read_resource_names(resources.read("simvol0","nam/MECHS.NAM"))};
   auto const definition{read_herc_definition(resources,names.at(static_cast<size_t>(herc.chassis)))};
   auto const partner{definition.mounts.at(0).paired_slot_offset};
-  if(partner<=0)throw std::runtime_error{"test HERC needs a paired first mount"};
+  if(partner <= 0)throw std::runtime_error{"test HERC needs a paired first mount"};
   auto session{std::make_unique<mission_session>(resources,script,roster)};
   session->set_auto_tracking(false);session->select_weapon(0);
   mission_view scene{resources,std::move(session)};
@@ -65,13 +87,14 @@ int main(int argc, char **argv) try {
   auto const &controls{scene.simulation().player_weapon_controls()};
   uint32_t clock{};
   auto check_key=[&](uint16_t code,bool linked){
-    tape_frame input;input.command=code;input.delta=1;
+    tape_frame input;input.command = code;input.delta = 1;
     if(!scene.step_recorded(input,++clock))throw std::runtime_error{"link command ended mission"};
-    if(controls.linked(0)!=linked||controls.linked(static_cast<size_t>(partner))!=linked)
+    if(controls.linked(0) != linked || controls.linked(static_cast<size_t>(partner)) != linked) {
       throw std::runtime_error{"cockpit link command did not update both weapons"};
+    }
   };
   check_key(38,true);check_key(38,false);
-  check_key(0x226,false);check_key(0x426,false); // Alt/Ctrl+L are not L.
+  check_key(0x226,false);check_key(0x426,false);                               // Alt/Ctrl+L are not L.
   scene.change_cockpit_view(cockpit_view::lower);check_key(38,false);
   scene.change_cockpit_view(cockpit_view::forward);check_key(38,true);
   scene.change_camera(camera_mode::orbit);check_key(38,true);

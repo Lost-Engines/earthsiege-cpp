@@ -16,8 +16,14 @@ public:
   void none(hangar &,career_state &);
   void accept(hangar &,career_state &)const;
   void cancel(hangar &,career_state &)const;
-  int16_t selected_pilot()const{return pilot;}
-  int16_t displaced_pilot()const{return displaced;}
-  std::array<int16_t,5> state()const{return {static_cast<int16_t>(1615+pilot),original_selected,previous_choice,origin,displaced};}
+  int16_t selected_pilot()const{
+    return pilot;
+  }
+  int16_t displaced_pilot()const{
+    return displaced;
+  }
+  std::array<int16_t,5> state()const{
+    return {static_cast<int16_t>(1615 + pilot),original_selected,previous_choice,origin,displaced};
+  }
 };
-}
+} // namespace earthsiege

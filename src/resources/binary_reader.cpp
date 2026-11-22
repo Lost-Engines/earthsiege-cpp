@@ -48,8 +48,12 @@ binary_reader::binary_reader(bytes input, std::string label) :
   source{input},
   context{std::move(label)} {}
 
-auto binary_reader::position() const->size_t { return cursor; }
-auto binary_reader::remaining() const->size_t { return source.size() - cursor; }
+auto binary_reader::position() const->size_t {
+  return cursor;
+}
+auto binary_reader::remaining() const->size_t {
+  return source.size() - cursor;
+}
 
 void binary_reader::seek(size_t position) {
   if(position > source.size()) fail("seek outside resource");

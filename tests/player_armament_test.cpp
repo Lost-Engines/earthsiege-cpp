@@ -75,7 +75,7 @@ int main(int const argc, char **argv) try {
         case 4: controls.change_group(static_cast<uint8_t>(args.at(0))); break;
         case 5: {
           controls.hold_selection(args.at(1) != 0); controls.set_manual_guidance(args.at(2) != 0);
-          std::array<bool, 5> locks; for(size_t i{0}; i != locks.size(); ++i) locks[i] = args.at(3+i) != 0;
+          std::array<bool, 5> locks; for(size_t i{0}; i != locks.size(); ++i) locks[i] = args.at(3 + i) != 0;
           controls.update_selection(args.at(0), locks); break;
         }
         case 6: controls.fast_charge(); break;

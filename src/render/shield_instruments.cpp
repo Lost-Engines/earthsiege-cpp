@@ -18,8 +18,9 @@ void update_shield_colours(palette &colours, int32_t const front, int32_t const 
     for(size_t level{}; level < dimming.size(); ++level) {
       size_t const index{80 + side * 3 + level};
       auto &dac{colours.dac_colours[index]};
-      for(size_t component{}; component < base.size(); ++component)
+      for(size_t component{}; component < base.size(); ++component) {
         dac[component] = static_cast<uint8_t>(std::max(0, base[component] - dimming[level]));
+      }
       colours.colours[index] = display_colour(dac);
     }
   }
@@ -40,7 +41,9 @@ shield_instruments::shield_instruments(resource_store const &resources, cockpit_
   for(size_t i{}; i < faces.size(); ++i) faces[i] = bank.at(58 + i);
 }
 
-std::array<rectangle, 2> const &shield_instruments::button_bounds() const { return buttons; }
+std::array<rectangle, 2> const &shield_instruments::button_bounds() const {
+  return buttons;
+}
 
 void shield_instruments::draw(framebuffer &target, int32_t const balance, std::array<unsigned int, 2> const button_faces, int const offset_x, int const offset_y) const {
   scoped_framebuffer_clip clip{target, nullptr};
@@ -56,8 +59,9 @@ void shield_instruments::draw(framebuffer &target, int32_t const balance, std::a
     target.fill(bounds, 63);
     target.text(numbers, text, x, y);
   }
-  for(size_t side{}; side < buttons.size(); ++side)
+  for(size_t side{}; side < buttons.size(); ++side) {
     target.image(faces.at(side * 3 + button_faces[side]), buttons[side].left + offset_x, buttons[side].top + offset_y, true);
+  }
 }
 
 } // namespace earthsiege

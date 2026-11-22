@@ -1,11 +1,19 @@
 #include <cstdlib>
 #include <iostream>
 #include "resources/binary_reader.h"
-#include "simulation/herc_aiming.h"
 #include "simulation/aim_control.h"
+#include "simulation/herc_aiming.h"
 
 namespace {
-using namespace earthsiege;
+using earthsiege::aim_herc_at;
+using earthsiege::aiming_profile;
+using earthsiege::aiming_state;
+using earthsiege::binary_reader;
+using earthsiege::centre_herc_aim;
+using earthsiege::herc_weapon_convergence;
+using earthsiege::model_transform;
+using earthsiege::read_file;
+using earthsiege::update_aim;
 model_transform read_matrix(binary_reader &file) {
   model_transform value;
   for(unsigned int const field : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) value.basis.data[field] = file.integer<int16_t>();
@@ -13,7 +21,7 @@ model_transform read_matrix(binary_reader &file) {
   value.translation = {file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
   return value;
 }
-}
+} // anonymous namespace
 int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};

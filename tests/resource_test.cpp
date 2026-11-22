@@ -11,7 +11,7 @@ void require(bool value, std::string const &message) {
   if(!value) throw std::runtime_error{message};
 }
 
-} // namespace
+} // anonymous namespace
 
 auto main(int argc, char *argv[])->int try {
   require(argc == 3, "expected assets and independent fixture paths");

@@ -12,7 +12,7 @@ struct flyer_attack_state {
   int16_t refire_timer{0};
   int32_t manoeuvre_timer{0};
   bool firing_window{false};
-  uint8_t contact_state{0};                                                // original actor +0x8c, cleared at the end of the circling phase
+  uint8_t contact_state{0};                                                    // original actor +0x8c, cleared at the end of the circling phase
 };
 struct flyer_attack_target {
   vec3<int32_t> position;

@@ -1,13 +1,13 @@
 #pragma once
-#include "simulation/sound_request.h"
 #include "render/scenery_renderer.h"
 #include "simulation/beam_effect.h"
 #include "simulation/object_pool.h"
+#include "simulation/sound_request.h"
 
 namespace earthsiege {
 
 class resource_store;
-inline size_t constexpr projectile_capacity{160};                            // original shared bullet/rocket/beam pool
+inline size_t constexpr projectile_capacity{160};                              // original shared bullet/rocket/beam pool
 
 struct projectile_owner {
   size_t actor{0};

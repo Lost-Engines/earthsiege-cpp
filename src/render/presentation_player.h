@@ -10,7 +10,7 @@ namespace earthsiege {
 
 struct presentation_state {
   uint8_t page{};
-  int32_t mode{}; // 0 advance, 1 repeat current page, 2 stopped, 3 end label
+  int32_t mode{};                                                              // 0 advance, 1 repeat current page, 2 stopped, 3 end label
   bool wait_latched{};
   int16_t remaining{};
   int16_t period{};

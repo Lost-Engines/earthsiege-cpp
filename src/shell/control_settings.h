@@ -11,7 +11,11 @@ class control_settings_state {
 public:
  explicit control_settings_state(preferences &);
  control_setting_action activate(unsigned button,bool reverse=false,bool joystick_button=false);
- std::array<uint8_t,10> const &state()const{return state_;}
- preferences::values const &persisted()const{return persisted_;}
+ std::array<uint8_t,10> const &state()const{
+   return state_;
+ }
+ preferences::values const &persisted()const{
+   return persisted_;
+ }
 };
-}
+} // namespace earthsiege

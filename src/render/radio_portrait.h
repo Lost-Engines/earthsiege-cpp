@@ -1,7 +1,7 @@
 #pragma once
+#include "render/framebuffer.h"
 #include "resources/artwork.h"
 #include "resources/resource_store.h"
-#include "render/framebuffer.h"
 #include "simulation/random_state.h"
 
 namespace earthsiege {

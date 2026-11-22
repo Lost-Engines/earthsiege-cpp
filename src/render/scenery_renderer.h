@@ -1,6 +1,6 @@
 #pragma once
-#include <span>
 #include <functional>
+#include <span>
 #include <vector>
 #include "render/distance_shading.h"
 #include "render/effect_lighting.h"
@@ -66,7 +66,9 @@ class scenery_renderer {
 public:
   scene_draw_observer observe;
   scenery_renderer(framebuffer &target, scenery_world const &world, distance_shade_bindings bindings, scene_shading palette_mode = scene_shading::distance);
-  void shape_detail(uint8_t value){shapes=earthsiege::shape_detail(value);}
+  void shape_detail(uint8_t value){
+    shapes = earthsiege::shape_detail(value);
+  }
   std::vector<size_t> draw(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights = false, std::span<scene_model const> actors = {}, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {}, model_view view = {});
   std::vector<size_t> draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool split_highlights, std::span<scene_object const> objects, effect_lighting *dynamic = nullptr, std::span<ground_flash const> ground = {}, model_view view = {});
 };

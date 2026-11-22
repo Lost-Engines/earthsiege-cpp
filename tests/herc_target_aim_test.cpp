@@ -1,12 +1,16 @@
-#include <cstdlib>
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <iostream>
 #include "resources/binary_reader.h"
 #include "simulation/herc_aiming.h"
 
 int main(int argc, char **argv) try {
-  using namespace earthsiege;
+  using earthsiege::binary_reader;
+  using earthsiege::combat_actor_kind;
+  using earthsiege::herc_aim_mode;
+  using earthsiege::read_file;
+  using earthsiege::select_herc_aim_point;
   if(argc != 2) return EXIT_FAILURE;
   auto const bytes{read_file(argv[1])}; binary_reader file{bytes}; auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESHTA001") file.fail("fixture version");

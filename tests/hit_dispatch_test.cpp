@@ -17,7 +17,7 @@ earthsiege::random_state seeded() {
   return earthsiege::random_state{state};
 }
 
-} // namespace
+} // anonymous namespace
 
 int main(int const argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
@@ -45,10 +45,10 @@ int main(int const argc, char **argv) try {
       actor.disabled = file.integer<uint8_t>() != 0;
       actor.inactive = file.integer<uint8_t>() != 0;
       actor.quiet = file.integer<uint8_t>() != 0;
-      file.integer<uint8_t>();                                                // native trigger operation; activation itself has separate references
+      file.integer<uint8_t>();                                                 // native trigger operation; activation itself has separate references
       depths[i] = file.integer<int32_t>();
       actor.trigger = i;
-      actor.hit = [&, i](earthsiege::impact_request const &ray) -> std::optional<int32_t> {
+      actor.hit = [&, i](earthsiege::impact_request const &ray)->std::optional<int32_t> {
         auto const depth{depths[i]};
         bool const hit{depth > 0 && depth < ray.reach};
         events.push_back({0, static_cast<int32_t>(i), ray.reach, hit ? depth : 0});
@@ -65,12 +65,12 @@ int main(int const argc, char **argv) try {
     }
     auto random{seeded()};
     earthsiege::impact_world world{actors, {}, random, {}};
-    world.events.trigger = [&](size_t const index) { events.push_back({1, static_cast<int32_t>(index)}); };
-    world.events.react = [&](size_t const victim, size_t const owner, int16_t const damage) {
+    world.events.trigger = [&](size_t const index){ events.push_back({1, static_cast<int32_t>(index)}); };
+    world.events.react = [&](size_t const victim, size_t const owner, int16_t const damage){
       if(owner != 0 || damage != 100) file.fail("reaction arguments");
       events.push_back({2, static_cast<int32_t>(victim - 1)});
     };
-    world.events.friendly_warning = [&](size_t const companion) { if(companion != 6) file.fail("friendly warning companion"); events.push_back({3}); };
+    world.events.friendly_warning = [&](size_t const companion){ if(companion != 6) file.fail("friendly warning companion"); events.push_back({3}); };
     std::array<size_t, 2> const members{0, 6};
     auto const result{earthsiege::dispatch_impact(request, {0, row % 3 == 0, members, std::nullopt}, world)};
     if((result ? *result + 1 : 0) != expected_result || events != expected_events) file.fail("dispatch reference " + std::to_string(row) + " differs");
@@ -90,7 +90,7 @@ int main(int const argc, char **argv) try {
     auto expected_random{random};
     earthsiege::impact_world world{actors, {}, random, {}};
     unsigned int effect_count{0};
-    world.events.effect = [&](vec3<int32_t> const &position, int16_t const effect) {
+    world.events.effect = [&](vec3<int32_t> const &position, int16_t const effect){
       ++effect_count;
       vec3<int32_t> const expected_position{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
       auto const expected_effect{file.integer<int16_t>()};

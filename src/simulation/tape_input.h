@@ -1,6 +1,6 @@
 #pragma once
-#include "resources/input_tape.h"
 #include "joystick_routing.h"
+#include "resources/input_tape.h"
 namespace earthsiege {
 /// Original 0x4cb14 playback path. Recorded axes are already routed; only the
 /// post-read mode switch, camera suppression, WCS and backturn policy repeat.

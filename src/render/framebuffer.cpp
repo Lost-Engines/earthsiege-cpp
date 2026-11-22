@@ -37,12 +37,22 @@ bool screen_mask::contains(int x, int y) const {
   return std::ranges::any_of(rows[static_cast<size_t>(y)], [x](scanline_span span){ return x >= span.left && x <= span.right; });
 }
 
-screen_mask const *framebuffer::clip() const { return mask; }
-void framebuffer::clip(screen_mask const *value) { mask = value; }
-scoped_framebuffer_clip::scoped_framebuffer_clip(framebuffer &buffer, screen_mask const *value) : target{buffer}, previous{buffer.clip()} { target.clip(value); }
-scoped_framebuffer_clip::~scoped_framebuffer_clip() { target.clip(previous); }
+screen_mask const *framebuffer::clip() const {
+  return mask;
+}
+void framebuffer::clip(screen_mask const *value) {
+  mask = value;
+}
+scoped_framebuffer_clip::scoped_framebuffer_clip(framebuffer &buffer, screen_mask const *value) : target{buffer}, previous{buffer.clip()} {
+  target.clip(value);
+}
+scoped_framebuffer_clip::~scoped_framebuffer_clip() {
+  target.clip(previous);
+}
 
-void framebuffer::clear(uint8_t colour) { raster.fill(colour); }
+void framebuffer::clear(uint8_t colour) {
+  raster.fill(colour);
+}
 
 void framebuffer::pixel(int x, int y, uint8_t colour) {
   if(x >= 0 && y >= 0 && x < static_cast<int>(screen_width) && y < static_cast<int>(screen_height) && (!mask || mask->contains(x, y))) {
@@ -105,7 +115,9 @@ void framebuffer::text(font const &face, std::string_view value, int x, int y) {
   }
 }
 
-auto framebuffer::pixels() const->std::array<uint8_t, screen_width * screen_height> const & { return raster; }
+auto framebuffer::pixels() const->std::array<uint8_t, screen_width * screen_height> const & {
+  return raster;
+}
 
 void framebuffer::save(std::filesystem::path const &path, palette const &colours) const {
   /// Save an unscaled frame for comparisons, independent of window size.
