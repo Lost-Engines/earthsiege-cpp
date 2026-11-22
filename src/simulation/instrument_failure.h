@@ -5,10 +5,11 @@
 namespace earthsiege {
 uint16_t instrument_damage_band(int32_t damage_fraction);
 struct instrument_failure_state {
-  uint16_t duration{};
-  uint32_t window{}, next_flip{};
-  bool failed{};
-  uint8_t repaint{};
+  uint16_t duration{0};
+  uint32_t window{0};
+  uint32_t next_flip{0};
+  bool failed{false};
+  uint8_t repaint{0};
 };
 /// Separate UI RNG, nominal 60 Hz deadlines, and one event per update.
 void schedule_instrument_failure(instrument_failure_state &state, uint32_t ticks, random_state &random);

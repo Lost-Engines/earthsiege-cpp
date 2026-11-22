@@ -15,7 +15,9 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESBANDS2") file.fail("fixture version");
   auto const worlds{file.integer<uint16_t>()};
-  unsigned int total{0}, original_faults{0}, frames{0};
+  unsigned int total{0};
+  unsigned int original_faults{0};
+  unsigned int frames{0};
   for(unsigned int index{0}; index != worlds; ++index) {
     auto const world{file.integer<uint16_t>()};
     auto const environment{earthsiege::read_world_environment(resources.read("simvol0", "wld/WORLD" + std::to_string(world) + ".WLD"))};

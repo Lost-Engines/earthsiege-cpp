@@ -22,10 +22,12 @@ auto main(int const argc, char **argv)->int try {
   for(unsigned int row{0}; row != cases; ++row) {
     auto const count{file.integer<uint16_t>()};
     std::vector<earthsiege::projected_vertex> vertices;
-    for(unsigned int index{0}; index != count; ++index) vertices.push_back({
-      .position{file.integer<int32_t>(), file.integer<int32_t>()},
-      .texture{file.integer<int32_t>(), file.integer<int32_t>()},
-    });
+    for(unsigned int index{0}; index != count; ++index) {
+      vertices.push_back({
+        .position{file.integer<int32_t>(), file.integer<int32_t>()},
+        .texture{file.integer<int32_t>(), file.integer<int32_t>()},
+      });
+    }
     earthsiege::rectangle const bounds{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
     bool const mapped{file.integer<uint8_t>() != 0};
     auto const direction{file.integer<uint8_t>() ? earthsiege::texture_scan_direction::rows : earthsiege::texture_scan_direction::columns};

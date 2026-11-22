@@ -40,7 +40,14 @@ int main(int const argc, char **argv) try {
     });
     if(consumed != draws.size()) file.fail("unconsumed damage choices");
     std::vector<earthsiege::model_attachment> attachments;
-    for(auto const &part : actor.body().weapons().parts()) attachments.push_back({.body_part{part.body_part}, .geometry{part.geometry && !part.disabled ? &*part.geometry : nullptr}, .cells{part.cell_frames}, .textures{weapon_textures}});
+    for(auto const &part : actor.body().weapons().parts()) {
+      attachments.push_back({
+        .body_part{part.body_part},
+        .geometry{part.geometry && !part.disabled ? &*part.geometry : nullptr},
+        .cells{part.cell_frames},
+        .textures{weapon_textures}
+      });
+    }
     auto const slash{palette_name.find('/')};
     auto const colours{earthsiege::read_palette(resources.read(palette_name.substr(0, slash), palette_name.substr(slash + 1)))};
     std::array const lights{earthsiege::default_world_light()};

@@ -10,13 +10,20 @@ struct missile_camera_object {
   vec3<int32_t> position;
   vec3<uint16_t> angles;
 };
-struct missile_camera_explosion { size_t id; vec3<int32_t> position; };
-enum class missile_picture : uint8_t { idle, camera, flash };
+struct missile_camera_explosion {
+  size_t id;
+  vec3<int32_t> position;
+};
+enum class missile_picture : uint8_t {
+  idle,
+  camera,
+  flash
+};
 struct missile_camera_frame {
   missile_picture picture{missile_picture::idle};
   vec3<int32_t> position;
   vec3<uint16_t> angles;
-  bool bright{};
+  bool bright{false};
 };
 
 /// Retain the original pool-slot references and last camera pose through impact.
@@ -25,7 +32,7 @@ class missile_camera_tracker {
   std::optional<size_t> explosion;
   vec3<int32_t> position;
   vec3<uint16_t> angles;
-  bool bright{};
+  bool bright{false};
 public:
   void watch(std::optional<size_t> slot);
   std::optional<size_t> watched() const;

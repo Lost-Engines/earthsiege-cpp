@@ -11,7 +11,7 @@ auto read_devices()->std::vector<host_joystick> {
   for(int id{GLFW_JOYSTICK_1}; id <= GLFW_JOYSTICK_LAST; ++id) {
     if(!glfwJoystickPresent(id)) continue;
     host_joystick sample{.id = id};
-    int count{};
+    int count{0};
     if(auto const *data{glfwGetJoystickAxes(id, &count)}) sample.axes.assign(data, data + count);
     if(auto const *data{glfwGetJoystickButtons(id, &count)}) sample.buttons.assign(data, data + count);
     if(auto const *data{glfwGetJoystickHats(id, &count)}) sample.hats.assign(data, data + count);
@@ -25,9 +25,11 @@ auto axis(host_joystick const *s, size_t i)->int32_t {
   return 32768 + static_cast<int32_t>(std::lround(value * (value < 0 ? 32768 : 32767)));
 }
 auto buttons(host_joystick const *s)->uint8_t {
-  uint8_t result{};
-  if(s) for(size_t i{}; i < 4 && i < s->buttons.size(); ++i) {
-    if(s->buttons[i]) result |= static_cast<uint8_t>(1 << i);
+  uint8_t result{0};
+  if(s) {
+    for(size_t i{0}; i < 4 && i < s->buttons.size(); ++i) {
+      if(s->buttons[i]) result |= static_cast<uint8_t>(1 << i);
+    }
   }
   return result;
 }
@@ -40,7 +42,9 @@ auto joystick_devices::stick(size_t slot) const->host_joystick const * {
 }
 void joystick_devices::refresh() {
   samples = source();
-  for(size_t i{}; i < ids.size(); ++i) if(!stick(i)) ids[i] = -1;
+  for(size_t i{0}; i < ids.size(); ++i) {
+    if(!stick(i)) ids[i] = -1;
+  }
   for(auto const &sample : samples) {
     if(std::ranges::find(ids, sample.id) != ids.end()) continue;
     auto const free{std::ranges::find(ids, -1)};
@@ -55,7 +59,7 @@ auto joystick_devices::poll(uint8_t model, bool pedals)->std::array<joystick_har
   if(a) {
     out[0].present = true;
     out[0].buttons = buttons(a);
-    for(size_t i{}; i < 4; ++i) out[0].axes[i] = axis(a, i);
+    for(size_t i{0}; i < 4; ++i) out[0].axes[i] = axis(a, i);
     size_t const slider{a->axes.size() > 3 ? 3u : 2u};
     uint8_t const hat{a->hats.empty() ? uint8_t{0} : a->hats[0]};
     int const direction{hat & GLFW_HAT_UP ? 0 : hat & GLFW_HAT_RIGHT ? 1 : hat & GLFW_HAT_DOWN ? 2 : hat & GLFW_HAT_LEFT ? 3 : -1};

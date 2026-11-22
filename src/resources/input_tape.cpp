@@ -27,14 +27,14 @@ auto read_input_tape(bytes source, game_edition const edition)->input_tape {
     if(commands > 256) file.fail("recorded command queue exceeds capacity");
     if(count > file.remaining() / 14) file.fail("mouse events exceed tape frame extent");
     frame.mouse.reserve(count);
-    for(unsigned int index{}; index < count; ++index) {
+    for(unsigned int index{0}; index < count; ++index) {
       frame.mouse.push_back(tape_mouse_event{
         .position{file.integer<int32_t>(), file.integer<int32_t>()},
         .kind{file.integer<uint16_t>()},
         .timestamp{file.integer<uint32_t>()},
       });
     }
-    for(unsigned int i{};i < commands;++i) frame.commands.push_back(file.integer<uint16_t>());
+    for(unsigned int i{0}; i < commands; ++i) frame.commands.push_back(file.integer<uint16_t>());
     result.frames.push_back(std::move(frame));
   }
   return result;

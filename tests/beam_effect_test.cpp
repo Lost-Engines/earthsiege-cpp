@@ -14,7 +14,8 @@ template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
 earthsiege::random_state::state random(earthsiege::binary_reader &file) {
   earthsiege::random_state::state result;
   for(auto &word : result.words) word = file.integer<uint16_t>();
-  result.first = file.integer<uint8_t>(); result.second = file.integer<uint8_t>();
+  result.first = file.integer<uint8_t>();
+  result.second = file.integer<uint8_t>();
   return result;
 }
 
@@ -23,16 +24,23 @@ earthsiege::random_state::state random(earthsiege::binary_reader &file) {
 int main(int const argc, char **argv) try {
   if(argc != 3) return EXIT_FAILURE;
   earthsiege::resource_store resources{argv[1]};
-  auto const bytes{earthsiege::read_file(argv[2])}; earthsiege::binary_reader file{bytes};
+  auto const bytes{earthsiege::read_file(argv[2])};
+  earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESBEAM01") file.fail("fixture version");
   std::array<int16_t, 10> header;
   for(auto &value : header) value = file.integer<int16_t>();
-  earthsiege::mission_header const mission{.terrain{static_cast<earthsiege::terrain_kind>(header[0])}, .zone{header[1]}, .world_variant{header[8]}, .palette_variant{header[9]}};
+  earthsiege::mission_header const mission{
+    .terrain{static_cast<earthsiege::terrain_kind>(header[0])},
+    .zone{header[1]},
+    .world_variant{header[8]},
+    .palette_variant{header[9]}
+  };
   auto const bindings{earthsiege::read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))};
   earthsiege::scenery_world terrain{resources, mission};
   std::array const lights{earthsiege::default_world_light()};
-  auto const count{file.integer<uint16_t>()}; size_t failed{0};
+  auto const count{file.integer<uint16_t>()};
+  size_t failed{0};
   for(size_t row{0}; row != count; ++row) {
     auto const subtype{file.integer<int16_t>()};
     earthsiege::beam_path const path{vector<int32_t>(file), vector<int32_t>(file)};
@@ -41,15 +49,20 @@ int main(int const argc, char **argv) try {
     auto const expected_random{random(file)};
     auto beam{earthsiege::make_beam_effect(subtype, path, rng)};
     auto const &state{rng.snapshot()};
-    auto const require{[&](bool const value, char const *field){ if(!value) file.fail("beam " + std::to_string(row) + ": " + field); }};
+    auto const require{[&](bool const value, char const *field){
+      if(!value) file.fail("beam " + std::to_string(row) + ": " + field);
+    }};
     require(beam.position == path.start && beam.colour == colour, "position/colour");
     require(state.words == expected_random.words && state.first == expected_random.first && state.second == expected_random.second, "random state");
     require(beam.points.size() == file.integer<uint16_t>(), "vertex count");
     for(auto const &point : beam.points) require(point == vector<int32_t>(file), "vertex");
     require(beam.faces.size() == file.integer<uint16_t>(), "face count");
-    for(auto const &face : beam.faces) for(auto const vertex : face) require(vertex == file.integer<uint16_t>(), "face index");
+    for(auto const &face : beam.faces) {
+      for(auto const vertex : face) require(vertex == file.integer<uint16_t>(), "face index");
+    }
     bool const expired{file.integer<uint8_t>() != 0};
-    auto const position{vector<int32_t>(file)}; auto const angles{vector<uint16_t>(file)};
+    auto const position{vector<int32_t>(file)};
+    auto const angles{vector<uint16_t>(file)};
     auto const expected{file.integer<uint32_t>()};
     earthsiege::framebuffer frame;
     earthsiege::scenery_renderer renderer{frame, terrain, bindings};

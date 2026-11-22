@@ -10,7 +10,9 @@ void warn_friendly_fire(herc_reaction_state &state, std::function<void()> const 
 }
 void advance_herc_reactions(herc_reaction_state &state, frame_ratio const ratio) {
   auto const tick{[&](int32_t &remaining){remaining = std::max(0, wrap_long(static_cast<int64_t>(remaining) - ratio));}};
-  tick(state.retaliate_remaining); tick(state.warning_remaining); tick(state.damage_remaining);
+  tick(state.retaliate_remaining);
+  tick(state.warning_remaining);
+  tick(state.damage_remaining);
   if(state.damage_remaining == 0) state.incoming_damage = 0;
 }
 void react_to_herc_hit(herc_reaction_state &state, engagement_state &decision, std::span<target_relationship> const targets, size_t const observer, size_t const attacker, int16_t const damage, herc_reaction_policy const &policy, bool &ignore_hud_target, std::optional<size_t> &designated, herc_reaction_callbacks const &callbacks) {
@@ -31,12 +33,18 @@ void react_to_herc_hit(herc_reaction_state &state, engagement_state &decision, s
     if(policy.leader_targets_attacker) ignore_hud_target = false;
   }
   if(behavior.properties & 4) {
-    if(policy.leader_player && (!policy.expansion || decision.command == 0)) {decision.command = 4; designated.reset();}
+    if(policy.leader_player && (!policy.expansion || decision.command == 0)) {
+      decision.command = 4;
+      designated.reset();
+    }
     decision.controller.reconsider_remaining = 0;
   } else if(!(behavior.properties & 8)) {
     auto const old{targets[observer].selected};
     assign_target(targets, observer, callbacks.select());
-    if(targets[observer].selected) {decision.attack_requested = true; callbacks.strategy();} else if(old) callbacks.resume_orders();
+    if(targets[observer].selected) {
+      decision.attack_requested = true;
+      callbacks.strategy();
+    } else if(old) callbacks.resume_orders();
   }
 }
 } // namespace earthsiege

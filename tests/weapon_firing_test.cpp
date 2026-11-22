@@ -18,7 +18,11 @@ int main(int const argc, char **argv) try {
   if(std::string(magic.begin(), magic.end()) != "ESFIRE01") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   unsigned int shots_total{0};
-  auto const shorts{[&]{ std::vector<int16_t> values(file.integer<uint16_t>()); for(auto &value : values) value = file.integer<int16_t>(); return values; }};
+  auto const shorts{[&]{
+    std::vector<int16_t> values(file.integer<uint16_t>());
+    for(auto &value : values) value = file.integer<int16_t>();
+    return values;
+  }};
   for(unsigned int row{0}; row != count; ++row) {
     auto const name{file.cstring()};
     auto const equipment{shorts()};
@@ -40,11 +44,16 @@ int main(int const argc, char **argv) try {
     auto *grenade{std::get_if<earthsiege::grenade_weapon>(&weapon.mechanism)};
     if(energy) energy->charge = amount;
     if(ammo) ammo->rounds = amount;
-    if(grenade) { grenade->holding = true; grenade->throw_range = 20000; }
+    if(grenade) {
+      grenade->holding = true;
+      grenade->throw_range = 20000;
+    }
     auto const shots{actor.discharge_slot(slot, aim, free)};
     auto const &control{weapon.controls()};
     std::array<int16_t, 7> const state{control.refire_remaining, control.hud_changes, control.refreshed_changes, control.firing_animation, ammo ? ammo->available : weapon_id != 13, grenade ? grenade->holding : false, energy ? energy->charge : ammo ? ammo->rounds : amount};
-    auto const require{[&](bool const correct, std::string const &field){ if(!correct) file.fail("discharge " + std::to_string(row) + ' ' + name + '/' + std::to_string(weapon_id) + '/' + std::to_string(slot) + ": " + field); }};
+    auto const require{[&](bool const correct, std::string const &field){
+      if(!correct) file.fail("discharge " + std::to_string(row) + ' ' + name + '/' + std::to_string(weapon_id) + '/' + std::to_string(slot) + ": " + field);
+    }};
     for(size_t i{0}; i != state.size(); ++i) require(state[i] == expected_state[i], "state " + std::to_string(i) + ": " + std::to_string(state[i]) + " != " + std::to_string(expected_state[i]));
     auto const shot_count{file.integer<uint16_t>()};
     require(shot_count == shots.size(), "spawn count");

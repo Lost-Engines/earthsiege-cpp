@@ -13,16 +13,17 @@ auto main(int argc, char *argv[])->int try {
   std::ifstream fixture{argv[2]};
   std::string name;
   std::string state;
-  unsigned int section_index{};
-  uint32_t expected_crc{};
-  unsigned int cases{};
+  unsigned int section_index{0};
+  uint32_t expected_crc{0};
+  unsigned int cases{0};
   while(fixture >> name >> section_index >> state >> std::hex >> expected_crc >> std::dec) {
     auto const text{earthsiege::read_mission_text(resources.read("zones", "msn/" + name))};
     auto const &section{text.sections.at(section_index)};
     std::array<int16_t, 100> counters{};
-    if(state == "one") counters.fill(1);
-    else if(state == "pattern") {
-      for(unsigned int index{}; index < counters.size(); ++index) counters[index] = static_cast<int16_t>(index % 5);
+    if(state == "one") {
+      counters.fill(1);
+    } else if(state == "pattern") {
+      for(unsigned int index{0}; index < counters.size(); ++index) counters[index] = static_cast<int16_t>(index % 5);
     }
     auto const rendered{earthsiege::render_text(std::get<earthsiege::text_program>(section.content), counters)};
     auto const data{earthsiege::bytes{reinterpret_cast<uint8_t const *>(rendered.data()), rendered.size()}};

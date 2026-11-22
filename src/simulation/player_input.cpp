@@ -7,9 +7,13 @@ vec2<int16_t> const &player_input::camera_input() const {
   return camera;
 }
 void player_input::camera_input(vec2<int16_t> const &value) {
-  if(camera_source == player_axis_pair::movement) movement = value;
-  else if(camera_source == player_axis_pair::aiming) aiming = value;
-  else camera = value;
+  if(camera_source == player_axis_pair::movement) {
+    movement = value;
+  } else if(camera_source == player_axis_pair::aiming) {
+    aiming = value;
+  } else {
+    camera = value;
+  }
 }
 
 void player_input_router::request_centre() {
@@ -40,7 +44,10 @@ player_input_actions player_input_router::route(player_input const &input, playe
   player_input_actions result;
   auto movement{context.external_control ? vec2<int16_t>{} : input.movement};
   result.aiming = context.external_control ? vec2<int16_t>{} : input.aiming;
-  if(context.external_control) { result.camera = input.camera_input(); result.zoom = input.fire; }
+  if(context.external_control) {
+    result.camera = input.camera_input();
+    result.zoom = input.fire;
+  }
   if(!input.right) {
     mouse_latched = false;
     mouse_response = {};
@@ -75,24 +82,29 @@ player_input_actions player_input_router::route(player_input const &input, playe
       for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(context.target->position[axis]) - context.position[axis]);
       result.distance = fast_distance(delta);
     }
-    if(context.disabled) centering = true;
-    else if(result.aiming.x == 0 && result.aiming.y == 0) {
+    if(context.disabled) {
+      centering = true;
+    } else if(result.aiming.x == 0 && result.aiming.y == 0) {
       if(context.auto_tracking && context.target && !context.target->dead) {
         result.aim = player_aim_mode::target;
         for(unsigned int axis{0}; axis != 3; ++axis) result.target_point[axis] = wrap_long(static_cast<int64_t>(context.target->position[axis]) + context.target->offset[axis]);
         centering = false;
       }
-    } else centering = false;
-    if(centering) result.aim = player_aim_mode::centre;
-    else if(result.aim != player_aim_mode::target) result.aim = player_aim_mode::manual;
+    } else {
+      centering = false;
+    }
+    if(centering) {
+      result.aim = player_aim_mode::centre;
+    } else if(result.aim != player_aim_mode::target) result.aim = player_aim_mode::manual;
   }
   result.fire_allowed = !context.external_control;
   result.fire = input.fire;
   result.cycle_target = input.enter && !enter_held;
   enter_held = input.enter;
   if(input.released) {
-    if(context.release_action == control_release_action::stop) result.stop = true;
-    else if(context.release_action == control_release_action::centre) centering = true;
+    if(context.release_action == control_release_action::stop) {
+      result.stop = true;
+    } else if(context.release_action == control_release_action::centre) centering = true;
   }
   return result;
 }

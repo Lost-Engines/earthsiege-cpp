@@ -15,7 +15,9 @@ int main(int const argc, char **argv) try {
   int lifetime{0};
   for(auto const &motion : bullets) lifetime = std::max(lifetime, static_cast<int>(motion.lifetime));
   for(auto const &motion : rockets) lifetime = std::max(lifetime, static_cast<int>(motion.lifetime));
-  size_t rendered{0}, live_shots{0}, live_effects{0};
+  size_t rendered{0};
+  size_t live_shots{0};
+  size_t live_effects{0};
   for(unsigned int demo{1}; demo != 5; ++demo) {
     auto const tape{earthsiege::read_input_tape(earthsiege::read_file(resources.root() / "TAPES" / ("DEMO" + std::to_string(demo) + ".TAP")))};
     auto script{earthsiege::read_mission_script(tape.starting_files[std::to_underlying(earthsiege::tape_file::script)])};
@@ -30,26 +32,34 @@ int main(int const argc, char **argv) try {
     camera.orbit_angles.x = 0xf800;
     auto const ammunition{[&]{
       int count{0};
-      for(auto const &slot : session.player_actor().weapons().slots()) if(slot && slot->ammunition()) count += slot->ammunition()->rounds;
+      for(auto const &slot : session.player_actor().weapons().slots()) {
+        if(slot && slot->ammunition()) count += slot->ammunition()->rounds;
+      }
       return count;
     }};
     auto const initial_ammunition{ammunition()};
-    bool fired{false}, saved{false};
+    bool fired{false};
+    bool saved{false};
     for(size_t slot{0}; slot != session.player_actor().weapons().slots().size(); ++slot) {
       if(!session.select_weapon(slot)) continue;
       for(unsigned int step{0}; step != 64; ++step) {
         session.step({.elevation{static_cast<int16_t>(step < 16 ? -256 : 0)}}, 256, step >= 16);
         auto &effects{session.visual_effects()};
         auto const shots{session.ordnance().live().size()};
-        live_shots += shots; live_effects += effects.live_explosions().size();
+        live_shots += shots;
+        live_effects += effects.live_explosions().size();
         fired |= shots != 0;
         if(step % 8 == 0 || (!saved && effects.live_explosions().size() != 0)) {
           earthsiege::update_camera(camera, session.view_target());
-          auto const objects{session.visible_objects()}; auto const ground{effects.ground_flashes()};
+          auto const objects{session.visible_objects()};
+          auto const ground{effects.ground_flashes()};
           frame.clear();
           renderer.draw_objects(camera.position, camera.angles, {}, false, objects, &effects.lights(), ground);
           ++rendered;
-          if(!saved && effects.live_explosions().size() != 0) { frame.save("combat-demo" + std::to_string(demo) + ".ppm", session.scenery().colours()); saved = true; }
+          if(!saved && effects.live_explosions().size() != 0) {
+            frame.save("combat-demo" + std::to_string(demo) + ".ppm", session.scenery().colours());
+            saved = true;
+          }
         }
       }
     }

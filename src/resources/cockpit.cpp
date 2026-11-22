@@ -13,33 +13,53 @@ screen_mask read_screen_mask(bytes source, std::vector<uint8_t> *unused) {
     if(y >= 0 && y < static_cast<int>(screen_height) && left <= right) result.rows[static_cast<size_t>(y)].push_back({left, right});
   }};
   auto const rectangles{file.integer<uint16_t>()};
-  for(unsigned int i{}; i < rectangles; ++i) {
-    int const top{file.integer<int16_t>()}, bottom{file.integer<int16_t>()};
+  for(unsigned int i{0}; i < rectangles; ++i) {
+    int const top{file.integer<int16_t>()};
+    int const bottom{file.integer<int16_t>()};
     if(bottom < top) file.fail("inverted clipping rectangle");
-    screen_region region{.first_row{top}, .spans{}, .rectangular{true}};
-    for(int y{top}; y <= bottom; ++y) { span(y, 0, screen_width - 1); region.spans.push_back({0, screen_width - 1}); }
+    screen_region region{
+      .first_row{top},
+      .spans{},
+      .rectangular{true}
+    };
+    for(int y{top}; y <= bottom; ++y) {
+      span(y, 0, screen_width - 1);
+      region.spans.push_back({0, screen_width - 1});
+    }
     result.regions.push_back(std::move(region));
   }
   auto const blocks{file.integer<uint16_t>()};
-  for(unsigned int i{}; i < blocks; ++i) {
-    int const first{file.integer<int16_t>()}, count{file.integer<int16_t>()};
+  for(unsigned int i{0}; i < blocks; ++i) {
+    int const first{file.integer<int16_t>()};
+    int const count{file.integer<int16_t>()};
     if(count < 0) file.fail("negative span count");
-    screen_region region{.first_row{first}, .spans{}, .rectangular{false}};
-    for(int row{}; row < count; ++row) {
-      int const left{file.integer<int16_t>()}, right{file.integer<int16_t>()};
+    screen_region region{
+      .first_row{first},
+      .spans{},
+      .rectangular{false}
+    };
+    for(int row{0}; row < count; ++row) {
+      int const left{file.integer<int16_t>()};
+      int const right{file.integer<int16_t>()};
       span(first + row, left, right);
       region.spans.push_back({left, right});
     }
     result.regions.push_back(std::move(region));
   }
   // COLOSSUS.ED1 includes legacy trailing data which the original reader ignores.
-  if(unused) { auto const rest{file.take(file.remaining())}; unused->assign(rest.begin(), rest.end()); }
+  if(unused) {
+    auto const rest{file.take(file.remaining())};
+    unused->assign(rest.begin(), rest.end());
+  }
   for(auto &row : result.rows) {
     std::ranges::sort(row, {}, &scanline_span::left);
     std::vector<scanline_span> joined;
     for(auto const value : row) {
-      if(!joined.empty() && value.left <= joined.back().right + 1) joined.back().right = std::max(joined.back().right, value.right);
-      else joined.push_back(value);
+      if(!joined.empty() && value.left <= joined.back().right + 1) {
+        joined.back().right = std::max(joined.back().right, value.right);
+      } else {
+        joined.push_back(value);
+      }
     }
     row = std::move(joined);
   }
@@ -68,9 +88,9 @@ cockpit_layout read_cockpit_layout(bytes source) {
   file.require_end();
   if(result.words[4] < 0 || result.words[4] > 9) file.fail("invalid cockpit weapon count");
   auto const rebase{[&](size_t offset){
-    for(size_t i{}; i < 4; ++i) result.words[offset / 4 + i] += result.words[i % 2];
+    for(size_t i{0}; i < 4; ++i) result.words[offset / 4 + i] += result.words[i % 2];
   }};
-  for(unsigned int i{}; i < result.weapon_count(); ++i) rebase(20 + i * 16);
+  for(unsigned int i{0}; i < result.weapon_count(); ++i) rebase(20 + i * 16);
   for(size_t const offset : {0x1c4, 0x224, 0x268, 0x2d8, 0x3e8, 0x450, 0x4bc}) rebase(offset);
   return result;
 }
@@ -92,11 +112,11 @@ cockpit_artwork read_cockpit(resource_store const &resources, std::string const 
   cockpit_artwork result;
   result.layout = read_cockpit_layout(resources.read("simvol0", "gau/" + name + ".GAU"));
   result.windows = read_cockpit_windows(resources.read("simvol0", "vue/" + name + ".VUE"));
-  for(unsigned int i{}; i < 4; ++i) {
+  for(unsigned int i{0}; i < 4; ++i) {
     auto const suffix{"ED" + std::to_string(i)};
     result.windows[i].mask = read_screen_mask(resources.read("simvol0", suffix + "/" + name + "." + suffix), &result.windows[i].unused_mask_bytes);
   }
-  for(unsigned int i{}; i < 3; ++i) {
+  for(unsigned int i{0}; i < 3; ++i) {
     auto const suffix{"DB" + std::to_string(i)};
     auto bank{read_bitmaps(resources.read("simvol0", suffix + "/" + name + "." + suffix))};
     if(bank.size() != 1) throw std::runtime_error{"cockpit panel must have one bitmap"};
@@ -105,42 +125,51 @@ cockpit_artwork read_cockpit(resource_store const &resources, std::string const 
   return result;
 }
 
-void cockpit_artwork::draw(framebuffer &target, cockpit_view view,int displacement) const {
+void cockpit_artwork::draw(framebuffer &target, cockpit_view view, int displacement) const {
   scoped_framebuffer_clip unclipped{target, nullptr};
   auto const index{static_cast<unsigned int>(view)};
   auto const &panel{panels.at(std::min(index, 2U))};
-  if(view != cockpit_view::left) target.image(panel, 0, -displacement);
-  else for(unsigned int y{}; y < panel.height; ++y) for(unsigned int x{}; x < panel.width; ++x) {
-    target.pixel(static_cast<int>(x), static_cast<int>(y) - displacement, panel.pixels[y * panel.width + panel.width - 1 - x]);
+  if(view != cockpit_view::left) {
+    target.image(panel, 0, -displacement);
+  } else {
+    for(unsigned int y{0}; y < panel.height; ++y) {
+      for(unsigned int x{0}; x < panel.width; ++x) {
+        target.pixel(static_cast<int>(x), static_cast<int>(y) - displacement, panel.pixels[y * panel.width + panel.width - 1 - x]);
+      }
+    }
   }
   // Front/lower artwork shares a vertically stacked VGA surface. A hit exposes
   // a few rows of the neighbouring panel. Side views explicitly clear that strip
   // to index 63 before moving the page (DBSIM 243d4).
-  if(displacement)for(int y{};y < 200;++y){
-    int const source_y{y + displacement};
-    if(source_y >= 0 && source_y < 200)continue;
-    for(int x{};x < 320;++x){
-      uint8_t colour{63};
-      if(view == cockpit_view::forward){
-        int const sy{source_y - windows[1].instrument_origin[1]};
-        if(sy >= 0 && sy < static_cast<int>(panels[1].height))colour = panels[1].pixels[static_cast<size_t>(sy * 320 + x)];
-      }else if(view == cockpit_view::lower){
-        int const sy{source_y + windows[1].instrument_origin[1]};
-        if(sy >= 0 && sy < static_cast<int>(panels[0].height))colour = panels[0].pixels[static_cast<size_t>(sy * 320 + x)];
+  if(displacement) {
+    for(int y{0}; y < 200; ++y) {
+      int const source_y{y + displacement};
+      if(source_y >= 0 && source_y < 200) continue;
+      for(int x{0}; x < 320; ++x) {
+        uint8_t colour{63};
+        if(view == cockpit_view::forward) {
+          int const sy{source_y - windows[1].instrument_origin[1]};
+          if(sy >= 0 && sy < static_cast<int>(panels[1].height)) colour = panels[1].pixels[static_cast<size_t>(sy * 320 + x)];
+        } else if(view == cockpit_view::lower) {
+          int const sy{source_y + windows[1].instrument_origin[1]};
+          if(sy >= 0 && sy < static_cast<int>(panels[0].height)) colour = panels[0].pixels[static_cast<size_t>(sy * 320 + x)];
+        }
+        target.pixel(x, y, colour);
       }
-      target.pixel(x,y,colour);
     }
   }
 }
 
-void cockpit_artwork::draw_composed(framebuffer &target,cockpit_view view,int displacement)const{
-  draw(target,view,displacement);
+void cockpit_artwork::draw_composed(framebuffer &target, cockpit_view view, int displacement) const {
+  draw(target, view, displacement);
   // Original page preparation blits DB1 at the lower view's authored offset,
   // then DB0 above it. Their overlap belongs to DB0 (three rows for HERCULES).
-  if(view == cockpit_view::lower)for(int y{};y < 200;++y){
-    int const sy{y + displacement + windows[1].instrument_origin[1]};
-    if(sy < 0 || sy >= static_cast<int>(panels[0].height))continue;
-    for(int x{};x < 320;++x)target.pixel(x,y,panels[0].pixels[static_cast<size_t>(sy * 320 + x)]);
+  if(view == cockpit_view::lower) {
+    for(int y{0}; y < 200; ++y) {
+      int const sy{y + displacement + windows[1].instrument_origin[1]};
+      if(sy < 0 || sy >= static_cast<int>(panels[0].height)) continue;
+      for(int x{0}; x < 320; ++x) target.pixel(x, y, panels[0].pixels[static_cast<size_t>(sy * 320 + x)]);
+    }
   }
 }
 
@@ -152,7 +181,7 @@ void apply_cockpit_colours(palette &world, palette const &cockpit, unsigned int 
     world.colours[target] = cockpit.colours[source];
     world.dac_colours[target] = cockpit.dac_colours[source];
   }};
-  for(unsigned int i{}; i < 16; ++i) {
+  for(unsigned int i{0}; i < 16; ++i) {
     copy(32 + i, chassis * (expansion ? 16 : 32) + i);
     if(!expansion) copy(64 + i, chassis * 32 + 16 + i);
   }

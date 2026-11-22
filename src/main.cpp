@@ -36,7 +36,7 @@ void sleep_milliseconds(uint64_t milliseconds) {
 }
 
 auto integer_option(std::string_view text)->unsigned int {
-  unsigned int result{};
+  unsigned int result{0};
   auto const [end, error]{std::from_chars(text.data(), text.data() + text.size(), result)};
   if(error != std::errc{} || end != text.data() + text.size()) throw std::runtime_error{"invalid integer option: " + std::string{text}};
   return result;
@@ -47,17 +47,21 @@ auto integer_option(std::string_view text)->unsigned int {
 
 auto main(int argc, char *argv[])->int try {
   std::filesystem::path data_dir{earthsiege::resource_store::locate(earthsiege::executable_path(argv[0]))};
-  std::filesystem::path screenshot,save_directory;
-  bool list{};
-  bool headless{};
-  bool skip_intro{};
-  bool audio_setup{},explicit_data{};
+  std::filesystem::path screenshot;
+  std::filesystem::path save_directory;
+  bool list{false};
+  bool headless{false};
+  bool skip_intro{false};
+  bool audio_setup{false};
+  bool explicit_data{false};
   std::optional<earthsiege::game_edition> requested_edition;
   std::optional<earthsiege::music_device> requested_music;
-  std::optional<std::filesystem::path> requested_roms,requested_soundfont;
-  unsigned int scale{};
-  std::optional<unsigned int> inspect_demo, requested_demo;
-  unsigned int frame_limit{};
+  std::optional<std::filesystem::path> requested_roms;
+  std::optional<std::filesystem::path> requested_soundfont;
+  unsigned int scale{0};
+  std::optional<unsigned int> inspect_demo;
+  std::optional<unsigned int> requested_demo;
+  unsigned int frame_limit{0};
   for(int index{1}; index < argc; ++index) {
     std::string_view const argument{argv[index]};
     if(argument == "--help") {
@@ -80,26 +84,50 @@ auto main(int argc, char *argv[])->int try {
         "  --list-resources      Print all original resource sizes and CRCs\n";
       return EXIT_SUCCESS;
     }
-    if(argument == "--data-dir" && index + 1 < argc) {data_dir = argv[++index];explicit_data = true;} else if(argument == "--original")requested_edition = earthsiege::game_edition::original;
-    else if(argument == "--expansion")requested_edition = earthsiege::game_edition::expansion;
-    else if(argument == "--save-dir" && index + 1 < argc) save_directory = argv[++index];
-    else if(argument == "--screenshot" && index + 1 < argc) screenshot = argv[++index];
-    else if(argument == "--demo" && index + 1 < argc) requested_demo = integer_option(argv[++index]);
-    else if(argument.starts_with("--demo=")) requested_demo = integer_option(argument.substr(7));
-    else if(argument == "--inspect-demo" && index + 1 < argc) inspect_demo = integer_option(argv[++index]);
-    else if(argument == "--audio-setup") audio_setup = true;
-    else if(argument == "--music" && index + 1 < argc) requested_music = earthsiege::parse_music_device(argv[++index]);
-    else if(argument.starts_with("--music=")) requested_music = earthsiege::parse_music_device(argument.substr(8));
-    else if(argument == "--rom-dir" && index + 1 < argc) requested_roms = argv[++index];
-    else if(argument.starts_with("--rom-dir=")) requested_roms = argument.substr(10);
-    else if(argument == "--soundfont" && index + 1 < argc) requested_soundfont = argv[++index];
-    else if(argument.starts_with("--soundfont=")) requested_soundfont = argument.substr(12);
-    else if(argument == "--scale" && index + 1 < argc) scale = integer_option(argv[++index]);
-    else if(argument == "--frames" && index + 1 < argc) frame_limit = integer_option(argv[++index]);
-    else if(argument == "--skip-intro") skip_intro = true;
-    else if(argument == "--headless") headless = true;
-    else if(argument == "--list-resources") list = true;
-    else throw std::runtime_error{"unknown or incomplete option: " + std::string{argument}};
+    if(argument == "--data-dir" && index + 1 < argc) {
+      data_dir = argv[++index];
+      explicit_data = true;
+    } else if(argument == "--original") {
+      requested_edition = earthsiege::game_edition::original;
+    } else if(argument == "--expansion") {
+      requested_edition = earthsiege::game_edition::expansion;
+    } else if(argument == "--save-dir" && index + 1 < argc) {
+      save_directory = argv[++index];
+    } else if(argument == "--screenshot" && index + 1 < argc) {
+      screenshot = argv[++index];
+    } else if(argument == "--demo" && index + 1 < argc) {
+      requested_demo = integer_option(argv[++index]);
+    } else if(argument.starts_with("--demo=")) {
+      requested_demo = integer_option(argument.substr(7));
+    } else if(argument == "--inspect-demo" && index + 1 < argc) {
+      inspect_demo = integer_option(argv[++index]);
+    } else if(argument == "--audio-setup") {
+      audio_setup = true;
+    } else if(argument == "--music" && index + 1 < argc) {
+      requested_music = earthsiege::parse_music_device(argv[++index]);
+    } else if(argument.starts_with("--music=")) {
+      requested_music = earthsiege::parse_music_device(argument.substr(8));
+    } else if(argument == "--rom-dir" && index + 1 < argc) {
+      requested_roms = argv[++index];
+    } else if(argument.starts_with("--rom-dir=")) {
+      requested_roms = argument.substr(10);
+    } else if(argument == "--soundfont" && index + 1 < argc) {
+      requested_soundfont = argv[++index];
+    } else if(argument.starts_with("--soundfont=")) {
+      requested_soundfont = argument.substr(12);
+    } else if(argument == "--scale" && index + 1 < argc) {
+      scale = integer_option(argv[++index]);
+    } else if(argument == "--frames" && index + 1 < argc) {
+      frame_limit = integer_option(argv[++index]);
+    } else if(argument == "--skip-intro") {
+      skip_intro = true;
+    } else if(argument == "--headless") {
+      headless = true;
+    } else if(argument == "--list-resources") {
+      list = true;
+    } else {
+      throw std::runtime_error{"unknown or incomplete option: " + std::string{argument}};
+    }
   }
   if(requested_demo && (*requested_demo < 1 || *requested_demo > 4)) {
     throw std::runtime_error{"--demo must be between 1 and 4"};
@@ -108,15 +136,16 @@ auto main(int argc, char *argv[])->int try {
     throw std::runtime_error{"--demo and --inspect-demo cannot be used together"};
   }
   std::unique_ptr<earthsiege::window> display;
-  if(!headless && !list)display = std::make_unique<earthsiege::window>(scale);
-  if(display && !explicit_data && !requested_edition && !inspect_demo && !requested_demo && std::filesystem::is_directory(data_dir / "expansion")){
-    earthsiege::resource_store original{data_dir};requested_edition = earthsiege::choose_game_edition(*display,original);
-    if(!requested_edition)return EXIT_SUCCESS;
+  if(!headless && !list) display = std::make_unique<earthsiege::window>(scale);
+  if(display && !explicit_data && !requested_edition && !inspect_demo && !requested_demo && std::filesystem::is_directory(data_dir / "expansion")) {
+    earthsiege::resource_store original{data_dir};
+    requested_edition = earthsiege::choose_game_edition(*display, original);
+    if(!requested_edition) return EXIT_SUCCESS;
   }
-  if(requested_edition == earthsiege::game_edition::expansion && std::filesystem::is_directory(data_dir / "expansion"))data_dir /= "expansion";
+  if(requested_edition == earthsiege::game_edition::expansion && std::filesystem::is_directory(data_dir / "expansion")) data_dir /= "expansion";
   earthsiege::resource_store const resources{data_dir};
-  if(requested_edition && resources.edition() != *requested_edition)throw std::runtime_error{"selected game edition is unavailable in " + data_dir.string()};
-  if(display && resources.edition() == earthsiege::game_edition::expansion)glfwSetWindowTitle(display->get(),"Earthsiege Expansion C++");
+  if(requested_edition && resources.edition() != *requested_edition) throw std::runtime_error{"selected game edition is unavailable in " + data_dir.string()};
+  if(display && resources.edition() == earthsiege::game_edition::expansion) glfwSetWindowTitle(display->get(), "Earthsiege Expansion C++");
   if(list) {
     for(auto const &[volume, archive] : resources.archives()) {
       for(auto const &[name, entry] : archive.entries()) {
@@ -125,37 +154,41 @@ auto main(int argc, char *argv[])->int try {
     }
     return EXIT_SUCCESS;
   }
-  if(save_directory.empty()){
+  if(save_directory.empty()) {
     save_directory = earthsiege::user_save_directory();
-    if(resources.edition() == earthsiege::game_edition::expansion)save_directory /= "expansion";
+    if(resources.edition() == earthsiege::game_edition::expansion) save_directory /= "expansion";
   }
-  if(headless && !frame_limit)frame_limit = 1;
+  if(headless && !frame_limit) frame_limit = 1;
   auto const music_file{save_directory / "music.cfg"};
   auto music_settings{earthsiege::read_music_settings(music_file)};
   music_settings.program_directory = earthsiege::executable_path(argv[0]).parent_path();
-  if(requested_music)music_settings.device = *requested_music;
-  if(requested_roms)music_settings.rom_directory = std::filesystem::absolute(*requested_roms);
-  if(requested_soundfont)music_settings.soundfont = std::filesystem::absolute(*requested_soundfont);
-  if(audio_setup){
-    if(headless)throw std::runtime_error{"--audio-setup needs a window"};
-    if(auto chosen{earthsiege::choose_music_device(*display, resources, music_settings.device)}){
-      auto candidate{music_settings};candidate.device = *chosen;
+  if(requested_music) music_settings.device = *requested_music;
+  if(requested_roms) music_settings.rom_directory = std::filesystem::absolute(*requested_roms);
+  if(requested_soundfont) music_settings.soundfont = std::filesystem::absolute(*requested_soundfont);
+  if(audio_setup) {
+    if(headless) throw std::runtime_error{"--audio-setup needs a window"};
+    if(auto chosen{earthsiege::choose_music_device(*display, resources, music_settings.device)}) {
+      auto candidate{music_settings};
+      candidate.device = *chosen;
       // Validate assets before persisting a choice that could prevent startup.
-      earthsiege::pcm_sound_bank probe_bank;earthsiege::music_audio probe{resources,probe_bank,candidate};
-      music_settings = candidate;earthsiege::write_music_settings(music_file,music_settings);
+      earthsiege::pcm_sound_bank probe_bank;
+      earthsiege::music_audio probe{resources, probe_bank, candidate};
+      music_settings = candidate;
+      earthsiege::write_music_settings(music_file, music_settings);
     }
   }
-  earthsiege::game_shell menu{resources,save_directory,static_cast<int>(std::time(nullptr) & 127),music_settings};
-  if(requested_demo)menu.request_demo();
-  else if(!inspect_demo)menu.startup(!skip_intro);
+  earthsiege::game_shell menu{resources, save_directory, static_cast<int>(std::time(nullptr) & 127), music_settings};
+  if(requested_demo) {
+    menu.request_demo();
+  } else if(!inspect_demo) menu.startup(!skip_intro);
   std::unique_ptr<earthsiege::mission_alert> alert;
   std::unique_ptr<earthsiege::mission_options_dialog> options;
   earthsiege::framebuffer alert_frame;
   earthsiege::framebuffer menu_frame;
   std::unique_ptr<earthsiege::mission_view> scene;
   if(inspect_demo) {
-    scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo,music_settings);
-    scene->configure_input(menu.settings(),menu.device_calibrations());
+    scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo, music_settings);
+    scene->configure_input(menu.settings(), menu.device_calibrations());
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl+Shift+arrows move the inspection camera; add Alt to change distance.\n"
       "Ctrl+F1 cockpit, Ctrl+F2 orbit, Ctrl+F3 free camera; P pauses, Escape returns to menu.\n"
@@ -166,111 +199,166 @@ auto main(int argc, char *argv[])->int try {
       "This is a live mission inspection, not playback of the recorded demo.\n";
   }
   std::unique_ptr<earthsiege::audio_output> sound;
-  if(display)try{sound = std::make_unique<earthsiege::audio_output>();}catch(std::exception const &e){std::cerr << "Audio unavailable: " << e.what() << '\n';}
+  if(display) {
+    try {
+      sound = std::make_unique<earthsiege::audio_output>();
+    } catch(std::exception const &e) {
+      std::cerr << "Audio unavailable: " << e.what() << '\n';
+    }
+  }
   std::unique_ptr<earthsiege::joystick_devices> sticks;
-  if(display)try{sticks = std::make_unique<earthsiege::joystick_devices>();}catch(std::exception const &e){std::cerr << "Joystick input unavailable: " << e.what() << '\n';}
-  std::array<earthsiege::software_cursor,7> mission_cursors{
-    earthsiege::software_cursor{resources.read("simvol0","dci/CURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0","dci/PCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0","dci/MCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0","dci/NCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0","dci/SCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0","dci/ECURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0","dci/WCURSOR.DCI")}};
-  earthsiege::software_cursor shell_cursor{resources.read("shell0","RES32/ARROW.DCI")};
-  earthsiege::software_cursor alert_cursor{resources.read("simvol0","dci/ALERT.DCI")};
-  auto const cursor_image{[&]()->earthsiege::software_cursor const *{
-    if(alert || options)return &alert_cursor;
-    if(!scene)return menu.presentation_active()?nullptr:&shell_cursor;
-    if(!display)return nullptr;
-    auto const p{display->pointer_position()};auto const kind{scene->pointer_cursor(p[0],p[1])};
-    return kind < 0?nullptr:&mission_cursors.at(static_cast<size_t>(kind));
+  if(display) {
+    try {
+      sticks = std::make_unique<earthsiege::joystick_devices>();
+    } catch(std::exception const &e) {
+      std::cerr << "Joystick input unavailable: " << e.what() << '\n';
+    }
+  }
+  std::array<earthsiege::software_cursor, 7> mission_cursors{
+    earthsiege::software_cursor{resources.read("simvol0", "dci/CURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0", "dci/PCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0", "dci/MCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0", "dci/NCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0", "dci/SCURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0", "dci/ECURSOR.DCI")},
+    earthsiege::software_cursor{resources.read("simvol0", "dci/WCURSOR.DCI")}};
+  earthsiege::software_cursor shell_cursor{resources.read("shell0", "RES32/ARROW.DCI")};
+  earthsiege::software_cursor alert_cursor{resources.read("simvol0", "dci/ALERT.DCI")};
+  auto const cursor_image{[&]()->earthsiege::software_cursor const* {
+    if(alert || options) return &alert_cursor;
+    if(!scene) return menu.presentation_active() ? nullptr : &shell_cursor;
+    if(!display) return nullptr;
+    auto const p{display->pointer_position()};
+    auto const kind{scene->pointer_cursor(p[0], p[1])};
+    return kind < 0 ? nullptr : &mission_cursors.at(static_cast<size_t>(kind));
   }};
   auto applied_preferences{menu.settings().current()};
   bool scene_dirty{scene != nullptr};
   bool running{true};
-  bool leave_mission{};
-  bool modal_command_pending{};
+  bool leave_mission{false};
+  bool modal_command_pending{false};
   bool focused{true};
-  unsigned int frames{};
+  unsigned int frames{0};
   uint64_t previous{display ? ticks() : 0};
   uint64_t pending{0};
   auto const open_alert{[&](int message){
-    alert = std::make_unique<earthsiege::mission_alert>(resources,message);
-    if(scene){scene->clear_input();alert->feedback([&]{scene->click_sound();});}
+    alert = std::make_unique<earthsiege::mission_alert>(resources, message);
+    if(scene) {
+      scene->clear_input();
+      alert->feedback([&]{scene->click_sound();});
+    }
     pending = 0;
   }};
   auto const respond{[&](int response){
-    int const message{alert->message()};bool const ending{alert->exits_mission(response)};alert.reset();
-    if(message == 1 && response == 1){running = false;return;}
+    int const message{alert->message()};
+    bool const ending{alert->exits_mission(response)};
+    alert.reset();
+    if(message == 1 && response == 1) {
+      running = false;
+      return;
+    }
     // The callback may be inside step_player. Release the scene only after
     // that original partial-frame exit has unwound to the host loop.
-    if(scene && message > 1 && ending)leave_mission = true;
+    if(scene && message > 1 && ending) leave_mission = true;
   }};
   auto const poll_events{[&]{
     // Leave subsequent host events queued until the mission has reached its
     // modal call site. A quick P/Escape pair must pause and resume, not let
     // Escape act on the underlying mission before Pause has opened.
-    if(modal_command_pending && !alert && !options)return;
+    if(modal_command_pending && !alert && !options) return;
     earthsiege::window_event event{};
     while(display && display->poll(event)) {
-      if(event.type == earthsiege::event_type::close){running = false;return;}
+      if(event.type == earthsiege::event_type::close) {
+        running = false;
+        return;
+      }
       if(event.type == earthsiege::event_type::focus) {
         if(!event.focused) {
           focused = false;
-          if(sound)sound->pause(true);
+          if(sound) sound->pause(true);
           menu.cancel_press();
-          if(options)options->cancel_press();
-          if(alert)alert->cancel_press();
+          if(options) options->cancel_press();
+          if(alert) alert->cancel_press();
           if(scene) scene->clear_input();
         }
-        if(event.focused){focused = true;if(sound)sound->pause(false);}
+        if(event.focused) {
+          focused = true;
+          if(sound) sound->pause(false);
+        }
       }
       if(focused && event.type == earthsiege::event_type::key_down && !event.repeat && event.key == GLFW_KEY_M
-        && (event.modifiers & GLFW_MOD_CONTROL) && (event.modifiers & GLFW_MOD_SHIFT)){
-        if(sound){sound->pause(true);sound->clear();}
-        if(scene)scene->clear_input();
+        && (event.modifiers & GLFW_MOD_CONTROL) && (event.modifiers & GLFW_MOD_SHIFT)) {
+        if(sound) {
+          sound->pause(true);
+          sound->clear();
+        }
+        if(scene) scene->clear_input();
         menu.cancel_press();
-        try{
-          if(auto chosen{earthsiege::choose_music_device(*display, resources, music_settings.device)}){
-            auto candidate{music_settings};candidate.device = *chosen;
-            menu.configure_music(candidate);if(scene)scene->configure_music(candidate);
-            earthsiege::write_music_settings(music_file,candidate);music_settings = candidate;
+        try {
+          if(auto chosen{earthsiege::choose_music_device(*display, resources, music_settings.device)}) {
+            auto candidate{music_settings};
+            candidate.device = *chosen;
+            menu.configure_music(candidate);
+            if(scene) scene->configure_music(candidate);
+            earthsiege::write_music_settings(music_file, candidate);
+            music_settings = candidate;
           }
-        }catch(std::exception const &error){earthsiege::show_music_error(*display, resources, error.what());}
-        previous = ticks();pending = 0;
+        } catch(std::exception const &error) {
+          earthsiege::show_music_error(*display, resources, error.what());
+        }
+        previous = ticks();
+        pending = 0;
         focused = display->focused();
-        if(sound)sound->pause(!focused);
+        if(sound) sound->pause(!focused);
         continue;
       }
       if(options) {
-        if(focused && event.type == earthsiege::event_type::key_down && !event.repeat){
-          if(auto scan{earthsiege::keyboard_command(event.key,(event.modifiers & GLFW_MOD_ALT) != 0,(event.modifiers & GLFW_MOD_CONTROL) != 0)})options->key(*scan);
-        }else if(focused && (event.type == earthsiege::event_type::button_down || event.type == earthsiege::event_type::button_up) && (event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT)){
+        if(focused && event.type == earthsiege::event_type::key_down && !event.repeat) {
+          if(auto scan{earthsiege::keyboard_command(event.key, (event.modifiers & GLFW_MOD_ALT) != 0, (event.modifiers & GLFW_MOD_CONTROL) != 0)}) options->key(*scan);
+        } else if(focused && (event.type == earthsiege::event_type::button_down || event.type == earthsiege::event_type::button_up) && (event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT)) {
           bool right{event.button == GLFW_MOUSE_BUTTON_RIGHT};
-          if(event.type == earthsiege::event_type::button_down)options->mouse_down(event.x,event.y,right);
-          else options->mouse_up(event.x,event.y,right);
+          if(event.type == earthsiege::event_type::button_down) {
+            options->mouse_down(event.x, event.y, right);
+          } else {
+            options->mouse_up(event.x, event.y, right);
+          }
         }
-        if(options->done())return;
+        if(options->done()) return;
         continue;
       }
       if(alert) {
         if(focused && event.type == earthsiege::event_type::key_down && !event.repeat) {
-          if(auto scan{earthsiege::keyboard_command(event.key,(event.modifiers & GLFW_MOD_ALT) != 0,(event.modifiers & GLFW_MOD_CONTROL) != 0)})if(auto response{alert->input(*scan,event.key == GLFW_KEY_SPACE,false,menu.settings().current()[10] != 0).response})respond(*response);
-        } else if(focused && event.type == earthsiege::event_type::button_down && event.button == GLFW_MOUSE_BUTTON_LEFT)alert->mouse_down(event.x,event.y);
-        else if(focused && event.type == earthsiege::event_type::button_up && event.button == GLFW_MOUSE_BUTTON_LEFT)if(auto response{alert->mouse_up(event.x,event.y)})respond(*response);
-        if(!alert)return;
+          if(auto scan{earthsiege::keyboard_command(event.key, (event.modifiers & GLFW_MOD_ALT) != 0, (event.modifiers & GLFW_MOD_CONTROL) != 0)}) {
+            if(auto response{alert->input(*scan, event.key == GLFW_KEY_SPACE, false, menu.settings().current()[10] != 0).response}) respond(*response);
+          }
+        } else if(focused && event.type == earthsiege::event_type::button_down && event.button == GLFW_MOUSE_BUTTON_LEFT) {
+          alert->mouse_down(event.x, event.y);
+        } else if(focused && event.type == earthsiege::event_type::button_up && event.button == GLFW_MOUSE_BUTTON_LEFT) {
+          if(auto response{alert->mouse_up(event.x, event.y)}) respond(*response);
+        }
+        if(!alert) return;
         continue;
       }
-      if(scene && scene->starting())continue;
-      if(event.type == earthsiege::event_type::text && !scene){menu.text_input(event.text);continue;}
+      if(scene && scene->starting()) continue;
+      if(event.type == earthsiege::event_type::text && !scene) {
+        menu.text_input(event.text);
+        continue;
+      }
       if(event.type == earthsiege::event_type::key_down && !event.repeat) {
         auto const key{event.key};
-        if(!scene){if(menu.presentation_active())menu.key(1);else if(auto scan{earthsiege::keyboard_command(key,(event.modifiers & GLFW_MOD_ALT) != 0,(event.modifiers & GLFW_MOD_CONTROL) != 0)})menu.key(*scan);} else if(focused) {
-          if(key == GLFW_KEY_ESCAPE && inspect_demo && !(event.modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_ALT))){scene.reset();if(sound)sound->clear();continue;}
-          if(key == GLFW_KEY_F1 && (event.modifiers & GLFW_MOD_CONTROL))scene->change_cockpit_view(earthsiege::cockpit_view::forward);
-          if(key == GLFW_KEY_F2 && (event.modifiers & GLFW_MOD_CONTROL))scene->change_camera(earthsiege::camera_mode::orbit);
-          if(key == GLFW_KEY_F3 && (event.modifiers & GLFW_MOD_CONTROL))scene->change_camera(earthsiege::camera_mode::free);
+        if(!scene) {
+          if(menu.presentation_active()) {
+            menu.key(1);
+          } else if(auto scan{earthsiege::keyboard_command(key, (event.modifiers & GLFW_MOD_ALT) != 0, (event.modifiers & GLFW_MOD_CONTROL) != 0)}) menu.key(*scan);
+        } else if(focused) {
+          if(key == GLFW_KEY_ESCAPE && inspect_demo && !(event.modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_ALT))) {
+            scene.reset();
+            if(sound) sound->clear();
+            continue;
+          }
+          if(key == GLFW_KEY_F1 && (event.modifiers & GLFW_MOD_CONTROL)) scene->change_cockpit_view(earthsiege::cockpit_view::forward);
+          if(key == GLFW_KEY_F2 && (event.modifiers & GLFW_MOD_CONTROL)) scene->change_camera(earthsiege::camera_mode::orbit);
+          if(key == GLFW_KEY_F3 && (event.modifiers & GLFW_MOD_CONTROL)) scene->change_camera(earthsiege::camera_mode::free);
         }
       }
       if(scene) {
@@ -281,63 +369,94 @@ auto main(int argc, char *argv[])->int try {
           if(held_key) scene->key(*held_key, event.type == earthsiege::event_type::key_down, alt);
           bool const inspection_camera{inspect_demo && held_key &&
             (event.modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)};
-          if(event.type == earthsiege::event_type::key_down && !inspection_camera)if(auto const code{earthsiege::keyboard_command(event.key,alt,(event.modifiers & GLFW_MOD_CONTROL) != 0)}){
-            scene->command(*code);
-            if(*code == 87 || *code == 88 || *code == 0x219 || *code == 25 || *code == 0x401 || *code == 0x410 || *code == 16){
-              modal_command_pending = true;return;
+          if(event.type == earthsiege::event_type::key_down && !inspection_camera) {
+            if(auto const code{earthsiege::keyboard_command(event.key, alt, (event.modifiers & GLFW_MOD_CONTROL) != 0)}) {
+              scene->command(*code);
+              if(*code == 87 || *code == 88 || *code == 0x219 || *code == 25 || *code == 0x401 || *code == 0x410 || *code == 16) {
+                modal_command_pending = true;
+                return;
+              }
             }
           }
         }
-        if(focused && event.type == earthsiege::event_type::motion) scene->mouse_position(event.x,event.y);
+        if(focused && event.type == earthsiege::event_type::motion) scene->mouse_position(event.x, event.y);
         if(focused && (event.type == earthsiege::event_type::button_down || event.type == earthsiege::event_type::button_up)) {
-          scene->mouse_position(event.x,event.y);
-          if(event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT)scene->mouse_button(event.button == GLFW_MOUSE_BUTTON_RIGHT,event.type == earthsiege::event_type::button_down);
+          scene->mouse_position(event.x, event.y);
+          if(event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT) scene->mouse_button(event.button == GLFW_MOUSE_BUTTON_RIGHT, event.type == earthsiege::event_type::button_down);
         }
       } else if(focused) {
-        if(event.type == earthsiege::event_type::motion) menu.mouse_move(event.x,event.y);
-        if(event.type == earthsiege::event_type::button_down && (event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT)) menu.mouse_down(event.x,event.y,event.button == GLFW_MOUSE_BUTTON_RIGHT);
-        if(event.type == earthsiege::event_type::button_up && (event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT)) menu.mouse_up(event.x,event.y,event.button == GLFW_MOUSE_BUTTON_RIGHT);
+        if(event.type == earthsiege::event_type::motion) menu.mouse_move(event.x, event.y);
+        if(event.type == earthsiege::event_type::button_down && (event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT)) menu.mouse_down(event.x, event.y, event.button == GLFW_MOUSE_BUTTON_RIGHT);
+        if(event.type == earthsiege::event_type::button_up && (event.button == GLFW_MOUSE_BUTTON_LEFT || event.button == GLFW_MOUSE_BUTTON_RIGHT)) menu.mouse_up(event.x, event.y, event.button == GLFW_MOUSE_BUTTON_RIGHT);
       }
     }
   }};
   auto const update_devices_and_dialogs{[&]{
-    if(focused && sticks){
-      auto const &p{menu.settings().current()};auto raw{sticks->poll(p[7],p[9] != 0)};
-      if(alert){if(auto response{alert->devices(raw,p[10] != 0)})respond(*response);} else if(options)options->devices(raw);else if(scene)scene->devices(raw,sticks->throttle());else menu.devices(raw);
-    }
-    if(alert){if(auto const warp{alert->take_warp()};warp && display)display->warp_mouse(warp->x,warp->y);}
-    if(options){
-      if(auto const warp{options->take_warp()};warp && display)display->warp_mouse(warp->x,warp->y);
-      if(applied_preferences != menu.settings().current()){
-        scene->apply_preferences(menu.settings());applied_preferences = menu.settings().current();scene_dirty = true;
+    if(focused && sticks) {
+      auto const &p{menu.settings().current()};
+      auto raw{sticks->poll(p[7], p[9] != 0)};
+      if(alert) {
+        if(auto response{alert->devices(raw, p[10] != 0)}) respond(*response);
+      } else if(options) {
+        options->devices(raw);
+      } else if(scene) {
+        scene->devices(raw, sticks->throttle());
+      } else {
+        menu.devices(raw);
       }
-      if(options->done()){scene->step_options_recorded();scene->draw();scene->end_options();scene->configure_input(menu.settings(),menu.device_calibrations());options.reset();scene_dirty = true;}
-    }else if(!scene){
-      if(auto const warp{menu.take_pointer_warp()};warp && display)display->warp_mouse(warp->x,warp->y);
+    }
+    if(alert) {
+      if(auto const warp{alert->take_warp()}; warp && display) display->warp_mouse(warp->x, warp->y);
+    }
+    if(options) {
+      if(auto const warp{options->take_warp()}; warp && display) display->warp_mouse(warp->x, warp->y);
+      if(applied_preferences != menu.settings().current()) {
+        scene->apply_preferences(menu.settings());
+        applied_preferences = menu.settings().current();
+        scene_dirty = true;
+      }
+      if(options->done()) {
+        scene->step_options_recorded();
+        scene->draw();
+        scene->end_options();
+        scene->configure_input(menu.settings(), menu.device_calibrations());
+        options.reset();
+        scene_dirty = true;
+      }
+    } else if(!scene) {
+      if(auto const warp{menu.take_pointer_warp()}; warp && display) display->warp_mouse(warp->x, warp->y);
     }
   }};
   // Run a modal at the original simulation call site. GLFW still receives
   // events and the audio clock runs, but the suspended mission frame cannot
   // advance until its response is known.
   auto const run_modal{[&]{
-    while(running && (alert || options)){
+    while(running && (alert || options)) {
       poll_events();
       update_devices_and_dialogs();
       auto const now{ticks()};
-      auto const elapsed{focused?now - previous:0};
-      previous = now;pending = 0;
-      scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed,UINT32_MAX)));
-      if(sound)sound->queue(scene->take_audio());
-      if(!running || (!alert && !options))break;
-      if(focused && options){
-        if(scene->step_options())scene_dirty = true;
-        if(scene_dirty){scene->draw();scene_dirty = false;}
+      auto const elapsed{focused ? now - previous : 0};
+      previous = now;
+      pending = 0;
+      scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed, UINT32_MAX)));
+      if(sound) sound->queue(scene->take_audio());
+      if(!running || (!alert && !options)) break;
+      if(focused && options) {
+        if(scene->step_options()) scene_dirty = true;
+        if(scene_dirty) {
+          scene->draw();
+          scene_dirty = false;
+        }
       }
       alert_frame = scene->image();
-      if(alert)alert->draw(alert_frame);else options->draw(alert_frame);
-      display->present(alert_frame,scene->colours(),cursor_image());
+      if(alert) {
+        alert->draw(alert_frame);
+      } else {
+        options->draw(alert_frame);
+      }
+      display->present(alert_frame, scene->colours(), cursor_image());
       ++frames;
-      if(frame_limit && frames >= frame_limit)running = false;
+      if(frame_limit && frames >= frame_limit) running = false;
       sleep_milliseconds(8);
     }
     return !running || leave_mission;
@@ -345,128 +464,184 @@ auto main(int argc, char *argv[])->int try {
   earthsiege::mission_dialog_handlers const dialogs{
     .command{[&](uint16_t code){
       using enum earthsiege::mission_command_result;
-      if(code != 87 && code != 88 && code != 0x219 && code != 25 && code != 0x401 && code != 0x410 && code != 16)return unhandled;
+      if(code != 87 && code != 88 && code != 0x219 && code != 25 && code != 0x401 && code != 0x410 && code != 16) return unhandled;
       modal_command_pending = false;
-      if(code == 87){
-        if(scene->view_camera().mode != earthsiege::camera_mode::attached)return unhandled;
-        alert = std::make_unique<earthsiege::mission_alert>(resources,scene->simulation().objective_text);
-        scene->clear_input();alert->feedback([&]{scene->click_sound();});pending = 0;
-      }else if(code == 88 || code == 0x219){
-        options = menu.flight_options();options->feedback([&]{scene->click_sound();});scene->begin_options();scene_dirty = true;pending = 0;
-      }else if(code == 25)open_alert(0);
-      else if(code == 0x401 || code == 0x410)open_alert(1);
-      else if(code == 16){
+      if(code == 87) {
+        if(scene->view_camera().mode != earthsiege::camera_mode::attached) return unhandled;
+        alert = std::make_unique<earthsiege::mission_alert>(resources, scene->simulation().objective_text);
+        scene->clear_input();
+        alert->feedback([&]{scene->click_sound();});
+        pending = 0;
+      } else if(code == 88 || code == 0x219) {
+        options = menu.flight_options();
+        options->feedback([&]{scene->click_sound();});
+        scene->begin_options();
+        scene_dirty = true;
+        pending = 0;
+      } else if(code == 25) {
+        open_alert(0);
+      } else if(code == 0x401 || code == 0x410) {
+        open_alert(1);
+      } else if(code == 16) {
         auto const status{static_cast<int>(scene->status(true))};
-        open_alert(status < 0?5:status);
-      }else return unhandled;
-      return run_modal()?exit_mission:handled;
+        open_alert(status < 0 ? 5 : status);
+      } else {
+        return unhandled;
+      }
+      return run_modal() ? exit_mission : handled;
     }},
     .outcome{[&](earthsiege::mission_status status){
-      open_alert(static_cast<int>(status));return run_modal();
+      open_alert(static_cast<int>(status));
+      return run_modal();
     }}
   };
-  while(running){
+  while(running) {
     poll_events();
-    if(!running)break;
+    if(!running) break;
     update_devices_and_dialogs();
-    if(menu.quit_requested())running = false;
+    if(menu.quit_requested()) running = false;
     if(menu.take_demo_request()) {
-      if(sound)sound->clear();
+      if(sound) sound->clear();
       auto const demo{requested_demo.value_or(1 + static_cast<unsigned>(std::time(nullptr) % 4))};
       requested_demo.reset();
-      earthsiege::demo_playback playback{resources,demo,menu.settings(),save_directory,music_settings};
-      std::cout << "Playing " << (resources.edition() == earthsiege::game_edition::expansion?"expansion":"original") << " demo " << demo << '\n';
-      auto const present_demo{[&](unsigned milliseconds,earthsiege::framebuffer const &frame){
-        auto samples{playback.view().take_audio()};if(sound)sound->queue(samples);
+      earthsiege::demo_playback playback{resources, demo, menu.settings(), save_directory, music_settings};
+      std::cout << "Playing " << (resources.edition() == earthsiege::game_edition::expansion ? "expansion" : "original") << " demo " << demo << '\n';
+      auto const present_demo{[&](unsigned milliseconds, earthsiege::framebuffer const &frame){
+        auto samples{playback.view().take_audio()};
+        if(sound) sound->queue(samples);
         // Retained pan frames belong to the same recorded update.
         auto pans{playback.view().take_pan_frames()};
-        if(display){for(auto const &pan:pans)display->present(pan,playback.view().colours());display->present(frame,playback.view().colours());}
+        if(display) {
+          for(auto const &pan : pans) display->present(pan, playback.view().colours());
+          display->present(frame, playback.view().colours());
+        }
         ++frames;
-        if(frame_limit && frames >= frame_limit){
+        if(frame_limit && frames >= frame_limit) {
           running = false;
-          if(!screenshot.empty()){frame.save(screenshot,playback.view().colours());screenshot.clear();}
+          if(!screenshot.empty()) {
+            frame.save(screenshot, playback.view().colours());
+            screenshot.clear();
+          }
           return false;
         }
-        if(!display)return running;
-        auto last{ticks()};uint64_t remaining{milliseconds};
+        if(!display) return running;
+        auto last{ticks()};
+        uint64_t remaining{milliseconds};
         do {
           earthsiege::window_event event{};
-          while(display->poll(event)){
-            if(event.type == earthsiege::event_type::close){running = false;return false;}
-            if(event.type == earthsiege::event_type::focus){focused = event.focused;if(sound)sound->pause(!focused);}
-            if(focused && ((event.type == earthsiege::event_type::key_down && !event.repeat) || event.type == earthsiege::event_type::button_down))return false;
+          while(display->poll(event)) {
+            if(event.type == earthsiege::event_type::close) {
+              running = false;
+              return false;
+            }
+            if(event.type == earthsiege::event_type::focus) {
+              focused = event.focused;
+              if(sound) sound->pause(!focused);
+            }
+            if(focused && ((event.type == earthsiege::event_type::key_down && !event.repeat) || event.type == earthsiege::event_type::button_down)) return false;
           }
           auto const now{ticks()};
-          if(focused)remaining -= std::min(remaining,now - last);
+          if(focused) remaining -= std::min(remaining, now - last);
           last = now;
-          if(remaining || !focused)sleep_milliseconds(8);
-        }while(remaining || !focused);
+          if(remaining || !focused) sleep_milliseconds(8);
+        } while(remaining || !focused);
         return true;
       }};
-      while(running && !playback.done())playback.step(present_demo);
-      if(sound){sound->clear();sound->pause(!focused);}
-      menu.demo_return();menu.cancel_press();previous = display?ticks():previous;pending = 0;
-      if(!running)break;
+      while(running && !playback.done()) playback.step(present_demo);
+      if(sound) {
+        sound->clear();
+        sound->pause(!focused);
+      }
+      menu.demo_return();
+      menu.cancel_press();
+      previous = display ? ticks() : previous;
+      pending = 0;
+      if(!running) break;
     }
     if(menu.ready_to_launch()) {
-      inspect_demo.reset();scene = std::make_unique<earthsiege::mission_view>(resources,menu.launch(),music_settings);scene->configure_input(menu.settings(),menu.device_calibrations());scene->begin_startup();scene_dirty = !scene->starting();applied_preferences = menu.settings().current();pending = 0;
-      if(sound)sound->clear();
+      inspect_demo.reset();
+      scene = std::make_unique<earthsiege::mission_view>(resources, menu.launch(), music_settings);
+      scene->configure_input(menu.settings(), menu.device_calibrations());
+      scene->begin_startup();
+      scene_dirty = !scene->starting();
+      applied_preferences = menu.settings().current();
+      pending = 0;
+      if(sound) sound->clear();
     }
     auto const now{display ? ticks() : previous + 25};
-    auto const elapsed{focused?now - previous:0};
-    pending += focused && !alert && !options ? std::min<uint64_t>(elapsed,100) : 0;
+    auto const elapsed{focused ? now - previous : 0};
+    pending += focused && !alert && !options ? std::min<uint64_t>(elapsed, 100) : 0;
     previous = now;
     if(!focused || alert || options) pending = 0;
     if(scene) {
-      scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed,UINT32_MAX)));
-      if(focused && options && scene->step_options())scene_dirty = true;
-      if(focused && !alert && !options){
+      scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(elapsed, UINT32_MAX)));
+      if(focused && options && scene->step_options()) scene_dirty = true;
+      if(focused && !alert && !options) {
         auto const modifiers{display ? display->modifiers() : 0};
         bool const inspection_camera{inspect_demo &&
           (modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)) == (GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)};
-        if(scene->starting()){
-          if(scene->step_startup())scene_dirty = false;
-        }else if(scene->step(inspection_camera,(modifiers & GLFW_MOD_ALT) != 0,
-                            display?dialogs:earthsiege::mission_dialog_handlers{}))scene_dirty = true;
-        if(!running)break;
-        if(leave_mission){
-          if(!inspect_demo)menu.mission_return(scene->results(),scene->mission_variables(),static_cast<int16_t>(std::time(nullptr) & 127));
-          scene.reset();leave_mission = false;pending = 0;
-          if(sound)sound->clear();
+        if(scene->starting()) {
+          if(scene->step_startup()) scene_dirty = false;
+        } else if(scene->step(inspection_camera, (modifiers & GLFW_MOD_ALT) != 0,
+                            display ? dialogs : earthsiege::mission_dialog_handlers{})) scene_dirty = true;
+        if(!running) break;
+        if(leave_mission) {
+          if(!inspect_demo) menu.mission_return(scene->results(), scene->mission_variables(), static_cast<int16_t>(std::time(nullptr) & 127));
+          scene.reset();
+          leave_mission = false;
+          pending = 0;
+          if(sound) sound->clear();
           continue;
         }
-        if(auto const warp{scene->take_pointer_warp()};warp && display)display->warp_mouse(warp->x,warp->y);
-        if(!display)if(auto message{scene->take_mission_prompt()})open_alert(static_cast<int>(*message));
+        if(auto const warp{scene->take_pointer_warp()}; warp && display) display->warp_mouse(warp->x, warp->y);
+        if(!display) {
+          if(auto message{scene->take_mission_prompt()}) open_alert(static_cast<int>(*message));
+        }
       }
-      auto const samples{scene->take_audio()};if(sound)sound->queue(samples);
+      auto const samples{scene->take_audio()};
+      if(sound) sound->queue(samples);
       // Scene drawing also consumes original per-frame visual state. Presenting
       // a retained frame must not run those consumers for a second time.
-      if(scene_dirty){scene->draw();scene_dirty = false;}
+      if(scene_dirty) {
+        scene->draw();
+        scene_dirty = false;
+      }
       auto pans{scene->take_pan_frames()};
-      if(display && !pans.empty()){
+      if(display && !pans.empty()) {
         uint64_t const start{ticks()};
-        for(size_t i{};i < pans.size();++i){
-          display->present(pans[i],scene->colours());
+        for(size_t i{0}; i < pans.size(); ++i) {
+          display->present(pans[i], scene->colours());
           uint64_t const deadline{start + (i + 1) * 1000 / 70};
           auto tick{ticks()};
-          if(tick < deadline)sleep_milliseconds(static_cast<uint32_t>(deadline - tick));
+          if(tick < deadline) sleep_milliseconds(static_cast<uint32_t>(deadline - tick));
           tick = ticks();
-          scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(tick - previous,UINT32_MAX)));
+          scene->advance_time(static_cast<unsigned>(std::min<uint64_t>(tick - previous, UINT32_MAX)));
           previous = tick;
-          if(sound)sound->queue(scene->take_audio());
+          if(sound) sound->queue(scene->take_audio());
           display->pump_events();
         }
       }
       pending = 0;
     } else {
-      while(pending >= 25){menu.advance(3);auto samples{menu.take_audio()};if(sound)sound->queue(samples);pending -= 25;}
+      while(pending >= 25) {
+        menu.advance(3);
+        auto samples{menu.take_audio()};
+        if(sound) sound->queue(samples);
+        pending -= 25;
+      }
       menu.draw(menu_frame);
     }
-    if(alert){alert_frame = scene?scene->image():menu_frame;alert->draw(alert_frame);}
-    if(options){alert_frame = scene->image();options->draw(alert_frame);}
-    auto const &frame{(alert || options)?alert_frame:scene ? scene->image() : menu_frame};
+    if(alert) {
+      alert_frame = scene ? scene->image() : menu_frame;
+      alert->draw(alert_frame);
+    }
+    if(options) {
+      alert_frame = scene->image();
+      options->draw(alert_frame);
+    }
+    auto const &frame{(alert || options) ? alert_frame : scene ? scene->image() : menu_frame};
     auto const &colours{scene ? scene->colours() : menu.colours()};
-    if(display) display->present(frame,colours,cursor_image());
+    if(display) display->present(frame, colours, cursor_image());
     ++frames;
     if(frame_limit && frames >= frame_limit) running = false;
     if(display) sleep_milliseconds(8);

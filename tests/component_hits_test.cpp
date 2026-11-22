@@ -40,7 +40,8 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESCHIT01") file.fail("fixture version");
   auto const models{file.integer<uint16_t>()};
-  unsigned int total{0}, hits{0};
+  unsigned int total{0};
+  unsigned int hits{0};
   for(unsigned int model{0}; model != models; ++model) {
     auto const name{file.cstring()};
     auto const equipment{shorts(file)};

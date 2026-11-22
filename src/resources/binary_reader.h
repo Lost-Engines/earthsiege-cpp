@@ -21,7 +21,7 @@ auto crc32(bytes data)->uint32_t;
 class binary_reader {
   bytes source;
   std::string context;
-  size_t cursor{};
+  size_t cursor{0};
 
 public:
   explicit binary_reader(bytes source, std::string context = {});
@@ -38,8 +38,8 @@ public:
     /// Decode a little-endian value without unaligned loads or signed shifts.
     using U = std::make_unsigned_t<T>;
     auto const data{take(sizeof(T))};
-    uint64_t value{};
-    for(unsigned int index{}; index < sizeof(T); ++index) {
+    uint64_t value{0};
+    for(unsigned int index{0}; index < sizeof(T); ++index) {
       value |= static_cast<uint64_t>(data[index]) << (index * 8);
     }
     return std::bit_cast<T>(static_cast<U>(value));

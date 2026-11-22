@@ -46,8 +46,11 @@ std::optional<size_t> select_target(std::span<target_candidate const> const acto
   if(observer_index >= actors.size() || objective.leader >= actors.size()) throw std::out_of_range{"target selection actor reference"};
   auto const &observer{actors[observer_index]};
   auto const &leader{actors[objective.leader]};
-  auto const has{[flags](target_selection_flags const flag){ return (static_cast<uint8_t>(flags) & static_cast<uint8_t>(flag)) != 0; }};
-  std::array<int16_t, 3> constexpr retaliation{1500, 2000, 2500}, passive{600, 400, 200}, engaged_elsewhere{700, 850, 1000}, kind_weights{2000, 500, 200};
+  auto const has{[flags](target_selection_flags const flag){return (static_cast<uint8_t>(flags) & static_cast<uint8_t>(flag)) != 0;}};
+  std::array<int16_t, 3> constexpr retaliation{1500, 2000, 2500};
+  std::array<int16_t, 3> constexpr passive{600, 400, 200};
+  std::array<int16_t, 3> constexpr engaged_elsewhere{700, 850, 1000};
+  std::array<int16_t, 3> constexpr kind_weights{2000, 500, 200};
   int best_priority{0};
   int16_t best_score{0};
   std::optional<size_t> selected;
@@ -64,7 +67,7 @@ std::optional<size_t> select_target(std::span<target_candidate const> const acto
     if(priority < best_priority) continue;
     auto const distance{distance_between(observer, target)};
     auto const error{has(target_selection_flags::ignore_bearing) ? 0 : saturated_magnitude(wrap_word(static_cast<int32_t>(bearing_angle(observer.position, target.position)) - observer.heading))};
-    if(maximum_bearing != 0 && error > maximum_bearing)continue;
+    if(maximum_bearing != 0 && error > maximum_bearing) continue;
     auto const angular{static_cast<int16_t>(4096 - (error >> 3))};
     int32_t score{q10(100, angular)};
     if(distance < 25000) score = std::max(score, angular / std::max(1, distance >> 11));
@@ -79,7 +82,9 @@ std::optional<size_t> select_target(std::span<target_candidate const> const acto
       score = wrap_word(score / (attackers + 1));
     }
     if(score > best_score || priority > best_priority) {
-      selected = index; best_score = static_cast<int16_t>(score); best_priority = priority;
+      selected = index;
+      best_score = static_cast<int16_t>(score);
+      best_priority = priority;
     }
   }
   return selected;

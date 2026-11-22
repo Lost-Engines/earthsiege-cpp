@@ -22,7 +22,10 @@ struct impact_actor {
   impact_query hit;
 };
 
-enum class obstruction_kind { actor, scenery };
+enum class obstruction_kind {
+  actor,
+  scenery
+};
 struct impact_obstruction {
   obstruction_kind kind{obstruction_kind::actor};
   size_t index{0};

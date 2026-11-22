@@ -4,111 +4,174 @@
 #include "simulation/fixed_math.h"
 namespace earthsiege {
 int16_t pilot_rank(int16_t total) {
-  std::array<int16_t,5> constexpr thresholds{0,1,5,15,30};
-  for(int16_t i{};i < 5;++i)if(total <= thresholds[i])return i;
+  std::array<int16_t, 5> constexpr thresholds{0, 1, 5, 15, 30};
+  for(int16_t i{0}; i < 5; ++i) {
+    if(total <= thresholds[i]) return i;
+  }
   return 4;
 }
-void advance_technology(technology_state &technology,int16_t missions,int16_t kind,int16_t grade) {
+void advance_technology(technology_state &technology, int16_t missions, int16_t kind, int16_t grade) {
   // GO's result classification tables: only classes 0/1 enable early awards.
   bool const route{kind == 0 || kind == 1 || kind == 2 || kind == 6};
-  bool const favorable{missions == 0 || (grade >= 0 && grade < (route?5:4))};
+  bool const favorable{missions == 0 || (grade >= 0 && grade < (route ? 5 : 4))};
   auto const expansion{technology.edition == game_edition::expansion && technology.battle_set != 0};
-  for(size_t i{};i < technology.entries.size();++i){
-    bool const chassis{i < technology.chassis_slots};auto const id{chassis?i:i - technology.chassis_slots};
-    if(id >= (chassis?technology.chassis_count:technology.weapon_count))continue;
+  for(size_t i{0}; i < technology.entries.size(); ++i) {
+    bool const chassis{i < technology.chassis_slots};
+    auto const id{chassis ? i : i - technology.chassis_slots};
+    if(id >= (chassis ? technology.chassis_count : technology.weapon_count)) continue;
     auto &t{technology.entries[i]};
-    bool const early{chassis && !expansion?t.early <= missions:t.early == missions};
-    bool const late{chassis && !expansion?t.late <= missions:t.late == missions};
-    if(!t.available && t.early != -1 && t.late != -1 && ((early && favorable) || (late && (!expansion || favorable)))){
-      t.available = 1;technology.last_type = !chassis;
-      technology.last_index = static_cast<int16_t>(chassis && id == 8?16:id);
+    bool const early{chassis && !expansion ? t.early <= missions : t.early == missions};
+    bool const late{chassis && !expansion ? t.late <= missions : t.late == missions};
+    if(!t.available && t.early != -1 && t.late != -1 && ((early && favorable) || (late && (!expansion || favorable)))) {
+      t.available = 1;
+      technology.last_type = !chassis;
+      technology.last_index = static_cast<int16_t>(chassis && id == 8 ? 16 : id);
     }
   }
 }
 namespace {
-void push(armory &inventory,int16_t weapon,int16_t condition){
+void push(armory &inventory, int16_t weapon, int16_t condition) {
   auto &stack{inventory.at(static_cast<size_t>(weapon))};
-  stack.insert(stack.begin(),condition);
+  stack.insert(stack.begin(), condition);
 }
-crew_member replacement(crew_member const &old,size_t member,std::array<int16_t,12> const &names,random_state &random) {
-  crew_member c;c.skill = random.bounded(2);c.experience = static_cast<int16_t>(random.bounded(5) + c.skill * 5);
+crew_member replacement(crew_member const &old, size_t member, std::array<int16_t, 12> const &names, random_state &random) {
+  crew_member c;
+  c.skill = random.bounded(2);
+  c.experience = static_cast<int16_t>(random.bounded(5) + c.skill * 5);
   c.total[0] = static_cast<int16_t>((random.bounded(3) + 1) * c.experience);
   c.total[2] = static_cast<int16_t>((random.bounded(2) + 1) * c.experience);
   c.total[1] = static_cast<int16_t>(random.bounded(2) * c.experience);
-  c.name = names.at(static_cast<size_t>(old.next_name) + (member - 1) * 4);c.variant = old.rotation;
-  c.next_name = static_cast<int16_t>((old.next_name + 1) % 3);c.rotation = static_cast<int16_t>((old.rotation + (old.next_name == 2)) % 3);
-  c.active = 1;c.health = 100;c.rank = pilot_rank(c.total[0]);c.prior_skill = c.skill;return c;
+  c.name = names.at(static_cast<size_t>(old.next_name) + (member - 1) * 4);
+  c.variant = old.rotation;
+  c.next_name = static_cast<int16_t>((old.next_name + 1) % 3);
+  c.rotation = static_cast<int16_t>((old.rotation + (old.next_name == 2)) % 3);
+  c.active = 1;
+  c.health = 100;
+  c.rank = pilot_rank(c.total[0]);
+  c.prior_skill = c.skill;
+  return c;
 }
 } // anonymous namespace
-campaign_debrief return_from_single_mission(career_state &state,hangar &roster,mission_results const &result){
- campaign_debrief debrief;size_t returned{};
- for(size_t member{};member < state.crew.size();++member){auto &c{state.crew[member]};
-  if(!c.active || c.hangar_slot == -1)continue;
-  if(returned >= result.crew.size())throw std::runtime_error{"single-mission return lacks an active crew member"};
-  auto const &r{result.crew[returned++]};
-  // GO 0x1568d discards wingmate chassis conditions in a single mission.
-  // Their slot numbers name temporary launch records, not the persistent bay.
-  if(member == 0){
-   auto h{roster.find(c.hangar_slot)};if(!h)throw std::runtime_error{"single-mission player has no HERC"};
-   h->condition = r.condition;normalize_hangar_equipment(*h);
-  }else{
-   // The original shell reloads its launch MEC, which excludes temporary
-   // single-mission wingmates created solely for PLAYER.MEC.
-   std::erase_if(roster.hercs,[&](auto const &h){return h.slot == c.hangar_slot;});
-  }
-  c.health = r.condition.internal[9];c.current = r.statistics;
-  for(size_t i{};i < 3;++i){c.total[i] = wrap_word(c.total[i] + r.statistics[i]);debrief.statistics[i] = wrap_word(debrief.statistics[i] + r.statistics[i]);}
-  c.rank = pilot_rank(c.total[0]);if(!c.health)++debrief.deaths;
- }
- if(returned != result.crew.size())throw std::runtime_error{"single-mission return has unexpected crew"};
- return debrief;
-}
-campaign_debrief return_from_mission(career_record &career,hangar &roster,mission_results const &result,
-  std::array<int16_t,100> const &counters,service_prices const &prices,random_state &random) {
-  auto &state{career.states[0]};auto &inventory{career.inventories[0]};campaign_debrief debrief;
-  for(auto [weapon,condition]:result.salvage){
-    // Expansion GO 27138 excludes the three Cybrid-only weapon types.
-    if(career.edition == game_edition::expansion && weapon >= 14 && weapon <= 16)continue;
-    push(inventory,weapon,career.edition == game_edition::expansion?100:condition);
-  }
-  size_t returned{};
-  for(auto &c:state.crew)if(c.active && c.hangar_slot != -1){
-    if(returned >= result.crew.size())throw std::runtime_error{"mission return lacks an active crew member"};
-    auto const &r{result.crew[returned++]};auto h{roster.find(c.hangar_slot)};
-    if(!h)throw std::runtime_error{"mission return crew refers to a missing HERC"};
-    h->condition = r.condition;normalize_hangar_equipment(*h);c.health = h->condition.internal[9];c.current = r.statistics;
-    for(size_t i{};i < 3;++i){c.total[i] = wrap_word(c.total[i] + r.statistics[i]);debrief.statistics[i] = wrap_word(debrief.statistics[i] + r.statistics[i]);}
+campaign_debrief return_from_single_mission(career_state &state, hangar &roster, mission_results const &result) {
+  campaign_debrief debrief;
+  size_t returned{0};
+  for(size_t member{0}; member < state.crew.size(); ++member) {
+    auto &c{state.crew[member]};
+    if(!c.active || c.hangar_slot == -1) continue;
+    if(returned >= result.crew.size()) throw std::runtime_error{"single-mission return lacks an active crew member"};
+    auto const &r{result.crew[returned++]};
+    // GO 0x1568d discards wingmate chassis conditions in a single mission.
+    // Their slot numbers name temporary launch records, not the persistent bay.
+    if(member == 0) {
+      auto h{roster.find(c.hangar_slot)};
+      if(!h) throw std::runtime_error{"single-mission player has no HERC"};
+      h->condition = r.condition;
+      normalize_hangar_equipment(*h);
+    } else {
+      // The original shell reloads its launch MEC, which excludes temporary
+      // single-mission wingmates created solely for PLAYER.MEC.
+      std::erase_if(roster.hercs, [&](auto const &h){return h.slot == c.hangar_slot;});
+    }
+    c.health = r.condition.internal[9];
+    c.current = r.statistics;
+    for(size_t i{0}; i < 3; ++i) {
+      c.total[i] = wrap_word(c.total[i] + r.statistics[i]);
+      debrief.statistics[i] = wrap_word(debrief.statistics[i] + r.statistics[i]);
+    }
     c.rank = pilot_rank(c.total[0]);
+    if(!c.health) ++debrief.deaths;
   }
-  if(returned != result.crew.size())throw std::runtime_error{"mission return has unexpected crew"};
-  state.counters = counters;state.counters[0] = result.grade;
-  std::array<int16_t,11> constexpr awards{13,2,8,11,12,4,3,20,19,18,21};
-  for(size_t i{};i < (career.edition == game_edition::expansion && career.mode?11U:7U);++i){for(int j{};j < state.counters[8 + i];++j)push(inventory,awards[i],100);state.counters[8 + i] = 0;}
+  if(returned != result.crew.size()) throw std::runtime_error{"single-mission return has unexpected crew"};
+  return debrief;
+}
+campaign_debrief return_from_mission(career_record &career, hangar &roster, mission_results const &result,
+  std::array<int16_t, 100> const &counters, service_prices const &prices, random_state &random) {
+  auto &state{career.states[0]};
+  auto &inventory{career.inventories[0]};
+  campaign_debrief debrief;
+  for(auto [weapon, condition] : result.salvage) {
+    // Expansion GO 27138 excludes the three Cybrid-only weapon types.
+    if(career.edition == game_edition::expansion && weapon >= 14 && weapon <= 16) continue;
+    push(inventory, weapon, career.edition == game_edition::expansion ? 100 : condition);
+  }
+  size_t returned{0};
+  for(auto &c : state.crew) {
+    if(c.active && c.hangar_slot != -1) {
+      if(returned >= result.crew.size()) throw std::runtime_error{"mission return lacks an active crew member"};
+      auto const &r{result.crew[returned++]};
+      auto h{roster.find(c.hangar_slot)};
+      if(!h) throw std::runtime_error{"mission return crew refers to a missing HERC"};
+      h->condition = r.condition;
+      normalize_hangar_equipment(*h);
+      c.health = h->condition.internal[9];
+      c.current = r.statistics;
+      for(size_t i{0}; i < 3; ++i) {
+        c.total[i] = wrap_word(c.total[i] + r.statistics[i]);
+        debrief.statistics[i] = wrap_word(debrief.statistics[i] + r.statistics[i]);
+      }
+      c.rank = pilot_rank(c.total[0]);
+    }
+  }
+  if(returned != result.crew.size()) throw std::runtime_error{"mission return has unexpected crew"};
+  state.counters = counters;
+  state.counters[0] = result.grade;
+  std::array<int16_t, 11> constexpr awards{13, 2, 8, 11, 12, 4, 3, 20, 19, 18, 21};
+  for(size_t i{0}; i < (career.edition == game_edition::expansion && career.mode ? 11U : 7U); ++i) {
+    for(int j{0}; j < state.counters[8 + i]; ++j) push(inventory, awards[i], 100);
+    state.counters[8 + i] = 0;
+  }
   state.budget = wrap_long(int64_t{state.budget} + result.recovery);
-  std::array<int16_t,17> constexpr restock{21,19,20,18,2,8,4,12,3,1,7,11,10,13,9,6,0};int added{};
-  for(auto weapon:restock){if(static_cast<size_t>(weapon) >= state.technology.weapon_count)continue;if(added == 5)break;if(state.technology.weapon_available(weapon) && inventory[weapon].size() < 2){push(inventory,weapon,100);++added;}}
+  std::array<int16_t, 17> constexpr restock{21, 19, 20, 18, 2, 8, 4, 12, 3, 1, 7, 11, 10, 13, 9, 6, 0};
+  int added{0};
+  for(auto weapon : restock) {
+    if(static_cast<size_t>(weapon) >= state.technology.weapon_count) continue;
+    if(added == 5) break;
+    if(state.technology.weapon_available(weapon) && inventory[weapon].size() < 2) {
+      push(inventory, weapon, 100);
+      ++added;
+    }
+  }
   // The native cursor visits assigned crew in cyclic order and updates the
   // selected hangar slot. Budget is shared before dead wingmates are scrapped.
-  auto const assigned{std::ranges::count_if(state.crew,[](auto const &c){return c.active && c.hangar_slot != -1;})};
-  if(assigned){
+  auto const assigned{std::ranges::count_if(state.crew, [](auto const &c){return c.active && c.hangar_slot != -1;})};
+  if(assigned) {
     auto const share{std::bit_cast<int32_t>(static_cast<uint32_t>(state.budget) / static_cast<uint32_t>(assigned))};
-    for(int i{};i < assigned;++i){auto const previous{state.crew_cursor};
-      do{state.crew_cursor = static_cast<int16_t>((state.crew_cursor + 1) % 4);}while(!state.crew.at(static_cast<size_t>(state.crew_cursor)).active || state.crew[state.crew_cursor].hangar_slot == -1);
-      auto &c{state.crew[state.crew_cursor]};if(state.crew_cursor != previous)roster.selected = c.hangar_slot;c.budget_share = share;
+    for(int i{0}; i < assigned; ++i) {
+      auto const previous{state.crew_cursor};
+      do {
+        state.crew_cursor = static_cast<int16_t>((state.crew_cursor + 1) % 4);
+      } while(!state.crew.at(static_cast<size_t>(state.crew_cursor)).active || state.crew[state.crew_cursor].hangar_slot == -1);
+      auto &c{state.crew[state.crew_cursor]};
+      if(state.crew_cursor != previous) roster.selected = c.hangar_slot;
+      c.budget_share = share;
     }
   }
-  for(size_t i{};i < state.crew.size();++i){auto &c{state.crew[i]};
-    if(!c.active || c.hangar_slot == -1 || c.health)continue;
-    ++debrief.deaths;if(i == static_cast<size_t>(state.selected_crew))continue;
-    auto h{roster.find(c.hangar_slot)};if(!h)throw std::runtime_error{"dead wingmate has no chassis"};
-    for(size_t j{};j < h->weapons.size();++j){auto const weapon{h->weapons[j]},condition{h->condition.equipment.at(j)};if(weapon == 17)continue;
-      if(condition < 80)state.budget = wrap_long(int64_t{state.budget} + prices.weapons.at(static_cast<size_t>(weapon)) * condition / 100);
-      else push(inventory,weapon,condition);
+  for(size_t i{0}; i < state.crew.size(); ++i) {
+    auto &c{state.crew[i]};
+    if(!c.active || c.hangar_slot == -1 || c.health) continue;
+    ++debrief.deaths;
+    if(i == static_cast<size_t>(state.selected_crew)) continue;
+    auto h{roster.find(c.hangar_slot)};
+    if(!h) throw std::runtime_error{"dead wingmate has no chassis"};
+    for(size_t j{0}; j < h->weapons.size(); ++j) {
+      auto const weapon{h->weapons[j]};
+      auto const condition{h->condition.equipment.at(j)};
+      if(weapon == 17) continue;
+      if(condition < 80) {
+        state.budget = wrap_long(int64_t{state.budget} + prices.weapons.at(static_cast<size_t>(weapon)) * condition / 100);
+      } else {
+        push(inventory, weapon, condition);
+      }
     }
-    state.budget = wrap_long(int64_t{state.budget} + chassis_recovery(*h,prices));
-    auto const slot{c.hangar_slot};std::erase_if(roster.hercs,[&](auto const &herc){return herc.slot == slot;});c = replacement(c,i,career.names,random);
+    state.budget = wrap_long(int64_t{state.budget} + chassis_recovery(*h, prices));
+    auto const slot{c.hangar_slot};
+    std::erase_if(roster.hercs, [&](auto const &herc){return herc.slot == slot;});
+    c = replacement(c, i, career.names, random);
   }
-  state.missions = wrap_word(state.missions + 1);advance_technology(state.technology,state.missions,state.mission_kind,result.grade);
-  advance_construction(roster,prices);state.screen = 1710;return debrief;
+  state.missions = wrap_word(state.missions + 1);
+  advance_technology(state.technology, state.missions, state.mission_kind, result.grade);
+  advance_construction(roster, prices);
+  state.screen = 1710;
+  return debrief;
 }
 } // namespace earthsiege

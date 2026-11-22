@@ -18,7 +18,13 @@ vec3<int32_t> world_point(vec3<int32_t> const &point, model_transform const &pla
 
 } // anonymous namespace
 
-scenery_renderer::scenery_renderer(framebuffer &buffer, scenery_world const &source, distance_shade_bindings bindings, scene_shading const mode) : target{buffer}, world{source}, colours{source.colours()}, shading{source.environment(), std::move(bindings)}, models{buffer, colours}, palette_mode{mode} {
+scenery_renderer::scenery_renderer(framebuffer &buffer, scenery_world const &source, distance_shade_bindings bindings, scene_shading const mode)
+  : target{buffer},
+    world{source},
+    colours{source.colours()},
+    shading{source.environment(), std::move(bindings)},
+    models{buffer, colours},
+    palette_mode{mode} {
   if(palette_mode == scene_shading::cockpit_map) apply_cockpit_map_shading(colours);
 }
 
@@ -38,7 +44,7 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
     for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(flash.position[axis]) - position[axis]);
     if(fast_distance(delta) >= 30000) continue;
     flash.position.z = 0;
-    auto placement{rotation_transform({0,0,flash.heading})};
+    auto placement{rotation_transform({0, 0, flash.heading})};
     placement.translation = flash.position;
     models.draw(flash.root, flash.instance, placement, view, flash.textures, dynamic ? dynamic->current() : lights);
   }
@@ -56,8 +62,17 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
     auto const distance{fast_distance(delta)};
     auto const radius{world.terrain().roots.at(object.shape).header.radius};
     if(shading.culled(distance, 0, radius)) continue;
-    scene_order_entry entry{.position{vec3<int32_t>{origin}}, .distance{distance}, .segment{std::nullopt}};
-    if(object.metadata) entry.segment = scene_sort_segment{.first{world_point(object.metadata->sort_endpoints[0], object.placement)}, .second{world_point(object.metadata->sort_endpoints[1], object.placement)}};
+    scene_order_entry entry{
+      .position{vec3<int32_t>{origin}},
+      .distance{distance},
+      .segment{std::nullopt}
+    };
+    if(object.metadata) {
+      entry.segment = scene_sort_segment{
+        .first{world_point(object.metadata->sort_endpoints[0], object.placement)},
+        .second{world_point(object.metadata->sort_endpoints[1], object.placement)}
+      };
+    }
     entries.push_back(entry);
     indices.push_back(index);
   }
@@ -72,7 +87,11 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
     for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(origin[axis]) - position[axis]);
     auto const distance{fast_distance(delta)};
     if(shading.culled(distance, native_class, radius)) continue;
-    entries.push_back({.position{vec3<int32_t>{origin}}, .distance{distance}, .segment{std::nullopt}});
+    entries.push_back({
+      .position{vec3<int32_t>{origin}},
+      .distance{distance},
+      .segment{std::nullopt}
+    });
     indices.push_back(objects.size() + index);
   }
   auto order{scene_painter_order(entries, position)};
@@ -111,16 +130,17 @@ std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position
       auto const object_lights{dynamic ? dynamic->select(actor.placement.translation, radius) : lights};
       auto const &placement{actor.placement};
       auto const eye{inverse_transform(compose_transforms(placement, view.camera)).translation};
-      auto detail{shapes?shapes->actor:actor.detail};
+      auto detail{shapes ? shapes->actor : actor.detail};
       detail.projection_shift = view.projection.perspective_shift;
       auto const root{actor.roots.size() == 1 ? 0 : actor_detail_index(actor.roots.size(), actor.detail_thresholds, radius, eye, detail)};
       auto actor_view{view};
-      if(shapes){
+      if(shapes) {
         actor_view.weapon_detail_bias = shapes->weapon;
-        if(actor.native_class == 7)actor_view.detail.bias = shapes->herc;
-        else if(actor.native_class == 6)actor_view.detail.bias = shapes->ordinary;
+        if(actor.native_class == 7) {
+          actor_view.detail.bias = shapes->herc;
+        } else if(actor.native_class == 6) actor_view.detail.bias = shapes->ordinary;
       }
-      if(observe)observe({vec3<int32_t>{placement.translation},actor.native_class,distance,radius,root,object_lights});
+      if(observe) observe({vec3<int32_t>{placement.translation}, actor.native_class, distance, radius, root, object_lights});
       models.draw(actor.roots[root], actor.instance, placement, actor_view, actor.textures, object_lights, actor.attachments);
       continue;
     }

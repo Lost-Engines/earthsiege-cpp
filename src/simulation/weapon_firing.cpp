@@ -54,7 +54,10 @@ std::vector<weapon_shot> discharge_weapon(weapon_state &state, weapon_catalogue 
   if(auto *ammunition{state.ammunition()}) {
     if(!free_ammunition) {
       ammunition->rounds = wrap_word(ammunition->rounds - full);
-      if(ammunition->rounds < 1) { ammunition->rounds = 0; ammunition->available = false; }
+      if(ammunition->rounds < 1) {
+        ammunition->rounds = 0;
+        ammunition->available = false;
+      }
     }
     bool const rocket{projectile.kind == projectile_kind::rocket};
     if(!rocket && mount.external()) control.firing_animation = true;

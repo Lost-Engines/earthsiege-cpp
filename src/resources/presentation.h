@@ -12,7 +12,10 @@ struct presentation_instruction {
   std::string text;
   std::vector<int16_t> points;
 };
-struct presentation_label { uint16_t number; std::string name; };
+struct presentation_label {
+  uint16_t number;
+  std::string name;
+};
 struct presentation_program {
   std::vector<std::vector<presentation_instruction>> pages;
   std::vector<presentation_label> labels;

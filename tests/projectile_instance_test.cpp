@@ -14,7 +14,9 @@ template<typename T> vec3<T> vector(earthsiege::binary_reader &file) {
 }
 
 void check_packet(earthsiege::binary_reader &file, earthsiege::impact_request const &request, std::string const &label) {
-  auto const require{[&](bool const correct, char const *field){ if(!correct) file.fail(label + ": " + field); }};
+  auto const require{[&](bool const correct, char const *field){
+    if(!correct) file.fail(label + ": " + field);
+  }};
   for(unsigned int const i : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) require(request.transform.basis.data[i] == file.integer<int16_t>(), "basis");
   require(request.transform.type == file.integer<uint8_t>(), "matrix type");
   file.integer<uint8_t>();
@@ -24,7 +26,9 @@ void check_packet(earthsiege::binary_reader &file, earthsiege::impact_request co
   require(request.damage.armour == file.integer<int16_t>(), "armour damage");
   require(request.damage.shield == file.integer<int16_t>(), "shield damage");
   require(request.damage.splash_q10 == file.integer<int16_t>(), "splash");
-  for(auto const &table : {request.damage.shield_effects, request.damage.ground_effects, request.damage.armour_effects}) for(auto const effect : table) require(effect == file.integer<int16_t>(), "impact effect");
+  for(auto const &table : {request.damage.shield_effects, request.damage.ground_effects, request.damage.armour_effects}) {
+    for(auto const effect : table) require(effect == file.integer<int16_t>(), "impact effect");
+  }
   require(request.damage.missile_subtype.value_or(5) == file.integer<int16_t>(), "missile signature");
 }
 
@@ -44,7 +48,9 @@ int main(int const argc, char **argv) try {
   auto const flight_count{file.integer<uint32_t>()};
   auto const beam_count{file.integer<uint32_t>()};
   auto const lookup{[&](earthsiege::projectile_kind const kind, int16_t const subtype){
-    for(size_t i{0}; i != definitions.projectiles.size(); ++i) if(definitions.projectiles[i].kind == kind && definitions.projectiles[i].subtype == subtype) return i;
+    for(size_t i{0}; i != definitions.projectiles.size(); ++i) {
+      if(definitions.projectiles[i].kind == kind && definitions.projectiles[i].subtype == subtype) return i;
+    }
     throw std::runtime_error{"no projectile definition"};
   }};
   for(unsigned int row{0}; row != flight_count; ++row) {
@@ -59,13 +65,16 @@ int main(int const argc, char **argv) try {
     auto const final_position{vector<int32_t>(file)};
     earthsiege::weapon_shot shot;
     shot.kind = kind == earthsiege::projectile_kind::rocket ? earthsiege::shot_kind::rocket : earthsiege::shot_kind::scaled;
-    shot.projectile = lookup(kind, subtype); shot.charge = charge;
-    shot.muzzle.position = position; shot.muzzle.angles = angles;
+    shot.projectile = lookup(kind, subtype);
+    shot.charge = charge;
+    shot.muzzle.position = position;
+    shot.muzzle.angles = angles;
     earthsiege::projectile_instance projectile{shot, definitions, motions, bullets, rockets};
     earthsiege::projectile_guidance guidance;
     unsigned int queries{0};
     auto const outcome{projectile.advance(ratio, guidance, [&](earthsiege::impact_request const &request)->std::optional<int32_t> {
-      ++queries; check_packet(file, request, "flight " + std::to_string(row));
+      ++queries;
+      check_packet(file, request, "flight " + std::to_string(row));
       return hit ? std::optional<int32_t>{100} : std::nullopt;
     })};
     if(queries != 1 || (outcome != earthsiege::projectile_result::flying) != done || projectile.flight().position != final_position) file.fail("flight result differs");
@@ -81,11 +90,18 @@ int main(int const argc, char **argv) try {
     auto const start{vector<int32_t>(file)};
     auto const end{vector<int32_t>(file)};
     earthsiege::weapon_shot shot;
-    shot.kind = earthsiege::shot_kind::beam; shot.projectile = lookup(earthsiege::projectile_kind::beam, subtype); shot.charge = charge; shot.range = reach;
-    shot.muzzle.transform = earthsiege::rotation_transform(angles); shot.muzzle.transform.translation = position; shot.muzzle.position = position; shot.muzzle.angles = angles;
+    shot.kind = earthsiege::shot_kind::beam;
+    shot.projectile = lookup(earthsiege::projectile_kind::beam, subtype);
+    shot.charge = charge;
+    shot.range = reach;
+    shot.muzzle.transform = earthsiege::rotation_transform(angles);
+    shot.muzzle.transform.translation = position;
+    shot.muzzle.position = position;
+    shot.muzzle.angles = angles;
     unsigned int queries{0};
     auto const path{earthsiege::dispatch_beam(shot, definitions, [&](earthsiege::impact_request const &request)->std::optional<int32_t> {
-      ++queries; check_packet(file, request, "beam " + std::to_string(row));
+      ++queries;
+      check_packet(file, request, "beam " + std::to_string(row));
       return depth ? std::optional<int32_t>{depth - 1} : std::nullopt;
     })};
     if(queries != 1 || path.start != start || path.end != end) file.fail("beam endpoint differs");

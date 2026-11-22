@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <stdexcept>
 namespace earthsiege {
-midi_gain::midi_gain(std::span<uint32_t const> installed) : devices{installed.begin(), installed.end()}, volumes_(installed.size()) {
+midi_gain::midi_gain(std::span<uint32_t const> installed)
+  : devices{installed.begin(), installed.end()},
+    volumes_(installed.size()) {
   for(auto &v : volumes_) v.fill(127);
 }
 auto midi_gain::apply(midi_packet packet, uint8_t song_volume, bool muted)->midi_packet {

@@ -15,25 +15,25 @@ enum class mission_text_kind : uint32_t {
 };
 
 struct conditional_phrase {
-  int16_t first{};
-  int16_t last{};
+  int16_t first{0};
+  int16_t last{0};
   std::string text;
 };
 
 struct counter_phrase {
-  unsigned int counter{};
+  unsigned int counter{0};
   std::vector<conditional_phrase> choices;
 };
 
 using text_segment = std::variant<std::string, counter_phrase>;
 
 struct text_program {
-  unsigned int maximum_text{};
+  unsigned int maximum_text{0};
   std::vector<text_segment> segments;
 };
 
 struct objective_text {
-  uint8_t marker{};
+  uint8_t marker{0};
   std::string text;
 };
 

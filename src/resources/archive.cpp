@@ -26,7 +26,7 @@ archive::archive(std::vector<uint8_t> input, std::string label) : data{std::move
   auto const payload_start{file.position()};
   std::vector<std::pair<size_t, size_t>> intervals;
   intervals.reserve(count);
-  for(unsigned int index{}; index < count; ++index) {
+  for(unsigned int index{0}; index < count; ++index) {
     binary_reader filename{table.take(13), "VOLN filename"};
     auto const basename{filename.cstring()};
     auto const directory{table.integer<uint8_t>()};

@@ -39,7 +39,9 @@ void flank(herc_attack_state &state, herc_target_geometry &geometry, herc_attack
       if(input.actor.view_offset >= -2000 && input.actor.view_offset < 2000) {
         geometry.direction = 0;
         state.steering_memory = 0;
-      } else geometry.direction = -1;
+      } else {
+        geometry.direction = -1;
+      }
     }
   }
   callbacks.move(herc_range_movement(geometry, state.last_direction));
@@ -62,54 +64,61 @@ herc_target_geometry relative_herc_target(herc_combat_position const &actor, her
 movement_request herc_range_movement(herc_target_geometry &geometry, int16_t &last_direction) {
   // Deliberately use the previous magnitude for the range correction, then
   // refresh it: approach/flanking can change bearing_error before this call.
-  if(geometry.distance < geometry.near_distance) geometry.direction = geometry.bearing_magnitude < 16384 ? -1 : 1;
-  else if(geometry.distance > geometry.far_distance) geometry.direction = geometry.bearing_magnitude <= 16384 ? 1 : -1;
+  if(geometry.distance < geometry.near_distance) {
+    geometry.direction = geometry.bearing_magnitude < 16384 ? -1 : 1;
+  } else if(geometry.distance > geometry.far_distance) geometry.direction = geometry.bearing_magnitude <= 16384 ? 1 : -1;
   geometry.bearing_magnitude = magnitude(geometry.bearing_error);
   if(geometry.direction != 0) last_direction = geometry.direction;
-  return {.speed{static_cast<int16_t>(geometry.direction < 0 ? -256 : geometry.direction > 0 ? 256 : 0)}, .turn{static_cast<int16_t>(geometry.bearing_error >> 4)}};
+  return {
+    .speed{static_cast<int16_t>(geometry.direction < 0 ? -256 : geometry.direction > 0 ? 256 : 0)},
+    .turn{static_cast<int16_t>(geometry.bearing_error >> 4)}
+  };
 }
 
 bool attack_with_herc(behavior const type, herc_attack_state &state, int16_t &command, herc_attack_inputs const &input, frame_ratio const ratio, herc_attack_callbacks const &callbacks) {
   auto geometry{relative_herc_target(input.actor, input.target)};
   switch(type) {
-    case behavior::attacking:
-      if(geometry.facing_magnitude < 8000) {
-        geometry.direction = 32768 - geometry.bearing_magnitude < 4000 ? -1 : 1;
-        auto const side{(geometry.bearing_error < 0) == (geometry.bearing_magnitude > 16384) ? 16384 : -16384};
-        auto point{offset_point(input.target.position, 18000, static_cast<uint16_t>(input.target.heading + side))};
-        if(geometry.direction == -1) {
-          for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(2 * static_cast<int64_t>(input.actor.position[axis]) - point[axis]);
-        }
-        geometry.bearing_error = wrap_word(bearing_angle(input.actor.position, point) - input.actor.heading);
-      } else geometry.direction = geometry.bearing_magnitude < 8192 ? 0 : -1;
-      callbacks.move(herc_range_movement(geometry, state.last_direction));
-      break;
-    case behavior::flanking:
-      flank(state, geometry, input, ratio, callbacks);
-      break;
-    case behavior::facing_off:
-      geometry.direction = geometry.bearing_magnitude < 8192 ? 1 : -1;
-      geometry.near_distance = 16000;
-      geometry.far_distance = 35000;
-      callbacks.move(herc_range_movement(geometry, state.last_direction));
-      break;
-    case behavior::attacking_base:
-      if(!input.base_can_retaliate) geometry.facing_error = geometry.facing_magnitude = 32000;
-      flank(state, geometry, input, ratio, callbacks);
-      geometry.near_distance = 25000;
-      // Original immediate is 0xffffafc8: 45,000 sign-extended from a word.
-      // It really is negative; the original also applies locomotion twice here.
-      geometry.far_distance = -20536;
-      callbacks.move(herc_range_movement(geometry, state.last_direction));
-      break;
-    case behavior::attacking_flyer:
-      geometry.direction = geometry.bearing_magnitude < 2000 && (geometry.facing_magnitude > 2000 || geometry.distance > 35000) ? 0 : -1;
-      if(input.expansion && geometry.bearing_magnitude < 2000 && geometry.facing_magnitude > 2000 && geometry.distance > 35000) geometry.direction = 1;
-      geometry.near_distance = 0;
-      geometry.far_distance = 1000000;
-      callbacks.move(herc_range_movement(geometry, state.last_direction));
-      break;
-    default: throw std::invalid_argument{"not a HERC attack movement controller"};
+  case behavior::attacking:
+    if(geometry.facing_magnitude < 8000) {
+      geometry.direction = 32768 - geometry.bearing_magnitude < 4000 ? -1 : 1;
+      auto const side{(geometry.bearing_error < 0) == (geometry.bearing_magnitude > 16384) ? 16384 : -16384};
+      auto point{offset_point(input.target.position, 18000, static_cast<uint16_t>(input.target.heading + side))};
+      if(geometry.direction == -1) {
+        for(unsigned int axis{0}; axis != 3; ++axis) point[axis] = wrap_long(2 * static_cast<int64_t>(input.actor.position[axis]) - point[axis]);
+      }
+      geometry.bearing_error = wrap_word(bearing_angle(input.actor.position, point) - input.actor.heading);
+    } else {
+      geometry.direction = geometry.bearing_magnitude < 8192 ? 0 : -1;
+    }
+    callbacks.move(herc_range_movement(geometry, state.last_direction));
+    break;
+  case behavior::flanking:
+    flank(state, geometry, input, ratio, callbacks);
+    break;
+  case behavior::facing_off:
+    geometry.direction = geometry.bearing_magnitude < 8192 ? 1 : -1;
+    geometry.near_distance = 16000;
+    geometry.far_distance = 35000;
+    callbacks.move(herc_range_movement(geometry, state.last_direction));
+    break;
+  case behavior::attacking_base:
+    if(!input.base_can_retaliate) geometry.facing_error = geometry.facing_magnitude = 32000;
+    flank(state, geometry, input, ratio, callbacks);
+    geometry.near_distance = 25000;
+    // Original immediate is 0xffffafc8: 45,000 sign-extended from a word.
+    // It really is negative; the original also applies locomotion twice here.
+    geometry.far_distance = -20536;
+    callbacks.move(herc_range_movement(geometry, state.last_direction));
+    break;
+  case behavior::attacking_flyer:
+    geometry.direction = geometry.bearing_magnitude < 2000 && (geometry.facing_magnitude > 2000 || geometry.distance > 35000) ? 0 : -1;
+    if(input.expansion && geometry.bearing_magnitude < 2000 && geometry.facing_magnitude > 2000 && geometry.distance > 35000) geometry.direction = 1;
+    geometry.near_distance = 0;
+    geometry.far_distance = 1000000;
+    callbacks.move(herc_range_movement(geometry, state.last_direction));
+    break;
+  default:
+    throw std::invalid_argument{"not a HERC attack movement controller"};
   }
   callbacks.aim(geometry.facing_error);
   bool const finished{callbacks.completed ? callbacks.completed() : input.actor_incapacitated || ((type == behavior::attacking_base || type == behavior::attacking_flyer) ? input.target_incapacitated : input.target_completed)};

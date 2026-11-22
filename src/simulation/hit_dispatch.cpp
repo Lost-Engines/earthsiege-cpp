@@ -26,7 +26,10 @@ std::optional<size_t> nearby_companion(impact_world const &world, shot_source co
     auto const &candidate{world.actors[index]};
     if(index == source.actor || candidate.disabled || candidate.dead) continue;
     auto const distance{fast_distance(difference(candidate.position, owner.position))};
-    if(distance < best_distance) { best_distance = distance; best = index; }
+    if(distance < best_distance) {
+      best_distance = distance;
+      best = index;
+    }
   }
   int32_t constexpr warning_distance{30000};
   return best_distance < warning_distance ? best : std::nullopt;
@@ -46,8 +49,9 @@ std::optional<int32_t> dispatch_impact(impact_request request, shot_source const
     auto const delta{difference(end, origin)};
     auto const horizontal{fast_distance_2d({delta.x, delta.y})};
     auto const downward{wrap_word(-static_cast<int32_t>(direction_angle(horizontal, delta.z)))};
-    if(origin.z < 0) request.reach = 0;
-    else if(downward != 0) {
+    if(origin.z < 0) {
+      request.reach = 0;
+    } else if(downward != 0) {
       auto const sine{model_cosine(static_cast<uint16_t>(downward - angle_quarter_turn))};
       if(sine == 0) throw std::runtime_error{"original ground intersection divides by zero"};
       request.reach = wrap_long(static_cast<int64_t>(origin.z) * model_matrix_one) / sine;
@@ -70,7 +74,9 @@ std::optional<int32_t> dispatch_impact(impact_request request, shot_source const
       owner.hit_enemy = true;
       if(victim.trigger && !victim.quiet && world.events.trigger) world.events.trigger(*victim.trigger);
       obstruction.reset();
-    } else obstruction = impact_obstruction{obstruction_kind::actor, index};
+    } else {
+      obstruction = impact_obstruction{obstruction_kind::actor, index};
+    }
     if(!victim.dead && (friendly || (!victim.inactive && !victim.disabled))) {
       if(source.player && friendly && victim.group != owner.group && world.events.friendly_warning) {
         if(auto const companion{nearby_companion(world, source)}) world.events.friendly_warning(*companion);

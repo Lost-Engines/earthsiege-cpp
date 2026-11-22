@@ -57,7 +57,7 @@ auto main(int const argc, char **argv)->int try {
     require(instance.transforms().size() == matrices, row, "matrix count");
     for(unsigned int node{0}; node != matrices; ++node) {
       auto const &transform{instance.transforms()[node]};
-      bool const defined{node == 0 || std::ranges::any_of(shape.animation->relations, [node](auto const &relation){ return relation.node == static_cast<int>(node); })};
+      bool const defined{node == 0 || std::ranges::any_of(shape.animation->relations, [node](auto const &relation){return relation.node == static_cast<int>(node);})};
       for(unsigned int const index : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) {
         auto const expected{file.integer<int16_t>()};
         require(!defined || transform.basis.data[index] == expected, row, "matrix basis");

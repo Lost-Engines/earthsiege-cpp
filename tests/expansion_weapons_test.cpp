@@ -57,9 +57,13 @@ int main(int argc, char **argv) try {
   resource_store resources{argv[1]};
   auto definitions{read_weapon_catalogue(resources)};
   auto const models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))};
-  weapon_mount mount{.orientation{4}, .equipment_slot{0}};
-  for(int16_t id{}; id < 22; ++id) {
-    std::array equipment{id}, values{int16_t{5}};
+  weapon_mount mount{
+    .orientation{4},
+    .equipment_slot{0}
+  };
+  for(int16_t id{0}; id < 22; ++id) {
+    std::array equipment{id};
+    std::array values{int16_t{5}};
     std::array mounts{mount};
     weapon_bank bank{definitions, models, mounts, equipment, values};
     if(id == 17) {
@@ -83,14 +87,18 @@ int main(int argc, char **argv) try {
   auto m{f.take(8)};
   require(std::string(m.begin(), m.end()) == "ESEXWPN1", "weapon fixture");
   auto count{f.integer<uint16_t>()};
-  for(unsigned i{}; i < count; ++i) {
+  for(unsigned i{0}; i < count; ++i) {
     auto id{f.integer<int16_t>()};
     auto steps{f.integer<uint16_t>()};
     capacitor c;
     c.charge = 961;
     weapon_state state{
-        .definition{id}, .projectile{static_cast<size_t>(definitions.weapons[id].projectile)}, .mechanism{c}, .convergence{}};
-    for(unsigned j{}; j < steps; ++j) {
+        .definition{id},
+      .projectile{static_cast<size_t>(definitions.weapons[id].projectile)},
+      .mechanism{c},
+      .convergence{}
+    };
+    for(unsigned j{0}; j < steps; ++j) {
       auto shots{discharge_weapon(state, definitions, mount, {}, false)};
       eq(f, state.energy()->charge, "original EMP charge");
       eq(f, static_cast<uint8_t>(state.pending_second_shot), "original EMP second-shot latch");
@@ -101,7 +109,7 @@ int main(int argc, char **argv) try {
     }
   }
   auto lifetimes{f.integer<uint16_t>()};
-  for(unsigned i{}; i < lifetimes; ++i) {
+  for(unsigned i{0}; i < lifetimes; ++i) {
     auto expansion{f.integer<uint8_t>()};
     auto ratio{f.integer<int16_t>()};
     auto steps{f.integer<uint16_t>()};
@@ -111,7 +119,7 @@ int main(int argc, char **argv) try {
     projectile_flight flight;
     flight.position = {0, 0, 10000};
     projectile_guidance guidance;
-    for(unsigned j{}; j < steps; ++j) {
+    for(unsigned j{0}; j < steps; ++j) {
       auto result{advance_projectile(flight, motions, 1000, {}, ratio, guidance)};
       eq(f, flight.age, "original bullet age");
       eq(f, static_cast<uint8_t>(result == projectile_result::expired), "original bullet expiry");
@@ -124,7 +132,7 @@ int main(int argc, char **argv) try {
   require(std::string(bm.begin(), bm.end()) == "ESEXBEAM", "beam fixture");
   auto styles{read_beam_styles(resources.read("simvol0", "dat/BEAM.DAT"))};
   auto beams{b.integer<uint16_t>()};
-  for(unsigned i{}; i < beams; ++i) {
+  for(unsigned i{0}; i < beams; ++i) {
     auto type{b.integer<int16_t>()};
     beam_path path{point(b), point(b)};
     auto colour{b.integer<int16_t>()};
@@ -144,7 +152,7 @@ int main(int argc, char **argv) try {
     require(strip == (type == 1 || type == 7), "ELF-II strip");
     eq(b, beam.remaining, "original beam lifetime");
     auto steps{b.integer<uint16_t>()};
-    for(unsigned j{}; j < steps; ++j) {
+    for(unsigned j{0}; j < steps; ++j) {
       auto ratio{b.integer<int16_t>()};
       auto done{advance_beam_effect(beam, ratio)};
       eq(b, beam.remaining, "beam remaining");

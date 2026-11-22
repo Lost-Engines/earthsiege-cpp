@@ -3,7 +3,10 @@
 
 namespace earthsiege {
 navigation_display::navigation_display(framebuffer &buffer, scenery_world const &source)
-  : target{buffer}, world{source}, colours{source.colours()}, models{buffer, colours} {
+  : target{buffer},
+    world{source},
+    colours{source.colours()},
+    models{buffer, colours} {
   apply_cockpit_map_shading(colours);
 }
 

@@ -27,7 +27,8 @@ std::optional<int32_t> intersect_spheres(std::span<collision_sphere const> const
 }
 
 collision_sphere collision_bounds(std::span<collision_sphere const> const spheres) {
-  vec3<int16_t> low{10000, 10000, 10000}, high{-10000, -10000, -10000};
+  vec3<int16_t> low{10000, 10000, 10000};
+  vec3<int16_t> high{-10000, -10000, -10000};
   for(auto const &sphere : spheres) {
     for(unsigned int axis{0}; axis != 3; ++axis) {
       high[axis] = wrap_word(std::max<int>(high[axis], sphere.centre[axis] + sphere.radius));

@@ -23,7 +23,9 @@ herc_loadout assemble_herc_loadout(herc_definition const &body, std::span<int16_
     result.damage.hit_points.at(internal) = weapon.internal_maximum;
     auto spheres{weapon.collision.spheres};
     auto const offset{weapon_mount_offset(mount, weapon)};
-    for(auto &sphere : spheres) for(unsigned int axis{0}; axis != 3; ++axis) sphere.centre[axis] = wrap_word(sphere.centre[axis] + offset[axis]);
+    for(auto &sphere : spheres) {
+      for(unsigned int axis{0}; axis != 3; ++axis) sphere.centre[axis] = wrap_word(sphere.centre[axis] + offset[axis]);
+    }
     // The original replaces the first pre-existing section with this equipment slot.
     bool replaced{false};
     for(auto &group : result.collision) {

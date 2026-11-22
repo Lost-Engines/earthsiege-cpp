@@ -13,7 +13,12 @@ damage_component component(binary_reader &file) {
   result.parent = file.integer<int8_t>();
   result.flags = file.integer<uint8_t>();
   auto const count{file.integer<uint16_t>()};
-  for(unsigned int index{0}; index != count; ++index) result.dependents.push_back(damage_dependency{.weight{file.integer<int16_t>()}, .component{file.integer<int16_t>()}});
+  for(unsigned int index{0}; index != count; ++index) {
+    result.dependents.push_back(damage_dependency{
+      .weight{file.integer<int16_t>()},
+      .component{file.integer<int16_t>()}
+    });
+  }
   return result;
 }
 
@@ -21,7 +26,12 @@ collision_section collision(binary_reader &file) {
   collision_section result;
   result.section = file.integer<int16_t>();
   auto const count{file.integer<uint16_t>()};
-  for(unsigned int index{0}; index != count; ++index) result.spheres.push_back(collision_sphere{.centre{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()}, .radius{file.integer<int16_t>()}});
+  for(unsigned int index{0}; index != count; ++index) {
+    result.spheres.push_back(collision_sphere{
+      .centre{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()},
+      .radius{file.integer<int16_t>()}
+    });
+  }
   return result;
 }
 

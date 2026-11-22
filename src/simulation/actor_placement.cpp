@@ -23,7 +23,11 @@ size_t kind_index(actor_kind const kind) {
 
 placement_catalogue::placement_catalogue(resource_store const &resources) {
   for(auto const &name : read_resource_names(resources.read("simvol0", "nam/MECHS.NAM"))) {
-    hercs.push_back(chassis{.name{name}, .profile{read_herc_profile(resources.read("simvol0", "dat/" + name + ".DAT"))}, .mounts{read_weapon_mounts(resources.read("simvol0", "gl/" + name + ".GL"))}});
+    hercs.push_back(chassis{
+      .name{name},
+      .profile{read_herc_profile(resources.read("simvol0", "dat/" + name + ".DAT"))},
+      .mounts{read_weapon_mounts(resources.read("simvol0", "gl/" + name + ".GL"))}
+    });
   }
   std::array<std::string_view, 3> const files{"MFORMS", "FFORMS", "BFORMS"};
   for(size_t kind{0}; kind != formations.size(); ++kind) {
@@ -33,9 +37,13 @@ placement_catalogue::placement_catalogue(resource_store const &resources) {
     for(unsigned int index{0}; index != count; ++index) {
       std::vector<vec3<int32_t>> offsets;
       for(int member{0}; member != members; ++member) {
-        if(kind == 2) offsets.push_back(vec3<int32_t>{file.integer<int32_t>(), file.integer<int32_t>(), 0});
-        else if(kind == 1) offsets.push_back(vec3<int32_t>{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()});
-        else offsets.push_back(vec3<int32_t>{file.integer<int16_t>(), file.integer<int16_t>(), 0});
+        if(kind == 2) {
+          offsets.push_back(vec3<int32_t>{file.integer<int32_t>(), file.integer<int32_t>(), 0});
+        } else if(kind == 1) {
+          offsets.push_back(vec3<int32_t>{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()});
+        } else {
+          offsets.push_back(vec3<int32_t>{file.integer<int16_t>(), file.integer<int16_t>(), 0});
+        }
       }
       formations[kind].push_back(std::move(offsets));
     }
@@ -55,14 +63,23 @@ mission_placement placement_catalogue::place(mission_script const &script, playe
   std::array<std::set<size_t>, 3> references;
   for(size_t index{1}; index != script.groups.size(); ++index) {
     auto const &group{script.groups[index]};
-    for(auto const member : group.members) if(member >= 0) references[kind_index(group.kind)].insert(static_cast<size_t>(member));
+    for(auto const member : group.members) {
+      if(member >= 0) references[kind_index(group.kind)].insert(static_cast<size_t>(member));
+    }
   }
   for(size_t index{0}; index != player.hercs.size(); ++index) references[0].insert(script.hercs.size() + index);
   std::array<std::map<size_t, size_t>, 3> slots;
   for(size_t kind{0}; kind != references.size(); ++kind) {
     for(auto const source : references[kind]) {
-      placed_actor actor{.source{source}, .definition{0}, .position{vec3<int32_t>{0, 0, -1}}, .angles{32768, 32768, 0}, .weapons{}};
-      int16_t position{-1}, heading{-1};
+      placed_actor actor{
+        .source{source},
+        .definition{0},
+        .position{vec3<int32_t>{0, 0, -1}},
+        .angles{32768, 32768, 0},
+        .weapons{}
+      };
+      int16_t position{-1};
+      int16_t heading{-1};
       if(kind == 0) {
         actor.player_roster = source >= script.hercs.size();
         std::span<int16_t const> weapons;
@@ -103,7 +120,12 @@ mission_placement placement_catalogue::place(mission_script const &script, playe
       if(heading >= 0) actor.angles = vec3<uint16_t>{0, 0, decode_mission_heading(script.headings.at(static_cast<size_t>(heading)))};
       auto const slot{result.actors[kind].size()};
       slots[kind][source] = slot;
-      if(actor.player_controlled) result.player = {.kind{actor_kind::herc}, .slot{slot}};
+      if(actor.player_controlled) {
+        result.player = {
+          .kind{actor_kind::herc},
+          .slot{slot}
+        };
+      }
       result.actors[kind].push_back(std::move(actor));
     }
   }
@@ -111,16 +133,28 @@ mission_placement placement_catalogue::place(mission_script const &script, playe
     auto const &source{script.groups[index]};
     auto const kind{kind_index(source.kind)};
     auto members{source.members};
-    if(index == 0) for(size_t ordinal{0}; ordinal != members.size(); ++ordinal) members[ordinal] = ordinal < player.hercs.size() ? static_cast<int16_t>(script.hercs.size() + ordinal) : int16_t{-1};
+    if(index == 0) {
+      for(size_t ordinal{0}; ordinal != members.size(); ++ordinal) members[ordinal] = ordinal < player.hercs.size() ? static_cast<int16_t>(script.hercs.size() + ordinal) : int16_t{-1};
+    }
     std::span<mission_reference const> route;
     if(source.route >= 0) route = script.routes.at(static_cast<size_t>(source.route)).points;
     uint16_t heading{0};
-    if(source.heading >= 0) heading = decode_mission_heading(script.headings.at(static_cast<size_t>(source.heading)));
-    else if(route.size() > 1) heading = bearing_angle(script.points.at(static_cast<size_t>(route[0])), script.points.at(static_cast<size_t>(route[1])));
+    if(source.heading >= 0) {
+      heading = decode_mission_heading(script.headings.at(static_cast<size_t>(source.heading)));
+    } else if(route.size() > 1) heading = bearing_angle(script.points.at(static_cast<size_t>(route[0])), script.points.at(static_cast<size_t>(route[1])));
     vec3<int32_t> const *anchor{nullptr};
-    if(source.position >= 0) anchor = &script.points.at(static_cast<size_t>(source.position));
-    else if(!route.empty()) anchor = &script.points.at(static_cast<size_t>(route[0]));
-    placed_group group{.kind{source.kind}, .formation{source.formation}, .argument{index == 0 && source.argument == 11 ? int16_t{8} : source.argument}, .heading{heading}, .members{}, .mode{static_cast<uint8_t>(source.mode)}, .target{source.target_type}};
+    if(source.position >= 0) {
+      anchor = &script.points.at(static_cast<size_t>(source.position));
+    } else if(!route.empty()) anchor = &script.points.at(static_cast<size_t>(route[0]));
+    placed_group group{
+      .kind{source.kind},
+      .formation{source.formation},
+      .argument{index == 0 && source.argument == 11 ? int16_t{8} : source.argument},
+      .heading{heading},
+      .members{},
+      .mode{static_cast<uint8_t>(source.mode)},
+      .target{source.target_type}
+    };
     for(size_t ordinal{0}; ordinal != members.size(); ++ordinal) {
       if(members[ordinal] < 0) continue;
       auto const slot{slots[kind].at(static_cast<size_t>(members[ordinal]))};
@@ -144,7 +178,10 @@ mission_placement placement_catalogue::place(mission_script const &script, playe
         }
       }
       if(kind == 1 && actor.position && actor.position->z == 0) actor.position->z = 5000;
-      group.members.push_back(actor_reference{.kind{source.kind}, .slot{slot}});
+      group.members.push_back(actor_reference{
+        .kind{source.kind},
+        .slot{slot}
+      });
     }
     result.groups.push_back(std::move(group));
   }

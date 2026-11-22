@@ -14,7 +14,11 @@ void repair_radar_bsp(model_part &part) {
   // These planes divide the stationary building; use their local-space plane.
   // Deliberate authentic-build exception: do not emulate DOS heap history only
   // to reproduce this confirmed bad read. See docs/VALIDATION.md.
-  if(auto *bsp{std::get_if<bsp_part>(&part.content)}) for(auto &node : bsp->nodes) if(node.transform >= 2) node.transform = -1;
+  if(auto *bsp{std::get_if<bsp_part>(&part.content)}) {
+    for(auto &node : bsp->nodes) {
+      if(node.transform >= 2) node.transform = -1;
+    }
+  }
   for(auto &child : model_children(part)) repair_radar_bsp(child);
 }
 
@@ -29,8 +33,9 @@ ground_catalogue::ground_catalogue(resource_store const &resources)
   binary_reader collisions{resources.read("simvol0", "dat/BASECOL.DAT"), "base collision"};
   auto const count{file.integer<uint16_t>()};
   for(unsigned int index{0}; index != count; ++index) {
-    ground_profile p;p.edition = resources.edition();
-    for(size_t field{}; field < p.source.size(); ++field) {
+    ground_profile p;
+    p.edition = resources.edition();
+    for(size_t field{0}; field < p.source.size(); ++field) {
       if(field == 5 && resources.edition() == game_edition::expansion) {
         for(auto &value : p.expansion_sections) value = file.integer<int16_t>();
       }
@@ -38,20 +43,34 @@ ground_catalogue::ground_catalogue(resource_store const &resources)
     }
     if(resources.edition() == game_edition::expansion) p.collision_enabled = file.integer<int16_t>() != 0;
     auto const &v{p.source};
-    p.type = v[0]; p.model = v[1]; p.wreck_model = v[2]; p.channels = v[3]; p.damage_capacity = v[4];
+    p.type = v[0];
+    p.model = v[1];
+    p.wreck_model = v[2];
+    p.channels = v[3];
+    p.damage_capacity = v[4];
     p.destruction_centre = vec3<int16_t>{v[6], v[7], v[8]};
-    p.burst_centre = vec3<int16_t>{v[9], v[10], v[11]}; p.burst_half_extent = vec3<int16_t>{v[12], v[13], v[14]};
-    p.weak_point = vec3<int16_t>{v[15], v[16], v[17]}; p.weak_point_radius = v[18];
-    p.animation_rates = {v[19], v[20]}; p.cell_sequence = v[21]; p.cell_period = v[22];
-    p.contact_radius = v[24]; p.target_height = v[25]; p.can_retaliate = v[26] != 0;
+    p.burst_centre = vec3<int16_t>{v[9], v[10], v[11]};
+    p.burst_half_extent = vec3<int16_t>{v[12], v[13], v[14]};
+    p.weak_point = vec3<int16_t>{v[15], v[16], v[17]};
+    p.weak_point_radius = v[18];
+    p.animation_rates = {v[19], v[20]};
+    p.cell_sequence = v[21];
+    p.cell_period = v[22];
+    p.contact_radius = v[24];
+    p.target_height = v[25];
+    p.can_retaliate = v[26] != 0;
     if(p.type != static_cast<int>(index) || p.channels < 0 || p.channels > 2) file.fail("unsupported base definition");
     p.collision = read_collision_parts(collisions);
     definitions.push_back(std::move(p));
   }
-  file.require_end(); collisions.require_end();
-  if(resources.edition() == game_edition::expansion){binary_reader w{resources.read("simvol0","dat/lc_wpns.dat")};auto count{w.integer<uint16_t>()};
-    for(unsigned i{};i < count;++i)landing_weapons_.push_back({w.integer<int16_t>(),w.integer<int16_t>(),w.integer<int32_t>(),{w.integer<int32_t>(),w.integer<int32_t>(),w.integer<int32_t>()},w.integer<int16_t>()});w.require_end();
-    if(landing_weapons_.size() != 3)throw std::runtime_error{"landing craft requires three weapon definitions"};
+  file.require_end();
+  collisions.require_end();
+  if(resources.edition() == game_edition::expansion) {
+    binary_reader w{resources.read("simvol0", "dat/lc_wpns.dat")};
+    auto count{w.integer<uint16_t>()};
+    for(unsigned i{0}; i < count; ++i) landing_weapons_.push_back({w.integer<int16_t>(), w.integer<int16_t>(), w.integer<int32_t>(), {w.integer<int32_t>(), w.integer<int32_t>(), w.integer<int32_t>()}, w.integer<int16_t>()});
+    w.require_end();
+    if(landing_weapons_.size() != 3) throw std::runtime_error{"landing craft requires three weapon definitions"};
   }
   for(auto &bank : animated_models) repair_radar_bsp(bank.roots.at(0));
 }

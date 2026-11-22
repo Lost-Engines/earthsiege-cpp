@@ -6,15 +6,21 @@
 
 namespace earthsiege {
 
-enum class damage_display_kind : int16_t { none = -1, herc, ground, flyer, unknown };
+enum class damage_display_kind : int16_t {
+  none = -1,
+  herc,
+  ground,
+  flyer,
+  unknown
+};
 struct damage_display_state {
   damage_display_kind kind{damage_display_kind::none};
-  int16_t model{};
-  bool friendly{};
-  bool player{};
-  bool dead{};
-  bool shield_warning{};
-  int16_t total_damage{};
+  int16_t model{0};
+  bool friendly{false};
+  bool player{false};
+  bool dead{false};
+  bool shield_warning{false};
+  int16_t total_damage{0};
   std::array<int16_t, 19> armour{};
   std::array<int16_t, 12> internal{};
   std::string name;
@@ -22,7 +28,10 @@ struct damage_display_state {
 
 /// STATUS/TARGET share an original paper doll renderer and retain the name font.
 class damage_display {
-  struct chassis_artwork { paper_doll diagram; std::vector<bitmap> frames; };
+  struct chassis_artwork {
+    paper_doll diagram;
+    std::vector<bitmap> frames;
+  };
   std::vector<chassis_artwork> chassis;
   std::vector<bitmap> bases;
   std::vector<bitmap> flyers;

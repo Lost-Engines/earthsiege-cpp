@@ -5,11 +5,11 @@
 namespace earthsiege {
 
 struct communications_choice {
-  bool disabled{};
-  bool alternate{};
+  bool disabled{false};
+  bool alternate{false};
 };
 struct communications_display_state {
-  size_t selected{};
+  size_t selected{0};
   std::array<communications_choice, 6> choices{};
   size_t command() const;
 };

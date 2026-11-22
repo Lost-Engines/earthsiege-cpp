@@ -7,7 +7,9 @@
 namespace earthsiege {
 
 live_explosion::live_explosion(int16_t const selected, explosion_state value, shape_part const &shape, shape_part const &secondary_shape)
-  : definition{selected}, state{std::move(value)}, model{shape} {
+  : definition{selected},
+    state{std::move(value)},
+    model{shape} {
   secondary_position = state.position;
   if(state.secondary_cell) secondary.emplace(secondary_shape);
   synchronize_cells();
@@ -18,11 +20,17 @@ void live_explosion::synchronize_cells() {
   if(secondary) secondary->cell_frames().front() = state.secondary_cell.value();
 }
 
-live_debris::live_debris(debris_particle value, shape_part const &shape, bool const weapon) : state{std::move(value)}, model{shape}, detached_weapon{weapon} {}
-live_smoke_puff::live_smoke_puff(smoke_puff_state value, shape_part const &shape) : state{std::move(value)}, model{shape} {}
+live_debris::live_debris(debris_particle value, shape_part const &shape, bool const weapon)
+  : state{std::move(value)},
+    model{shape},
+    detached_weapon{weapon} {}
+live_smoke_puff::live_smoke_puff(smoke_puff_state value, shape_part const &shape)
+  : state{std::move(value)},
+    model{shape} {}
 
 world_effects::world_effects(resource_store const &resources, sound_sink sink, bool alternate_ground_models)
-  : sounds{std::move(sink)}, explosion_definitions{read_explosions(resources.read("simvol0", "dat/EXPLOS.DAT"))},
+  : sounds{std::move(sink)},
+    explosion_definitions{read_explosions(resources.read("simvol0", "dat/EXPLOS.DAT"))},
     debris_definitions{read_debris(resources.read("simvol0", "dat/DEBRIS.DAT"))},
     explosion_models{read_model(resources.read("simvol0", "dts/EXPLOS.DTS"))},
     debris_models{read_model(resources.read("simvol0", "dts/DEBRIS.DTS"))},
@@ -31,10 +39,14 @@ world_effects::world_effects(resource_store const &resources, sound_sink sink, b
     detached_weapon_models{read_model(resources.read("simvol0", "dts/MECHWPN2.DTS"))},
     smoke_textures{read_bitmaps(resources.read("simvol0", "dba/SMOKE.DBA"))},
     weapon_textures{read_bitmaps(resources.read("simvol0", "dba/WPNTEX.DBA"))} {
-  if(resources.edition() == game_edition::expansion){deployment_models = read_model(resources.read("simvol0","dts/METEOR.DTS"));deployment_textures = read_bitmaps(resources.read("simvol0","dba/IMPACT.DBA"));craters.reserve(150);}
-  if(resources.edition() == game_edition::expansion)flat_textures = read_bitmaps(resources.read("simvol0",alternate_ground_models?"dba/FLAT2.DBA":"dba/FLAT.DBA"));
-  for(auto const &root:flat_models.roots)flat_instances.emplace_back(std::get<shape_part>(root.content));
-  explosion_textures.resize(resources.edition() == game_edition::expansion?10:9);
+  if(resources.edition() == game_edition::expansion) {
+    deployment_models = read_model(resources.read("simvol0", "dts/METEOR.DTS"));
+    deployment_textures = read_bitmaps(resources.read("simvol0", "dba/IMPACT.DBA"));
+    craters.reserve(150);
+  }
+  if(resources.edition() == game_edition::expansion) flat_textures = read_bitmaps(resources.read("simvol0", alternate_ground_models ? "dba/FLAT2.DBA" : "dba/FLAT.DBA"));
+  for(auto const &root : flat_models.roots) flat_instances.emplace_back(std::get<shape_part>(root.content));
+  explosion_textures.resize(resources.edition() == game_edition::expansion ? 10 : 9);
   for(size_t bank{0}; bank != explosion_textures.size(); ++bank) explosion_textures[bank] = read_bitmaps(resources.read("simvol0", "dba/EXPLO" + std::to_string(bank) + ".DBA"));
 }
 
@@ -47,14 +59,15 @@ std::optional<size_t> world_effects::add_explosion(int16_t const selected, vec3<
   auto &effect{explosions.at(*slot)};
   if(effect.state.light_intensity) {
     effect.light_slot = light_owners.emplace(*slot);
-    if(!effect.light_slot) effect.state.light_intensity.reset();
-    else {
+    if(!effect.light_slot) {
+      effect.state.light_intensity.reset();
+    } else {
       auto const source{lighting.add(position).value()};
       light_owners.at(*effect.light_slot) = source;
       lighting.intensity(source, *effect.state.light_intensity);
     }
   }
-  if(sounds) sounds(sample_sound_request{sound_action::positioned,static_cast<uint16_t>(effect.state.sound),position});
+  if(sounds) sounds(sample_sound_request{sound_action::positioned, static_cast<uint16_t>(effect.state.sound), position});
   return slot;
 }
 
@@ -72,7 +85,8 @@ std::optional<size_t> world_effects::add_smoke(int16_t const family, std::functi
   return emitters.emplace(live_smoke_emitter{create_smoke_emitter(family, random), std::move(attachment)});
 }
 std::optional<size_t> world_effects::add_puff(int16_t const root, vec3<int32_t> const &position) {
-  auto const slot{puffs.next_free_slot()}; if(!slot) return {};
+  auto const slot{puffs.next_free_slot()};
+  if(!slot) return {};
   auto const &shape{std::get<shape_part>(smoke_models.roots.at(static_cast<size_t>(root)).content)};
   return puffs.emplace(smoke_puff_state{root, vec3<int32_t>{position}, vec3<int16_t>{retained_puff_velocities[*slot]}}, shape);
 }
@@ -111,24 +125,33 @@ void world_effects::advance(frame_ratio const ratio) {
   });
 }
 
-bool world_effects::add_deployment(std::optional<size_t> const group,vec3<int32_t> const &destination,random_state &random){
-  if(!deployments.available())return false;
-  deployments.emplace(create_deployment(destination,random),group,std::get<shape_part>(deployment_models.roots.at(0).content),std::get<shape_part>(deployment_models.roots.at(1).content));return true;
+bool world_effects::add_deployment(std::optional<size_t> const group, vec3<int32_t> const &destination, random_state &random) {
+  if(!deployments.available()) return false;
+  deployments.emplace(create_deployment(destination, random), group, std::get<shape_part>(deployment_models.roots.at(0).content), std::get<shape_part>(deployment_models.roots.at(1).content));
+  return true;
 }
-void world_effects::advance_deployments(frame_ratio const ratio,std::function<bool(vec3<int32_t> const &)> const &impact,std::function<void(size_t,vec3<int32_t> const &)> const &release,vec3<int32_t> const &listener){
-  deployments.for_each_oldest([&](size_t slot,live_deployment &pod){
-    if(deployments.retiring(slot))return;
+void world_effects::advance_deployments(frame_ratio const ratio, std::function<bool(vec3<int32_t> const &)> const &impact, std::function<void(size_t, vec3<int32_t> const &)> const &release, vec3<int32_t> const &listener) {
+  deployments.for_each_oldest([&](size_t slot, live_deployment &pod){
+    if(deployments.retiring(slot)) return;
     auto const frames{std::get<shape_part>(deployment_models.roots.at(1).content).cell_frame_counts.front()};
-    if(advance_deployment(pod.state,static_cast<uint16_t>(frames),ratio,{
-      .sound{[&](uint16_t id){if(sounds)sounds(sample_sound_request{sound_action::positioned,id,listener});}},.impact{impact},
-      .finish{[&](vec3<int32_t> const &position,bool clear){if(pod.group){if(clear)release(*pod.group,position);if(craters.size() < 150)craters.push_back(position);}}}
-    }))deployments.defer_erase(slot);
+    if(advance_deployment(pod.state, static_cast<uint16_t>(frames), ratio, {
+      .sound{[&](uint16_t id){
+        if(sounds) sounds(sample_sound_request{sound_action::positioned, id, listener});
+      }},
+      .impact{impact},
+      .finish{[&](vec3<int32_t> const &position, bool clear){
+        if(pod.group) {
+          if(clear) release(*pod.group, position);
+          if(craters.size() < 150) craters.push_back(position);
+        }
+      }}
+    })) deployments.defer_erase(slot);
     pod.opening.cell_frames().front() = pod.state.cell;
   });
 }
 void world_effects::collect() {
   deployments.collect();
-  light_owners.collect([&](size_t, size_t const source){ lighting.remove(source); });
+  light_owners.collect([&](size_t, size_t const source){lighting.remove(source);});
   explosions.collect();
   debris.collect();
   puffs.collect([&](size_t const slot, live_smoke_puff const &puff){retained_puff_velocities[slot] = puff.state.velocity;});
@@ -140,10 +163,20 @@ effect_lighting &world_effects::lights() {
 }
 
 void world_effects::append_models(std::vector<scene_model> &models) {
-  deployments.for_each_oldest([&](size_t,live_deployment &pod){
-    auto placement{rotation_transform(pod.state.angles)};placement.translation = pod.state.position;
-    size_t const root{pod.state.landed?1u:0u};
-    models.push_back({.roots{&deployment_models.roots.at(root),1},.instance{pod.state.landed?pod.opening:pod.body},.placement{placement},.native_class{1},.textures{deployment_textures},.attachments{},.detail_thresholds{},.detail{}});
+  deployments.for_each_oldest([&](size_t, live_deployment &pod){
+    auto placement{rotation_transform(pod.state.angles)};
+    placement.translation = pod.state.position;
+    size_t const root{pod.state.landed ? 1u : 0u};
+    models.push_back({
+      .roots{&deployment_models.roots.at(root), 1},
+      .instance{pod.state.landed ? pod.opening : pod.body},
+      .placement{placement},
+      .native_class{1},
+      .textures{deployment_textures},
+      .attachments{},
+      .detail_thresholds{},
+      .detail{}
+    });
   });
   explosions.for_each_oldest([&](size_t, live_explosion &effect){
     auto const &definition{explosion_definitions.at(static_cast<size_t>(effect.definition))};
@@ -151,9 +184,13 @@ void world_effects::append_models(std::vector<scene_model> &models) {
     placement.translation = effect.state.position;
     models.push_back({
       .roots{&explosion_models.roots.at(static_cast<size_t>(definition.model)), 1},
-      .instance{effect.model}, .placement{placement}, .native_class{static_cast<int16_t>(definition.alternate_object_kind ? 8 : 2)},
+      .instance{effect.model},
+      .placement{placement},
+      .native_class{static_cast<int16_t>(definition.alternate_object_kind ? 8 : 2)},
       .textures{explosion_textures.at(static_cast<size_t>(definition.texture_bank))},
-      .attachments{}, .detail_thresholds{}, .detail{},
+      .attachments{},
+      .detail_thresholds{},
+      .detail{},
     });
   });
   debris.for_each_oldest([&](size_t, live_debris &particle){
@@ -161,26 +198,39 @@ void world_effects::append_models(std::vector<scene_model> &models) {
     placement.translation = particle.state.position;
     models.push_back({
       .roots{&(particle.detached_weapon ? detached_weapon_models : debris_models).roots.at(static_cast<size_t>(particle.state.model)), 1},
-      .instance{particle.model}, .placement{placement}, .native_class{1},
-      .textures{particle.detached_weapon ? std::span<bitmap const>{weapon_textures} : std::span<bitmap const>{}}, .attachments{}, .detail_thresholds{}, .detail{},
+      .instance{particle.model},
+      .placement{placement},
+      .native_class{1},
+      .textures{particle.detached_weapon ? std::span<bitmap const>{weapon_textures} : std::span<bitmap const>{}},
+      .attachments{},
+      .detail_thresholds{},
+      .detail{},
     });
   });
   puffs.for_each_oldest([&](size_t, live_smoke_puff &puff){
-    auto placement{rotation_transform({0,0,0})}; placement.translation = puff.state.position;
-    models.push_back({.roots{&smoke_models.roots.at(static_cast<size_t>(puff.state.root)), 1},
-      .instance{puff.model}, .placement{placement}, .native_class{4},
-      .textures{smoke_textures}, .attachments{}, .detail_thresholds{}, .detail{}});
+    auto placement{rotation_transform({0, 0, 0})};
+    placement.translation = puff.state.position;
+    models.push_back({
+      .roots{&smoke_models.roots.at(static_cast<size_t>(puff.state.root)), 1},
+      .instance{puff.model},
+      .placement{placement},
+      .native_class{4},
+      .textures{smoke_textures},
+      .attachments{},
+      .detail_thresholds{},
+      .detail{}
+    });
   });
 }
-ground_flash world_effects::ground_attachment(size_t const shape,vec3<int32_t> &position,uint16_t const heading) {
-  return {flat_models.roots.at(shape),flat_instances.at(shape),position,heading,flat_textures};
+ground_flash world_effects::ground_attachment(size_t const shape, vec3<int32_t> &position, uint16_t const heading) {
+  return {flat_models.roots.at(shape), flat_instances.at(shape), position, heading, flat_textures};
 }
 std::vector<ground_flash> world_effects::ground_flashes() {
   std::vector<ground_flash> result;
   explosions.for_each_oldest([&](size_t, live_explosion &effect){
-    if(effect.secondary) result.push_back({flat_models.roots.at(1), *effect.secondary, effect.secondary_position,0,flat_textures});
+    if(effect.secondary) result.push_back({flat_models.roots.at(1), *effect.secondary, effect.secondary_position, 0, flat_textures});
   });
-  for(auto &position:craters)result.push_back(ground_attachment(3,position,0));
+  for(auto &position : craters) result.push_back(ground_attachment(3, position, 0));
   return result;
 }
 

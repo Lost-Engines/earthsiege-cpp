@@ -8,20 +8,27 @@ namespace earthsiege {
 struct wingmate_order_state {
   vec3<int32_t> position{};
   behavior type{behavior::patrolling};
-  bool unavailable{}, disabled{}, dead{};
-  bool radar{}, radar_requested{}, ignore_target{};
-  int16_t command{};
-  std::optional<size_t> designated, selected;
-  int16_t stop_status{};
+  bool unavailable{false};
+  bool disabled{false};
+  bool dead{false};
+  bool radar{false};
+  bool radar_requested{false};
+  bool ignore_target{false};
+  int16_t command{0};
+  std::optional<size_t> designated;
+  std::optional<size_t> selected;
+  int16_t stop_status{0};
   vec2<int32_t> command_position{};
-  int32_t incoming_damage{}, reconsider_remaining{};
+  int32_t incoming_damage{0};
+  int32_t reconsider_remaining{0};
   bool herc{true};
-  bool expansion{false}, weapons_free{false};
+  bool expansion{false};
+  bool weapons_free{false};
   std::optional<size_t> followed;
 };
 struct wingmate_order {
-  uint16_t command{};
-  size_t issuer{};
+  uint16_t command{0};
+  size_t issuer{0};
   vec3<int32_t> position{};
   std::optional<size_t> target;
 };

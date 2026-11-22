@@ -9,8 +9,8 @@ public:
   static unsigned int constexpr word_count{56};
   struct state {
     std::array<uint16_t, word_count> words{};
-    unsigned int first{};
-    unsigned int second{};
+    unsigned int first{0};
+    unsigned int second{0};
   };
 
 private:

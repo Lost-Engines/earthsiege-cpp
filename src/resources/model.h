@@ -42,14 +42,14 @@ enum class model_kind : uint32_t {
 
 struct part_header {
   int16_t transform{-1};
-  int16_t id{};
-  int16_t radius{};
+  int16_t id{0};
+  int16_t radius{0};
   vec3<int16_t> centre;
 };
 
 struct material_slot {
-  int16_t value{};
-  uint16_t flags{};
+  int16_t value{0};
+  uint16_t flags{0};
 };
 
 struct face_material {
@@ -61,19 +61,19 @@ struct face_material {
 
 struct model_polygon {
   model_kind kind{};
-  uint16_t normal{};
-  uint16_t centre{};
-  uint16_t vertex_count{};
-  uint16_t vertex_list{};
+  uint16_t normal{0};
+  uint16_t centre{0};
+  uint16_t vertex_count{0};
+  uint16_t vertex_list{0};
   std::optional<uint16_t> material;
   std::optional<uint16_t> normal_list;
 };
 
 struct polygon_bsp_node {
-  int32_t constant{};
-  int16_t polygon{};
-  int16_t front{};
-  int16_t back{};
+  int32_t constant{0};
+  int16_t polygon{0};
+  int16_t front{0};
+  int16_t back{0};
 };
 
 struct model_mesh {
@@ -85,26 +85,26 @@ struct model_mesh {
 };
 
 struct animation_frame {
-  uint16_t duration{};
-  uint16_t transition_count{};
-  uint16_t first_transition{};
+  uint16_t duration{0};
+  uint16_t transition_count{0};
+  uint16_t first_transition{0};
 };
 
 struct animation_sequence {
-  bool cyclic{};
-  int16_t tick{};
-  int16_t priority{};
-  int16_t ground_movement{};
+  bool cyclic{false};
+  int16_t tick{0};
+  int16_t priority{0};
+  int16_t ground_movement{0};
   std::vector<animation_frame> frames;
   std::vector<uint16_t> parts;
   std::vector<uint16_t> pose_indices;
 };
 
 struct animation_transition {
-  uint16_t tick{};
-  uint16_t destination_sequence{};
-  uint16_t destination_frame{};
-  uint16_t ground_movement{};
+  uint16_t tick{0};
+  uint16_t destination_sequence{0};
+  uint16_t destination_frame{0};
+  uint16_t ground_movement{0};
 };
 
 struct animation_pose {
@@ -113,8 +113,8 @@ struct animation_pose {
 };
 
 struct node_relation {
-  int16_t parent{};
-  int16_t node{};
+  int16_t parent{0};
+  int16_t node{0};
 };
 
 struct animation_list {
@@ -131,15 +131,15 @@ struct model_transform {
     int16_t{}, model_matrix_one, int16_t{},
     int16_t{}, int16_t{}, model_matrix_one,
   };
-  uint8_t type{};
-  uint8_t flags{};
+  uint8_t type{0};
+  uint8_t flags{0};
   vec3<int32_t> translation;
 };
 
 struct collision_heightfield {
   vec2<int16_t> size;
   vec2<int16_t> origin;
-  int16_t cell_shift{};
+  int16_t cell_shift{0};
   std::array<int32_t, 256> heights{};
   std::vector<uint8_t> cells;
 };
@@ -160,9 +160,9 @@ struct shape_part {
 
 struct part_bsp_node {
   vec3<int16_t> normal;
-  int32_t constant{};
-  int16_t front{};
-  int16_t back{};
+  int32_t constant{0};
+  int16_t front{0};
+  int16_t back{0};
   int16_t transform{-1};
 };
 
@@ -178,11 +178,11 @@ struct detail_part {
 
 struct cell_part {
   std::vector<model_part> children;
-  int16_t sequence{};
+  int16_t sequence{0};
 };
 
 struct billboard_part {
-  uint16_t bitmap{};
+  uint16_t bitmap{0};
   vec2<int8_t> offset;
 };
 

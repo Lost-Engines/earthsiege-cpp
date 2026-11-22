@@ -37,7 +37,7 @@ auto crc32(bytes data)->uint32_t {
   uint32_t value{0xffffffff};
   for(auto const byte : data) {
     value ^= byte;
-    for(unsigned int bit{}; bit < 8; ++bit) {
+    for(unsigned int bit{0}; bit < 8; ++bit) {
       value = (value >> 1) ^ ((value & 1) ? 0xedb88320u : 0u);
     }
   }

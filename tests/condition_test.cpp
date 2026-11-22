@@ -45,15 +45,15 @@ auto main(int argc, char *argv[])->int try {
   std::ifstream fixture{argv[2]};
   std::string name;
   std::string seed;
-  unsigned int count{};
-  unsigned int cases{};
+  unsigned int count{0};
+  unsigned int cases{0};
   while(fixture >> name >> seed >> count) {
     earthsiege::binary_reader file{resources.read("zones", "msn/" + name), name};
     if(file.integer<uint16_t>() != 5) throw std::runtime_error{"unexpected source mission revision"};
     auto const conditions{earthsiege::read_conditions(file)};
     earthsiege::random_state::state initial;
     if(seed == "seeded") {
-      for(unsigned int index{}; index < initial.words.size(); ++index) initial.words[index] = static_cast<uint16_t>((index * 7919 + 12345) & 32767);
+      for(unsigned int index{0}; index < initial.words.size(); ++index) initial.words[index] = static_cast<uint16_t>((index * 7919 + 12345) & 32767);
       initial.first = 31;
     }
     earthsiege::random_state random{initial};
@@ -61,7 +61,7 @@ auto main(int argc, char *argv[])->int try {
     auto const active{earthsiege::evaluate_conditions(conditions, flags, random)};
     if(active.size() != count) throw std::runtime_error{"condition count differs from original: " + name};
     std::vector<std::array<int16_t, 7>> expected_complete;
-    for(unsigned int index{}; index < count; ++index) {
+    for(unsigned int index{0}; index < count; ++index) {
       std::array<int16_t, 7> expected{};
       for(auto &word : expected) fixture >> word;
       expected_complete.push_back(expected);
@@ -71,21 +71,21 @@ auto main(int argc, char *argv[])->int try {
     }
     earthsiege::random_state complete_random{initial};
     auto const complete{earthsiege::compile_mission(resources.read("zones", "msn/" + name), flags, complete_random, 0)};
-    for(unsigned int index{}; index < count; ++index) {
+    for(unsigned int index{0}; index < count; ++index) {
       if(native_words(complete.conditions.at(index)) != expected_complete[index]) throw std::runtime_error{"late condition binding differs from original: " + name};
     }
     ++cases;
   }
   if(cases != 150) throw std::runtime_error{"incomplete condition fixtures"};
   std::ifstream random_fixtures{argv[3]};
-  int16_t advances{};
-  unsigned int draws{};
-  uint32_t expected_crc{};
-  unsigned int rng_cases{};
+  int16_t advances{0};
+  unsigned int draws{0};
+  uint32_t expected_crc{0};
+  unsigned int rng_cases{0};
   while(random_fixtures >> advances >> draws >> std::hex >> expected_crc >> std::dec) {
     earthsiege::random_state random{advances};
     std::vector<uint8_t> result;
-    for(unsigned int index{}; index < draws; ++index) {
+    for(unsigned int index{0}; index < draws; ++index) {
       auto const value{std::bit_cast<uint16_t>(random.next())};
       result.push_back(static_cast<uint8_t>(value));
       result.push_back(static_cast<uint8_t>(value >> 8));

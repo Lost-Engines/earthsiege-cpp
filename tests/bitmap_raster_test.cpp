@@ -10,7 +10,7 @@ int main(int const argc, char **argv) try {
   auto const bytes{earthsiege::read_file(argv[1])};
   earthsiege::binary_reader file{bytes};
   auto const magic{file.take(8)};
-  bool const shell{std::string(magic.begin(),magic.end()) == "ESSCLGO1"};
+  bool const shell{std::string(magic.begin(), magic.end()) == "ESSCLGO1"};
   if(!shell && std::string(magic.begin(), magic.end()) != "ESBITMAP") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   earthsiege::bitmap bitmap;
@@ -26,7 +26,7 @@ int main(int const argc, char **argv) try {
     auto const expected{file.integer<uint32_t>()};
     earthsiege::framebuffer frame;
     frame.clear(background);
-    (shell?earthsiege::draw_shell_scaled_bitmap:earthsiege::draw_scaled_bitmap)(frame, bitmap, vec2<int32_t>{position}, vec2<int32_t>{size}, bounds);
+    (shell ? earthsiege::draw_shell_scaled_bitmap : earthsiege::draw_scaled_bitmap)(frame, bitmap, vec2<int32_t>{position}, vec2<int32_t>{size}, bounds);
     if(earthsiege::crc32(frame.pixels()) != expected) throw std::runtime_error{"scaled bitmap differs at " + std::to_string(row)};
   }
   file.require_end();

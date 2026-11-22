@@ -7,7 +7,11 @@
 namespace earthsiege {
 
 // Runtime combat categories differ from the mission file's HERC/flyer/base order.
-enum class combat_actor_kind : int16_t { herc, base, flyer };
+enum class combat_actor_kind : int16_t {
+  herc,
+  base,
+  flyer
+};
 constexpr combat_actor_kind combat_kind(actor_kind kind) {
   return kind == actor_kind::herc ? combat_actor_kind::herc : kind == actor_kind::base ? combat_actor_kind::base : combat_actor_kind::flyer;
 }
@@ -49,7 +53,11 @@ enum class target_selection_flags : uint8_t {
   ignore_bearing = 32,
 };
 
-enum class combat_balance : uint8_t { superior, comparable, inferior };
+enum class combat_balance : uint8_t {
+  superior,
+  comparable,
+  inferior
+};
 combat_balance compare_herc_strength(int16_t own_strength, int16_t target_strength, combat_actor_kind target_kind, random_state &random);
 
 bool recognizes(target_candidate const &observer, target_candidate const &target, size_t target_index);

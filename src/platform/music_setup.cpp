@@ -13,7 +13,11 @@ struct panel {
   palette colours;
   framebuffer frame;
   explicit panel(resource_store const &resources) : face{read_font(resources.read("simvol0", "dfn/green6x8.dfn"))} {
-    for(auto &glyph : face.glyphs) for(auto &pixel : glyph.pixels) if(pixel) pixel = 1;
+    for(auto &glyph : face.glyphs) {
+      for(auto &pixel : glyph.pixels) {
+        if(pixel) pixel = 1;
+      }
+    }
     colours.colours.fill(0xff101820);
     colours.colours[1] = 0xffd8e8df;
     colours.colours[2] = 0xff315b49;
@@ -36,26 +40,35 @@ std::array constexpr labels{"AdLib / Sound Blaster (OPL2)", "Sound Blaster Pro /
 } // anonymous namespace
 
 auto choose_game_edition(window &display, resource_store const &resources)->std::optional<game_edition> {
-  panel ui{resources};int selected{};
-  while(!glfwWindowShouldClose(display.get())){
+  panel ui{resources};
+  int selected{0};
+  while(!glfwWindowShouldClose(display.get())) {
     window_event event;
-    while(display.poll(event)){
-      if(event.type == event_type::close)return {};
-      if(event.type == event_type::key_down && !event.repeat){
-        if(event.key == GLFW_KEY_ESCAPE)return {};
-        if(event.key == GLFW_KEY_UP || event.key == GLFW_KEY_DOWN)selected = 1 - selected;
-        if(event.key == GLFW_KEY_ENTER || event.key == GLFW_KEY_KP_ENTER)return selected?game_edition::expansion:game_edition::original;
-        if(event.key == GLFW_KEY_1)return game_edition::original;
-        if(event.key == GLFW_KEY_2)return game_edition::expansion;
+    while(display.poll(event)) {
+      if(event.type == event_type::close) return {};
+      if(event.type == event_type::key_down && !event.repeat) {
+        if(event.key == GLFW_KEY_ESCAPE) return {};
+        if(event.key == GLFW_KEY_UP || event.key == GLFW_KEY_DOWN) selected = 1 - selected;
+        if(event.key == GLFW_KEY_ENTER || event.key == GLFW_KEY_KP_ENTER) return selected ? game_edition::expansion : game_edition::original;
+        if(event.key == GLFW_KEY_1) return game_edition::original;
+        if(event.key == GLFW_KEY_2) return game_edition::expansion;
       }
       bool const inside{event.x >= 10 && event.x < 310 && event.y >= 66 && event.y < 110};
-      if(event.type == event_type::motion && inside)selected = (event.y - 66) / 22;
-      if(event.type == event_type::button_down && event.button == GLFW_MOUSE_BUTTON_LEFT && inside)return (event.y - 66) / 22?game_edition::expansion:game_edition::original;
+      if(event.type == event_type::motion && inside) selected = (event.y - 66) / 22;
+      if(event.type == event_type::button_down && event.button == GLFW_MOUSE_BUTTON_LEFT && inside) return (event.y - 66) / 22 ? game_edition::expansion : game_edition::original;
     }
-    ui.frame.clear();ui.text("EARTHSIEGE",10,15);ui.text("Choose a game",10,37);
-    for(int i{};i < 2;++i){int y{66 + i * 22};if(selected == i)ui.frame.fill({10,y,309,y + 19},2);ui.text(i?"2. Earthsiege Expansion":"1. Earthsiege",16,y + 6);}
-    ui.text("Each edition keeps separate saved games.",10,139);
-    ui.text("Click or 1-2: choose   Esc: quit",10,176);ui.present(display);glfwWaitEventsTimeout(.01);
+    ui.frame.clear();
+    ui.text("EARTHSIEGE", 10, 15);
+    ui.text("Choose a game", 10, 37);
+    for(int i{0}; i < 2; ++i) {
+      int y{66 + i * 22};
+      if(selected == i) ui.frame.fill({10, y, 309, y + 19}, 2);
+      ui.text(i ? "2. Earthsiege Expansion" : "1. Earthsiege", 16, y + 6);
+    }
+    ui.text("Each edition keeps separate saved games.", 10, 139);
+    ui.text("Click or 1-2: choose   Esc: quit", 10, 176);
+    ui.present(display);
+    glfwWaitEventsTimeout(.01);
   }
   return {};
 }
@@ -80,7 +93,7 @@ auto choose_music_device(window &display, resource_store const &resources, music
     }
     ui.frame.clear();
     ui.text("MUSIC HARDWARE", 10, 7);
-    for(size_t i{}; i < choices.size(); ++i) {
+    for(size_t i{0}; i < choices.size(); ++i) {
       int const y{27 + static_cast<int>(i) * 14};
       if(static_cast<int>(i) == selected) ui.frame.fill({6, y, 313, y + 12}, 2);
       ui.text(std::to_string(i + 1) + ". " + labels[i], 10, y + 2);
@@ -114,7 +127,7 @@ void show_music_error(window &display, resource_store const &resources, std::str
     }
     ui.frame.clear();
     ui.text("MUSIC DEVICE UNAVAILABLE", 8, 8);
-    size_t at{};
+    size_t at{0};
     for(int y{28}; at < message.size() && y < 172; y += 11) {
       size_t end{std::min(at + 49, message.size())};
       auto const newline{message.find('\n', at)};

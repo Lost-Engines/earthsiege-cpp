@@ -35,7 +35,8 @@ public:
   };
   observer *record{nullptr};
   explicit shell_audio(resource_store const &source, music_settings const &settings = {})
-    : resources{source}, music_config{settings} {}
+    : resources{source},
+      music_config{settings} {}
   void configure_music(music_settings const &settings) {
     if(music) {
       music->configure(settings);

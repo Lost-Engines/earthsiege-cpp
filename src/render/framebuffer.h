@@ -15,10 +15,10 @@ inline unsigned int constexpr screen_width{320};
 inline unsigned int constexpr screen_height{200};
 
 struct rectangle {
-  int left{};
-  int top{};
-  int right{};
-  int bottom{};
+  int left{0};
+  int top{0};
+  int right{0};
+  int bottom{0};
   auto contains(int x, int y) const->bool;
 };
 
@@ -28,7 +28,7 @@ struct scanline_span {
 };
 
 struct screen_region {
-  int first_row{};
+  int first_row{0};
   std::vector<scanline_span> spans;
   bool rectangular{false};
   bool contains(int x, int y) const;

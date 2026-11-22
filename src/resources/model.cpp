@@ -27,7 +27,7 @@ auto counted(binary_reader &file, F read) {
   auto const count{file.integer<uint16_t>()};
   std::vector<T> result;
   result.reserve(count);
-  for(unsigned int index{}; index < count; ++index) result.push_back(read());
+  for(unsigned int index{0}; index < count; ++index) result.push_back(read());
   return result;
 }
 
@@ -51,21 +51,24 @@ auto polygon(binary_reader &parent)->model_polygon {
     .normal_list{},
   };
   switch(object.kind) {
-    case model_kind::helper_polygon: break;
-    case model_kind::solid_polygon:
-    case model_kind::shaded_polygon:
-    case model_kind::gouraud_polygon:
-    case model_kind::textured_polygon:
-    case model_kind::aliased_polygon:
-    case model_kind::aliased_shaded_polygon:
-    case model_kind::aliased_gouraud_polygon: {
-      auto const slot{file.integer<uint16_t>()};
-      if(slot % 4) file.fail("face material does not begin at its front-fill slot");
-      result.material = static_cast<uint16_t>(slot / 4);
-      if(object.kind == model_kind::gouraud_polygon || object.kind == model_kind::aliased_gouraud_polygon) result.normal_list = file.integer<uint16_t>();
-      break;
-    }
-    default: file.fail("non-polygon object inside mesh surface array");
+  case model_kind::helper_polygon:
+    break;
+  case model_kind::solid_polygon:
+  case model_kind::shaded_polygon:
+  case model_kind::gouraud_polygon:
+  case model_kind::textured_polygon:
+  case model_kind::aliased_polygon:
+  case model_kind::aliased_shaded_polygon:
+  case model_kind::aliased_gouraud_polygon:
+    {
+    auto const slot{file.integer<uint16_t>()};
+    if(slot % 4) file.fail("face material does not begin at its front-fill slot");
+    result.material = static_cast<uint16_t>(slot / 4);
+    if(object.kind == model_kind::gouraud_polygon || object.kind == model_kind::aliased_gouraud_polygon) result.normal_list = file.integer<uint16_t>();
+    break;
+  }
+  default:
+    file.fail("non-polygon object inside mesh surface array");
   }
   file.require_end();
   return result;
@@ -87,11 +90,11 @@ auto sequence(binary_reader &parent)->animation_sequence {
       .first_transition{file.integer<uint16_t>()},
     };
   });
-  result.parts = counted(file, [&file]{ return file.integer<uint16_t>(); });
+  result.parts = counted(file, [&file]{return file.integer<uint16_t>();});
   auto const indices{result.parts.size() * result.frames.size()};
   if(indices > file.remaining() / 2) file.fail("animation pose table exceeds sequence extent");
   result.pose_indices.reserve(indices);
-  for(size_t index{}; index < indices; ++index) result.pose_indices.push_back(file.integer<uint16_t>());
+  for(size_t index{0}; index < indices; ++index) result.pose_indices.push_back(file.integer<uint16_t>());
   file.require_end();
   return result;
 }
@@ -101,7 +104,7 @@ auto animation(binary_reader &parent)->animation_list {
   if(object.kind != model_kind::animation_list) parent.fail("expected animation list");
   binary_reader file{object.data, "animation list"};
   animation_list result;
-  result.sequences = counted(file, [&file]{ return sequence(file); });
+  result.sequences = counted(file, [&file]{return sequence(file);});
   result.transitions = counted(file, [&file]{
     return animation_transition{
       .tick{file.integer<uint16_t>()},
@@ -116,7 +119,7 @@ auto animation(binary_reader &parent)->animation_list {
       .translation{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()},
     };
   });
-  result.defaults = counted(file, [&file]{ return file.integer<uint16_t>(); });
+  result.defaults = counted(file, [&file]{return file.integer<uint16_t>();});
   result.relations = counted(file, [&file]{
     return node_relation{
       .parent{file.integer<int16_t>()},
@@ -160,111 +163,120 @@ auto part(binary_reader &parent, unsigned int depth)->model_part {
     .radius{file.integer<int16_t>()},
     .centre{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()},
   };
-  auto const children{[&file, depth]{ return counted(file, [&file, depth]{ return part(file, depth + 1); }); }};
+  auto const children{[&file, depth]{return counted(file, [&file, depth]{return part(file, depth + 1);});}};
   switch(object.kind) {
-    case model_kind::base_part: break;
-    case model_kind::part_list:
-      result.content = part_list{
+  case model_kind::base_part:
+    break;
+  case model_kind::part_list:
+    result.content = part_list{
         .children{children()},
       };
-      break;
-    case model_kind::shape:
-    case model_kind::animated_shape:
-    case model_kind::terrain_shape: {
-      shape_part shape;
-      shape.children = children();
-      auto const transforms{file.integer<uint16_t>()};
-      shape.cell_frame_counts = counted(file, [&file]{ return file.integer<int16_t>(); });
-      shape.transforms.reserve(transforms);
-      for(unsigned int index{}; index < transforms; ++index) {
-        model_transform transform;
-        // Original 3Space storage puts the planar 2x2 block first, then
-        // xz/yz/zx/zy/zz. Convert it to vectorstorm column-major order.
-        for(unsigned int const component : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) transform.basis.data[component] = file.integer<int16_t>();
-        transform.type = file.integer<uint8_t>();
-        transform.flags = file.integer<uint8_t>();
-        transform.translation = vec3<int32_t>{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
-        shape.transforms.push_back(std::move(transform));
-      }
-      if(object.kind == model_kind::animated_shape) shape.animation = animation(file);
-      if(object.kind == model_kind::terrain_shape) shape.collision = heightfield(file);
-      result.content = std::move(shape);
-      break;
+    break;
+  case model_kind::shape:
+  case model_kind::animated_shape:
+  case model_kind::terrain_shape:
+    {
+    shape_part shape;
+    shape.children = children();
+    auto const transforms{file.integer<uint16_t>()};
+    shape.cell_frame_counts = counted(file, [&file]{
+      return file.integer<int16_t>();
+    });
+    shape.transforms.reserve(transforms);
+    for(unsigned int index{0}; index < transforms; ++index) {
+      model_transform transform;
+      // Original 3Space storage puts the planar 2x2 block first, then
+      // xz/yz/zx/zy/zz. Convert it to vectorstorm column-major order.
+      for(unsigned int const component : {0U, 1U, 3U, 4U, 2U, 5U, 6U, 7U, 8U}) transform.basis.data[component] = file.integer<int16_t>();
+      transform.type = file.integer<uint8_t>();
+      transform.flags = file.integer<uint8_t>();
+      transform.translation = vec3<int32_t>{file.integer<int32_t>(), file.integer<int32_t>(), file.integer<int32_t>()};
+      shape.transforms.push_back(std::move(transform));
     }
-    case model_kind::cell_animation: {
-      cell_part cells;
-      cells.children = children();
-      cells.sequence = file.integer<int16_t>();
-      result.content = std::move(cells);
-      break;
-    }
-    case model_kind::detail: {
-      detail_part detail;
-      detail.children = children();
-      detail.distances.reserve(detail.children.size());
-      for(unsigned int index{}; index < detail.children.size(); ++index) detail.distances.push_back(file.integer<int16_t>());
-      result.content = std::move(detail);
-      break;
-    }
-    case model_kind::billboard:
-      result.content = billboard_part{
+    if(object.kind == model_kind::animated_shape) shape.animation = animation(file);
+    if(object.kind == model_kind::terrain_shape) shape.collision = heightfield(file);
+    result.content = std::move(shape);
+    break;
+  }
+  case model_kind::cell_animation:
+    {
+    cell_part cells;
+    cells.children = children();
+    cells.sequence = file.integer<int16_t>();
+    result.content = std::move(cells);
+    break;
+  }
+  case model_kind::detail:
+    {
+    detail_part detail;
+    detail.children = children();
+    detail.distances.reserve(detail.children.size());
+    for(unsigned int index{0}; index < detail.children.size(); ++index) detail.distances.push_back(file.integer<int16_t>());
+    result.content = std::move(detail);
+    break;
+  }
+  case model_kind::billboard:
+    result.content = billboard_part{
         .bitmap{file.integer<uint16_t>()},
         .offset{file.integer<int8_t>(), file.integer<int8_t>()},
       };
-      break;
-    case model_kind::bsp_part: {
-      bsp_part bsp;
-      bsp.children = children();
-      bsp.nodes = counted(file, [&file]{
-        return part_bsp_node{
+    break;
+  case model_kind::bsp_part:
+    {
+    bsp_part bsp;
+    bsp.children = children();
+    bsp.nodes = counted(file, [&file]{
+      return part_bsp_node{
           .normal{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()},
           .constant{file.integer<int32_t>()},
           .front{file.integer<int16_t>()},
           .back{file.integer<int16_t>()},
           .transform{-1},
         };
-      });
-      for(auto &node : bsp.nodes) node.transform = file.integer<int16_t>();
-      result.content = std::move(bsp);
-      break;
-    }
-    case model_kind::group:
-    case model_kind::bsp_group: {
-      auto const indices{file.integer<uint16_t>()};
-      auto const points{file.integer<uint16_t>()};
-      auto const slots{file.integer<uint16_t>()};
-      auto const polygons{file.integer<uint16_t>()};
-      if(slots % 4) file.fail("mesh material table lacks complete front/back slot groups");
-      model_mesh mesh;
-      mesh.indices.reserve(indices);
-      mesh.points.reserve(points);
-      mesh.materials.reserve(slots / 4);
-      mesh.polygons.reserve(polygons);
-      for(unsigned int index{}; index < indices; ++index) mesh.indices.push_back(file.integer<uint16_t>());
-      for(unsigned int index{}; index < points; ++index) mesh.points.push_back(vec3<int16_t>{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()});
-      for(unsigned int index{}; index < slots / 4; ++index) {
-        mesh.materials.push_back(face_material{
+    });
+    for(auto &node : bsp.nodes) node.transform = file.integer<int16_t>();
+    result.content = std::move(bsp);
+    break;
+  }
+  case model_kind::group:
+  case model_kind::bsp_group:
+    {
+    auto const indices{file.integer<uint16_t>()};
+    auto const points{file.integer<uint16_t>()};
+    auto const slots{file.integer<uint16_t>()};
+    auto const polygons{file.integer<uint16_t>()};
+    if(slots % 4) file.fail("mesh material table lacks complete front/back slot groups");
+    model_mesh mesh;
+    mesh.indices.reserve(indices);
+    mesh.points.reserve(points);
+    mesh.materials.reserve(slots / 4);
+    mesh.polygons.reserve(polygons);
+    for(unsigned int index{0}; index < indices; ++index) mesh.indices.push_back(file.integer<uint16_t>());
+    for(unsigned int index{0}; index < points; ++index) mesh.points.push_back(vec3<int16_t>{file.integer<int16_t>(), file.integer<int16_t>(), file.integer<int16_t>()});
+    for(unsigned int index{0}; index < slots / 4; ++index) {
+      mesh.materials.push_back(face_material{
           .front_fill{material(file)},
           .front_line{material(file)},
           .back_fill{material(file)},
           .back_line{material(file)},
         });
-      }
-      for(unsigned int index{}; index < polygons; ++index) mesh.polygons.push_back(polygon(file));
-      if(object.kind == model_kind::bsp_group) {
-        mesh.bsp = counted(file, [&file]{
-          return polygon_bsp_node{
+    }
+    for(unsigned int index{0}; index < polygons; ++index) mesh.polygons.push_back(polygon(file));
+    if(object.kind == model_kind::bsp_group) {
+      mesh.bsp = counted(file, [&file]{
+        return polygon_bsp_node{
             .constant{file.integer<int32_t>()},
             .polygon{file.integer<int16_t>()},
             .front{file.integer<int16_t>()},
             .back{file.integer<int16_t>()},
           };
-        });
-      }
-      result.content = std::move(mesh);
-      break;
+      });
     }
-    default: file.fail("unknown model part tag");
+    result.content = std::move(mesh);
+    break;
+  }
+  default:
+    file.fail("unknown model part tag");
   }
   file.require_end();
   return result;

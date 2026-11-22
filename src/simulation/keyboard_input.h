@@ -7,10 +7,21 @@
 namespace earthsiege {
 
 enum class held_key : size_t {
-  forward_left, forward, forward_right, left, right,
-  reverse_left, reverse, reverse_right,
-  aim_down, aim_left, aim_right, aim_up,
-  fire, enter, count,
+  forward_left,
+  forward,
+  forward_right,
+  left,
+  right,
+  reverse_left,
+  reverse,
+  reverse_right,
+  aim_down,
+  aim_left,
+  aim_right,
+  aim_up,
+  fire,
+  enter,
+  count,
 };
 
 inline size_t constexpr held_key_count{static_cast<size_t>(held_key::count)};

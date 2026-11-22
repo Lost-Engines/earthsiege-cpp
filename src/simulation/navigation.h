@@ -35,7 +35,7 @@ struct avoidance_state {
 struct avoidance_policy {
   bool expansion{false};
   std::span<vec2<int32_t> const> friendly_fire_line{};
-  int16_t reverse_rate{};
+  int16_t reverse_rate{0};
 };
 
 using avoidance_query = std::function<std::optional<int32_t>(avoidance_probe, vec3<int32_t> const &, vec3<int32_t> const &)>;

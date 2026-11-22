@@ -7,32 +7,41 @@
 namespace earthsiege {
 
 player_armament::player_armament(weapon_bank &weapons, weapon_catalogue const &catalogue, std::span<weapon_mount const> const attachment_points)
-  : bank{weapons}, definitions{catalogue}, mounts{attachment_points}, pairs(weapons.slots().size(), false) {
+  : bank{weapons},
+    definitions{catalogue},
+    mounts{attachment_points},
+    pairs(weapons.slots().size(), false) {
   if(mounts.size() != bank.slots().size()) throw std::invalid_argument{"player weapon mount count"};
   for(auto &entries : groups) entries.resize(mounts.size(), false);
-  for(size_t slot{0}; slot != mounts.size(); ++slot) if(auto const &weapon{bank.slots()[slot]}; weapon && !std::holds_alternative<ecm_weapon>(weapon->mechanism)) {
-    groups[0][slot] = true;
-    if(selected < 0) selected = static_cast<int16_t>(slot);
+  for(size_t slot{0}; slot != mounts.size(); ++slot) {
+    if(auto const &weapon{bank.slots()[slot]}; weapon && !std::holds_alternative<ecm_weapon>(weapon->mechanism)) {
+      groups[0][slot] = true;
+      if(selected < 0) selected = static_cast<int16_t>(slot);
+    }
   }
 }
 void player_armament::initialise_displays() {
   instrument_rows.clear();
-  for(size_t slot{}; slot < mounts.size(); ++slot) if(auto const &weapon{bank.slots()[slot]}) {
-    if(mounts[slot].control_number < 0) continue;
-    weapon_instrument_state state;
-    // 0xa97c initially copies the native capacitor setting; the first state
-    // exchange converts it to the slider's Q10 units via the setting latch.
-    if(auto const *energy{weapon->energy()}) state.requested_charge = energy->setting;
-    instrument_rows.push_back({slot, static_cast<unsigned int>(mounts[slot].control_number), instrument_kind(*weapon), weapon_display_name(*weapon, definitions), state});
+  for(size_t slot{0}; slot < mounts.size(); ++slot) {
+    if(auto const &weapon{bank.slots()[slot]}) {
+      if(mounts[slot].control_number < 0) continue;
+      weapon_instrument_state state;
+      // 0xa97c initially copies the native capacitor setting; the first state
+      // exchange converts it to the slider's Q10 units via the setting latch.
+      if(auto const *energy{weapon->energy()}) state.requested_charge = energy->setting;
+      instrument_rows.push_back({slot, static_cast<unsigned int>(mounts[slot].control_number), instrument_kind(*weapon), weapon_display_name(*weapon, definitions), state});
+    }
   }
 }
 std::span<weapon_display const> player_armament::displays() const {
   return instrument_rows;
 }
 void player_armament::request_group_control(unsigned int const button) {
-  if(button < groups.size()) requested_group = static_cast<uint8_t>(button);
-  else if(button == 3) requested_link = true;
-  else if(button == 4) requested_tracking = !requested_tracking.value_or(tracking);
+  if(button < groups.size()) {
+    requested_group = static_cast<uint8_t>(button);
+  } else if(button == 3) {
+    requested_link = true;
+  } else if(button == 4) requested_tracking = !requested_tracking.value_or(tracking);
 }
 void player_armament::cycle_requested_group(bool const reverse) {
   requested_group = static_cast<uint8_t>((requested_group.value_or(group) + (reverse ? 2 : 1)) % 3);
@@ -41,26 +50,34 @@ void player_armament::exchange_group_controls() {
   // Original 0xcf78 performs automatic selection first, then these UI writes.
   // B has already changed the bank and overrides a pending mouse group choice.
   if(requested_group && !keyboard_group_changed) change_group(*requested_group);
-  requested_group.reset(); keyboard_group_changed = false;
+  requested_group.reset();
+  keyboard_group_changed = false;
   if(requested_tracking) set_tracking(*requested_tracking);
   requested_tracking.reset();
   if(requested_link) toggle_pair();
   requested_link = false;
 }
 bool player_armament::click_control(unsigned int const control_number, bool const secondary) {
-  for(auto &row : instrument_rows) if(row.control_number == control_number) {
-    if(row.kind == weapon_instrument_kind::ecm) { row.state.selected = !row.state.selected; return true; }
-    if(secondary) return toggle_category(static_cast<int8_t>(control_number));
-    if(!available(row.bank_slot)) return false;
-    select(row.bank_slot);
-    held_selection = true;
-    return true;
+  for(auto &row : instrument_rows) {
+    if(row.control_number == control_number) {
+      if(row.kind == weapon_instrument_kind::ecm) {
+        row.state.selected = !row.state.selected;
+        return true;
+      }
+      if(secondary) return toggle_category(static_cast<int8_t>(control_number));
+      if(!available(row.bank_slot)) return false;
+      select(row.bank_slot);
+      held_selection = true;
+      return true;
+    }
   }
   return false;
 }
 void player_armament::request_charge(unsigned int const control_number, int32_t const value) {
-  for(auto &row : instrument_rows) if(row.control_number == control_number && row.kind == weapon_instrument_kind::energy) {
-    row.state.requested_charge = std::clamp(value, 0, 1024);
+  for(auto &row : instrument_rows) {
+    if(row.control_number == control_number && row.kind == weapon_instrument_kind::energy) {
+      row.state.requested_charge = std::clamp(value, 0, 1024);
+    }
   }
 }
 void player_armament::exchange_displays(int32_t const distance, std::array<bool, 5> const &locks, frame_ratio const ratio) {
@@ -105,7 +122,10 @@ void player_armament::set_manual_guidance(bool const active) {
   manual_active = active;
 }
 void player_armament::finish_manual_guidance() {
-  if(manual_fired && !manual_active) { cycle(); held_selection = false; }
+  if(manual_fired && !manual_active) {
+    cycle();
+    held_selection = false;
+  }
 }
 
 bool player_armament::available(size_t const slot) const {
@@ -132,8 +152,9 @@ void player_armament::cycle(int16_t const direction) {
   auto next{selected};
   do {
     next += direction;
-    if(next < 0) next = static_cast<int16_t>(mounts.size() - 1);
-    else if(static_cast<size_t>(next) >= mounts.size()) next = 0;
+    if(next < 0) {
+      next = static_cast<int16_t>(mounts.size() - 1);
+    } else if(static_cast<size_t>(next) >= mounts.size()) next = 0;
     auto const slot{static_cast<size_t>(next)};
     if(available(slot) && (!pairs[slot] || mounts[slot].paired_slot_offset > 0) && groups[group][slot]) break;
   } while(next != selected);
@@ -154,10 +175,12 @@ void player_armament::toggle_inclusion(size_t const slot) {
   groups.at(group).at(slot).flip();
 }
 bool player_armament::toggle_category(int8_t const category) {
-  for(size_t slot{0}; slot != mounts.size(); ++slot) if(auto const &weapon{bank.slots()[slot]}; weapon && mounts[slot].control_number == category && definitions.weapons.at(static_cast<size_t>(weapon->definition)).range > 0) {
-    toggle_inclusion(slot);
-    if(auto *energy{bank.at(slot).energy()}; energy && !energy->fast && energy->setting == 0) default_capacitor_setting(*energy);
-    return true;
+  for(size_t slot{0}; slot != mounts.size(); ++slot) {
+    if(auto const &weapon{bank.slots()[slot]}; weapon && mounts[slot].control_number == category && definitions.weapons.at(static_cast<size_t>(weapon->definition)).range > 0) {
+      toggle_inclusion(slot);
+      if(auto *energy{bank.at(slot).energy()}; energy && !energy->fast && energy->setting == 0) default_capacitor_setting(*energy);
+      return true;
+    }
   }
   return false;
 }
@@ -174,24 +197,39 @@ void player_armament::toggle_pair() {
   pairs[partner].flip();
 }
 void player_armament::refresh_pairs() {
-  for(size_t slot{0}; slot != mounts.size(); ++slot) if(pairs[slot] && (bank.at(slot).controls().disabled || !available(slot))) {
-    auto const partner{static_cast<size_t>(static_cast<int>(slot) + mounts[slot].paired_slot_offset)};
-    pairs.at(slot).flip();
-    pairs.at(partner).flip();
-    select(partner);
+  for(size_t slot{0}; slot != mounts.size(); ++slot) {
+    if(pairs[slot] && (bank.at(slot).controls().disabled || !available(slot))) {
+      auto const partner{static_cast<size_t>(static_cast<int>(slot) + mounts[slot].paired_slot_offset)};
+      pairs.at(slot).flip();
+      pairs.at(partner).flip();
+      select(partner);
+    }
   }
 }
 void player_armament::default_charge() {
-  for(size_t slot{0}; slot != mounts.size(); ++slot) if(bank.slots()[slot]) if(auto *energy{bank.at(slot).energy()}) default_capacitor_setting(*energy);
+  for(size_t slot{0}; slot != mounts.size(); ++slot) {
+    if(bank.slots()[slot]) {
+      if(auto *energy{bank.at(slot).energy()}) default_capacitor_setting(*energy);
+    }
+  }
 }
 void player_armament::fast_charge() {
-  for(size_t slot{0}; slot != mounts.size(); ++slot) if(bank.slots()[slot]) if(auto *energy{bank.at(slot).energy()}) {
-    if(static_cast<int16_t>(slot) == selected) fast_charge_capacitor(*energy);
-    else energy->fast = false;
+  for(size_t slot{0}; slot != mounts.size(); ++slot) {
+    if(bank.slots()[slot]) {
+      if(auto *energy{bank.at(slot).energy()}) {
+        if(static_cast<int16_t>(slot) == selected) {
+          fast_charge_capacitor(*energy);
+        } else {
+          energy->fast = false;
+        }
+      }
+    }
   }
 }
 void player_armament::adjust_charge(bool const increase) {
-  if(selected >= 0) if(auto *energy{bank.at(static_cast<size_t>(selected)).energy()}) change_capacitor_setting(*energy, increase);
+  if(selected >= 0) {
+    if(auto *energy{bank.at(static_cast<size_t>(selected)).energy()}) change_capacitor_setting(*energy, increase);
+  }
 }
 bool player_armament::selectable(size_t const slot, int32_t const distance, std::array<bool, 5> const &locks) const {
   if(!ready(slot)) return false;
@@ -206,7 +244,10 @@ void player_armament::update_selection(int32_t const distance, std::array<bool, 
   size_t attempts{0};
   do {
     cycle();
-    if(selectable(static_cast<size_t>(selected), distance, locks)) { held_selection = false; return; }
+    if(selectable(static_cast<size_t>(selected), distance, locks)) {
+      held_selection = false;
+      return;
+    }
     if(selected == previous) break;
   } while(attempts++ <= mounts.size());
   selected = previous;
@@ -216,7 +257,10 @@ bool player_armament::poll_trigger(size_t const slot, bool const pressed, bool &
   if(auto *elf{weapon.elf()}) return poll_elf_trigger(weapon.controls(), *elf, pressed);
   if(auto *grenade{std::get_if<grenade_weapon>(&weapon.mechanism)}) {
     if(!grenade->holding) {
-      if(pressed) { grenade->holding = true; grenade->throw_range = 20000; }
+      if(pressed) {
+        grenade->holding = true;
+        grenade->throw_range = 20000;
+      }
       return false;
     }
     if(pressed) {
@@ -238,7 +282,10 @@ bool player_armament::fire(bool const pressed, std::function<void(size_t)> const
   if(!poll_trigger(slot, pressed, release) || (partner && !poll_trigger(*partner, pressed, release))) return release;
   discharge(slot);
   if(!ready(slot)) held_selection = false;
-  if(weapon_lock_channel(bank.at(slot), definitions) == 3) { manual_fired = true; manual_active = true; }
+  if(weapon_lock_channel(bank.at(slot), definitions) == 3) {
+    manual_fired = true;
+    manual_active = true;
+  }
   if(partner) {
     discharge(*partner);
     // The original rechecks the first weapon here, including for linked pairs.
@@ -248,14 +295,30 @@ bool player_armament::fire(bool const pressed, std::function<void(size_t)> const
 }
 bool player_armament::command(uint16_t const code) {
   switch(code) {
-    case 44: default_charge(); break;                                          // Z
-    case 48: cycle_group(); keyboard_group_changed = true; break;              // B
-    case 17: cycle(); held_selection = false; break;                           // W
-    case 529: cycle(-1); held_selection = false; break;                        // Alt+W
-    case 12: case 13: case 74: case 78: adjust_charge(code == 13 || code == 78); break;
-    default:
-      if(code < 514 || code > 522) return false;
-      toggle_category(static_cast<int8_t>(code - 514));                        // Alt+1..9
+  case 44:
+    default_charge();
+    break;                                                                     // Z
+  case 48:
+    cycle_group();
+    keyboard_group_changed = true;
+    break;                                                                     // B
+  case 17:
+    cycle();
+    held_selection = false;
+    break;                                                                     // W
+  case 529:
+    cycle(-1);
+    held_selection = false;
+    break;                                                                     // Alt+W
+  case 12:
+  case 13:
+  case 74:
+  case 78:
+    adjust_charge(code == 13 || code == 78);
+    break;
+  default:
+    if(code < 514 || code > 522) return false;
+    toggle_category(static_cast<int8_t>(code - 514));                          // Alt+1..9
   }
   return true;
 }

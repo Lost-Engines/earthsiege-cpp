@@ -5,7 +5,10 @@ music_player::music_player(bool opl3, bytes melodic, bytes drums, bytes digital_
   : music_player{opl3 ? 0xa009u : 0xa002u, melodic, drums, digital_bank, backend, {}} {}
 music_player::music_player(uint32_t device, bytes melodic, bytes drums, bytes digital_bank, pcm_midi_backend &backend,
   std::function<void(std::span<uint8_t const>)> output)
-  : devices{device, 0xa005}, midi_output{std::move(output)}, pcm{digital_bank, backend}, gain{devices} {
+  : devices{device, 0xa005},
+    midi_output{std::move(output)},
+    pcm{digital_bank, backend},
+    gain{devices} {
   if(device == 0xa002 || device == 0xa009) {
     fm = std::make_unique<hmi_fm>(device == 0xa009, melodic, drums);
   } else if((device != 0xa001 && device != 0xa004) || !midi_output) {

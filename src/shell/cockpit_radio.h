@@ -10,79 +10,94 @@
 
 namespace earthsiege {
 /// External timer reads and PCM-driver results; replay never supplies radio state.
-enum class radio_input_point : uint8_t { portraits, pilot_queue, system_queue, transmission, enqueue, animation, speech_playback };
-using radio_input_source=std::function<uint32_t(radio_input_point,uint32_t)>;
+enum class radio_input_point : uint8_t {
+  portraits,
+  pilot_queue,
+  system_queue,
+  transmission,
+  enqueue,
+  animation,
+  speech_playback
+};
+using radio_input_source = std::function<uint32_t(radio_input_point, uint32_t)>;
 
 /// Connect radio replies to the original timer, pilot portraits and text overlay.
 class cockpit_radio {
   resource_store const &resources;
   random_state &random;
   radio_catalogue catalogue;
-  radio_controller controller,system_controller;
+  radio_controller controller;
+  radio_controller system_controller;
   radio_input_source observation;
   std::function<bool(std::string_view)> speech_player;
-  std::function<void(uint16_t,bool)> sound_player;
-  void play_sound(uint16_t id,bool idle_only=false);
-  uint32_t read_input(radio_input_point point,uint32_t fallback)const;
-  uint32_t system_ticks{};
-  bool system_blink{},system_enabled{true},system_repaint_pending{};
+  std::function<void(uint16_t, bool)> sound_player;
+  void play_sound(uint16_t id, bool idle_only = false);
+  uint32_t read_input(radio_input_point point, uint32_t fallback) const;
+  uint32_t system_ticks{0};
+  bool system_blink{false};
+  bool system_enabled{true};
+  bool system_repaint_pending{false};
   std::vector<uint8_t> system_erased;
   std::string system_text;
   rectangle system_bounds;
-  int system_origin_x{},system_origin_y{};
+  int system_origin_x{0};
+  int system_origin_y{0};
   radio_banner banner;
   wingmate_portrait labels;
   struct member {
-    size_t actor,pilot;
-    rectangle bounds,painted;
+    size_t actor;
+    size_t pilot;
+    rectangle bounds;
+    rectangle painted;
     radio_portrait portrait;
     std::optional<pilot_transmission> transmission;
-    size_t noise_frame{};
-    bool initialized{};
+    size_t noise_frame{0};
+    bool initialized{false};
     std::string speech;
   };
   std::vector<member> members;
   std::vector<radio_speaker> speakers;
   rectangle parent;
-  std::array<rectangle,3> portrait_bounds;
+  std::array<rectangle, 3> portrait_bounds;
   framebuffer cache;
-  bool visible{},text_enabled{true};
+  bool visible{false};
+  bool text_enabled{true};
   std::string text;
   std::optional<size_t> text_speaker;
   std::vector<uint16_t> sounds;
   std::vector<std::string> speech_requests;
-  std::optional<size_t> speaker_index(std::optional<size_t> actor)const;
-  void advance_portraits(mission_session &session,uint32_t ticks);
+  std::optional<size_t> speaker_index(std::optional<size_t> actor) const;
+  void advance_portraits(mission_session &session, uint32_t ticks);
 public:
-  cockpit_radio(resource_store const &resources,cockpit_layout const &layout,mission_session const &session,random_state &ui_random,bool reduced_detail=false);
-  void sound_output(std::function<void(uint16_t,bool)> player){
+  cockpit_radio(resource_store const &resources, cockpit_layout const &layout, mission_session const &session, random_state &ui_random, bool reduced_detail = false);
+  void sound_output(std::function<void(uint16_t, bool)> player) {
     sound_player = std::move(player);
   }
-  void speech_output(std::function<bool(std::string_view)> player){
+  void speech_output(std::function<bool(std::string_view)> player) {
     speech_player = std::move(player);
   }
-  void input_source(radio_input_source source){
+  void input_source(radio_input_source source) {
     observation = std::move(source);
   }
-  radio_presentation_state const &system_state()const{
+  radio_presentation_state const &system_state() const {
     return system_controller.state();
   }
-  std::string pilot_name(int identity)const{
-    return identity >= 0 && identity < 36?labels.name(static_cast<size_t>(identity / 3)):"????";
+  std::string pilot_name(int identity) const {
+    return identity >= 0 && identity < 36 ? labels.name(static_cast<size_t>(identity / 3)) : "????";
   }
-  void captions(bool enabled){
+  void captions(bool enabled) {
     text_enabled = enabled;
   }
-  bool submit(radio_event event,uint32_t ticks);
-  void update(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);
-  void prepare(mission_session &session,camera_state const &camera,uint32_t ticks,int origin_x,int origin_y,bool restoring_cockpit=false);
-  void advance_queue(mission_session &session,uint32_t ticks);
+  bool submit(radio_event event, uint32_t ticks);
+  void update(mission_session &session, camera_state const &camera, uint32_t ticks, int origin_x, int origin_y, bool restoring_cockpit = false);
+  void prepare(mission_session &session, camera_state const &camera, uint32_t ticks, int origin_x, int origin_y, bool restoring_cockpit = false);
+  void advance_queue(mission_session &session, uint32_t ticks);
   void draw(framebuffer &frame);
-  void repaint(){
+  void repaint() {
     system_repaint_pending = true;
   }
   void overpaint(rectangle const &bounds);
-  radio_presentation_state const &state()const;
+  radio_presentation_state const &state() const;
   std::vector<uint16_t> take_sounds();
   std::vector<std::string> take_speech();
 };

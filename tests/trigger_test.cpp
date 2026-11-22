@@ -15,8 +15,15 @@ earthsiege::mission_script area_script() {
   earthsiege::mission_script script;
   script.points.emplace_back(0, 0, 0);
   script.points.emplace_back(0, 0, 0);
-  script.areas.push_back({.kind{1}, .first_point{0}, .second_point_or_radius{10}});
-  earthsiege::mission_trigger trigger{.counter{7}, .counter_operation{6}};
+  script.areas.push_back({
+    .kind{1},
+    .first_point{0},
+    .second_point_or_radius{10}
+  });
+  earthsiege::mission_trigger trigger{
+    .counter{7},
+    .counter_operation{6}
+  };
   trigger.areas.fill(-1);
   trigger.areas[0] = 0;
   script.triggers.push_back(trigger);
@@ -46,7 +53,11 @@ int main(int const argc, char **argv) try {
       auto const position{point(file)};
       auto const radius{file.integer<int32_t>()};
       bool const expected{file.integer<uint8_t>() != 0};
-      script.areas[0] = {.kind{area_kind}, .first_point{0}, .second_point_or_radius{static_cast<int16_t>(area_kind ? radius / 10 : 1)}};
+      script.areas[0] = {
+        .kind{area_kind},
+        .first_point{0},
+        .second_point_or_radius{static_cast<int16_t>(area_kind ? radius / 10 : 1)}
+      };
       earthsiege::mission_triggers triggers{script};
       matched = triggers.enter(0, position, counters) == expected && triggers.latched(0) == expected;
     } else if(kind == 1) {
@@ -75,14 +86,20 @@ int main(int const argc, char **argv) try {
       std::array<vec3<int32_t>, 3> positions;
       for(size_t i{0}; i != positions.size(); ++i) positions[i] = vec3<int32_t>{i == inside ? 0 : 500, 0, 0};
       std::array<earthsiege::trigger_group, 3> groups;
-      for(size_t i{0}; i != groups.size(); ++i) groups[i] = {
-        .kind{actor_kind}, .side{side}, .waiting{waiting},
-        .positions{std::span<vec3<int32_t> const>{positions}.subspan(i, i == 0 ? 2 : 1)},
-      };
+      for(size_t i{0}; i != groups.size(); ++i) {
+        groups[i] = {
+          .kind{actor_kind},
+          .side{side},
+          .waiting{waiting},
+          .positions{std::span<vec3<int32_t> const>{positions}.subspan(i, i == 0 ? 2 : 1)},
+        };
+      }
       earthsiege::mission_triggers triggers{script};
       triggers.scan(positions[0], 0, groups, counters);
       matched = triggers.latched(0) == expected && counters[7] == static_cast<int16_t>(expected);
-    } else file.fail("unknown trigger case");
+    } else {
+      file.fail("unknown trigger case");
+    }
     if(!matched) file.fail("original trigger case " + std::to_string(row) + " differs");
   }
   file.require_end();

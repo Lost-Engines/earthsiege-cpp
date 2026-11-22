@@ -34,7 +34,10 @@ auto hmi_fm::read_bank(bytes source)->bank {
   }
   return b;
 }
-hmi_fm::hmi_fm(bool opl3, bytes m, bytes d) : stereo{opl3}, melodic{read_bank(m)}, drums{read_bank(d)} {
+hmi_fm::hmi_fm(bool opl3, bytes m, bytes d)
+  : stereo{opl3},
+    melodic{read_bank(m)},
+    drums{read_bank(d)} {
   // The original drum loader takes these offsets from the melodic header.
   drums.names = melodic.names;
   drums.patches = melodic.patches;

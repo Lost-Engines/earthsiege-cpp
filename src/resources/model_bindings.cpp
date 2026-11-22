@@ -19,7 +19,9 @@ void children(model_part &part, F const &visit) {
 model_part *find_part(model_part &part, uint8_t const id) {
   if(part.kind != model_kind::null && part.header.id == id) return &part;
   model_part *found{nullptr};
-  children(part, [&](auto &child){ if(!found) found = find_part(child, id); });
+  children(part, [&](auto &child){
+    if(!found) found = find_part(child, id);
+  });
   return found;
 }
 
@@ -34,7 +36,7 @@ void bind_part(model_part &part, std::span<int16_t const> const indices, size_t 
       if(node.transform > 0 && static_cast<size_t>(node.transform) < pose_count && indices[static_cast<size_t>(node.transform)] >= 0) node.transform = indices[static_cast<size_t>(node.transform)];
     }
   }
-  children(part, [&](auto &child){ bind_part(child, indices, pose_count); });
+  children(part, [&](auto &child){bind_part(child, indices, pose_count);});
 }
 
 } // anonymous namespace

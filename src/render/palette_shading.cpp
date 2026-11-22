@@ -7,7 +7,7 @@
 namespace earthsiege {
 
 void apply_cockpit_map_shading(palette &target) {
-  for(size_t ramp{}; ramp < 16; ramp += 2) {
+  for(size_t ramp{0}; ramp < 16; ramp += 2) {
     auto &values{target.shade_ramps.at(ramp)};
     values.resize(16);
     std::iota(values.begin(), values.end(), uint16_t{16});

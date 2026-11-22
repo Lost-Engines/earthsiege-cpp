@@ -33,8 +33,12 @@ int main(int const argc, char **argv) try {
       check(part.header.transform);
       std::visit([&](auto const &content){
         using type = std::decay_t<decltype(content)>;
-        if constexpr(std::is_same_v<type, earthsiege::bsp_part>) for(auto const &node : content.nodes) check(node.transform);
-        if constexpr(requires { content.children; }) for(auto const &child : content.children) self(child);
+        if constexpr(std::is_same_v<type, earthsiege::bsp_part>) {
+          for(auto const &node : content.nodes) check(node.transform);
+        }
+        if constexpr(requires { content.children; }) {
+          for(auto const &child : content.children) self(child);
+        }
       }, part.content);
     }};
     for(auto const &part : model.roots) visit(part);

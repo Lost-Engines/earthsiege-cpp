@@ -17,7 +17,9 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESWPN001") file.fail("fixture version");
   auto const count{file.integer<uint16_t>()};
-  unsigned int weapons{0}, nodes{0}, points{0};
+  unsigned int weapons{0};
+  unsigned int nodes{0};
+  unsigned int points{0};
   for(unsigned int row{0}; row != count; ++row) {
     auto const name{file.cstring()};
     auto const require{[&](bool const pass, std::string const &field){
@@ -28,14 +30,14 @@ int main(int const argc, char **argv) try {
     auto const owner{earthsiege::read_model(resources.read("simvol0", "dts/" + name + ".DTS"))};
     auto const mounts{earthsiege::read_weapon_mounts(resources.read("simvol0", "gl/" + name + ".GL"))};
     earthsiege::weapon_assembly assembly{owner.roots.front(), mounts, equipment, definitions, templates};
-    require(assembly.parts().size() == static_cast<size_t>(std::ranges::count_if(mounts, [](auto const &mount){ return mount.external(); })), "external mount count");
+    require(assembly.parts().size() == static_cast<size_t>(std::ranges::count_if(mounts, [](auto const &mount){return mount.external();})), "external mount count");
     auto const mounted{file.integer<uint16_t>()};
     for(unsigned int index{0}; index != mounted; ++index) {
       auto const body_part{file.integer<int16_t>()};
       auto const weapon{file.integer<int16_t>()};
       auto const found{std::ranges::find(assembly.parts(), body_part, &earthsiege::mounted_weapon_model::body_part)};
       require(found != assembly.parts().end() && found->weapon == weapon && found->geometry.has_value(), "mounted weapon");
-      require(std::ranges::all_of(found->cell_frames, [](auto const value){ return value == 0; }), "initial weapon cells");
+      require(std::ranges::all_of(found->cell_frames, [](auto const value){return value == 0;}), "initial weapon cells");
       auto const node_count{file.integer<uint16_t>()};
       for(unsigned int node{0}; node != node_count; ++node) {
         auto const depth{file.integer<uint16_t>()};

@@ -8,17 +8,27 @@ namespace earthsiege {
 struct mfd_state {
   mfd_page page{mfd_page::status};
   size_t range_index{2};
-  size_t choice{};
+  size_t choice{0};
   std::optional<size_t> selected_actor;
   uint8_t pending_paint{2};
   std::array<bool, 6> refresh{};
-  uint32_t deadline{};
+  uint32_t deadline{0};
   mfd_page previous_page{mfd_page::status};
-  bool automatic_camera{};
+  bool automatic_camera{false};
   bool allow_camera_switch{true};
 };
-struct mfd_paint { mfd_page page; bool full; uint16_t failure{}; auto operator<=>(mfd_paint const &) const = default; };
-enum class mfd_action { none, toggle_radar, cycle_target, transmit };
+struct mfd_paint {
+  mfd_page page;
+  bool full;
+  uint16_t failure{0};
+  auto operator<=>(mfd_paint const &) const = default;
+};
+enum class mfd_action {
+  none,
+  toggle_radar,
+  cycle_target,
+  transmit
+};
 
 /// Own MFD page/range/selection and the original two-stage refresh scheduling.
 class mfd_controller {

@@ -16,7 +16,9 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESPLACE1") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
-  unsigned int actors{0}, groups{0}, undefined{0};
+  unsigned int actors{0};
+  unsigned int groups{0};
+  unsigned int undefined{0};
   for(unsigned int row{0}; row != count; ++row) {
     auto const name{file.cstring()};
     auto const require{[&](bool const pass, std::string const &field){
@@ -26,14 +28,17 @@ int main(int const argc, char **argv) try {
     auto const player{earthsiege::read_player_roster(file.take(file.integer<uint32_t>()), resources.edition())};
     if(argc == 5) {
       try {
-        auto session{std::make_unique<earthsiege::mission_session>(resources,script,player)};
-        earthsiege::mission_view view{resources,std::move(session)};
-        for(int frame{};frame < 64;++frame){
-          earthsiege::tape_frame input;input.delta = 256;
-          view.step_recorded(input,static_cast<uint32_t>(frame * 50),false);
-          if(frame % 16 == 0)view.draw();
+        auto session{std::make_unique<earthsiege::mission_session>(resources, script, player)};
+        earthsiege::mission_view view{resources, std::move(session)};
+        for(int frame{0}; frame < 64; ++frame) {
+          earthsiege::tape_frame input;
+          input.delta = 256;
+          view.step_recorded(input, static_cast<uint32_t>(frame * 50), false);
+          if(frame % 16 == 0) view.draw();
         }
-      } catch(std::exception const &error) { throw std::runtime_error{name + ": " + error.what()}; }
+      } catch(std::exception const &error) {
+        throw std::runtime_error{name + ": " + error.what()};
+      }
     }
     auto const actual{catalogue.place(script, player)};
     for(auto const &pool : actual.actors) {
@@ -46,7 +51,9 @@ int main(int const argc, char **argv) try {
         require(actor.position.has_value() == valid, label + "defined position");
         if(valid) {
           for(unsigned int axis{0}; axis != 3; ++axis) require((*actor.position)[axis] == file.integer<int32_t>(), label + "position");
-        } else ++undefined;
+        } else {
+          ++undefined;
+        }
         for(unsigned int axis{0}; axis != 3; ++axis) require(actor.angles[axis] == file.integer<uint16_t>(), label + "angle");
         require(actor.group == file.integer<uint16_t>(), label + "group");
         require(actor.ordinal == file.integer<uint16_t>(), label + "ordinal");

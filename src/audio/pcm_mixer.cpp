@@ -10,7 +10,9 @@ uint8_t mix_pcm8(uint8_t const sample, uint8_t const background, uint16_t const 
   auto const scaled{std::bit_cast<int8_t>(static_cast<uint8_t>(((static_cast<int>(sample) - 128) * gain) >> 7))};
   return static_cast<uint8_t>(std::clamp(static_cast<int>(scaled) + background - 128, -128, 127) + 128);
 }
-pcm_mixer::pcm_mixer(pcm_sound_bank &sounds, bool const stereo_output) : bank{sounds}, stereo{stereo_output} {
+pcm_mixer::pcm_mixer(pcm_sound_bank &sounds, bool const stereo_output)
+  : bank{sounds},
+    stereo{stereo_output} {
   buffer.fill(128);
 }
 std::vector<uint8_t> pcm_mixer::advance(uint16_t const byte_count) {

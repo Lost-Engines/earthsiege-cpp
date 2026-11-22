@@ -4,7 +4,11 @@
 
 namespace earthsiege {
 
-enum class herc_aim_mode { centre_controls, target_centre, target_component };
+enum class herc_aim_mode {
+  centre_controls,
+  target_centre,
+  target_component
+};
 struct herc_aim_selection {
   herc_aim_mode mode{herc_aim_mode::centre_controls};
   int16_t component{-1};

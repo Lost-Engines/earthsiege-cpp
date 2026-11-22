@@ -26,13 +26,15 @@ class bsp_walker {
       auto const index{static_cast<uint16_t>(static_cast<unsigned int>(reference) & index_mask)};
       if(index >= part.children.size()) throw std::runtime_error{"BSP child index exceeds part count"};
       order.push_back(index);
-    } else node(static_cast<unsigned int>(reference), depth);
+    } else {
+      node(static_cast<unsigned int>(reference), depth);
+    }
   }
 
   void node(unsigned int index, unsigned int depth) {
     if(index >= part.nodes.size() || depth > part.nodes.size()) throw std::runtime_error{"invalid or cyclic model BSP"};
     auto const &plane{part.nodes[index]};
-    int32_t distance{};
+    int32_t distance{0};
     if(plane.transform < 0) {
       distance = wrap(static_cast<int64_t>(eye.x) * plane.normal.x + static_cast<int64_t>(eye.y) * plane.normal.y + static_cast<int64_t>(eye.z) * plane.normal.z);
     } else {
@@ -48,7 +50,10 @@ class bsp_walker {
   }
 
 public:
-  bsp_walker(bsp_part const &source, vec3<int32_t> const &view, std::span<model_transform const> poses) : part{source}, eye{view}, transforms{poses} {}
+  bsp_walker(bsp_part const &source, vec3<int32_t> const &view, std::span<model_transform const> poses)
+    : part{source},
+      eye{view},
+      transforms{poses} {}
   auto run()->std::vector<uint16_t> {
     if(!part.nodes.empty()) node(0, 0);
     return std::move(order);
@@ -57,7 +62,9 @@ public:
 
 auto approximate_distance(vec3<int32_t> const &point)->int32_t {
   std::array<int64_t, 3> components{point.x, point.y, point.z};
-  for(auto &value : components) if(value < 0) value = -value;
+  for(auto &value : components) {
+    if(value < 0) value = -value;
+  }
   std::ranges::sort(components);
   return wrap(components[2] + (components[0] >> 2) + (components[1] >> 2) + (components[1] >> 4) + (components[1] >> 5));
 }

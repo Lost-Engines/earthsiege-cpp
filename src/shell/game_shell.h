@@ -27,10 +27,10 @@ class game_shell {
   career_index careers;
   career_index transfer_sources;
   std::filesystem::path transfer_root;
-  int transfer_selection{};
+  int transfer_selection{0};
   void transfer_selected_career(bool keep);
   preferences preferences_;
-  std::array<joystick_calibration,2> calibrations;
+  std::array<joystick_calibration, 2> calibrations;
   std::unique_ptr<controls_dialog> controls;
   void finish_controls();
   shell_audio audio;
@@ -38,21 +38,24 @@ class game_shell {
   std::unique_ptr<dialog> menu;
   std::unique_ptr<shell_cinematic> cinematic;
   std::unique_ptr<shell_door> door_motion;
-  void start_door(bool closing,framebuffer const &,palette const &);
+  void start_door(bool closing, framebuffer const &, palette const &);
   void finish_door();
-  unsigned visible_region()const;
-  std::deque<std::pair<std::string,int>> movies;
-  unsigned movie_destination{};
-  bool startup_movies{},cinematics_enabled{true};
-  std::array<int16_t,3> mechanic_lines{-1,-1,-1};
-  void start_movies(std::vector<std::pair<std::string,int>>,unsigned destination,bool startup=false);
+  unsigned visible_region() const;
+  std::deque<std::pair<std::string, int>> movies;
+  unsigned movie_destination{0};
+  bool startup_movies{false};
+  bool cinematics_enabled{true};
+  std::array<int16_t, 3> mechanic_lines{-1, -1, -1};
+  void start_movies(std::vector<std::pair<std::string, int>>, unsigned destination, bool startup = false);
   void finish_movie(bool skipped);
   std::unique_ptr<shell_speech_scene> speech;
   palette speech_palette;
-  int speech_mode{-1},speech_ordinal{};
-  unsigned speech_screen{},speech_destination{};
-  bool consume_release{};
-  void start_speech(int mode,int ordinal=0);
+  int speech_mode{-1};
+  int speech_ordinal{0};
+  unsigned speech_screen{0};
+  unsigned speech_destination{0};
+  bool consume_release{false};
+  void start_speech(int mode, int ordinal = 0);
   void finish_speech(bool skipped);
   std::unique_ptr<briefing_map> briefing;
   std::unique_ptr<dialog> warning_parent;
@@ -67,7 +70,7 @@ class game_shell {
   void refresh_repair();
   construction_artwork build_view;
   std::optional<construction_menu> build_menu;
-  int16_t build_chassis{};
+  int16_t build_chassis{0};
   void refresh_construction();
   armament_catalog armament;
   hangar_artwork bay;
@@ -75,104 +78,109 @@ class game_shell {
   framebuffer bay_backdrop;
   std::vector<uint8_t> displayed_hangar;
   int displayed_mount{-2};
-  uint64_t animation_ticks{};
+  uint64_t animation_ticks{0};
   void refresh_bay();
   void action_impl(uint16_t id);
   crew_artwork crew_view;
   shell_statistics statistics_view;
-  size_t statistics_history{};
+  size_t statistics_history{0};
   std::optional<crew_assignment> crew_edit;
   int selected_mount{-1};
   std::optional<int> pressed_mount;
-  bool missile_menu{};
+  bool missile_menu{false};
   std::unique_ptr<weapon_preview> weapon_motion;
   int preview_index{-2};
   void refresh_preview();
   std::vector<int16_t> weapon_choices;
-  void refresh_armament(std::optional<int16_t> wanted={});
+  void refresh_armament(std::optional<int16_t> wanted = {});
   void choose_armament();
-  int single_kind{},battle_set{};
- uint8_t career_difficulty{1};
- bool expansion_battle()const{
-   return resources.edition() == game_edition::expansion && battle_set != 0;
- }
-  unsigned int options_owner{1000},last_screen{1000};
-  int text_scroll{};
+  int single_kind{0};
+  int battle_set{0};
+  uint8_t career_difficulty{1};
+  bool expansion_battle() const {
+    return resources.edition() == game_edition::expansion && battle_set != 0;
+  }
+  unsigned int options_owner{1000};
+  unsigned int last_screen{1000};
+  int text_scroll{0};
   std::vector<size_t> history_slots;
-  bool quitting{},launch_requested{},demo_requested{};
-  int detail_level{},saved_detail_level{};
+  bool quitting{false};
+  bool launch_requested{false};
+  bool demo_requested{false};
+  int detail_level{0};
+  int saved_detail_level{0};
   void show(unsigned int id);
   void refresh_values();
   void save_career();
   void select_career();
   void register_career();
   void begin();
-  void draw_text(framebuffer &frame,std::string const &text,rectangle const &bounds,int scroll=0)const;
+  void draw_text(framebuffer &frame, std::string const &text, rectangle const &bounds, int scroll = 0) const;
 public:
-  game_shell(resource_store const &resources,std::filesystem::path save_directory,int seed=17,music_settings const &music={});
-  void configure_music(music_settings const &settings){
+  game_shell(resource_store const &resources, std::filesystem::path save_directory, int seed = 17, music_settings const &music = {});
+  void configure_music(music_settings const &settings) {
     audio.configure_music(settings);
   }
-  unsigned int screen()const{
-    return cinematic?0:speech?speech_screen:controls?1320:menu->id();
+  unsigned int screen() const {
+    return cinematic ? 0 : speech ? speech_screen : controls ? 1320 : menu->id();
   }
-  bool presentation_active()const{
+  bool presentation_active() const {
     return speech != nullptr || cinematic != nullptr || door_motion != nullptr;
   }
-  bool transition_active()const{
+  bool transition_active() const {
     return door_motion != nullptr;
   }
-  bool quit_requested()const{
+  bool quit_requested() const {
     return quitting;
   }
-  bool ready_to_launch()const{
+  bool ready_to_launch() const {
     return launch_requested;
   }
-  void request_demo(){
+  void request_demo() {
     demo_requested = true;
   }
   bool take_demo_request();
   void demo_return();
-  preferences const &settings()const{
+  preferences const &settings() const {
     return preferences_;
   }
-  dialog const &current_dialog()const{
+  dialog const &current_dialog() const {
     return *menu;
   }
-  game_state const &state()const{
+  game_state const &state() const {
     return game;
   }
-  void startup(bool enabled=true);
+  void startup(bool enabled = true);
   void action(uint16_t id);
   void key(uint16_t scan);
-  void text_input(std::string_view text){
-    if(!presentation_active() && !controls)menu->text_input(text);
+  void text_input(std::string_view text) {
+    if(!presentation_active() && !controls) menu->text_input(text);
   }
-  void mouse_move(int x,int y);
-  void mouse_down(int x,int y,bool right=false);
-  void mouse_up(int x,int y,bool right=false);
-  void cancel_press(){
+  void mouse_move(int x, int y);
+  void mouse_down(int x, int y, bool right = false);
+  void mouse_up(int x, int y, bool right = false);
+  void cancel_press() {
     pressed_mount.reset();
     menu->cancel_press();
-    if(controls)controls->cancel_press();
+    if(controls) controls->cancel_press();
   }
-  void devices(std::array<joystick_hardware,2> const &);
-  std::array<joystick_calibration,2> const &device_calibrations()const{
+  void devices(std::array<joystick_hardware, 2> const &);
+  std::array<joystick_calibration, 2> const &device_calibrations() const {
     return calibrations;
   }
   std::optional<vec2<int32_t>> take_pointer_warp();
-  std::unique_ptr<mission_options_dialog> flight_options(){
-    return std::make_unique<mission_options_dialog>(resources,preferences_,saves,calibrations);
+  std::unique_ptr<mission_options_dialog> flight_options() {
+    return std::make_unique<mission_options_dialog>(resources, preferences_, saves, calibrations);
   }
   std::unique_ptr<mission_session> launch();
-  void mission_return(mission_results const &result,mission_counters const &counters,int16_t return_seed=17);
-  void advance(unsigned timer_ticks=3);
-  std::vector<int16_t> take_audio(){
+  void mission_return(mission_results const &result, mission_counters const &counters, int16_t return_seed = 17);
+  void advance(unsigned timer_ticks = 3);
+  std::vector<int16_t> take_audio() {
     return audio.take_output();
   }
-  void draw(framebuffer &target)const;
-  palette const &colours()const{
-    return door_motion?door_motion->colours():cinematic?cinematic->colours():speech?speech_palette:menu->current_palette();
+  void draw(framebuffer &target) const;
+  palette const &colours() const {
+    return door_motion ? door_motion->colours() : cinematic ? cinematic->colours() : speech ? speech_palette : menu->current_palette();
   }
 };
 }

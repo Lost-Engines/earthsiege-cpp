@@ -5,7 +5,10 @@
 namespace earthsiege {
 struct radio_presentation_state {
   std::optional<size_t> active;
-  bool starting{}, ready{}, cancelling{}, visible{};
+  bool starting{false};
+  bool ready{false};
+  bool cancelling{false};
+  bool visible{false};
 };
 struct radio_presentation_callbacks {
   std::function<void(radio_message const &)> start;
@@ -23,7 +26,7 @@ public:
   radio_presentation_state const &state() const;
   void ready();
   void cancel();
-  bool cancel_message(uint16_t id,std::optional<size_t> speaker);
+  bool cancel_message(uint16_t id, std::optional<size_t> speaker);
   radio_message const *active() const;
   void advance(uint32_t ticks, bool text_enabled, radio_presentation_callbacks const &callbacks);
 };

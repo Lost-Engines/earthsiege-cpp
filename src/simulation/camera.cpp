@@ -30,8 +30,9 @@ vec3<int32_t> add_position(vec3<int32_t> const &a, vec3<int32_t> const &b) {
 void steer_camera(camera_state &camera, bool const zoom, int16_t const tilt, int16_t const turn) {
   if(camera.mode == camera_mode::attached) return;
   auto const approach{[](int16_t &value, int16_t const desired, int16_t const step){
-    if(value < desired) value = std::min(desired, wrap_word(value + step));
-    else if(value > desired) value = std::max(desired, wrap_word(value - step));
+    if(value < desired) {
+      value = std::min(desired, wrap_word(value + step));
+    } else if(value > desired) value = std::max(desired, wrap_word(value - step));
   }};
   int const sign{camera.mode == camera_mode::free ? -1 : 1};
   approach(camera.angular_rates.z, wrap_word(sign * turn * 8), 192);
@@ -48,32 +49,32 @@ void update_camera(camera_state &camera, camera_target const &target) {
     return;
   case camera_mode::orbit:
     {
-      auto const old_position{camera.position};
-      auto const old_angles{camera.angles};
-      auto const old_orbit{camera.orbit_angles};
-      camera.orbit_distance = std::clamp<int16_t>(wrap_word(camera.orbit_distance + camera.movement), minimum_orbit_distance, maximum_orbit_distance);
-      turn_camera(camera.orbit_angles, camera.angular_rates);
-      camera.angles = camera.orbit_angles;
-      camera.angles.z = static_cast<uint16_t>(camera.angles.z + target.angles.z);
-      auto const centre{transform_point(camera.focus_offset, target.placement)};
-      auto const locate{[&]{
-        return add_position(centre, rotate_vector(vec3<int32_t>{0, -camera.orbit_distance, 0}, rotation_transform(camera.angles)));
-      }};
-      camera.position = locate();
-      if(camera.position.z < minimum_camera_height) {
-        if(camera.movement <= 0) {
-          camera.position = old_position;
-          camera.angles = old_angles;
-          camera.orbit_angles = old_orbit;
-        } else {
-          auto const height{wrap_long(static_cast<int64_t>(centre.z) - minimum_camera_height)};
-          auto const sine{wrap_word(wrap_long(static_cast<int64_t>(height) * model_matrix_one) / camera.orbit_distance)};
-          camera.orbit_angles.x = camera.angles.x = model_arcsine(sine);
-          camera.position = locate();
-        }
+    auto const old_position{camera.position};
+    auto const old_angles{camera.angles};
+    auto const old_orbit{camera.orbit_angles};
+    camera.orbit_distance = std::clamp<int16_t>(wrap_word(camera.orbit_distance + camera.movement), minimum_orbit_distance, maximum_orbit_distance);
+    turn_camera(camera.orbit_angles, camera.angular_rates);
+    camera.angles = camera.orbit_angles;
+    camera.angles.z = static_cast<uint16_t>(camera.angles.z + target.angles.z);
+    auto const centre{transform_point(camera.focus_offset, target.placement)};
+    auto const locate{[&]{
+      return add_position(centre, rotate_vector(vec3<int32_t>{0, -camera.orbit_distance, 0}, rotation_transform(camera.angles)));
+    }};
+    camera.position = locate();
+    if(camera.position.z < minimum_camera_height) {
+      if(camera.movement <= 0) {
+        camera.position = old_position;
+        camera.angles = old_angles;
+        camera.orbit_angles = old_orbit;
+      } else {
+        auto const height{wrap_long(static_cast<int64_t>(centre.z) - minimum_camera_height)};
+        auto const sine{wrap_word(wrap_long(static_cast<int64_t>(height) * model_matrix_one) / camera.orbit_distance)};
+        camera.orbit_angles.x = camera.angles.x = model_arcsine(sine);
+        camera.position = locate();
       }
-      return;
     }
+    return;
+  }
   case camera_mode::attached:
     if(target.attachment) {
       auto const placement{compose_transforms(*target.attachment, target.placement)};

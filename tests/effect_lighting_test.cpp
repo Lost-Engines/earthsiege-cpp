@@ -13,7 +13,14 @@ vec3<T> vector(earthsiege::binary_reader &file) {
 }
 
 earthsiege::light light(earthsiege::binary_reader &file) {
-  return {.kind{static_cast<earthsiege::light_kind>(file.integer<uint8_t>())}, .intensity{file.integer<int32_t>()}, .position{vector<int32_t>(file)}, .direction{vector<int16_t>(file)}, .attenuation{file.integer<int32_t>()}, .scale{file.integer<int32_t>()}};
+  return {
+    .kind{static_cast<earthsiege::light_kind>(file.integer<uint8_t>())},
+    .intensity{file.integer<int32_t>()},
+    .position{vector<int32_t>(file)},
+    .direction{vector<int16_t>(file)},
+    .attenuation{file.integer<int32_t>()},
+    .scale{file.integer<int32_t>()}
+  };
 }
 
 void require(bool const value, size_t const row, char const *field) {
@@ -36,7 +43,8 @@ int main(int const argc, char **argv) try {
   require(std::string(magic.begin(), magic.end()) == "ESFXLT01", 0, "version");
   auto const isolated{file.integer<uint32_t>()};
   for(size_t row{0}; row != isolated; ++row) {
-    auto const source{vector<int32_t>(file)}, object{vector<int32_t>(file)};
+    auto const source{vector<int32_t>(file)};
+    auto const object{vector<int32_t>(file)};
     auto const radius{file.integer<int32_t>()};
     auto const intensity{file.integer<int16_t>()};
     bool const present{file.integer<uint8_t>() != 0};
@@ -49,7 +57,8 @@ int main(int const argc, char **argv) try {
   size_t operations{0};
   auto const traces{file.integer<uint32_t>()};
   for(size_t trace{0}; trace != traces; ++trace) {
-    auto const scale{file.integer<int32_t>()}, offset{file.integer<int32_t>()};
+    auto const scale{file.integer<int32_t>()};
+    auto const offset{file.integer<int32_t>()};
     auto const fixed_count{file.integer<uint8_t>()};
     std::vector<earthsiege::light> persistent;
     for(size_t i{0}; i != fixed_count; ++i) persistent.push_back(light(file));
@@ -57,25 +66,32 @@ int main(int const argc, char **argv) try {
     auto const count{file.integer<uint32_t>()};
     for(size_t row{0}; row != count; ++row, ++operations) {
       switch(file.integer<uint8_t>()) {
-      case 0: {
+      case 0:
+        {
         auto const position{vector<int32_t>(file)};
         auto const slot{file.integer<uint8_t>()};
         require(manager.add(position) == slot, operations, "allocation slot");
         break;
       }
-      case 1: manager.remove(file.integer<uint8_t>()); break;
-      case 2: {
+      case 1:
+        manager.remove(file.integer<uint8_t>());
+        break;
+      case 2:
+        {
         auto const slot{file.integer<uint8_t>()};
         manager.intensity(slot, file.integer<int16_t>());
         break;
       }
-      case 3: {
+      case 3:
+        {
         auto const slot{file.integer<uint8_t>()};
-        auto const strength{file.integer<int32_t>()}, attenuation{file.integer<int32_t>()};
+        auto const strength{file.integer<int32_t>()};
+        auto const attenuation{file.integer<int32_t>()};
         manager.attenuation(slot, strength, attenuation);
         break;
       }
-      case 4: {
+      case 4:
+        {
         auto const position{vector<int32_t>(file)};
         auto const radius{file.integer<int32_t>()};
         auto const expected{file.integer<uint8_t>()};
@@ -84,7 +100,8 @@ int main(int const argc, char **argv) try {
         for(auto const &value : selected) compare(value, light(file), operations);
         break;
       }
-      default: throw std::runtime_error{"invalid light fixture operation"};
+      default:
+        throw std::runtime_error{"invalid light fixture operation"};
       }
     }
   }

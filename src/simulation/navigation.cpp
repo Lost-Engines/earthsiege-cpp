@@ -26,7 +26,10 @@ movement_request follow_route(vec3<int32_t> const &position, uint16_t const head
   auto const point{route.points[static_cast<size_t>(next)]};
   if(point < 0 || static_cast<size_t>(point) >= points.size()) throw std::out_of_range{"route point"};
   auto const &destination{points[static_cast<size_t>(point)]};
-  movement_request const result{.speed{requested_speed ? requested_speed : int16_t{170}}, .turn{static_cast<int16_t>(wrap_word(bearing_angle(position, destination) - heading) >> 4)}};
+  movement_request const result{
+    .speed{requested_speed ? requested_speed : int16_t{170}},
+    .turn{static_cast<int16_t>(wrap_word(bearing_angle(position, destination) - heading) >> 4)}
+  };
   int32_t constexpr arrival_distance{10000};
   if(horizontal_distance(position, destination) < arrival_distance) {
     cursor = static_cast<int16_t>(next);
@@ -50,11 +53,20 @@ movement_request follow_formation(vec3<int32_t> const &position, uint16_t const 
       auto delta{difference(position, destination)};
       delta.z = 0;                                                             // original formation correction uses the horizontal matrix only
       auto const local{inverse_rotate_vector(delta, rotation)};
-      return {.speed{wrap_word((-local.y >> 5) + leader_speed)}, .turn{wrap_word(-((heading_error >> 4) + (-local.x >> 5)))}};
+      return {
+        .speed{wrap_word((-local.y >> 5) + leader_speed)},
+        .turn{wrap_word(-((heading_error >> 4) + (-local.x >> 5)))}
+      };
     }
-    return {.speed{-256}, .turn{static_cast<int16_t>(heading_error <= 0 ? 256 : -256)}};
+    return {
+      .speed{-256},
+      .turn{static_cast<int16_t>(heading_error <= 0 ? 256 : -256)}
+    };
   }
-  return {.speed{static_cast<int16_t>(distance < formation_follow_distance ? distance >> 7 : 256)}, .turn{static_cast<int16_t>(wrap_word(bearing_angle(position, destination) - heading) >> 4)}};
+  return {
+    .speed{static_cast<int16_t>(distance < formation_follow_distance ? distance >> 7 : 256)},
+    .turn{static_cast<int16_t>(wrap_word(bearing_angle(position, destination) - heading) >> 4)}
+  };
 }
 
 void avoid_obstacles(movement_request &control, avoidance_state const &state, std::span<contact_actor const> const actors, avoidance_query const &query, avoidance_policy const &policy) {
@@ -63,36 +75,41 @@ void avoid_obstacles(movement_request &control, avoidance_state const &state, st
   int32_t constexpr clear_distance{22000};
   std::array<int32_t, 2> clearance{clear_distance, clear_distance};
   if(!(control.flags & 1)) {
-  auto const rotation{rotation_transform(vec3<uint16_t>{0, 0, state.heading})};
-  for(size_t side{0}; side != clearance.size(); ++side) {
-    int const direction{side == 0 ? -1 : 1};
-    auto start{rotate_vector(vec3<int32_t>{1500 * direction, 0, 0}, rotation)};
-    auto end{rotate_vector(vec3<int32_t>{10000 * direction, 20000, 0}, rotation)};
-    for(unsigned int axis{0}; axis != 3; ++axis) {
-      start[axis] = wrap_long(static_cast<int64_t>(start[axis]) + state.position[axis]);
-      end[axis] = wrap_long(static_cast<int64_t>(end[axis]) + state.position[axis]);
+    auto const rotation{rotation_transform(vec3<uint16_t>{0, 0, state.heading})};
+    for(size_t side{0}; side != clearance.size(); ++side) {
+      int const direction{side == 0 ? -1 : 1};
+      auto start{rotate_vector(vec3<int32_t>{1500 * direction, 0, 0}, rotation)};
+      auto end{rotate_vector(vec3<int32_t>{10000 * direction, 20000, 0}, rotation)};
+      for(unsigned int axis{0}; axis != 3; ++axis) {
+        start[axis] = wrap_long(static_cast<int64_t>(start[axis]) + state.position[axis]);
+        end[axis] = wrap_long(static_cast<int64_t>(end[axis]) + state.position[axis]);
+      }
+      for(auto const kind : {avoidance_probe::scenery, avoidance_probe::ground_objects}) {
+        if(auto const distance{query(kind, start, end)}) clearance[side] = std::min(clearance[side], *distance);
+      }
     }
-    for(auto const kind : {avoidance_probe::scenery, avoidance_probe::ground_objects}) if(auto const distance{query(kind, start, end)}) clearance[side] = std::min(clearance[side], *distance);
-  }
-  for(auto const &actor : actors) {
-    if(actor.waiting || actor.radius == 0) continue;
-    auto const distance{wrap_long((static_cast<int64_t>(fast_distance(difference(actor.position, state.position))) * 2000 + 512) >> 10)};
-    if(distance >= clearance[0] && distance >= clearance[1]) continue;
-    auto const angle{wrap_word(bearing_angle(state.position, actor.position) - state.heading)};
-    if(std::min(std::abs(static_cast<int>(angle)), 32767) >= 8192) continue;
-    auto &side{clearance[angle < 0 ? 1 : 0]};
-    side = std::min(side, distance);
-  }
+    for(auto const &actor : actors) {
+      if(actor.waiting || actor.radius == 0) continue;
+      auto const distance{wrap_long((static_cast<int64_t>(fast_distance(difference(actor.position, state.position))) * 2000 + 512) >> 10)};
+      if(distance >= clearance[0] && distance >= clearance[1]) continue;
+      auto const angle{wrap_word(bearing_angle(state.position, actor.position) - state.heading)};
+      if(std::min(std::abs(static_cast<int>(angle)), 32767) >= 8192) continue;
+      auto &side{clearance[angle < 0 ? 1 : 0]};
+      side = std::min(side, distance);
+    }
   }
   // Expansion 0x1388c also keeps wingmates out of the player's firing line.
   std::array<bool, 2> firing_line{};
   if(policy.expansion) {
     for(auto const &point : policy.friendly_fire_line) {
       auto const range{wrap_long((static_cast<int64_t>(fast_distance_2d({wrap_long(static_cast<int64_t>(point.x) - state.position.x), wrap_long(static_cast<int64_t>(point.y) - state.position.y)})) * 1000 + 512) >> 10)};
-      auto const angle{wrap_word(bearing_angle(state.position, {point.x,point.y,state.position.z}) - state.heading)};
-      if(std::min(std::abs(static_cast<int>(angle)),32767) >= 12288) continue;
+      auto const angle{wrap_word(bearing_angle(state.position, {point.x, point.y, state.position.z}) - state.heading)};
+      if(std::min(std::abs(static_cast<int>(angle)), 32767) >= 12288) continue;
       auto const side{angle < 0 ? 1U : 0U};
-      if(range < clearance[side]) {clearance[side] = range; firing_line[side] = true;}
+      if(range < clearance[side]) {
+        clearance[side] = range;
+        firing_line[side] = true;
+      }
     }
     if(state.forward_collision && clearance[0] == clear_distance && clearance[1] == clear_distance) {
       clearance[state.collision_bias < 1 ? 1 : 0] = 16500;
@@ -104,8 +121,9 @@ void avoid_obstacles(movement_request &control, avoidance_state const &state, st
   auto const distance{clearance[side]};
   auto const correction{wrap_word(wrap_long(static_cast<int64_t>(clear_distance - distance) * (firing_line[side] ? 2500 : 2000) / clear_distance))};
   control.turn = wrap_word(control.turn + (clearance[0] <= clearance[1] ? -correction : correction));
-  if(firing_line[side] && distance < 3000) control.speed = policy.reverse_rate;
-  else if(distance < 0) control.speed = policy.expansion ? policy.reverse_rate : int16_t{0};
+  if(firing_line[side] && distance < 3000) {
+    control.speed = policy.reverse_rate;
+  } else if(distance < 0) control.speed = policy.expansion ? policy.reverse_rate : int16_t{0};
 }
 
 } // namespace earthsiege

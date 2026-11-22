@@ -35,8 +35,8 @@ class throttle_gauge {
   int thumb_extent;
   std::array<bitmap, 2> painted_lamps;
   std::array<int, 2> lamp_boundaries{};
-  bool lamps_initialized{};
-  int32_t last_painted_speed{};
+  bool lamps_initialized{false};
+  int32_t last_painted_speed{0};
   void update_lamps(int32_t speed);
   void update_lamp(size_t index, int32_t speed);
 public:

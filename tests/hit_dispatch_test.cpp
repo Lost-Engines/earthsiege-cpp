@@ -13,7 +13,8 @@ namespace {
 earthsiege::random_state seeded() {
   earthsiege::random_state::state state;
   for(size_t i{0}; i != state.words.size(); ++i) state.words[i] = static_cast<uint16_t>((i * 7919 + 12345) & 32767);
-  state.first = 31; state.second = 0;
+  state.first = 31;
+  state.second = 0;
   return earthsiege::random_state{state};
 }
 
@@ -30,10 +31,14 @@ int main(int const argc, char **argv) try {
   for(unsigned int row{0}; row != count; ++row) {
     earthsiege::impact_request request;
     request.transform.translation = {0, 0, 10000};
-    request.reach = file.integer<int32_t>(); request.radius = 50; request.damage.armour = 100; request.damage.shield = 200;
+    request.reach = file.integer<int32_t>();
+    request.radius = 50;
+    request.damage.armour = 100;
+    request.damage.shield = 200;
     auto const expected_result{file.integer<int32_t>()};
     std::array<earthsiege::impact_actor, 7> actors;
-    actors[0].position = {0, 0, 10000}; actors[6].position = {0, 10000, 10000};
+    actors[0].position = {0, 0, 10000};
+    actors[6].position = {0, 10000, 10000};
     std::array<int32_t, 5> depths{};
     std::vector<std::vector<int32_t>> events;
     for(size_t i{0}; i != depths.size(); ++i) {
@@ -65,25 +70,36 @@ int main(int const argc, char **argv) try {
     }
     auto random{seeded()};
     earthsiege::impact_world world{actors, {}, random, {}};
-    world.events.trigger = [&](size_t const index){ events.push_back({1, static_cast<int32_t>(index)}); };
+    world.events.trigger = [&](size_t const index){events.push_back({1, static_cast<int32_t>(index)});};
     world.events.react = [&](size_t const victim, size_t const owner, int16_t const damage){
       if(owner != 0 || damage != 100) file.fail("reaction arguments");
       events.push_back({2, static_cast<int32_t>(victim - 1)});
     };
-    world.events.friendly_warning = [&](size_t const companion){ if(companion != 6) file.fail("friendly warning companion"); events.push_back({3}); };
+    world.events.friendly_warning = [&](size_t const companion){
+      if(companion != 6) file.fail("friendly warning companion");
+      events.push_back({3});
+    };
     std::array<size_t, 2> const members{0, 6};
     auto const result{earthsiege::dispatch_impact(request, {0, row % 3 == 0, members, std::nullopt}, world)};
     if((result ? *result + 1 : 0) != expected_result || events != expected_events) file.fail("dispatch reference " + std::to_string(row) + " differs");
     bool enemy_hit{false};
-    for(auto const &event : expected_events) if(event[0] == 0 && event[3] != 0 && actors[static_cast<size_t>(event[1]) + 1].side != 0) enemy_hit = true;
+    for(auto const &event : expected_events) {
+      if(event[0] == 0 && event[3] != 0 && actors[static_cast<size_t>(event[1]) + 1].side != 0) enemy_hit = true;
+    }
     if(actors[0].hit_enemy != enemy_hit) file.fail("owner enemy-hit latch");
   }
   for(unsigned int row{0}; row != ground_count; ++row) {
-    auto const pitch{file.integer<uint16_t>()}; auto const yaw{file.integer<uint16_t>()};
-    auto const height{file.integer<int32_t>()}; auto const reach{file.integer<int32_t>()};
-    auto const expected{file.integer<int32_t>()}; auto const effects{file.integer<uint8_t>()};
+    auto const pitch{file.integer<uint16_t>()};
+    auto const yaw{file.integer<uint16_t>()};
+    auto const height{file.integer<int32_t>()};
+    auto const reach{file.integer<int32_t>()};
+    auto const expected{file.integer<int32_t>()};
+    auto const effects{file.integer<uint8_t>()};
     earthsiege::impact_request request;
-    request.transform = earthsiege::rotation_transform({pitch, 0, yaw}); request.transform.translation = {0, 0, height}; request.reach = reach; request.radius = 50;
+    request.transform = earthsiege::rotation_transform({pitch, 0, yaw});
+    request.transform.translation = {0, 0, height};
+    request.reach = reach;
+    request.radius = 50;
     request.damage.ground_effects = {104, 105, 106, 107};
     std::array<earthsiege::impact_actor, 1> actors;
     auto random{seeded()};
@@ -99,7 +115,8 @@ int main(int const argc, char **argv) try {
     auto const result{earthsiege::dispatch_impact(request, {}, world)};
     if((result ? *result + 1 : 0) != expected || effect_count != effects) file.fail("ground reference " + std::to_string(row) + " differs");
     if(effects) expected_random.bounded(4);
-    auto const &a{random.snapshot()}; auto const &b{expected_random.snapshot()};
+    auto const &a{random.snapshot()};
+    auto const &b{expected_random.snapshot()};
     if(a.words != b.words || a.first != b.first || a.second != b.second) file.fail("ground effect random state");
   }
   file.require_end();

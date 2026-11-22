@@ -4,8 +4,16 @@
 
 namespace earthsiege {
 
-enum class control_release_action : uint8_t { none, stop, centre };
-enum class player_axis_pair : uint8_t { movement, aiming, separate };
+enum class control_release_action : uint8_t {
+  none,
+  stop,
+  centre
+};
+enum class player_axis_pair : uint8_t {
+  movement,
+  aiming,
+  separate
+};
 struct player_input {
   vec2<int16_t> movement{};
   vec2<int16_t> aiming{};
@@ -16,7 +24,8 @@ struct player_input {
   bool fire{false};
   bool enter{false};
   bool released{false};
-  bool cycle_weapon{false},toggle_radar{false};
+  bool cycle_weapon{false};
+  bool toggle_radar{false};
   uint16_t command{0};                                                         // original scan code and modifier bits
   player_axis_pair camera_source{player_axis_pair::separate};                  // original pointers can alias movement or aiming
   control_release_action release_action{control_release_action::none};
@@ -40,7 +49,12 @@ struct player_input_context {
   vec2<int32_t> viewport_max{320, 200};
   control_release_action release_action{control_release_action::none};
 };
-enum class player_aim_mode : uint8_t { none, manual, centre, target };
+enum class player_aim_mode : uint8_t {
+  none,
+  manual,
+  centre,
+  target
+};
 struct player_input_actions {
   vec2<int16_t> camera{};
   bool zoom{false};

@@ -13,7 +13,9 @@ class comparison {
   size_t index{0};
 
 public:
-  comparison(earthsiege::binary_reader &source, std::string label) : file{source}, name{std::move(label)} {
+  comparison(earthsiege::binary_reader &source, std::string label)
+    : file{source},
+      name{std::move(label)} {
   }
   void value(int64_t const actual) {
     auto const expected{file.integer<int32_t>()};
@@ -21,14 +23,20 @@ public:
     ++index;
   }
   void component(earthsiege::damage_component const &part) {
-    value(part.armour); value(part.debris); value(part.cell_sequence); value(part.parent); value(part.flags);
+    value(part.armour);
+    value(part.debris);
+    value(part.cell_sequence);
+    value(part.parent);
+    value(part.flags);
     value(static_cast<int64_t>(part.dependents.size()));
     for(auto const &dependency : part.dependents) {
-      value(dependency.weight); value(dependency.component);
+      value(dependency.weight);
+      value(dependency.component);
     }
   }
   void collision(earthsiege::collision_section const &state) {
-    value(state.section); value(static_cast<int64_t>(state.spheres.size()));
+    value(state.section);
+    value(static_cast<int64_t>(state.spheres.size()));
     for(auto const &sphere : state.spheres) {
       for(unsigned int axis{0}; axis != 3; ++axis) value(sphere.centre[axis]);
       value(sphere.radius);
@@ -62,25 +70,39 @@ int main(int const argc, char **argv) try {
       auto const parts{earthsiege::read_collision_parts(data)};
       expect.value(static_cast<int64_t>(parts.size()));
       for(auto const &part : parts) {
-        expect.value(part.model_part); expect.value(static_cast<int64_t>(part.sections.size()));
+        expect.value(part.model_part);
+        expect.value(static_cast<int64_t>(part.sections.size()));
         for(auto const &state : part.sections) expect.collision(state);
       }
     } else {
       auto const catalogue{earthsiege::read_weapon_catalogue(data)};
       expect.value(static_cast<int64_t>(catalogue.weapons.size()));
       for(auto const &weapon : catalogue.weapons) {
-        expect.component(weapon.damage); expect.collision(weapon.collision);
+        expect.component(weapon.damage);
+        expect.collision(weapon.collision);
         for(auto const model : weapon.model_indices) expect.value(model);
-        expect.value(weapon.internal_maximum); expect.value(weapon.minimum_range); expect.value(weapon.range); expect.value(weapon.shot_value_penalty);
+        expect.value(weapon.internal_maximum);
+        expect.value(weapon.minimum_range);
+        expect.value(weapon.range);
+        expect.value(weapon.shot_value_penalty);
         for(auto const threshold : weapon.energy_thresholds) expect.value(threshold);
-        expect.value(weapon.magazine); expect.value(weapon.barrels); expect.value(weapon.projectile);
+        expect.value(weapon.magazine);
+        expect.value(weapon.barrels);
+        expect.value(weapon.projectile);
         for(unsigned int axis{0}; axis != 3; ++axis) expect.value(weapon.muzzle_offset[axis]);
         for(unsigned int axis{0}; axis != 3; ++axis) expect.value(weapon.side_muzzle_offset[axis]);
-        expect.value(weapon.refire_delay); expect.value(weapon.combat_rating); expect.value(weapon.damage_icon);
+        expect.value(weapon.refire_delay);
+        expect.value(weapon.combat_rating);
+        expect.value(weapon.damage_icon);
       }
       expect.value(static_cast<int64_t>(catalogue.projectiles.size()));
       for(auto const &projectile : catalogue.projectiles) {
-        expect.value(static_cast<int16_t>(projectile.kind)); expect.value(projectile.subtype); expect.value(projectile.shield_damage); expect.value(projectile.armour_damage); expect.value(projectile.splash_q10); expect.value(projectile.speed);
+        expect.value(static_cast<int16_t>(projectile.kind));
+        expect.value(projectile.subtype);
+        expect.value(projectile.shield_damage);
+        expect.value(projectile.armour_damage);
+        expect.value(projectile.splash_q10);
+        expect.value(projectile.speed);
         for(auto const effect : projectile.shield_effects) expect.value(effect);
         for(auto const effect : projectile.ground_effects) expect.value(effect);
         for(auto const effect : projectile.armour_effects) expect.value(effect);

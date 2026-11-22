@@ -12,7 +12,12 @@ struct target_relationship {
 };
 void assign_target(std::span<target_relationship> relationships, size_t observer, std::optional<size_t> selected);
 
-enum class engagement_mode { herc_search, herc_patrol, flyer_search, flyer_patrol };
+enum class engagement_mode {
+  herc_search,
+  herc_patrol,
+  flyer_search,
+  flyer_patrol
+};
 
 struct engagement_state {
   controller_state controller;

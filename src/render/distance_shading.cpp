@@ -23,7 +23,10 @@ std::vector<palette_range> interpolate_ranges(palette_range const near, palette_
     for(int index{0}; index < levels - 1; ++index) {
       auto const first{wrap_word(near.first + ((index * first_step) >> 8))};
       auto const count{wrap_word(near_last + ((index * last_step) >> 8) - first + 1)};
-      result.push_back(palette_range{.first{first}, .count{count}});
+      result.push_back(palette_range{
+        .first{first},
+        .count{count}
+      });
     }
   }
   result.push_back(far);
@@ -45,13 +48,20 @@ distance_shade_bindings read_distance_shade_bindings(bytes const source) {
     auto const pairs{file.integer<uint8_t>()};
     auto &entry{result.at(slot)};
     entry.clear();
-    for(unsigned int pair{0}; pair != pairs; ++pair) entry.push_back(shade_binding{.palette_slot{file.integer<uint8_t>()}, .environment_column{file.integer<uint8_t>()}});
+    for(unsigned int pair{0}; pair != pairs; ++pair) {
+      entry.push_back(shade_binding{
+        .palette_slot{file.integer<uint8_t>()},
+        .environment_column{file.integer<uint8_t>()}
+      });
+    }
   }
   file.require_end();
   return result;
 }
 
-distance_shading::distance_shading(world_environment const &source, distance_shade_bindings mapping) : environment{source}, bindings{std::move(mapping)} {
+distance_shading::distance_shading(world_environment const &source, distance_shade_bindings mapping)
+  : environment{source},
+    bindings{std::move(mapping)} {
   if(source.near_ranges.size() != source.far_ranges.size()) throw std::invalid_argument{"distance palette columns differ"};
   for(size_t index{0}; index != source.near_ranges.size(); ++index) bands.push_back(interpolate_ranges(source.near_ranges[index], source.far_ranges[index], source.shade_levels));
   highlights = interpolate_ranges(source.blend_ranges[0], source.blend_ranges[1], source.shade_levels);
@@ -89,7 +99,9 @@ void distance_shading::apply(palette &target, int32_t const distance, int16_t co
       append_range(ramp, range.first, range.count - trim - 1);
       auto const highlight{highlights.at(level)};
       append_range(ramp, highlight.first + highlight.count - trim, trim + 1);
-    } else append_range(ramp, range.first, range.count);
+    } else {
+      append_range(ramp, range.first, range.count);
+    }
   }
 }
 

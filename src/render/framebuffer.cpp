@@ -22,8 +22,10 @@ void screen_mask::translate(int x, int y) {
   for(auto &row : rows) row.clear();
   for(auto &region : regions) {
     region.first_row += y;
-    for(size_t i{}; i < region.spans.size(); ++i) {
-      auto &span{region.spans[i]}; span.left += x; span.right += x;
+    for(size_t i{0}; i < region.spans.size(); ++i) {
+      auto &span{region.spans[i]};
+      span.left += x;
+      span.right += x;
       int const row{region.first_row + static_cast<int>(i)};
       if(row < 0 || row >= static_cast<int>(screen_height)) continue;
       scanline_span const visible{std::max(0, span.left), std::min(static_cast<int>(screen_width) - 1, span.right)};
@@ -34,7 +36,7 @@ void screen_mask::translate(int x, int y) {
 
 bool screen_mask::contains(int x, int y) const {
   if(y < 0 || y >= static_cast<int>(rows.size())) return false;
-  return std::ranges::any_of(rows[static_cast<size_t>(y)], [x](scanline_span span){ return x >= span.left && x <= span.right; });
+  return std::ranges::any_of(rows[static_cast<size_t>(y)], [x](scanline_span span){return x >= span.left && x <= span.right;});
 }
 
 screen_mask const *framebuffer::clip() const {
@@ -43,7 +45,9 @@ screen_mask const *framebuffer::clip() const {
 void framebuffer::clip(screen_mask const *value) {
   mask = value;
 }
-scoped_framebuffer_clip::scoped_framebuffer_clip(framebuffer &buffer, screen_mask const *value) : target{buffer}, previous{buffer.clip()} {
+scoped_framebuffer_clip::scoped_framebuffer_clip(framebuffer &buffer, screen_mask const *value)
+  : target{buffer},
+    previous{buffer.clip()} {
   target.clip(value);
 }
 scoped_framebuffer_clip::~scoped_framebuffer_clip() {
@@ -70,8 +74,11 @@ void framebuffer::fill(rectangle area, uint8_t colour) {
     auto const span_fill{[&](int left, int right){
       if(left <= right) std::fill_n(raster.begin() + y * screen_width + left, right - left + 1, colour);
     }};
-    if(mask) for(auto const span : mask->rows[static_cast<size_t>(y)]) span_fill(std::max(area.left, span.left), std::min(area.right, span.right));
-    else span_fill(area.left, area.right);
+    if(mask) {
+      for(auto const span : mask->rows[static_cast<size_t>(y)]) span_fill(std::max(area.left, span.left), std::min(area.right, span.right));
+    } else {
+      span_fill(area.left, area.right);
+    }
   }
 }
 
@@ -86,15 +93,21 @@ void framebuffer::line(int x0, int y0, int x1, int y1, uint8_t colour) {
     pixel(x0, y0, colour);
     if(x0 == x1 && y0 == y1) break;
     int const twice{error * 2};
-    if(twice >= dy) { error += dy; x0 += sx; }
-    if(twice <= dx) { error += dx; y0 += sy; }
+    if(twice >= dy) {
+      error += dy;
+      x0 += sx;
+    }
+    if(twice <= dx) {
+      error += dx;
+      y0 += sy;
+    }
   }
 }
 
 void framebuffer::image(bitmap const &source, int x, int y, bool transparent) {
   /// Blit original palette indices; zero is the transparent sprite colour.
-  for(unsigned int row{}; row < source.height; ++row) {
-    for(unsigned int column{}; column < source.width; ++column) {
+  for(unsigned int row{0}; row < source.height; ++row) {
+    for(unsigned int column{0}; column < source.width; ++column) {
       auto const colour{source.pixels[row * source.width + column]};
       if(!transparent || colour) pixel(x + static_cast<int>(column), y + static_cast<int>(row), colour);
     }
@@ -105,8 +118,8 @@ void framebuffer::text(font const &face, std::string_view value, int x, int y) {
   for(unsigned char const character : value) {
     if(character < face.first_character || character - face.first_character >= face.glyphs.size()) continue;
     auto const &letter{face.glyphs[character - face.first_character]};
-    for(unsigned int row{}; row < face.height; ++row) {
-      for(unsigned int column{}; column < letter.width; ++column) {
+    for(unsigned int row{0}; row < face.height; ++row) {
+      for(unsigned int column{0}; column < letter.width; ++column) {
         auto const colour{letter.pixels[row * letter.width + column]};
         if(colour) pixel(x + static_cast<int>(column), y + static_cast<int>(row) - face.baseline, colour);
       }

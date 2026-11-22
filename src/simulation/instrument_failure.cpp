@@ -13,17 +13,22 @@ void schedule_instrument_failure(instrument_failure_state &state, uint32_t const
 }
 bool advance_instrument_failure(instrument_failure_state &state, uint16_t const severity, uint32_t const ticks, random_state &random) {
   if(severity == 0) return false;
-  if(severity == 3) {state.failed = true; return false;}
+  if(severity == 3) {
+    state.failed = true;
+    return false;
+  }
   if(state.window < ticks) {
     if(ticks < state.window + state.duration) {
       if(state.next_flip < ticks) {
         state.next_flip = ticks + static_cast<uint16_t>(random.next()) % 30 + 1;
-        state.failed = !state.failed; state.repaint = 2;
+        state.failed = !state.failed;
+        state.repaint = 2;
         return state.failed;
       }
     } else {
-      schedule_instrument_failure(state,ticks,random);
-      state.failed = severity >= 2; state.repaint = 2;
+      schedule_instrument_failure(state, ticks, random);
+      state.failed = severity >= 2;
+      state.repaint = 2;
     }
   }
   return false;

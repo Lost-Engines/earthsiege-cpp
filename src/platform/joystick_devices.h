@@ -8,7 +8,7 @@
 namespace earthsiege {
 
 struct host_joystick {
-  int id{};
+  int id{0};
   std::vector<float> axes{};
   std::vector<uint8_t> buttons{};
   std::vector<uint8_t> hats{};

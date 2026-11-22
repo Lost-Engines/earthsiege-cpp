@@ -4,7 +4,8 @@
 
 namespace earthsiege {
 hmp_player::hmp_player(hmp_song const &source, std::span<uint32_t const> installed)
-  : song{source}, devices{installed.begin(), installed.end()} {
+  : song{source},
+    devices{installed.begin(), installed.end()} {
   restart();
 }
 void hmp_player::read_delta(size_t const index) {

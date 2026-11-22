@@ -14,7 +14,9 @@ int main(int const argc, char **argv) try {
   if(std::string(magic.begin(), magic.end()) != "ESINPUT1") file.fail("fixture version");
   auto const read_state{[&]{
     earthsiege::keyboard_latches result;
-    for(auto *group : {&result.held, &result.released, &result.consumed}) for(auto &value : *group) value = file.integer<uint8_t>();
+    for(auto *group : {&result.held, &result.released, &result.consumed}) {
+      for(auto &value : *group) value = file.integer<uint8_t>();
+    }
     return result;
   }};
   auto const check_state{[&](earthsiege::keyboard_input const &input){
@@ -23,8 +25,12 @@ int main(int const argc, char **argv) try {
     if(actual.held != expected.held || actual.released != expected.released || actual.consumed != expected.consumed) file.fail("keyboard latch state differs");
   }};
   auto const check_sample{[&](earthsiege::keyboard_sample const &actual){
-    for(auto const value : {actual.movement.x, actual.movement.y, actual.aiming.x, actual.aiming.y}) if(value != file.integer<int32_t>()) file.fail("keyboard axis differs");
-    for(auto const value : {actual.fire, actual.enter}) if(value != (file.integer<uint8_t>() != 0)) file.fail("keyboard button differs");
+    for(auto const value : {actual.movement.x, actual.movement.y, actual.aiming.x, actual.aiming.y}) {
+      if(value != file.integer<int32_t>()) file.fail("keyboard axis differs");
+    }
+    for(auto const value : {actual.fire, actual.enter}) {
+      if(value != (file.integer<uint8_t>() != 0)) file.fail("keyboard button differs");
+    }
   }};
   auto const combinations{file.integer<uint32_t>()};
   for(unsigned int index{0}; index != combinations; ++index) {

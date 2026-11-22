@@ -24,7 +24,7 @@ struct impact_request {
   int32_t reach{0};
   int16_t radius{0};
   impact_payload damage;
-  int16_t area_radius{};                                                       // nonzero dispatches the original radial damage pass
+  int16_t area_radius{0};                                                      // nonzero dispatches the original radial damage pass
 };
 
 /// Returns the retained world-hit distance; an empty result means no impact

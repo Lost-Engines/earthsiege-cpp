@@ -144,9 +144,11 @@ model_transform inverse_transform(model_transform const &source) {
 
 auto compose_transforms(model_transform const &local, model_transform const &parent)->model_transform {
   model_transform result;
-  if(local.type == 0) result = model_transform{parent};
-  else if(parent.type == 0) result = model_transform{local};
-  else {
+  if(local.type == 0) {
+    result = model_transform{parent};
+  } else if(parent.type == 0) {
+    result = model_transform{local};
+  } else {
     for(unsigned int column{0}; column < 3; ++column) {
       for(unsigned int row{0}; row < 3; ++row) {
         int64_t sum{0};

@@ -4,7 +4,12 @@
 #include "simulation/weapon_firing.h"
 
 namespace earthsiege {
-enum class flyer_attack_phase : int16_t { departing, approaching, circling, levelling };
+enum class flyer_attack_phase : int16_t {
+  departing,
+  approaching,
+  circling,
+  levelling
+};
 struct flyer_attack_state {
   flyer_attack_phase phase{flyer_attack_phase::departing};
   int16_t requested_speed{0};

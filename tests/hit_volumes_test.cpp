@@ -33,7 +33,9 @@ int main(int const argc, char **argv) try {
   std::map<std::string, std::vector<earthsiege::collision_part>> definitions;
   for(unsigned int row{0}; row != count; ++row) {
     auto const kind{file.integer<uint8_t>()};
-    auto check{[&](bool const okay){if(!okay) file.fail("hit-volume case " + std::to_string(row) + " differs");}};
+    auto check{[&](bool const okay){
+      if(!okay) file.fail("hit-volume case " + std::to_string(row) + " differs");
+    }};
     if(kind == 0) {
       auto reach{file.integer<int32_t>()};
       auto const projectile{file.integer<int16_t>()};
@@ -65,14 +67,19 @@ int main(int const argc, char **argv) try {
       auto const matrix{transform(file)};
       auto const reach{file.integer<int32_t>()};
       auto damage{file.integer<int16_t>()};
-      earthsiege::shield_power shield{.front{file.integer<int16_t>()}, .rear{file.integer<int16_t>()}};
+      earthsiege::shield_power shield{
+        .front{file.integer<int16_t>()},
+        .rear{file.integer<int16_t>()}
+      };
       auto const expected_hit{file.integer<int32_t>()};
       auto const expected_damage{file.integer<int16_t>()};
       auto const front{file.integer<int16_t>()};
       auto const rear{file.integer<int16_t>()};
       auto const hit{earthsiege::intercept_shield(shield, damage, 100, 1000, reach, matrix)};
       check((hit ? *hit + 1 : 0) == expected_hit && damage == expected_damage && shield.front == front && shield.rear == rear);
-    } else file.fail("unknown hit-volume case");
+    } else {
+      file.fail("unknown hit-volume case");
+    }
   }
   file.require_end();
   if(count != 6608) file.fail("hit-volume reference coverage differs");

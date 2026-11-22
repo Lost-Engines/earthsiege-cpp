@@ -12,7 +12,7 @@ namespace earthsiege {
 class pcm_queue {
   std::mutex lock;
   std::deque<int16_t> samples;
-  bool paused{};
+  bool paused{false};
 
 public:
   void queue(std::span<int16_t const> input) {

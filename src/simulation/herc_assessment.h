@@ -24,7 +24,11 @@ struct herc_retreat_inputs {
   int16_t attackers{0};
   int16_t strength{0};
 };
-enum class herc_retreat_action { none, resume_orders, flee };
+enum class herc_retreat_action {
+  none,
+  resume_orders,
+  flee
+};
 herc_retreat_action assess_herc_retreat(herc_retreat_inputs const &input, int16_t &aim_tolerance, std::function<int32_t()> const &attacker_strength);
 
 } // namespace earthsiege

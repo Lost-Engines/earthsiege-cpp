@@ -14,12 +14,18 @@ int main(int const argc, char **argv) try {
   auto const magic{file.take(8)};
   if(std::string(magic.begin(), magic.end()) != "ESSCENE1") file.fail("fixture version");
   auto const worlds{file.integer<uint16_t>()};
-  unsigned int failed{0}, total{0};
+  unsigned int failed{0};
+  unsigned int total{0};
   auto const bindings{earthsiege::read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))};
   for(unsigned int world_index{0}; world_index != worlds; ++world_index) {
     std::array<int16_t, 10> header;
     for(auto &value : header) value = file.integer<int16_t>();
-    earthsiege::mission_header const mission{.terrain{static_cast<earthsiege::terrain_kind>(header[0])}, .zone{header[1]}, .world_variant{header[8]}, .palette_variant{header[9]}};
+    earthsiege::mission_header const mission{
+      .terrain{static_cast<earthsiege::terrain_kind>(header[0])},
+      .zone{header[1]},
+      .world_variant{header[8]},
+      .palette_variant{header[9]}
+    };
     earthsiege::scenery_world world{resources, mission};
     earthsiege::framebuffer frame;
     earthsiege::scenery_renderer renderer{frame, world, bindings};

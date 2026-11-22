@@ -2,7 +2,10 @@
 #include <cstddef>
 #include <cstdint>
 namespace earthsiege {
-enum class game_edition { original, expansion };
+enum class game_edition {
+  original,
+  expansion
+};
 constexpr size_t weapon_count(game_edition edition) {
   return edition == game_edition::expansion ? 22U : 17U;
 }

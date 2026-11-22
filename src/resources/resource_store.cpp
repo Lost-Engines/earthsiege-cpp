@@ -36,7 +36,7 @@ resource_store::resource_store(std::filesystem::path const &root) : root_path{ro
       if(name == "simvoicf" || name == "simvoicg" || name == "fspeech" || name == "gspeech" || name == "pfspeech" || name == "pgspeech") continue;
       overrides.push_back(&volume);
     }
-    std::stable_sort(overrides.begin(), overrides.end(), [](auto a, auto b){ return a->priority() > b->priority(); });
+    std::stable_sort(overrides.begin(), overrides.end(), [](auto a, auto b){return a->priority() > b->priority();});
   }
   for(auto const name : required) {
     if(!volumes.contains(name)) throw std::runtime_error{"missing game volume " + std::string{name} + " in " + directory.string()};
@@ -44,7 +44,7 @@ resource_store::resource_store(std::filesystem::path const &root) : root_path{ro
 }
 
 auto resource_store::read(std::string_view volume, std::string_view name) const->bytes {
-  if(auto result{try_read(volume,name)})return std::move(*result);
+  if(auto result{try_read(volume, name)}) return std::move(*result);
   throw std::runtime_error{"resource not found: " + std::string{volume} + ":" + std::string{name}};
 }
 auto resource_store::try_read(std::string_view volume, std::string_view name) const->std::optional<bytes> {
@@ -52,18 +52,22 @@ auto resource_store::try_read(std::string_view volume, std::string_view name) co
   if(found == volumes.end()) throw std::runtime_error{"unknown game volume: " + std::string{volume}};
   if(edition_ == game_edition::expansion) {
     auto const usage{found->second.usage_mask()};
-    for(auto const *candidate : overrides) if(candidate->usage_mask() & usage) {
-      if(auto const *entry{candidate->find(name)}) return candidate->read(*entry);
+    for(auto const *candidate : overrides) {
+      if(candidate->usage_mask() & usage) {
+        if(auto const *entry{candidate->find(name)}) return candidate->read(*entry);
+      }
     }
   }
-  if(auto const *entry{found->second.find(name)})return found->second.read(*entry);
+  if(auto const *entry{found->second.find(name)}) return found->second.read(*entry);
   return {};
 }
-bool resource_store::contains(std::string_view volume,std::string_view name)const {
+bool resource_store::contains(std::string_view volume, std::string_view name) const {
   auto const found{volumes.find(normalise_path(volume))};
-  if(found == volumes.end())return false;
-  if(edition_ == game_edition::expansion)for(auto const *candidate:overrides) {
-    if((candidate->usage_mask() & found->second.usage_mask()) && candidate->find(name))return true;
+  if(found == volumes.end()) return false;
+  if(edition_ == game_edition::expansion) {
+    for(auto const *candidate : overrides) {
+      if((candidate->usage_mask() & found->second.usage_mask()) && candidate->find(name)) return true;
+    }
   }
   return found->second.find(name) != nullptr;
 }
@@ -78,16 +82,25 @@ auto resource_store::read_original(std::string_view volume, std::string_view nam
 
 std::optional<std::filesystem::path> resource_store::external(std::string_view name) const {
   auto relative{std::filesystem::path{normalise_path(name)}};
-  if(relative.is_absolute())throw std::runtime_error{"absolute game resource path"};
-  for(auto const &part:relative)if(part == "..")throw std::runtime_error{"parent in game resource path"};
-  auto directory{root_path};if(normalise_path(directory.filename().string()) == "vol")directory = directory.parent_path();
-  for(auto const &part:relative){
-    if(!std::filesystem::is_directory(directory))return {};
-    bool found{};
-    for(auto const &entry:std::filesystem::directory_iterator{directory})if(normalise_path(entry.path().filename().string()) == part.string()){directory = entry.path();found = true;break;}
-    if(!found)return {};
+  if(relative.is_absolute()) throw std::runtime_error{"absolute game resource path"};
+  for(auto const &part : relative) {
+    if(part == "..") throw std::runtime_error{"parent in game resource path"};
   }
-  if(std::filesystem::is_regular_file(directory))return directory;
+  auto directory{root_path};
+  if(normalise_path(directory.filename().string()) == "vol") directory = directory.parent_path();
+  for(auto const &part : relative) {
+    if(!std::filesystem::is_directory(directory)) return {};
+    bool found{false};
+    for(auto const &entry : std::filesystem::directory_iterator{directory}) {
+      if(normalise_path(entry.path().filename().string()) == part.string()) {
+        directory = entry.path();
+        found = true;
+        break;
+      }
+    }
+    if(!found) return {};
+  }
+  if(std::filesystem::is_regular_file(directory)) return directory;
   return {};
 }
 

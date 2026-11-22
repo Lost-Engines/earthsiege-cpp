@@ -5,8 +5,16 @@
 
 namespace earthsiege {
 
-enum class control_face : uint8_t { normal, pressed, disabled };
-struct control_activation { size_t index; int value; bool double_click{}; };
+enum class control_face : uint8_t {
+  normal,
+  pressed,
+  disabled
+};
+struct control_activation {
+  size_t index;
+  int value;
+  bool double_click{false};
+};
 
 /// Original cockpit mouse queue semantics, independent of the host window system.
 /// Actions are returned to the owning instrument. Button values retain the mouse
@@ -17,7 +25,7 @@ public:
     rectangle bounds;
     control_face face{control_face::normal};
     std::optional<slider_geometry> slider;
-    int boundary{};
+    int boundary{0};
     rectangle painted_thumb;
   };
 private:
@@ -25,10 +33,12 @@ private:
   rectangle window{0, 0, 319, 199};
   std::optional<size_t> selected;
   bool dragging{false};
-  bool left_held{false}, right_held{false};
-  int last_x{}, last_y{};
-  std::array<uint32_t,2> release_ticks{};
-  bool double_click{};
+  bool left_held{false};
+  bool right_held{false};
+  int last_x{0};
+  int last_y{0};
+  std::array<uint32_t, 2> release_ticks{};
+  bool double_click{false};
   std::optional<size_t> hit(int x, int y) const;
 public:
   size_t add_button(rectangle bounds);
@@ -38,7 +48,7 @@ public:
   bool is_dragging() const;
   bool is_double_click() const;
   void window_bounds(rectangle bounds);
-  void bounds(size_t index,rectangle value){
+  void bounds(size_t index, rectangle value) {
     controls.at(index).bounds = value;
   }
   void enable(size_t index, bool enabled);

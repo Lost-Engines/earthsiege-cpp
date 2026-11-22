@@ -13,9 +13,9 @@ class external_view_artwork {
   std::string player_label;
 public:
   explicit external_view_artwork(resource_store const &);
-  static rectangle constexpr bounds{0,30,319,170};
-  static vec2<int32_t> constexpr centre{160,105};
+  static rectangle constexpr bounds{0, 30, 319, 170};
+  static vec2<int32_t> constexpr centre{160, 105};
   static screen_mask clipping(rectangle);
-  void draw(framebuffer &,bool camera_control,std::string_view target={})const;
+  void draw(framebuffer &, bool camera_control, std::string_view target = {}) const;
 };
 }

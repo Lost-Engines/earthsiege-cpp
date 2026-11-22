@@ -22,11 +22,16 @@ earthsiege::model_transform matrix(earthsiege::binary_reader &file) {
 
 earthsiege::camera_state state(earthsiege::binary_reader &file) {
   return {
-    .position{vector<int32_t>(file)}, .angles{vector<uint16_t>(file)},
-    .orbit_distance{file.integer<int16_t>()}, .movement{file.integer<int16_t>()},
-    .orbit_angles{vector<uint16_t>(file)}, .angular_rates{vector<int16_t>(file)},
+    .position{vector<int32_t>(file)},
+    .angles{vector<uint16_t>(file)},
+    .orbit_distance{file.integer<int16_t>()},
+    .movement{file.integer<int16_t>()},
+    .orbit_angles{vector<uint16_t>(file)},
+    .angular_rates{vector<int16_t>(file)},
     .mode{static_cast<earthsiege::camera_mode>(file.integer<int16_t>())},
-    .focus_offset{vector<int16_t>(file)}, .attachment_offset{vector<int16_t>(file)}, .look_offset{vector<int16_t>(file)},
+    .focus_offset{vector<int16_t>(file)},
+    .attachment_offset{vector<int16_t>(file)},
+    .look_offset{vector<int16_t>(file)},
   };
 }
 
@@ -40,12 +45,18 @@ int main(int const argc, char **argv) try {
   if(std::string(magic.begin(), magic.end()) != "ESCAM001") file.fail("fixture version");
   auto const count{file.integer<uint32_t>()};
   for(unsigned int index{0}; index != count; ++index) {
-    earthsiege::camera_target target{.angles{vector<uint16_t>(file)}, .placement{matrix(file)}, .attachment{std::nullopt}};
+    earthsiege::camera_target target{
+      .angles{vector<uint16_t>(file)},
+      .placement{matrix(file)},
+      .attachment{std::nullopt}
+    };
     if(file.integer<uint8_t>()) target.attachment = matrix(file);
     auto actual{state(file)};
     auto const expected{state(file)};
     earthsiege::update_camera(actual, target);
-    auto const require{[&](bool const pass, char const *field){if(!pass) throw std::runtime_error{"camera case " + std::to_string(index) + ": " + field + " differs"};}};
+    auto const require{[&](bool const pass, char const *field){
+      if(!pass) throw std::runtime_error{"camera case " + std::to_string(index) + ": " + field + " differs"};
+    }};
     require(actual.position == expected.position, "position");
     require(actual.angles == expected.angles, "angles");
     require(actual.orbit_distance == expected.orbit_distance, "distance");

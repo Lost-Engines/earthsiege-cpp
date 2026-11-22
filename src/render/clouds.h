@@ -9,16 +9,18 @@ class cloud_field {
   std::vector<vec3<int32_t>> field;
   std::vector<uint8_t> recycled;
   std::vector<bitmap> images;
-  vec3<int32_t> previous,drift;
-  int32_t top_texture{};
-  int16_t active{};
-  bool ready{},expansion{};
+  vec3<int32_t> previous;
+  vec3<int32_t> drift;
+  int32_t top_texture{0};
+  int16_t active{0};
+  bool ready{false};
+  bool expansion{false};
   int32_t altitude{10000};
 public:
-  cloud_field(world_environment const &,std::vector<bitmap>);
+  cloud_field(world_environment const &, std::vector<bitmap>);
   /// Wind advances once per original draw, independently of simulation Q8 time.
-  void draw(framebuffer &,vec3<int32_t> const &,vec3<uint16_t> const &,
-            camera_projection const &,rectangle,uint8_t detail,random_state &);
+  void draw(framebuffer &, vec3<int32_t> const &, vec3<uint16_t> const &,
+            camera_projection const &, rectangle, uint8_t detail, random_state &);
   auto const &points() const {
     return field;
   }

@@ -7,7 +7,8 @@
 namespace earthsiege {
 
 effect_lighting::effect_lighting(std::span<light const> const fixed, int32_t const scale, int32_t const offset)
-  : default_attenuation{offset >> 5}, default_scale{scale >> 5} {
+  : default_attenuation{offset >> 5},
+    default_scale{scale >> 5} {
   if(fixed.size() > persistent.size()) throw std::invalid_argument{"too many persistent lights"};
   std::ranges::copy(fixed, persistent.begin());
   for(size_t index{0}; index != fixed.size(); ++index) active.add(persistent[index]);
@@ -16,7 +17,13 @@ effect_lighting::effect_lighting(std::span<light const> const fixed, int32_t con
 std::optional<size_t> effect_lighting::add(vec3<int32_t> const &position) {
   for(size_t slot{0}; slot != sources.size(); ++slot) {
     if(sources[slot]) continue;
-    sources[slot].emplace(source{.position{vec3<int32_t>{position}}, .intensity{255}, .attenuation{default_attenuation}, .scale{default_scale}, .rendered{}});
+    sources[slot].emplace(source{
+      .position{vec3<int32_t>{position}},
+      .intensity{255},
+      .attenuation{default_attenuation},
+      .scale{default_scale},
+      .rendered{}
+    });
     order[count++] = slot;
     return slot;
   }
@@ -60,14 +67,27 @@ std::span<light const> effect_lighting::select(vec3<int32_t> const &object, int3
     for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(object[axis]) - entry.position[axis]);
     auto const distance{fast_distance(delta)};
     auto const reach{wrap_long(wrap_long(static_cast<int64_t>(entry.scale) * 32 * entry.intensity) / 10LL + static_cast<int64_t>(entry.attenuation) * 32)};
-    if(distance >= reach) { release(entry); continue; }
-    light value{.kind{light_kind::positional}, .intensity{intensity}, .position{vec3<int32_t>{entry.position}}, .direction{}, .attenuation{entry.attenuation * 32}, .scale{entry.scale * 32}};
+    if(distance >= reach) {
+      release(entry);
+      continue;
+    }
+    light value{
+      .kind{light_kind::positional},
+      .intensity{intensity},
+      .position{vec3<int32_t>{entry.position}},
+      .direction{},
+      .attenuation{entry.attenuation * 32},
+      .scale{entry.scale * 32}
+    };
     auto const coarse_distance{distance >> 5};
     if(coarse_distance != 0 && wrap_word(direction_angle(coarse_distance, radius >> 5)) < 8000) {
       auto const denominator{wrap_long(static_cast<int64_t>(coarse_distance) + entry.attenuation)};
       if(denominator == 0) throw std::domain_error{"dynamic light has zero attenuation denominator"};
       auto const weight{std::min(255, wrap_long(static_cast<int64_t>(entry.scale) * 256) / denominator)};
-      value = light{.kind{light_kind::directional}, .intensity{wrap_long(static_cast<int64_t>(intensity) * weight) >> 8}};
+      value = light{
+        .kind{light_kind::directional},
+        .intensity{wrap_long(static_cast<int64_t>(intensity) * weight) >> 8}
+      };
       for(unsigned int axis{0}; axis != 3; ++axis) value.direction[axis] = wrap_word(wrap_long(static_cast<int64_t>(delta[axis]) * model_normal_one) / distance);
     }
     if(!entry.rendered || entry.rendered->kind != value.kind) {

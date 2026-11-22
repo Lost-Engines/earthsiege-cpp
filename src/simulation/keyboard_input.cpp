@@ -19,8 +19,11 @@ void keyboard_input::event(held_key const key, bool const pressed, bool const al
   if(pressed) {
     current.held.at(index) = 1;
     current.released.at(index) = 0;
-  } else if(!current.consumed.at(index)) current.released.at(index) = 1;
-  else current.held.at(index) = current.released.at(index) = current.consumed.at(index) = 0;
+  } else if(!current.consumed.at(index)) {
+    current.released.at(index) = 1;
+  } else {
+    current.held.at(index) = current.released.at(index) = current.consumed.at(index) = 0;
+  }
   current.alt = alt;
 }
 

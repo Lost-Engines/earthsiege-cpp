@@ -12,7 +12,9 @@ struct music_audio::chip_state {
     OPL3_Reset(&chip, 44100);
   }
 };
-music_audio::music_audio(resource_store const &r, pcm_sound_bank &b, music_settings const &settings) : resources{r}, bank{b} {
+music_audio::music_audio(resource_store const &r, pcm_sound_bank &b, music_settings const &settings)
+  : resources{r},
+    bank{b} {
   configure(settings);
   bank.completed = [this](size_t h){
     player->complete_sample(static_cast<int32_t>(h));

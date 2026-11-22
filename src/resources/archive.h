@@ -11,15 +11,15 @@ namespace earthsiege {
 
 struct archive_entry {
   std::string name;
-  uint32_t offset{};
-  uint32_t size{};
-  uint32_t timestamp{};
+  uint32_t offset{0};
+  uint32_t size{0};
+  uint32_t timestamp{0};
 };
 
 class archive {
   std::vector<uint8_t> data;
-  uint32_t usage_{};
-  uint8_t priority_{};
+  uint32_t usage_{0};
+  uint8_t priority_{0};
   std::map<std::string, archive_entry, std::less<>> catalogue;
 
 public:

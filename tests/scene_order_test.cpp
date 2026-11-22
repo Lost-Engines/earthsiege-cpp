@@ -29,12 +29,21 @@ int main(int const argc, char **argv) try {
       auto const position{point(file)};
       auto const distance{file.integer<int32_t>()};
       bool const segment{file.integer<uint8_t>() != 0};
-      earthsiege::scene_sort_segment const endpoints{.first{point(file)}, .second{point(file)}};
-      entries.push_back(earthsiege::scene_order_entry{.position{vec3<int32_t>{position}}, .distance{distance}, .segment{segment ? std::optional{endpoints} : std::nullopt}});
+      earthsiege::scene_sort_segment const endpoints{
+        .first{point(file)},
+        .second{point(file)}
+      };
+      entries.push_back(earthsiege::scene_order_entry{
+        .position{vec3<int32_t>{position}},
+        .distance{distance},
+        .segment{segment ? std::optional{endpoints} : std::nullopt}
+      });
     }
     auto const actual{earthsiege::scene_painter_order(entries, eye)};
     if(actual.size() != count) throw std::runtime_error{"scene order lost objects"};
-    for(auto const index : actual) if(index != file.integer<uint16_t>()) throw std::runtime_error{"scene painter order differs in case " + std::to_string(row)};
+    for(auto const index : actual) {
+      if(index != file.integer<uint16_t>()) throw std::runtime_error{"scene painter order differs in case " + std::to_string(row)};
+    }
   }
   file.require_end();
   if(cases != 2000) file.fail("incomplete scene order fixture");

@@ -91,7 +91,11 @@ class texture_edge {
 
 public:
   texture_edge(std::span<projected_vertex const> const points, size_t const start, size_t const finish, int const walk, unsigned int const scan_axis)
-    : vertices{points}, end{finish}, direction{walk}, axis{scan_axis}, active{load(start)} {
+    : vertices{points},
+      end{finish},
+      direction{walk},
+      axis{scan_axis},
+      active{load(start)} {
   }
 
   bool valid() const {

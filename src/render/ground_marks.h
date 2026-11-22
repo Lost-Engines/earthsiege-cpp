@@ -10,12 +10,12 @@ class ground_marks {
   std::vector<vec3<int32_t>> field;
   vec3<int32_t> previous;
   int16_t colour;
-  int16_t active{};
-  bool ready{};
+  int16_t active{0};
+  bool ready{false};
 public:
   explicit ground_marks(world_environment const &environment);
-  void draw(framebuffer &,vec3<int32_t> const &position,vec3<uint16_t> const &angles,
-            camera_projection const &,rectangle bounds,uint8_t detail,random_state &);
+  void draw(framebuffer &, vec3<int32_t> const &position, vec3<uint16_t> const &angles,
+            camera_projection const &, rectangle bounds, uint8_t detail, random_state &);
   std::span<vec3<int32_t> const> points() const {
     return field;
   }

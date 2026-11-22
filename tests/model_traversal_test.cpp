@@ -19,13 +19,16 @@ auto part_at(earthsiege::model_resource const &model, std::string const &source)
   std::string path{source};
   std::ranges::replace(path, '.', ' ');
   std::istringstream stream{path};
-  unsigned int index{};
+  unsigned int index{0};
   stream >> index;
   auto const *part{&model.roots.at(index)};
   while(stream >> index) {
     part = std::visit([&](auto const &content)->earthsiege::model_part const * {
-      if constexpr(requires { content.children; }) return &content.children.at(index);
-      else throw std::runtime_error{"invalid fixture path"};
+      if constexpr(requires { content.children; }) {
+        return &content.children.at(index);
+      } else {
+        throw std::runtime_error{"invalid fixture path"};
+      }
     }, part->content);
   }
   return *part;
@@ -41,14 +44,16 @@ auto main(int argc, char **argv)->int try {
   std::map<std::string, earthsiege::model_resource> models;
   std::array<std::vector<earthsiege::model_transform>, 12> transforms;
   std::array<std::array<uint16_t, 64>, 12> frames{};
-  for(unsigned int state{}; state < transforms.size(); ++state) {
-    for(unsigned int index{}; index < 64; ++index) {
+  for(unsigned int state{0}; state < transforms.size(); ++state) {
+    for(unsigned int index{0}; index < 64; ++index) {
       vec3<uint16_t> angles;
-      if(state & 1) angles = vec3<uint16_t>{
-        static_cast<uint16_t>((index + 1) * 733 + state * 271),
-        static_cast<uint16_t>((index + 1) * 1879 + state * 271),
-        static_cast<uint16_t>((index + 1) * 3571 + state * 271),
-      };
+      if(state & 1) {
+        angles = vec3<uint16_t>{
+          static_cast<uint16_t>((index + 1) * 733 + state * 271),
+          static_cast<uint16_t>((index + 1) * 1879 + state * 271),
+          static_cast<uint16_t>((index + 1) * 3571 + state * 271),
+        };
+      }
       auto transform{earthsiege::rotation_transform(angles)};
       int const node{static_cast<int>(index)};
       transform.translation = vec3<int32_t>{node * 37, -node * 51, node * 79};
@@ -56,12 +61,21 @@ auto main(int argc, char **argv)->int try {
       frames[state][index] = static_cast<uint16_t>(state * 11 + index * 7);
     }
   }
-  std::string volume, name, path;
-  unsigned int state{}, kind{}, size{}, count{};
-  int32_t x{}, y{}, z{};
+  std::string volume;
+  std::string name;
+  std::string path;
+  unsigned int state{0};
+  unsigned int kind{0};
+  unsigned int size{0};
+  unsigned int count{0};
+  int32_t x{0};
+  int32_t y{0};
+  int32_t z{0};
   while(input >> volume >> name >> path >> state >> kind >> x >> y >> z >> size) {
     std::vector<uint16_t> expected(size);
-    for(auto &value : expected) if(!(input >> value)) throw std::runtime_error{"truncated traversal fixture"};
+    for(auto &value : expected) {
+      if(!(input >> value)) throw std::runtime_error{"truncated traversal fixture"};
+    }
     std::string const key{volume + ':' + name};
     if(!models.contains(key)) models.emplace(key, earthsiege::read_model(resources.read(volume, name)));
     auto const &part{part_at(models.at(key), path)};

@@ -4,7 +4,9 @@
 #include "resources/interface_strings.h"
 
 namespace earthsiege {
-mission_audio::mission_audio(resource_store const &source, music_settings const &settings) : resources{source}, music_config{settings} {
+mission_audio::mission_audio(resource_store const &source, music_settings const &settings)
+  : resources{source},
+    music_config{settings} {
   auto const groups{read_interface_strings(source.read("simvol0", "str/SOUNDS.STR"))};
   size_t id{0};
   for(auto const &group : groups) {
@@ -143,7 +145,7 @@ bool mission_audio::play_at(size_t const id, vec3<int32_t> const &where) {
   return play(id);
 }
 bool mission_audio::speech(std::string_view const path) {
-  if(!speech_enabled) return true;                                              // Original disabled speech still advances the portrait.
+  if(!speech_enabled) return true;                                             // Original disabled speech still advances the portrait.
   for(size_t slot{speech_start}; slot < speech_start + 10; ++slot) {
     if(!bank.playing(slot)) {
       for(auto const volume : {"speech", "simvoice"}) {

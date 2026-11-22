@@ -58,13 +58,13 @@ int main(int argc, char **argv) try {
   auto magic{f.take(8)};
   require(std::string(magic.begin(), magic.end()) == "ESEXP001", "fixture version");
   auto lookups{f.integer<uint32_t>()};
-  for(uint32_t i{}; i < lookups; ++i) {
+  for(uint32_t i{0}; i < lookups; ++i) {
     auto mask{f.integer<uint16_t>()};
     auto name{f.cstring()};
     eq(f, crc32(resources.read(mask == 1 ? "simvol0" : "shell0", name)), name + " priority");
   }
   auto worlds{f.integer<uint16_t>()};
-  for(unsigned i{}; i < worlds; ++i) {
+  for(unsigned i{0}; i < worlds; ++i) {
     auto name{f.cstring()};
     auto w{read_world_environment(resources.read("simvol0", "wld/" + name + ".WLD"), resources.edition())};
     auto const &b{w.background};
@@ -85,13 +85,13 @@ int main(int argc, char **argv) try {
       }
     }
     eq(f, w.shade_levels, name);
-    auto ranges = [&](auto const &rows){
+    auto ranges{[&](auto const &rows){
       eq(f, static_cast<uint16_t>(rows.size()), name);
       for(auto r : rows) {
         eq(f, r.first, name);
         eq(f, r.count, name);
       }
-    };
+    }};
     ranges(w.near_ranges);
     ranges(w.far_ranges);
     ranges(w.blend_ranges);
@@ -105,10 +105,12 @@ int main(int argc, char **argv) try {
     for(auto const &v : w.resource_names) {
       require(v == f.cstring(), name + " resource binding");
     }
-    mission_header h{.terrain{static_cast<terrain_kind>(i / 6)},
+    mission_header h{
+      .terrain{static_cast<terrain_kind>(i / 6)},
                      .zone{-1},
                      .world_variant{static_cast<int16_t>(i % 2)},
-                     .palette_variant{static_cast<int16_t>(i % 6 / 2)}};
+                     .palette_variant{static_cast<int16_t>(i % 6 / 2)}
+    };
     scenery_world owned{resources, h};
     require(owned.environment().resource_names == w.resource_names, name + " owned world");
   }
@@ -128,10 +130,10 @@ int main(int argc, char **argv) try {
     eq(f, w.magazine, "magazine");
     eq(f, w.barrels, "barrels");
     eq(f, w.projectile, "projectile");
-    for(int i{}; i < 3; ++i) {
+    for(int i{0}; i < 3; ++i) {
       eq(f, w.muzzle_offset[i], "muzzle");
     }
-    for(int i{}; i < 3; ++i) {
+    for(int i{0}; i < 3; ++i) {
       eq(f, w.side_muzzle_offset[i], "side muzzle");
     }
     eq(f, w.refire_delay, "refire");
@@ -162,10 +164,10 @@ int main(int argc, char **argv) try {
     for(auto v :
          {b.model, b.lifetime, b.collision_radius, b.animation_period, b.shot_noise, b.spread, b.damage_falloff}) {
       eq(f, v, "bullet motion");
-  }
     }
+  }
   auto cockpits{f.integer<uint16_t>()};
-  for(unsigned i{}; i < cockpits; ++i) {
+  for(unsigned i{0}; i < cockpits; ++i) {
     auto name{f.cstring()};
     auto chassis{f.integer<uint16_t>()};
     auto c{read_cockpit(resources, name)};
@@ -176,22 +178,22 @@ int main(int argc, char **argv) try {
     for(auto rgb : world.dac_colours) {
       for(auto v : rgb) {
         eq(f, v, name + " native palette");
-    }
       }
+    }
   }
   auto tapes{f.integer<uint16_t>()};
-  size_t frame_count{};
-  for(unsigned i{}; i < tapes; ++i) {
+  size_t frame_count{0};
+  for(unsigned i{0}; i < tapes; ++i) {
     auto name{f.cstring()};
     auto raw{read_file(resources.root() / "TAPES" / name)};
     auto tape{read_input_tape(raw, resources.edition())};
     eq(f, static_cast<uint32_t>(tape.frames.size()), name + " frame count");
     for(auto const &frame : tape.frames) {
       eq(f, frame.command, name);
-      for(int j{}; j < 2; ++j) {
+      for(int j{0}; j < 2; ++j) {
         eq(f, frame.primary_axes[j], name);
       }
-      for(int j{}; j < 2; ++j) {
+      for(int j{0}; j < 2; ++j) {
         eq(f, frame.secondary_axes[j], name);
       }
       eq(f, frame.delta, name);
@@ -200,7 +202,7 @@ int main(int argc, char **argv) try {
       eq(f, static_cast<uint32_t>(frame.mouse.size()), name);
       eq(f, static_cast<uint32_t>(frame.commands.size()), name);
       for(auto m : frame.mouse) {
-        for(int j{}; j < 2; ++j) {
+        for(int j{0}; j < 2; ++j) {
           eq(f, m.position[j], name);
         }
         eq(f, m.kind, name);
@@ -214,12 +216,12 @@ int main(int argc, char **argv) try {
     auto const &input{tape.starting_files[std::to_underlying(tape_file::preferences)]};
     preferences p{input, false, resources.edition()};
     require(p.current().size() == 22, "expanded preferences");
-    for(size_t j{}; j < 22; ++j) {
+    for(size_t j{0}; j < 22; ++j) {
       require(p.current()[j] == (j < input.size() ? input[j] : 0), "zero-filled short preference file");
     }
   }
   auto handoffs{f.integer<uint16_t>()};
-  for(unsigned i{}; i < handoffs; ++i) {
+  for(unsigned i{0}; i < handoffs; ++i) {
     auto name{f.cstring()};
     auto raw{f.take(f.integer<uint32_t>())};
     auto player{read_player_roster(raw, resources.edition())};

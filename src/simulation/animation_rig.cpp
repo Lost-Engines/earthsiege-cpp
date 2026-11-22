@@ -12,7 +12,9 @@ animation_list const &require_animation(shape_part const &shape) {
 
 } // anonymous namespace
 
-animation_rig::animation_rig(shape_part const &shape) : source{require_animation(shape)}, model{shape} {
+animation_rig::animation_rig(shape_part const &shape)
+  : source{require_animation(shape)},
+    model{shape} {
 }
 
 size_t animation_rig::add_channel(animation_index const sequence) {

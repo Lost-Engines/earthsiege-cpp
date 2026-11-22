@@ -13,8 +13,9 @@ communications_display::communications_display(resource_store const &resources)
 std::array<rectangle, 6> communications_display::row_bounds(rectangle const &bounds) const {
   std::array<rectangle, 6> result;
   int const step{(bounds.bottom - bounds.top) / static_cast<int>(result.size())};
-  for(size_t i{}; i < result.size(); ++i) {
-    auto &row{result[i]}; row = bounds;
+  for(size_t i{0}; i < result.size(); ++i) {
+    auto &row{result[i]};
+    row = bounds;
     row.top += static_cast<int>(i) * step;
     row.bottom = row.top + static_cast<int>(fonts[0].height);
   }
@@ -24,12 +25,13 @@ void communications_display::draw(framebuffer &target, rectangle const &bounds, 
   scoped_framebuffer_clip clip{target, nullptr};
   target.fill(bounds, 63);
   auto const rows{row_bounds(bounds)};
-  for(size_t i{}; i < rows.size(); ++i) {
+  for(size_t i{0}; i < rows.size(); ++i) {
     auto const &choice{state.choices[i]};
     auto const &entry{commands.at(i + (choice.alternate ? 3 : 0))};
     auto const &face{fonts[choice.disabled ? 3 : i == state.selected ? 1 : 0]};
     auto const &row{rows[i]};
-    int const x{row.left + 1}, y{row.top + ((row.bottom - row.top + static_cast<int>(face.height)) >> 1)};
+    int const x{row.left + 1};
+    int const y{row.top + ((row.bottom - row.top + static_cast<int>(face.height)) >> 1)};
     target.fill(row, 63);
     target.text(face, entry.text, x, y);
     if(!entry.attributes.empty() && entry.attributes[0] < entry.text.size()) {

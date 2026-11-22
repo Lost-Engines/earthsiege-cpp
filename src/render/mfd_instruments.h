@@ -4,7 +4,14 @@
 
 namespace earthsiege {
 
-enum class mfd_page : uint8_t { status, communications, navigation, scanner, target, missile_camera };
+enum class mfd_page : uint8_t {
+  status,
+  communications,
+  navigation,
+  scanner,
+  target,
+  missile_camera
+};
 inline size_t constexpr mfd_button_count{13};
 inline std::array<int32_t, 3> constexpr mfd_ranges{30000, 80000, 120000};
 std::array<bool, mfd_button_count> mfd_enabled_buttons(mfd_page page);
