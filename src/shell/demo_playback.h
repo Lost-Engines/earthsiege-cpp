@@ -26,14 +26,15 @@ private:
   size_t simulation_frames{0};
   size_t modal_packets{0};
   uint64_t elapsed_ms{0};
-  unsigned pending_ms{0};
-  unsigned nominal_fraction{0};
+  unsigned capture_ms{0};
+  unsigned tick_fraction{0};
   uint16_t last_delta{0};
   bool finished{false};
   bool suppressed{false};
-  tape_frame const &poll(bool static_dialog = false);
+  tape_frame const &poll();
+  unsigned world_hold(uint64_t poll_time);
   void advance_clock(unsigned milliseconds);
-  bool present(presenter const &, framebuffer const &);
+  bool present(presenter const &, framebuffer const &, unsigned milliseconds);
   bool alert(int message, presenter const &);
   mission_command_result command(uint16_t, presenter const &);
 public:

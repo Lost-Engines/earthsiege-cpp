@@ -6,6 +6,9 @@ namespace earthsiege {
 using frame_ratio = int16_t;
 inline frame_ratio constexpr frame_ratio_one{256};
 inline int16_t constexpr nominal_frame_milliseconds{100};
+inline int16_t constexpr simulation_timer_hz{120};
+inline int16_t constexpr nominal_frame_ticks{simulation_timer_hz / 10};
+inline frame_ratio constexpr maximum_frame_ratio{450};
 
 frame_ratio ratio_from_period(int16_t elapsed, int16_t nominal);
 int16_t scale_frame_time(int16_t value, frame_ratio ratio);

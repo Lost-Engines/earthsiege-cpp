@@ -1153,22 +1153,23 @@ All 225 CTest checks pass after the complete rebuild (31.89 seconds). The live c
 
 ### Original live frame pacing
 
-The host now advances the original 120 Hz timer independently of simulation,
-including during mission alerts. Its wrapping fast/slow clocks and saturating
-countdown match 3,840 original states. Live frames wait for at least two ticks;
-ratios use the actual countdown difference and the original 64–450 clamp.
-The minimum two-tick wait is about 16.7 ms, while the minimum simulated period
-is 25 nominal milliseconds. This original discrepancy is retained instead of
-assuming a fixed 40 Hz update loop. The host uses nominal 120 Hz, without PIT
-electrical emulation.
+The original 120 Hz timer runs independently of world updates. Its wrapping
+fast and slow clocks, two-tick gate and saturating countdown match 3,840
+original states. The DOS live pacer calculates a ratio from elapsed ticks,
+with a minimum of 64 and a maximum of 450. Two ticks take about 16.7 ms but
+produce 25 ms of nominal movement.
 
-Scene drawing only runs after a new simulation frame. Host presentation reuses
-the previous image rather than advancing visual consumers and random state a
-second time. Audio continues during mission dialogs. Losing window focus
-releases held controls while the game and mixer keep running.
-The original bypasses its live frame limiter during recorded playback.
-[Recorded-input demo verification](DEMO_REPLAY.md) describes the two clocks and
-the comparison with 60,000-cycle DOSBox.
+The native live scheduler uses the engine's full-strength step of 12 ticks.
+When a display poll crosses that deadline it consumes 12 ticks and carries
+the remainder forward. Once the original elapsed-time calculation reaches its
+upper limit, it consumes the stall in one bounded update. The lift and
+in-flight options retain their own pacing. The host timer runs at nominal
+120 Hz. Each mouse event takes its timestamp from the 60 Hz counter.
+
+Between world updates the window presents the previous image. Audio continues
+during mission dialogs and losing focus releases held controls. Demos take
+their ordinary frame intervals from the recording machine's timer.
+[Recorded-input demo verification](DEMO_REPLAY.md#how-fast-should-a-demo-play)
 
 ### Recorded input routing
 

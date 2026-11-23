@@ -40,7 +40,9 @@ int main(int argc, char **argv) try {
   game_shell shell{resources, temp.path, 17};
   mission_view scene{resources, 1};
   scene.configure_input(shell.settings(), shell.device_calibrations());
-  scene.advance_time(25);
+  scene.advance_time(99);
+  require(!scene.step(false, false), "live world waits for its nominal period");
+  scene.advance_time(1);
   require(scene.step(false, false), "live mission started");
   scene.draw();
   scene.begin_options();
@@ -108,7 +110,7 @@ int main(int argc, char **argv) try {
   require(reopened.settings().current() == saved && reopened.device_calibrations()[0] == calibrated, "settings and calibration survive restart");
   scene.end_options();
   scene.configure_input(shell.settings(), shell.device_calibrations());
-  scene.advance_time(25);
+  scene.advance_time(100);
   require(scene.step(false, false), "mission resumes after options");
   mission_audio audio{resources};
   random_state rng;

@@ -59,9 +59,13 @@ The GLFW window was checked locally against the original DOSBox preferences:
 Max displays correctly, all four presets cycle, a demo plays, and Escape returns
 to the main menu.
 
-A scale-5 window ran retail DEMO3 from its first startup update to the menu
-in 96.57 seconds. The 60,000-cycle DOSBox capture measured 96.52 seconds.
-The captured native output contained audio through all four cockpit pans.
+Earlier window checks paced every poll from the 60,000-cycle DOSBox capture.
+A scale-5 window then completed retail DEMO3 in 96.57 seconds against 96.52
+seconds in the emulator. With the recording clock, the same demo schedules
+149.585 seconds. A scale-5 GLFW window on a private X11 display took 149.68
+seconds from the playback announcement to the main menu. The timing tests
+compare individual world intervals and mouse gestures with the tapes. The output contained audio
+through all four cockpit pans.
 Switching away during playback and clicking back produced the same music-menu
 image as an uninterrupted run. A separate Alt+Tab check also returned the
 same frame after refocusing.
@@ -75,9 +79,8 @@ compositor's virtual monitor.
 A separate X11 test delayed each replay update by 110 ms. Every window
 capture from the previous build was black over the eight-second check.
 The fixed build showed the cockpit within the first second and continued
-to update. At normal speed a full replay on Wayland took 96.58 seconds
-from the first startup update to the menu. A loopback recording contained
-audio in every 10 ms block sampled during the four cockpit pans.
+to update. A loopback recording contained audio in every 10 ms block sampled
+during the four cockpit pans.
 
 ## Weapon-link shortcut
 

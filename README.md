@@ -129,9 +129,11 @@ The bundled DATA/KEYJOY.CFG retains the original pitch/turn choices. Malformed t
 
 Side and lower cockpit views now scroll between panels using the original pixel steps. Music and sound continue during the scroll.
 
-Live missions now use the original elapsed-time pacing and bounded simulation
-steps. Audio continues during mission dialogs. Switching to another window leaves
-the simulation and sound running and releases any held controls.
+Live missions run a full world step every 100 ms, the DOS simulator's nominal
+period. A long cockpit pan uses the original limit on how far one step can
+move the world. Demos replay the variable intervals on their tapes. Sound
+continues through pans, dialogs and window switches. Switching away releases
+any held controls. [How the recording clock works](docs/DEMO_REPLAY.md#how-fast-should-a-demo-play)
 
 
 F12 or Alt+P opens the original in-flight preferences panel, with a rotating HERC preview. Music, effects, radio mode, horizon, sky, ground and model detail update live. Controls and joystick calibration are available inside it; Escape accepts a panel and returns to its parent. Closing preferences restores the previous flight view.

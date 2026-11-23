@@ -42,36 +42,73 @@ of entries, retrying if it matches the selector's retained previous index.
 
 ## How fast should a demo play?
 
-DBSIM reads a movement multiplier from each tape packet. It skips its live
-frame limiter during replay, so two DOS machines can follow the same patrol
-at different speeds. In a stationary dialog it can read hundreds of packets
-between two display refreshes.
+A normal world step in both DOS executables is 12 timer ticks, about 100 ms.
+In live play DBSIM measures the time since the previous step and scales the
+movement by that interval. A fast machine can run more than ten updates per
+second. At the minimum wait of two ticks it advances the world by three
+ticks' worth of movement. Tying that loop to a modern display can make the
+HERC walk up to 50% too fast.
+
+The native game schedules a full world step every 100 ms. It carries spare
+timer ticks into the next step when a display refresh arrives late. A long
+stall, such as a cockpit pan, gets one update at the original upper limit.
+Input, window presentation and the audio mixer run on their own schedules.
+
+For demos, the recording supplies the pace. Just before a world update the
+writer saves the integer part of `elapsed_ticks * 256 / 12`, clipped to
+64 through 450. An interior value of 213, for example, comes from exactly
+ten timer ticks. After drawing a frame the player can recover how long to
+hold it by reading the value in the *next* world packet. It carries fractional
+milliseconds between frames. The original movement code still receives the
+stored value on each update.
+
+| Recording and interval | Time on the recording clock | DOSBox at 60,000 cycles |
+| --- | ---: | ---: |
+| Retail DEMO3, world packets 6-55 | 3.083 s | 2.154 s |
+| Retail DEMO3, world packets 201-300 | 9.042 s | 5.251 s |
+| Retail DEMO3, exit-dialog mouse gesture | 0.800 s | 0.010 s |
+
+The mouse supplies an independent check. In retail DEMO1 the timer accounts
+for 27.225 seconds between packets 1476 and 1802. The last mouse event in
+each packet puts them 27.233 seconds apart. In expansion DEMO3 the same check
+gives 25.092 and 25.100 seconds between packets 2989 and 3216. Mouse events
+can arrive between two world updates. Packet numbers here start at one.
+
+The lift has no tape packets. A value of 64 could mean two or three ticks.
+At 450 only the first 22 ticks are certain. During a dialog the world is
+frozen and DBSIM writes the last movement value on every poll. The player
+uses three ticks at the lower limit. At the upper limit it allows for any
+cockpit scroll and time already spent in a dialog. Where a dialog contains
+two timestamped mouse batches, it spreads their elapsed time over the polls
+between them.
+
+For intervals the recording leaves open, the eight files in `assets/demo-clocks`
+start with DOSBox measurements for the lift, upper-clipped waits, untimed
+dialog polls and the exit. For 335 upper-clipped steps the mouse timestamps
+also constrain the total time between two ordinary world polls. Where the
+DOSBox estimate ended too early to allow the recorded mouse movement, the
+extra ticks are spread across the clipped steps in that stretch. Their
+individual durations remain estimates. In expansion DEMO4 the mouse covers
+332.183 seconds between packets 629 and 3304. The player takes 332.199
+seconds across those 253 clipped steps and the ordinary steps between them.
+
+Each file is named for the TAP's CRC32. Its first little-endian
+16-bit word counts the startup intervals, followed by those intervals and one
+interval per input packet, all in milliseconds. A replacement tape also uses
+its own world intervals and mouse timestamps. Without a matching capture,
+its lift uses the native timer, an untimed alert polls immediately, and the
+moving options preview allows one VGA refresh per poll.
+
+The DOS replay branch bypasses the live timer. At 60,000 cycles retail DEMO3
+took 4.601 seconds for the lift and 91.923 seconds from the first tape input
+to exit. Those numbers describe playback in that emulator. Adding the
+movement values from all 2,470 polls gives 204.77 seconds because that
+calculation counts frozen dialogs as world updates.
 
 In expansion DEMO3 a hit shakes the lower map panel a few pixels into the
-forward view. Its top edge is briefly visible while the player presses `1`
-to select a plasma weapon. DOS sends number keys to the active cockpit view,
-so a sliver of the map cannot intercept that selection.
-
-The native player uses DOSBox at 60,000 cycles as its reference for the eight
-bundled demos. Each file in `assets/demo-clocks` contains milliseconds measured
-between successive polls of its tape, including the time spent panning the
-cockpit. The filename is the CRC32 of the complete TAP. The first little-endian
-16-bit word counts the startup intervals, followed by those intervals and one
-16-bit interval for each tape packet. The last interval ends when DBSIM leaves
-the replay loop. A replacement tape uses its nominal step for moving scenes
-and consumes static-dialog polls without a delay.
-
-In retail DEMO3 the lift and shake took 4.601 seconds. The patrol then ran for
-91.923 seconds from the first tape input to exit. Adding up the recorded
-movement multipliers would have produced 204.77 seconds for the inputs alone.
-The interval measurements include the four cockpit pans and both visits to
-Preferences. The mixer and music timer keep running through each pan, and
-the modal cursor follows the recorded mouse and the dialog's button selection.
-
-Demo playback uses the same synchronized buffer swaps as the menus. When a
-frame takes longer than its recorded interval, the window still shows the
-latest cockpit image. Playback can skip intermediate pan images and group
-rapid dialog polls while the tape and audio follow their recorded timings.
+forward view while the player presses `1` to select a plasma weapon. DOS
+sends number keys to the active cockpit view, so the visible edge of the map
+cannot intercept that selection.
 
 ## Original comparison
 

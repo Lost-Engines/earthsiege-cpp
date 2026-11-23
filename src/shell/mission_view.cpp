@@ -197,12 +197,12 @@ void mission_view::command(uint16_t const code) {
 void mission_view::mouse_position(int const x, int const y) {
   if(!mouse_enabled) return;
   pointer.mouse = {x, y};
-  pointer_events.push_back({pointer, {}});
+  pointer_events.push_back({pointer, pacing.state().slow});
 }
 void mission_view::mouse_button(bool const right, bool const pressed) {
   if(!mouse_enabled) return;
   (right ? pointer.right : pointer.left) = pressed;
-  pointer_events.push_back({pointer, {}});
+  pointer_events.push_back({pointer, pacing.state().slow});
 }
 
 void mission_view::consume_pointer_events() {
@@ -221,7 +221,7 @@ void mission_view::consume_pointer_events() {
     for(auto const &queued : pointer_events) {
       auto const &event{queued.input};
       hdd->pointer(event.mouse.x + origin[0], event.mouse.y + origin[1]);
-      if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right, queued.timestamp.value_or(interface_ticks * 2))}) {
+      if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right, queued.timestamp)}) {
         if(auto const edge{std::ranges::find(edge_controls, action->index)}; edge != edge_controls.end()) {
           transitions.request(cockpit_edge_request(static_cast<int>(panel), static_cast<size_t>(edge - edge_controls.begin())));
           continue;
@@ -475,14 +475,14 @@ bool mission_view::step_startup() {
   return true;
 }
 void mission_view::advance_time(unsigned milliseconds) {
-  auto const before{elapsed_milliseconds * 120 / 1000};
+  auto const before{elapsed_milliseconds * simulation_timer_hz / 1000};
   elapsed_milliseconds += milliseconds;
-  auto const ticks{static_cast<unsigned>(elapsed_milliseconds * 120 / 1000 - before)};
+  auto const ticks{static_cast<unsigned>(elapsed_milliseconds * simulation_timer_hz / 1000 - before)};
   pacing.advance(ticks);
   audio.advance(ticks);
 }
 bool mission_view::step(bool const control, bool const zoom, mission_dialog_handlers const &dialogs) {
-  auto const ratio{pacing.take()};
+  auto const ratio{pacing.take_world()};
   if(!ratio) return false;
   if(paused) {
     pointer_events.clear();

@@ -13,6 +13,19 @@ namespace {
 void require(bool ok, char const *why) {
   if(!ok) throw std::runtime_error{why};
 }
+struct recording_span {
+  size_t first_poll, last_poll;
+  unsigned earliest_ticks;
+  unsigned latest_ticks{earliest_ticks};
+  uint64_t duration{0};
+  void observe(size_t poll, unsigned milliseconds) {
+    if(first_poll <= poll && poll < last_poll) duration += milliseconds;
+  }
+  void check() const {
+    require(duration >= earliest_ticks * 1000u / 120 && duration <= (latest_ticks * 1000u + 119) / 120,
+            "presented interval disagrees with the recording clock");
+  }
+};
 struct cleanup {
   std::filesystem::path path;
   ~cleanup() {
@@ -81,9 +94,27 @@ int main(int argc, char **argv) try {
     bool checked_panel{false};
     unsigned timed_pans{0};
     bool const retail_patrol{resources.edition() == earthsiege::game_edition::original && demo == 3};
+    std::vector<recording_span> spans;
+    if(retail_patrol) {
+      // The last span is in the exit dialog. Its mouse moves from tick 9294
+      // to 9342 (48 slow ticks), while DOSBox took only 10 ms to poll it.
+      spans = {{5, 55, 370}, {200, 300, 1085}, {2227, 2470, 96}};
+    }
+    // Independent mouse timestamps span 1,634 and 1,506 ticks at 60 Hz.
+    if(resources.edition() == earthsiege::game_edition::original && demo == 1) spans = {{1476, 1802, 3267}};
+    if(resources.edition() == earthsiege::game_edition::expansion && demo == 3) spans = {{2989, 3216, 3011}};
+    if(resources.edition() == earthsiege::game_edition::expansion && demo == 4) {
+      // Mouse events bracket the poll to within its own world interval.
+      // These two stretches contain 156 and 253 upper-clipped steps.
+      spans = {{1597, 2186, 9579, 9602}, {629, 3304, 39857, 39875}};
+    }
     while(!playback.done()) {
       playback.step([&](unsigned period, framebuffer const &frame){
         milliseconds += period;
+        for(auto &span : spans) span.observe(playback.packets_read(), period);
+        if(retail_patrol && playback.packets_read() == 1) {
+          require(period == 83, "first patrol frame holds for the ten ticks stored in packet two");
+        }
         stereo_frames += playback.view().take_audio().size() / 2;
         require(stereo_frames == milliseconds * 120 / 1000 * 44100 / 120, "continuous 44.1 kHz audio on the presentation clock");
         auto pans{playback.view().take_pan_frames()};
@@ -117,14 +148,28 @@ int main(int argc, char **argv) try {
       });
       require(shown < 20000, "playback terminates");
     }
-    std::cout << "Completed demo " << demo << ": " << playback.frames_played() << " frames, " << playback.modal_packets_read() << " modal packets, " << playback.packets_read() << '/' << playback.packet_count() << std::endl;
+    std::cout << "Completed demo " << demo << ": " << playback.frames_played() << " frames, " << playback.modal_packets_read() << " modal packets, " << playback.packets_read() << '/' << playback.packet_count() << " packets, " << shown << " presentations, " << milliseconds << " ms" << std::endl;
     if(apocalypse_panel) require(checked_panel, "expansion demo shows the lower cockpit");
+    if(retail_patrol) {
+      // A user-supplied tape has no matching DOSBox clock file.
+      demo_playback uncaptured{resources, demo, shell.settings(), temp.path, {}, temp.path / "no-clocks"};
+      recording_span opening{5, 55, 370};
+      while(!uncaptured.done()) {
+        uncaptured.step([&](unsigned period, framebuffer const &){
+          uncaptured.view().take_audio();
+          uncaptured.view().take_pan_frames();
+          opening.observe(uncaptured.packets_read(), period);
+          return uncaptured.packets_read() < 55;
+        });
+      }
+      opening.check();
+    }
     if(full) {
       require(playback.packets_read() == playback.packet_count(), "complete recording consumed");
       require(playback.frames_played() > 1000, "full demo simulates");
+      for(auto const &span : spans) span.check();
       if(retail_patrol) {
         require(checked_music_cursor && timed_pans == 4, "retail patrol music menu and four cockpit pans");
-        require(milliseconds == 4601 + 91923, "DOSBox 60000-cycle lift and tape duration");
       }
     } else {
       require((apocalypse_panel || playback.frames_played() == 3) && playback.packets_read() < playback.packet_count(), "host input can interrupt playback");

@@ -135,7 +135,7 @@ class mission_view {
   std::unique_ptr<cockpit_hdd> hdd;
   struct pointer_event {
     player_input input;
-    std::optional<uint32_t> timestamp;
+    uint32_t timestamp;
   };
   std::deque<pointer_event> pointer_events;
   int16_t requested_throttle{0};
