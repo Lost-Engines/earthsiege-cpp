@@ -185,10 +185,10 @@ class model_draw {
       for(auto const &surface : source.polygons) polygon(source, surface, current);
       return;
     }
-    auto const walk{[&, renderer = this](this auto const &self, int16_t const reference, size_t const depth)->void {
+    auto const walk{[&](this auto const &self, int16_t const reference, size_t const depth)->void {
       if(reference < 0) return;
       if(reference & 0x4000) {
-        renderer->polygon(source, source.polygons.at(static_cast<unsigned int>(reference) & 0x3fff), current);
+        polygon(source, source.polygons.at(static_cast<unsigned int>(reference) & 0x3fff), current);
         return;
       }
       if(depth > source.bsp.size()) throw std::runtime_error{"cyclic mesh BSP"};
@@ -199,7 +199,7 @@ class model_draw {
       for(unsigned int axis{0}; axis != 3; ++axis) dot += static_cast<int64_t>(normal[axis]) * current.eye[axis];
       bool const front{wrap_long(dot) < 0};
       self(front ? node.front : node.back, depth + 1);
-      renderer->polygon(source, surface, current);
+      polygon(source, surface, current);
       self(front ? node.back : node.front, depth + 1);
     }};
     walk(0, 0);

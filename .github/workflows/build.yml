@@ -115,12 +115,15 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends g++-14 ninja-build ccache \
+          sudo apt-get install -y --no-install-recommends ninja-build ccache \
             libgl-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
             libwayland-dev libxkbcommon-dev wayland-protocols \
             libasound2-dev libpulse-dev libudev-dev libdbus-1-dev
-          echo CC=gcc-14 >> "$GITHUB_ENV"
-          echo CXX=g++-14 >> "$GITHUB_ENV"
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install gcc@16
+          gcc_prefix="$(brew --prefix gcc@16)"
+          echo "CC=$gcc_prefix/bin/gcc-16" >> "$GITHUB_ENV"
+          echo "CXX=$gcc_prefix/bin/g++-16" >> "$GITHUB_ENV"
 
       - name: Install macOS dependencies
         if: runner.os == 'macOS'

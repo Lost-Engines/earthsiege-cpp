@@ -57,8 +57,8 @@ its downloads are then deleted, including old drafts. Git tags are retained.
 
 ## Reproduce a portable build
 
-Use CMake 3.30 or newer, Ninja and a compiler supporting C++26. CI uses GCC 14 on
-Linux, GCC 16 on macOS, and the UCRT64 GCC toolchain on Windows. macOS also uses Apple's
+Use CMake 3.30 or newer, Ninja and a compiler supporting C++26. CI uses Homebrew
+GCC 16 on Linux and macOS, and the UCRT64 GCC toolchain on Windows. macOS also uses Apple's
 Clang for the Cocoa/CoreAudio sources; C and C++ use GCC. The workflow lists the native development
 packages needed to build GLFW on Linux.
 
