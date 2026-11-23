@@ -1512,6 +1512,14 @@ shields, weapons and throttle. The other eight playable layouts use PBUTTONS.
 Both sheets have 64 sprites. The lower map controls also carry a hit shape
 independent of their image dimensions.
 
+Both editions display the requested shield allocation as two numbers that add
+up to 200. The three coloured bands on each side show its stored charge. Retail
+subtracts a brightness offset from the base green. The expansion scales the
+green itself. Its first two bands stay black up to 37.5% and 25% charge
+respectively, while the third brightens across the full range. The shield test
+compares all 1,025 charge levels with the DOS palette routines. Expansion demo
+4 also checks the gauge before and after the rear allocation returns to 20.
+
 Expansion pilot names use the roster slot directly. The three slots sharing
 each portrait still use the same face and speech resources. An occupied crew
 display fills its authored rectangle in the expansion. Retail retains a

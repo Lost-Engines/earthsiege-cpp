@@ -85,7 +85,6 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   apply_cockpit_colours(display_colours, read_palette(resources.read("simvol0", "dpl/COCKPIT.DPL")), static_cast<unsigned int>(session->player_chassis()), resources.edition());
   update_camera(camera, session->view_target(viewed_actor));
   environment.initialize_palette(display_colours, camera.angles.x);
-  display_device.present(display_colours);
   session->on_cockpit_impact([this]{impact.hit(interface_ticks, impact_view(), ui_random);});
   // Original startup fills the lower/forward artwork on both page pairs.
   for(int x : {0, 320}) {
@@ -106,6 +105,9 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   for(auto const &bounds : shields.button_bounds()) instruments.add_button(bounds);
   session->initialise_weapon_instruments();
   exchange_panel_values();
+  // DOS paints the forward cockpit before the lift takes its two palette copies.
+  update_shield_colours(display_colours, painted_shields[0], painted_shields[1], resources.edition());
+  display_device.present(display_colours);
   auto const rows{session->player_weapon_controls().displays()};
   painted_weapon_rows.assign(rows.begin(), rows.end());
   for(size_t i{0}; i < rows.size(); ++i) {
@@ -410,7 +412,7 @@ void mission_view::present_view() {
       throttle.repaint_lamps();
       weapons.repaint();
       displayed_shields = painted_shields;
-      update_shield_colours(display_colours, (*displayed_shields)[0], (*displayed_shields)[1]);
+      update_shield_colours(display_colours, (*displayed_shields)[0], (*displayed_shields)[1], session->scenery().environment().edition);
       display_device.changed(80, 6);
     }
   }
@@ -909,7 +911,7 @@ void mission_view::draw() {
     // only its first repaint (391ee) uploads the six shield DAC entries.
     if(displayed_shields != shield_state) {
       displayed_shields = shield_state;
-      update_shield_colours(colours, shield_state[0], shield_state[1]);
+      update_shield_colours(colours, shield_state[0], shield_state[1], session->scenery().environment().edition);
       display_device.changed(80, 6);
     }
     shields.draw(frame, painted_shields[2], {std::to_underlying(instruments.at(1).face), std::to_underlying(instruments.at(2).face)}, x, y);

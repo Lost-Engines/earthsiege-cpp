@@ -73,6 +73,14 @@ int main(int argc, char **argv) try {
       // At 100 seconds the HERC is turning. The scanner uses the last world draw.
       check(cockpit_rgb_crc(replay.view(), {124, 122, 194, 165}), 0x5e1e710eu, "turning scanner contacts");
     }
+    if(demo == 4) {
+      // DOS capture of the Apocalypse at equal allocation, then either side of the rear 0-to-20 transfer.
+      auto const &view{replay.view()};
+      auto const packet{replay.packets_read()};
+      if(packet == 107) check(cockpit_rgb_crc(view, {202, 3, 239, 20}), 0x8a630784u, "front and rear shields");
+      if(packet == 820) check(cockpit_rgb_crc(view, {202, 12, 239, 20}), 0x22f219d6u, "empty rear shield");
+      if(packet == 856) check(cockpit_rgb_crc(view, {202, 3, 239, 20}), 0xb883b604u, "rebalanced front and rear shields");
+    }
     auto const &motion{replay.view().simulation().player().movement()};
     for(auto value : {motion.position.x, motion.position.y, motion.position.z}) check(value, expected.integer<int32_t>(), "position");
     for(auto value : {motion.angles.x, motion.angles.y, motion.angles.z}) check(value, expected.integer<uint16_t>(), "angle");

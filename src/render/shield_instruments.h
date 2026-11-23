@@ -5,7 +5,7 @@
 namespace earthsiege {
 
 /// Six palette slots embedded in the cockpit artwork show front/rear charge.
-void update_shield_colours(palette &colours, int32_t front, int32_t rear);
+void update_shield_colours(palette &colours, int32_t front, int32_t rear, game_edition edition);
 
 class shield_instruments {
   std::array<rectangle, 2> buttons;
