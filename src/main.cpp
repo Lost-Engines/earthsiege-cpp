@@ -528,10 +528,15 @@ auto main(int argc, char *argv[])->int try {
         }
         return false;
       }};
-      // DOS pans advance at VGA retrace. The display may have a different
-      // refresh rate, so each scanout gets a deadline on the audio timeline.
-      if(display) glfwSwapInterval(0);
+      // Keep the window's synchronized swaps. Unsynchronized demo frames can
+      // stay black in the Wayland compositor even with a populated back buffer.
+      constexpr unsigned vga_refresh_hz{70};
       uint64_t deadline{ticks()};
+      uint64_t refresh_due{deadline};
+      auto const show_frame{[&](earthsiege::framebuffer const &page){
+        display->present(page, playback.view().colours());
+        refresh_due = ticks() + 1000 / vga_refresh_hz;
+      }};
       auto const present_demo{[&](unsigned milliseconds, earthsiege::framebuffer const &frame){
         auto samples{playback.view().take_audio()};
         if(sound) sound->queue(samples);
@@ -541,13 +546,15 @@ auto main(int argc, char *argv[])->int try {
         if(display) {
           if(!demo_events()) return false;
           for(size_t i{0}; i < pans.size(); ++i) {
-            auto const until{std::min(deadline, start + (i + 1) * uint64_t{1000} / 70)};
+            auto const until{std::min(deadline, start + (i + 1) * uint64_t{1000} / vga_refresh_hz)};
             if(ticks() >= until) continue;
-            display->present(pans[i], playback.view().colours());
+            show_frame(pans[i]);
             if(!wait_until(until)) return false;
           }
-          // Several input polls can occur before the next visible scanout.
-          if(ticks() < deadline) display->present(frame, playback.view().colours());
+          // DOS can poll a dialog several times per retrace. Coalesce late
+          // polls, but keep showing the current frame while playback catches up.
+          auto const now{ticks()};
+          if(now < deadline || now >= refresh_due) show_frame(frame);
         }
         ++frames;
         if(frame_limit && frames >= frame_limit) {
@@ -561,7 +568,6 @@ auto main(int argc, char *argv[])->int try {
         return !display || wait_until(deadline);
       }};
       while(running && !playback.done()) playback.step(present_demo);
-      if(display) glfwSwapInterval(1);
       if(sound) sound->clear();
       menu.demo_return();
       menu.cancel_press();

@@ -68,6 +68,11 @@ The interval measurements include the four cockpit pans and both visits to
 Preferences. The mixer and music timer keep running through each pan, and
 the modal cursor follows the recorded mouse and the dialog's button selection.
 
+Demo playback uses the same synchronized buffer swaps as the menus. When a
+frame takes longer than its recorded interval, the window still shows the
+latest cockpit image. Playback can skip intermediate pan images and group
+rapid dialog polls while the tape and audio follow their recorded timings.
+
 ## Original comparison
 
 The analysis project runs the unchanged March 1995 expansion executable and TAP

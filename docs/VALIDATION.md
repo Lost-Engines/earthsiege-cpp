@@ -66,6 +66,19 @@ Switching away during playback and clicking back produced the same music-menu
 image as an uninterrupted run. A separate Alt+Tab check also returned the
 same frame after refocusing.
 
+On GNOME Wayland with an NVIDIA GPU, disabling swap synchronization for
+DEMO3 left the game window black even though the OpenGL back buffer held
+the cockpit image. Restoring the usual swaps showed the moving cockpit at
+both the default size and scale 5. The comparison used captures from the
+compositor's virtual monitor.
+
+A separate X11 test delayed each replay update by 110 ms. Every window
+capture from the previous build was black over the eight-second check.
+The fixed build showed the cockpit within the first second and continued
+to update. At normal speed a full replay on Wayland took 96.58 seconds
+from the first startup update to the menu. A loopback recording contained
+audio in every 10 ms block sampled during the four cockpit pans.
+
 ## Weapon-link shortcut
 
 L now reaches the cockpit weapon-link handler. It toggles the selected matching
