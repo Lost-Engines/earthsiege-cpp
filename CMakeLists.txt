@@ -380,6 +380,9 @@ add_executable(earthsiege
 )
 target_link_libraries(earthsiege PRIVATE earthsiege_core glfw OpenGL::GL pcm_device)
 
+add_executable(capture_demo EXCLUDE_FROM_ALL tools/capture_demo.cpp)
+target_link_libraries(capture_demo PRIVATE earthsiege_core)
+
 if(BUILD_TESTING)
   add_executable(mission_alert_test tests/mission_alert_test.cpp)
   target_link_libraries(mission_alert_test PRIVATE earthsiege_core)
