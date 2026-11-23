@@ -124,7 +124,7 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
   });
   radio->speech_output([this](std::string_view path){return audio.speech(path);});
   session->on_radio([this](radio_event const &event){radio->submit(event, interface_ticks);});
-  displays = std::make_unique<cockpit_displays>(resources, cockpit.layout, *session, instruments, ui_random);
+  displays = std::make_unique<cockpit_displays>(resources, cockpit.layout, *session, instruments, ui_random, renderer.last_view_transform());
   hdd = std::make_unique<cockpit_hdd>(resources, cockpit.layout, *session, instruments, ui_random);
   for(size_t i{0}; i < edge_controls.size(); ++i) edge_controls[i] = instruments.add_button(cockpit_edge_bounds(0)[i]);
   auto const origin{instrument_origin()};

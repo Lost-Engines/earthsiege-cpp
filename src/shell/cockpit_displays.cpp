@@ -4,8 +4,9 @@
 
 namespace earthsiege {
 cockpit_displays::cockpit_displays(resource_store const &resources, cockpit_layout const &layout,
-  mission_session &session, pointer_controls &input, random_state &ui_random)
+  mission_session &session, pointer_controls &input, random_state &ui_random, model_transform const &scene_view)
   : random{ui_random},
+    world_to_camera{scene_view},
     failure_font{read_font(resources.read("simvol0", "dfn/CPRED.DFN"))},
     failure_label{read_interface_strings(resources.read("simvol0", "str/STRINGS0.STR")).at(30).at(0).text},
     controls{resources, layout},
@@ -146,7 +147,7 @@ void cockpit_displays::paint(mfd_page const page, mission_session &session, came
     navigation.draw(bounds, camera.position, camera.angles, {});
     break;
   case mfd_page::scanner:
-    scanner.draw(cache, bounds, session.scanner_state(camera.angles.z, ticks, mfd_ranges[controller.state().range_index]));
+    scanner.draw(cache, bounds, session.scanner_state(camera.angles.z, ticks, mfd_ranges[controller.state().range_index]), world_to_camera);
     break;
   case mfd_page::missile_camera:
     {

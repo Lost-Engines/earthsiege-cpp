@@ -65,8 +65,13 @@ int main(int argc, char **argv) try {
       auto const &view{replay.view()};
       check(cockpit_rgb_crc(view, {16, 140, 71, 174}), 0x8f786c3cu, "left weapon bank");
       check(cockpit_rgb_crc(view, {248, 140, 303, 174}), 0x8a433a21u, "right weapon bank");
+      check(cockpit_rgb_crc(view, {124, 122, 194, 165}), 0xf594eeccu, "scanner contacts");
       check(cockpit_rgb_crc(view, {106, 177, 215, 184}), 0x645f8041u, "scanner and mode controls");
       check(cockpit_rgb_crc(view, {133, 188, 215, 196}), 0x05751ae7u, "range and target controls");
+    }
+    if(demo == 2 && replay.packets_read() == 803) {
+      // At 100 seconds the HERC is turning. The scanner uses the last world draw.
+      check(cockpit_rgb_crc(replay.view(), {124, 122, 194, 165}), 0x5e1e710eu, "turning scanner contacts");
     }
     auto const &motion{replay.view().simulation().player().movement()};
     for(auto value : {motion.position.x, motion.position.y, motion.position.z}) check(value, expected.integer<int32_t>(), "position");

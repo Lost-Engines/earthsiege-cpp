@@ -1,6 +1,7 @@
 #pragma once
 #include "vectorstorm/vector/vector2.h"
 #include "resources/cockpit.h"
+#include "resources/model.h"
 #include "simulation/target_selection.h"
 
 namespace earthsiege {
@@ -24,13 +25,14 @@ struct scanner_display_state {
   std::vector<scanner_contact> contacts;                                       // original world order, excluding the player
 };
 class scanner_display {
+  bool expansion;
   bitmap background;
   std::array<font, 3> fonts;                                                   // blue, green, red
   std::array<std::string, 2> activity_labels;
   std::array<std::string, 2> distance_labels;
 public:
   explicit scanner_display(resource_store const &resources);
-  void draw(framebuffer &target, rectangle const &bounds, scanner_display_state const &state) const;
+  void draw(framebuffer &target, rectangle const &bounds, scanner_display_state const &state, model_transform const &world_to_camera = {}) const;
 };
 
 } // namespace earthsiege

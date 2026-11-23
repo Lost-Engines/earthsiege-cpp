@@ -38,7 +38,8 @@ std::vector<size_t> scenery_renderer::draw(vec3<int32_t> const &position, vec3<u
 std::vector<size_t> scenery_renderer::draw_objects(vec3<int32_t> const &position, vec3<uint16_t> const &angles, std::span<light const> lights, bool const split_highlights, std::span<scene_object const> const actors, effect_lighting * const dynamic, std::span<ground_flash const> const ground, model_view view) {
   auto camera{rotation_transform(angles)};
   camera.translation = position;
-  view.camera = inverse_transform(camera);
+  world_to_camera = inverse_transform(camera);
+  view.camera = world_to_camera;
   for(auto const &flash : ground) {
     vec3<int32_t> delta;
     for(unsigned int axis{0}; axis != 3; ++axis) delta[axis] = wrap_long(static_cast<int64_t>(flash.position[axis]) - position[axis]);

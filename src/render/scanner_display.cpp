@@ -13,6 +13,13 @@ int32_t project_component(int32_t const distance, int16_t const coefficient) {
   uint32_t const bias{product != wrap_long(product) ? uint32_t{0xffffdfff} : uint32_t{0x2000}};
   return wrap_long((product + bias) >> matrix_fraction_bits);
 }
+vec2<int32_t> retail_projection(vec2<int32_t> const &delta, int32_t distance, uint16_t heading) {
+  if(delta.y > 0) distance = -distance;
+  auto const sine{wrap_word(wrap_long(static_cast<int64_t>(delta.x) * model_matrix_one) / distance)};
+  auto const angle{static_cast<uint16_t>(angle_quarter_turn - model_arcsine(sine) + heading)};
+  return {project_component(distance, model_cosine(angle)),
+          project_component(distance, model_cosine(static_cast<uint16_t>(angle - angle_quarter_turn)))};
+}
 std::string padded_distance(int32_t const distance) {
   auto text{std::to_string((distance / 1000) * 6)};
   if(text.size() < 4) text.insert(0, 4 - text.size(), '0');
@@ -38,7 +45,8 @@ void label(framebuffer &target, font const &face, std::string_view const text, r
 }
 } // anonymous namespace
 scanner_display::scanner_display(resource_store const &resources)
-  : background{read_bitmaps(resources.read("simvol0", "dba/RADAR.DBA")).at(0)},
+  : expansion{resources.edition() == game_edition::expansion},
+    background{read_bitmaps(resources.read("simvol0", "dba/RADAR.DBA")).at(0)},
     fonts{read_font(resources.read("simvol0", "dfn/CPBLUE.DFN")),
           read_font(resources.read("simvol0", "dfn/CPGREEN.DFN")),
           read_font(resources.read("simvol0", "dfn/CPRED.DFN"))} {
@@ -46,7 +54,7 @@ scanner_display::scanner_display(resource_store const &resources)
   activity_labels = {strings.at(25).at(0).text, strings.at(25).at(1).text};
   distance_labels = {strings.at(26).at(0).text, strings.at(27).at(0).text};
 }
-void scanner_display::draw(framebuffer &target, rectangle const &bounds, scanner_display_state const &state) const {
+void scanner_display::draw(framebuffer &target, rectangle const &bounds, scanner_display_state const &state, model_transform const &world_to_camera) const {
   scoped_framebuffer_clip clip{target, nullptr};
   int32_t const scale{state.range / 21};
   if(scale == 0) throw std::invalid_argument{"scanner range is too small"};
@@ -67,15 +75,19 @@ void scanner_display::draw(framebuffer &target, rectangle const &bounds, scanner
     auto distance{fast_distance_2d(delta)};
     if(distance == 0) distance = 1;
     if(distance >= state.range) continue;
-    if(delta.y > 0) distance = -distance;
-    auto const sine{wrap_word(wrap_long(static_cast<int64_t>(delta.x) * model_matrix_one) / distance)};
-    auto const angle{static_cast<uint16_t>(angle_quarter_turn - model_arcsine(sine) + state.heading)};
-    vec2<int32_t> const point{x + 34 + project_component(distance, model_cosine(angle)) / scale,
-                              y + 22 + project_component(distance, model_cosine(static_cast<uint16_t>(angle - angle_quarter_turn))) / scale};
+    vec2<int32_t> projected;
+    if(expansion) {
+      // Expansion CD 0x3928c rotates the relative XY vector using the view matrix.
+      auto const rotated{rotate_vector({delta.x, delta.y, 0}, world_to_camera)};
+      projected = {rotated.x, -rotated.y};
+    } else {
+      projected = retail_projection(delta, distance, state.heading);
+    }
+    vec2<int32_t> const point{x + 34 + projected.x / scale, y + 22 + projected.y / scale};
     target.pixel(point.x, point.y, contact_colour(contact));
     if(contact.selected) {
       selected = point;
-      selected_distance = distance < 0 ? -distance : distance;
+      selected_distance = distance;
     }
   }
   if(selected) {

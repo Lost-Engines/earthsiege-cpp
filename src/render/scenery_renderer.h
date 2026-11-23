@@ -65,9 +65,13 @@ class scenery_renderer {
   model_renderer models;
   scene_shading palette_mode;
   std::optional<shape_preferences> shapes;
+  model_transform world_to_camera;
 
 public:
   scene_draw_observer observe;
+  model_transform const &last_view_transform() const {
+    return world_to_camera;
+  }
   scenery_renderer(framebuffer &target, scenery_world const &world, distance_shade_bindings bindings, scene_shading palette_mode = scene_shading::distance);
   void shape_detail(uint8_t value) {
     shapes = earthsiege::shape_detail(value);
