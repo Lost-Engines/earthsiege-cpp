@@ -34,7 +34,7 @@ enum class mfd_action {
 class mfd_controller {
   mfd_state data;
 public:
-  explicit mfd_controller(size_t player, uint32_t ticks = 0);
+  explicit mfd_controller(size_t player, uint32_t ticks = 0, mfd_page initial_page = mfd_page::status);
   mfd_state const &state() const;
   void select(mfd_page page, size_t player, std::optional<size_t> target);
   void request_update();

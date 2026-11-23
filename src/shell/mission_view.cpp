@@ -68,7 +68,8 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     lift_artwork{read_bitmaps(resources.read("simvol0", "dba/INTRO.DBA")).at(0)},
     environment{resources, session->scenery().environment()},
     renderer{frame, session->scenery(), read_distance_shade_bindings(resources.read("simvol0", "dat/SHADES.DAT"))},
-    camera{session->make_camera(camera_mode::attached)} {
+    camera{session->make_camera(camera_mode::attached)},
+    external_actor{session->player_id()} {
   // The shipped file is an external input policy, separate from PREFS.CFG.
   for(auto const &path : {resources.root() / "DATA" / "KEYJOY.CFG", resources.root() / "data" / "keyjoy.cfg"}) {
     if(!std::filesystem::exists(path)) continue;
@@ -318,6 +319,7 @@ void mission_view::next_camera_actor() {
   for(size_t step{1}; step < actors.size(); ++step) {
     auto const next{(current + step) % actors.size()};
     if(actors[next].group == group && actors[next].actor.body().movement().position.z >= 0) {
+      external_actor = next;
       select_camera_actor(next);
       break;
     }
@@ -328,8 +330,9 @@ void mission_view::change_camera(camera_mode const mode) {
   set_camera(mode, impact_view().mode);
 }
 void mission_view::set_camera(camera_mode const mode, unsigned previous, bool reset_input) {
-  // 5894c/58a44 retain the target camera across cockpit and external views.
-  if(mode == camera_mode::attached && viewed_actor && *viewed_actor != session->player_id()) select_camera_actor(session->player_id());
+  // Both editions keep the external subject while the cockpit follows the player.
+  if(mode == camera_mode::attached) select_camera_actor(session->player_id());
+  else if(mode == camera_mode::orbit) select_camera_actor(external_actor);
   camera.mode = mode;
   impact.change_view(previous, impact_view());
   if(reset_input) {

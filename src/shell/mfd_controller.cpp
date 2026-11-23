@@ -3,8 +3,9 @@
 #include <utility>
 
 namespace earthsiege {
-mfd_controller::mfd_controller(size_t const player, uint32_t const ticks) {
-  data.selected_actor = player;
+mfd_controller::mfd_controller(size_t const player, uint32_t const ticks, mfd_page const initial_page) {
+  data.page = initial_page;
+  if(initial_page == mfd_page::status) data.selected_actor = player;
   data.deadline = ticks + 30;
 }
 mfd_state const &mfd_controller::state() const {

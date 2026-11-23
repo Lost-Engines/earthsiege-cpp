@@ -108,6 +108,7 @@ class mission_view {
   scenery_renderer renderer;
   camera_state camera;
   std::optional<size_t> viewed_actor;
+  size_t external_actor;
   std::map<size_t, camera_state> actor_cameras;
   void select_camera_actor(size_t actor);
   void next_camera_actor();

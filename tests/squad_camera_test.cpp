@@ -16,6 +16,7 @@ int main(int argc, char **argv) try {
   if(argc != 2) return EXIT_FAILURE;
   resource_store resources{argv[1]};
   size_t switches{0};
+  size_t wingmate_returns{0};
   for(unsigned demo{1}; demo <= 4; ++demo) {
     mission_view view{resources, demo};
     auto const player{view.simulation().player_id()};
@@ -61,10 +62,20 @@ int main(int argc, char **argv) try {
       require(view.view_camera().orbit_angles == vec3<uint16_t>{}, "newly bound squad camera starts at zero orbit");
     }
     step(49);
+    auto const subject{view.camera_actor()};
+    require(view.step_recorded(turn, 0), "turn remembered external camera");
+    step(0);
+    auto const orbit{view.view_camera().orbit_angles};
     view.change_camera(camera_mode::attached);
     require(view.camera_actor() == player, "returning to cockpit restores player target");
+    step(49);
+    view.change_camera(camera_mode::orbit);
+    require(view.camera_actor() == subject, "reopening the external view restores its subject");
+    require(view.view_camera().orbit_angles == orbit, "reopening the external view restores its orbit");
+    if(subject != player) ++wingmate_returns;
   }
   require(switches >= 4, "squad cycle exercised");
+  require(wingmate_returns > 0, "left and reopened a wingmate's camera");
   std::cout << switches << " squad camera switches and four restored objective lists pass\n";
 } catch(std::exception const &e) {
   std::cerr << e.what() << '\n';

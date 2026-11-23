@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 #include "shell/demo_playback.h"
 using earthsiege::binary_reader;
 using earthsiege::demo_playback;
@@ -8,6 +9,22 @@ using earthsiege::framebuffer;
 using earthsiege::preferences;
 using earthsiege::read_file;
 using earthsiege::resource_store;
+
+namespace {
+uint32_t cockpit_rgb_crc(earthsiege::mission_view const &view, earthsiege::rectangle area) {
+  std::vector<uint8_t> rgb;
+  for(int y{area.top}; y <= area.bottom; ++y) {
+    for(int x{area.left}; x <= area.right; ++x) {
+      auto const index{view.image().pixels()[y * earthsiege::screen_width + x]};
+      auto const colour{view.colours().colours[index]};
+      rgb.push_back(static_cast<uint8_t>(colour >> 16));
+      rgb.push_back(static_cast<uint8_t>(colour >> 8));
+      rgb.push_back(static_cast<uint8_t>(colour));
+    }
+  }
+  return earthsiege::crc32(rgb);
+}
+}
 int main(int argc, char **argv) try {
   if(argc != 4) throw std::runtime_error{"Usage: expansion_replay_test DATA FIXTURE SAVE_DIRECTORY"};
   auto const bytes{read_file(argv[2])};
@@ -43,6 +60,14 @@ int main(int argc, char **argv) try {
     replay.step(present);
     check(replay.frames_played(), frame + 1, "simulation count");
     check(replay.packets_read(), expected.integer<uint32_t>(), "input packets");
+    if(demo == 2 && frame == 1) {
+      // Lossless DOS capture, forward Apocalypse cockpit immediately after the lift.
+      auto const &view{replay.view()};
+      check(cockpit_rgb_crc(view, {16, 140, 71, 174}), 0x8f786c3cu, "left weapon bank");
+      check(cockpit_rgb_crc(view, {248, 140, 303, 174}), 0x8a433a21u, "right weapon bank");
+      check(cockpit_rgb_crc(view, {106, 177, 215, 184}), 0x645f8041u, "scanner and mode controls");
+      check(cockpit_rgb_crc(view, {133, 188, 215, 196}), 0x05751ae7u, "range and target controls");
+    }
     auto const &motion{replay.view().simulation().player().movement()};
     for(auto value : {motion.position.x, motion.position.y, motion.position.z}) check(value, expected.integer<int32_t>(), "position");
     for(auto value : {motion.angles.x, motion.angles.y, motion.angles.z}) check(value, expected.integer<uint16_t>(), "angle");

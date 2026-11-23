@@ -9,7 +9,7 @@ cockpit_displays::cockpit_displays(resource_store const &resources, cockpit_layo
     failure_font{read_font(resources.read("simvol0", "dfn/CPRED.DFN"))},
     failure_label{read_interface_strings(resources.read("simvol0", "str/STRINGS0.STR")).at(30).at(0).text},
     controls{resources, layout},
-    controller{session.player_id()},
+    controller{session.player_id(), 0, resources.edition() == game_edition::expansion ? mfd_page::scanner : mfd_page::status},
     communications{resources},
     status{resources},
     target{resources},

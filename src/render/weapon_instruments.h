@@ -21,6 +21,7 @@ class weapon_instruments {
   std::vector<std::optional<std::array<unsigned int, 5>>> header_cache;
   std::vector<bool> expanded_label;
   cockpit_layout layout;
+  bool expansion;
   std::vector<bitmap> buttons;
   std::array<font, 3> number_fonts;
   font blue;
@@ -29,8 +30,14 @@ class weapon_instruments {
   std::string offline;
   std::string ecm;
   std::array<std::string, 5> group_labels;
-  rectangle child_bounds(unsigned int slot, weapon_instrument_kind kind, size_t offset) const;
-  void draw_row(framebuffer &target, unsigned int slot, weapon_instrument_kind kind,
+  struct row_layout {
+    rectangle button, number, lamp, name, offline, detail;
+    slider_geometry charge_slider() const {
+      return {detail, false, 1, 0, 1024};
+    }
+  };
+  row_layout geometry(unsigned int slot, weapon_instrument_kind kind) const;
+  void draw_row(framebuffer &target, row_layout const &row, unsigned int slot, weapon_instrument_kind kind,
                 std::string_view name, weapon_instrument_state const &state,
                 unsigned int button_face, int offset_x, int offset_y, bool expanded = false) const;
 public:

@@ -12,14 +12,17 @@ rectangle translate(rectangle value, int const x, int const y) {
   value.bottom += y;
   return value;
 }
-size_t template_offset(weapon_instrument_kind const kind) {
+struct weapon_template_offsets {
+  size_t bounds, mirror_mask;
+};
+weapon_template_offsets template_offsets(weapon_instrument_kind const kind) {
   switch(kind) {
   case weapon_instrument_kind::energy:
-    return 0xf4;
+    return {0xf4, 0x134};
   case weapon_instrument_kind::ammunition:
-    return 0xa4;
+    return {0xa4, 0xd4};
   case weapon_instrument_kind::ecm:
-    return 0x154;
+    return {0x154, 0x1a4};
   }
   throw std::runtime_error{"unknown weapon instrument"};
 }
@@ -37,6 +40,7 @@ weapon_instruments::weapon_instruments(resource_store const &resources, cockpit_
     header_cache(source.weapon_count()),
     expanded_label(source.weapon_count()),
     layout{source},
+    expansion{resources.edition() == game_edition::expansion},
     buttons{source.read_buttons(resources)},
     number_fonts{read_font(resources.read("simvol0", "dfn/CPON.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPPRESS.DFN")),
@@ -70,32 +74,54 @@ void weapon_instruments::draw_groups(framebuffer &target, unsigned int const gro
   }
 }
 
-rectangle weapon_instruments::child_bounds(unsigned int const slot, weapon_instrument_kind const kind, size_t const offset) const {
+weapon_instruments::row_layout weapon_instruments::geometry(unsigned int const slot, weapon_instrument_kind const kind) const {
   if(slot >= layout.weapon_count()) throw std::out_of_range{"weapon cockpit control number"};
   auto const parent{layout.bounds(0x14 + slot * 16)};
-  return translate(layout.bounds(template_offset(kind) + offset), parent.left, parent.top);
+  auto const offsets{template_offsets(kind)};
+  // Expansion DBSIM gives each weapon template a byte mask, one bit per row.
+  bool const mirrored{expansion && (static_cast<uint8_t>(layout.words[offsets.mirror_mask / 4]) & (1u << slot))};
+  auto const child{[&](size_t offset) {
+    auto const local{layout.bounds(offsets.bounds + offset)};
+    if(mirrored) return rectangle{parent.right - local.right, parent.top + local.top, parent.right - local.left, parent.top + local.bottom};
+    return translate(local, parent.left, parent.top);
+  }};
+  auto const header{child(0x10)};
+  auto number{header};
+  int const number_width{expansion ? 9 : 10};
+  if(mirrored) number.left = header.right - number_width + 1;
+  else number.right = header.left + number_width - 1;
+  rectangle const button{number.left, number.top, number.left + 8, number.top + static_cast<int>(buttons.at(0).height)};
+  int const lamp_x{mirrored ? number.left - 4 : number.right + 2};
+  rectangle const lamp{lamp_x, header.top, lamp_x + 2, header.top + 7};
+  auto name{header};
+  if(mirrored) name.right = lamp.left - 2;
+  else name.left = lamp.right + 2;
+  auto offline{parent};
+  if(mirrored) {
+    offline.right = name.right;
+    offline.bottom = name.bottom;
+  } else {
+    offline.left = expansion ? name.left : button.left;
+    offline.top = header.top;
+  }
+  return {button, number, lamp, name, offline, child(0x20)};
 }
 rectangle weapon_instruments::button_bounds(unsigned int const slot, weapon_instrument_kind const kind) const {
-  auto bounds{child_bounds(slot, kind, 0x10)};
-  bounds.right = bounds.left + 8;
-  bounds.bottom = bounds.top + static_cast<int>(buttons.at(0).height);
-  return bounds;
+  return geometry(slot, kind).button;
 }
 slider_geometry weapon_instruments::charge_slider(unsigned int const slot) const {
-  return {child_bounds(slot, weapon_instrument_kind::energy, 0x20), false, 1, 0, 1024};
+  return geometry(slot, weapon_instrument_kind::energy).charge_slider();
 }
 
-void weapon_instruments::draw_row(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
+void weapon_instruments::draw_row(framebuffer &target, row_layout const &row, unsigned int const slot, weapon_instrument_kind const kind,
                                   std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
                                   int const offset_x, int const offset_y, bool const expanded) const {
   scoped_framebuffer_clip clip{target, nullptr};
-  auto const button{translate(child_bounds(slot, kind, 0x10), offset_x, offset_y)};
+  auto const button{translate(row.button, offset_x, offset_y)};
   if(state.disabled && kind != weapon_instrument_kind::ecm) button_face = 2;
   target.image(buttons.at(button_face), button.left, button.top, true);
-  auto number{button};
-  number.right = number.left + 9;
-  label(target, number_fonts.at(button_face), std::to_string(slot + 1), number, true, 0);
-  auto const detail{translate(child_bounds(slot, kind, 0x20), offset_x, offset_y)};
+  label(target, number_fonts.at(button_face), std::to_string(slot + 1), translate(row.number, offset_x, offset_y), true, 0);
+  auto const detail{translate(row.detail, offset_x, offset_y)};
   if(kind == weapon_instrument_kind::ecm) {
     auto bounds{detail};
     if(state.disabled) {
@@ -105,21 +131,14 @@ void weapon_instruments::draw_row(framebuffer &target, unsigned int const slot, 
     label(target, yellow, state.disabled ? offline : ecm, bounds, true, 0, state.selected && !state.disabled ? 56 : 63);
     return;
   }
-  int const status_x{button.left + 11};
-  int const status_y{button.top};
-  auto name_bounds{button};
-  name_bounds.left = status_x + 4;
-  if(state.disabled || expanded) {
-    name_bounds = translate(layout.bounds(0x14 + slot * 16), offset_x, offset_y);
-    name_bounds.left = button.left;
-    name_bounds.top = button.top;
-  }
+  auto const lamp{translate(row.lamp, offset_x, offset_y)};
+  auto const name_bounds{translate(state.disabled || expanded ? row.offline : row.name, offset_x, offset_y)};
   label(target, state.disabled || state.selected ? yellow : green, state.disabled ? offline : name,
         name_bounds, state.disabled || expanded, 1, !state.disabled && state.selected ? 53 : 63);
   if(state.disabled || state.selected || state.included) {
-    target.image(buttons.at(state.disabled ? 57 : state.ready ? 55 : 56), status_x, status_y, true);
+    target.image(buttons.at(state.disabled ? 57 : state.ready ? 55 : 56), lamp.left, lamp.top, true);
   } else {
-    target.fill({status_x, status_y, status_x + 2, status_y + 7}, 63);
+    target.fill(lamp, 63);
   }
   if(state.disabled) return;
   if(kind == weapon_instrument_kind::ammunition) {
@@ -131,10 +150,11 @@ void weapon_instruments::draw_row(framebuffer &target, unsigned int const slot, 
 void weapon_instruments::draw(framebuffer &target, unsigned int const slot, weapon_instrument_kind const kind,
                               std::string_view name, weapon_instrument_state const &state, unsigned int button_face,
                               std::optional<int> const charge_boundary, int const offset_x, int const offset_y) const {
-  draw_row(target, slot, kind, name, state, button_face, offset_x, offset_y);
+  auto const row{geometry(slot, kind)};
+  draw_row(target, row, slot, kind, name, state, button_face, offset_x, offset_y);
   if(kind != weapon_instrument_kind::energy || state.disabled) return;
   scoped_framebuffer_clip clip{target, nullptr};
-  auto const detail{translate(child_bounds(slot, kind, 0x20), offset_x, offset_y)};
+  auto const detail{translate(row.detail, offset_x, offset_y)};
   // 0x389ac resets the LED boundary, then paints only the charged interval.
   // Uncharged pixels belong to the cockpit backing, not to a full bar clear.
   int const extent{(static_cast<int16_t>(state.value) * ((detail.right - detail.left) * 65536 / 1024)) >> 16};
@@ -143,8 +163,7 @@ void weapon_instruments::draw(framebuffer &target, unsigned int const slot, weap
       target.fill({x, detail.top, x, detail.bottom}, x & 1 ? 49 : 50);
     }
   } else if(extent < 0) target.fill({detail.left + extent + 1, detail.top, detail.left, detail.bottom}, 63);
-  auto const slider{charge_slider(slot)};
-  int const boundary{charge_boundary.value_or(slider.boundary_for_value(state.requested_charge))};
+  int const boundary{charge_boundary.value_or(row.charge_slider().boundary_for_value(state.requested_charge))};
   target.image(buttons.at(26), boundary + offset_x, detail.top - 1, true);
 }
 
@@ -158,13 +177,14 @@ void weapon_instruments::draw_retained(framebuffer &target, unsigned int const s
   // 37194/376b4 mark the header only for enable/selection/group/ready
   // or button-face changes; ammunition and charge have separate dirty flags.
   std::array<unsigned int, 5> const header{state.disabled, state.selected, state.included, state.ready, button_face};
+  auto const row{geometry(slot, kind)};
   auto &previous{header_cache.at(slot)};
   bool header_changed{false};
   if(!previous || *previous != header) {
     auto const shown{[&](rectangle const &b){
       return b.right + offset_x >= 0 && b.left + offset_x < 320 && b.bottom + offset_y >= 0 && b.top + offset_y < 200;
     }};
-    auto const button{button_bounds(slot, kind)};
+    auto const &button{row.button};
     if(shown(button)) {
       header_changed = true;
       // 384f0/38509 enlarge and centre the label for OFFLINE. The original
@@ -172,37 +192,26 @@ void weapon_instruments::draw_retained(framebuffer &target, unsigned int const s
       if(state.disabled && kind != weapon_instrument_kind::ecm) expanded_label[slot] = true;
       if(painted_region) {
         painted_region(button);
-        if(expanded_label[slot]) {
-          auto expanded{layout.bounds(0x14 + slot * 16)};
-          expanded.left = button.left;
-          expanded.top = button.top;
-          painted_region(expanded);
-        }
+        if(expanded_label[slot]) painted_region(row.offline);
         if(kind == weapon_instrument_kind::ecm) {
-          auto detail{child_bounds(slot, kind, 0x20)};
+          auto detail{row.detail};
           if(state.disabled) {
             detail.left = button.left;
             detail.top = button.top;
           }
           if(shown(detail)) painted_region(detail);
         } else {
-          auto detail{child_bounds(slot, kind, 0x10)};
-          detail.left += 11;
-          auto status{detail};
-          status.right = status.left + 2;
-          if(shown(status)) painted_region(status);
-          // The one-pixel gap after the three-pixel readiness lamp is retained.
-          detail.left += 4;
-          if(shown(detail)) painted_region(detail);
+          if(shown(row.lamp)) painted_region(row.lamp);
+          if(shown(row.name)) painted_region(row.name);
         }
       }
       previous = header;
     }
   }
-  draw_row(target, slot, kind, name, state, button_face, offset_x, offset_y, expanded_label[slot]);
+  draw_row(target, row, slot, kind, name, state, button_face, offset_x, offset_y, expanded_label[slot]);
   if(kind != weapon_instrument_kind::energy || state.disabled) return;
   scoped_framebuffer_clip clip{target, nullptr};
-  auto const bounds{child_bounds(slot, kind, 0x20)};
+  auto const bounds{row.detail};
   auto const area{translate({bounds.left, bounds.top - 1, bounds.right, bounds.bottom + 1}, offset_x, offset_y)};
   // Original 2b214 does not advance controls outside the current cockpit page.
   if(area.right < 0 || area.bottom < 0 || area.left >= static_cast<int>(screen_width) || area.top >= static_cast<int>(screen_height)) return;
@@ -248,7 +257,7 @@ void weapon_instruments::draw_retained(framebuffer &target, unsigned int const s
       }
     }
   }
-  auto const boundary{charge_boundary.value_or(charge_slider(slot).boundary_for_value(state.requested_charge))};
+  auto const boundary{charge_boundary.value_or(row.charge_slider().boundary_for_value(state.requested_charge))};
   if(cache.full || cache.value != state.value || cache.requested != state.requested_charge || cache.thumb_boundary != boundary) {
     // Full paint restores only a displaced thumb; incremental paint always
     // restores it, even when only the LED value changed.
