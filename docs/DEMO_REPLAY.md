@@ -15,8 +15,9 @@ movement and detour to work.
 Launch `earthsiege --demo 1` through `--demo 4` to play a specific original-game
 recording. Add `--expansion` for the expansion recordings; its Apocalypse patrol
 is `earthsiege --expansion --demo 3`. An explicit `--data-dir` selects that data
-set instead. The opening cinematics and edition selector are skipped, and a key
-or mouse click returns to the main menu, as does the end of playback.
+set instead. Playback starts immediately. Press Escape to return to the main
+menu, or let the recording finish. Clicking the window and switching away with
+Alt+Tab both leave playback running.
 
 The native View Demo menu chooses `1 + (current time in seconds % 4)`. It is a
 clock-based choice, not a sequence through the recordings. `--demo` overrides
@@ -38,6 +39,34 @@ runs the simulator directly; it is the command used for the original-game
 comparison captures. DOS View Demo itself has no numbered picker. Its `-D`
 selector reads `TAPES/DEMOLIST.STR` and uses the current time modulo the number
 of entries, retrying if it matches the selector's retained previous index.
+
+## How fast should a demo play?
+
+DBSIM reads a movement multiplier from each tape packet. It skips its live
+frame limiter during replay, so two DOS machines can follow the same patrol
+at different speeds. In a stationary dialog it can read hundreds of packets
+between two display refreshes.
+
+In expansion DEMO3 a hit shakes the lower map panel a few pixels into the
+forward view. Its top edge is briefly visible while the player presses `1`
+to select a plasma weapon. DOS sends number keys to the active cockpit view,
+so a sliver of the map cannot intercept that selection.
+
+The native player uses DOSBox at 60,000 cycles as its reference for the eight
+bundled demos. Each file in `assets/demo-clocks` contains milliseconds measured
+between successive polls of its tape, including the time spent panning the
+cockpit. The filename is the CRC32 of the complete TAP. The first little-endian
+16-bit word counts the startup intervals, followed by those intervals and one
+16-bit interval for each tape packet. The last interval ends when DBSIM leaves
+the replay loop. A replacement tape uses its nominal step for moving scenes
+and consumes static-dialog polls without a delay.
+
+In retail DEMO3 the lift and shake took 4.601 seconds. The patrol then ran for
+91.923 seconds from the first tape input to exit. Adding up the recorded
+movement multipliers would have produced 204.77 seconds for the inputs alone.
+The interval measurements include the four cockpit pans and both visits to
+Preferences. The mixer and music timer keep running through each pan, and
+the modal cursor follows the recorded mouse and the dialog's button selection.
 
 ## Original comparison
 

@@ -646,7 +646,10 @@ bool mission_view::dispatch_command(player_input &input, mission_dialog_handlers
     // The cockpit handler (2d24c) is inactive in external views, including
     // its Alt+letter radio shortcuts. A tape can contain ignored shortcuts.
     if(camera.mode == camera_mode::attached) {
-      if(hdd->command(input.command, *session, instruments, mfd_ranges[displays->state().range_index])) {
+      // 2d272/2d4fa route keys by the selected view. Impact shake can
+      // expose the top of the lower display while the forward view owns input.
+      bool const lower_keys{panel == cockpit_view::lower || input.command == 65 || input.command == 66};
+      if(lower_keys && hdd->command(input.command, *session, instruments, mfd_ranges[displays->state().range_index])) {
         input.command = 0;
       } else if(displays->command(input.command, *session, instruments)) input.command = 0;
     }

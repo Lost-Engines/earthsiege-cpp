@@ -31,7 +31,7 @@ Options → View Demo chooses one of the four recordings for the selected editio
 ./build/earthsiege --expansion --demo 3
 ```
 
-The second command plays the Apocalypse patrol on the red world. `--demo` skips the opening screens and defaults to the original game unless `--expansion` or another `--data-dir` is supplied. Playback returns to the main menu when it finishes; press a key or click to interrupt it. Preferences → Detail cycles through Low, Medium, High and Max; Accept saves it and Cancel restores the previous setting.
+The second command plays the Apocalypse patrol on the red world. `--demo` skips the opening screens and defaults to the original game unless `--expansion` or another `--data-dir` is supplied. Press Escape to return to the main menu. Clicking the window or using Alt+Tab leaves the demo running. Preferences → Detail cycles through Low, Medium, High and Max; Accept saves it and Cancel restores the previous setting.
 
 `--inspect-demo 1` (or 2–4) opens a recorded mission’s starting terrain and HERC roster. Use arrows/keypad to walk and turn, I/J/K/M or right mouse to aim, and Space to fire. W/Alt+W cycles weapons; L links/unlinks the selected matching weapon pair; Tab cycles targets; Enter confirms tactical-panel commands. F1–F6 select the six MFD pages. Ctrl+F1 shows the cockpit, Ctrl+F2 orbits and Ctrl+F3 detaches. F7/F8 select the lower tactical map/damage panel and F9/F10 the left/right panels. Ctrl+Shift+arrows controls the inspection camera; adding Alt changes distance; P pauses and Escape returns to the menu. The cockpit throttle and weapon charge sliders, shield allocation buttons, weapon groups, LINK and TRACK controls respond to the mouse. Click a numbered weapon to select it, right-click to change its group membership, or use 1–9. The HUD shows heading, torso and pitch indicators, target lock brackets and the next waypoint. The cockpit clock and animated lamps use the original presentation scripts.
 
@@ -130,7 +130,8 @@ The bundled DATA/KEYJOY.CFG retains the original pitch/turn choices. Malformed t
 Side and lower cockpit views now scroll between panels using the original pixel steps. Music and sound continue during the scroll.
 
 Live missions now use the original elapsed-time pacing and bounded simulation
-steps. Audio continues during mission dialogs; losing window focus suspends it.
+steps. Audio continues during mission dialogs. Switching to another window leaves
+the simulation and sound running and releases any held controls.
 
 
 F12 or Alt+P opens the original in-flight preferences panel, with a rotating HERC preview. Music, effects, radio mode, horizon, sky, ground and model detail update live. Controls and joystick calibration are available inside it; Escape accepts a panel and returns to its parent. Closing preferences restores the previous flight view.

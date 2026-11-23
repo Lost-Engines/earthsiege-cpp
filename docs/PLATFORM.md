@@ -14,7 +14,8 @@ size, logical mouse positions and cursor warps, including HiDPI displays.
 GLFW callbacks append to an ordered input queue. A mission modal can stop
 consuming that queue and resume it at the original simulation call site, so a
 quick Pause/Escape pair retains its order. Character input is separate from
-physical key commands. Focus loss clears held controls and pauses audio.
+physical key commands. Focus loss releases held controls and cancels pressed
+buttons. The simulation, music and effects continue while another window has focus.
 Ctrl+Shift+M opens the in-window music selector; keyboard and mouse selection,
 Cancel and missing-device errors use the same GLFW window.
 
@@ -27,8 +28,9 @@ sample conversion without requiring physical controllers on CI.
 
 The game's existing mixer and synthesiser backends produce signed 16-bit,
 44.1 kHz stereo samples. A synchronized queue feeds those samples to miniaudio.
-Underruns emit silence. Pause retains queued samples, and clearing the queue
-removes audio belonging to the previous scene. Miniaudio performs any conversion
+Playback starts with four device periods buffered (about 23 ms at 44.1 kHz).
+After an underrun the queue builds up that reserve again. Clearing the queue
+discards audio from the previous scene. Miniaudio performs any conversion
 needed by the host output device.
 
 Existing saves and preferences remain in the same locations:

@@ -1,9 +1,10 @@
 # Explicit Runtime contents keep local saves, ROMs and research out of packages.
 install(TARGETS earthsiege RUNTIME DESTINATION . COMPONENT Runtime)
 install(FILES README.md THIRD_PARTY.md DESTINATION . COMPONENT Runtime)
-install(FILES docs/MUSIC.md docs/EXPANSION.md docs/VALIDATION.md docs/IMPLEMENTATION.md docs/PLATFORM.md docs/build-release.md
+install(FILES docs/MUSIC.md docs/EXPANSION.md docs/DEMO_REPLAY.md docs/VALIDATION.md docs/IMPLEMENTATION.md docs/PLATFORM.md docs/build-release.md
   DESTINATION docs COMPONENT Runtime)
 install(FILES assets/README.md DESTINATION assets COMPONENT Runtime)
+install(DIRECTORY assets/demo-clocks/ DESTINATION assets/demo-clocks COMPONENT Runtime FILES_MATCHING PATTERN "*.clk")
 install(FILES assets/DATA/KEYJOY.CFG DESTINATION assets/DATA COMPONENT Runtime)
 install(FILES assets/TAPES/DEMO1.TAP assets/TAPES/DEMO2.TAP
   assets/TAPES/DEMO3.TAP assets/TAPES/DEMO4.TAP

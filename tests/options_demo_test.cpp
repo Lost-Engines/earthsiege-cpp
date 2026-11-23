@@ -74,10 +74,28 @@ int main(int argc, char **argv) try {
   for(unsigned demo{argc > 4 ? static_cast<unsigned>(std::stoul(argv[4])) : 1}; demo <= 4; ++demo) {
     demo_playback playback{resources, demo, shell.settings(), temp.path};
     size_t shown{0};
+    uint64_t milliseconds{0};
+    uint64_t stereo_frames{0};
+    bool checked_music_cursor{false};
+    unsigned timed_pans{0};
+    bool const retail_patrol{resources.edition() == earthsiege::game_edition::original && demo == 3};
     while(!playback.done()) {
-      playback.step([&](unsigned, framebuffer const &frame){
-        playback.view().take_audio();
-        playback.view().take_pan_frames();
+      playback.step([&](unsigned period, framebuffer const &frame){
+        milliseconds += period;
+        stereo_frames += playback.view().take_audio().size() / 2;
+        require(stereo_frames == milliseconds * 120 / 1000 * 44100 / 120, "continuous 44.1 kHz audio on the presentation clock");
+        auto pans{playback.view().take_pan_frames()};
+        if(retail_patrol && !pans.empty()) {
+          require(period >= 500, "cockpit pan has audio for its complete VGA scroll");
+          ++timed_pans;
+        }
+        if(retail_patrol && playback.packets_read() == 970) {
+          earthsiege::software_cursor arrow{resources.read("simvol0", "dci/ALERT.DCI")};
+          auto stamped{frame};
+          arrow.draw(stamped, 51, 148);
+          require(stamped.pixels() == frame.pixels(), "DOS music button cursor at 51,148");
+          checked_music_cursor = true;
+        }
         require(frame.pixels().size() == 320 * 200, "demo presents game frames");
         ++shown;
         return full || playback.frames_played() < 3;
@@ -88,6 +106,10 @@ int main(int argc, char **argv) try {
     if(full) {
       require(playback.packets_read() == playback.packet_count(), "complete recording consumed");
       require(playback.frames_played() > 1000, "full demo simulates");
+      if(retail_patrol) {
+        require(checked_music_cursor && timed_pans == 4, "retail patrol music menu and four cockpit pans");
+        require(milliseconds == 4601 + 91923, "DOSBox 60000-cycle lift and tape duration");
+      }
     } else {
       require(playback.frames_played() == 3 && playback.packets_read() < playback.packet_count(), "host input can interrupt playback");
     }

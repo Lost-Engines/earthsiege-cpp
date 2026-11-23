@@ -1164,11 +1164,11 @@ electrical emulation.
 
 Scene drawing only runs after a new simulation frame. Host presentation reuses
 the previous image rather than advancing visual consumers and random state a
-second time. Audio continues while mission dialogs are open. Window focus loss
-still suspends time as a host convenience. The complete rebuild passes all
-226 CTest checks, and a 40-frame headless mission smoke run completes.
-Recorded playback bypasses the live pacing in the original; its integration
-and whole-game parity are still separate work.
+second time. Audio continues during mission dialogs. Losing window focus
+releases held controls while the game and mixer keep running.
+The original bypasses its live frame limiter during recorded playback.
+[Recorded-input demo verification](DEMO_REPLAY.md) describes the two clocks and
+the comparison with 60,000-cycle DOSBox.
 
 ### Recorded input routing
 

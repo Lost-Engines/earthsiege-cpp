@@ -1,4 +1,5 @@
 #pragma once
+#include "render/software_cursor.h"
 #include "shell/mission_alert.h"
 #include "shell/mission_options_dialog.h"
 #include "shell/mission_view.h"
@@ -11,7 +12,12 @@ public:
   using presenter = std::function<bool(unsigned milliseconds, framebuffer const &)>;
 private:
   resource_store const &resources;
+  std::vector<uint16_t> startup_periods;
+  std::vector<uint16_t> packet_periods;
   input_tape tape;
+  software_cursor dialog_cursor;
+  vec2<int32_t> pointer{};
+  size_t startup_index{0};
   mission_view view_;
   preferences settings;
   save_store saves;
@@ -19,17 +25,21 @@ private:
   size_t next{0};
   size_t simulation_frames{0};
   size_t modal_packets{0};
-  uint64_t elapsed_units{0};                                                   // milliseconds * 256, retaining fractional tape periods
+  uint64_t elapsed_ms{0};
+  unsigned pending_ms{0};
+  unsigned nominal_fraction{0};
   uint16_t last_delta{0};
   bool finished{false};
   bool suppressed{false};
-  unsigned advance(uint16_t delta);
-  bool present(presenter const &, unsigned, framebuffer const &);
+  tape_frame const &poll(bool static_dialog = false);
+  void advance_clock(unsigned milliseconds);
+  bool present(presenter const &, framebuffer const &);
   bool alert(int message, presenter const &);
   mission_command_result command(uint16_t, presenter const &);
 public:
   demo_playback(resource_store const &, unsigned demo, preferences const &,
-                std::filesystem::path save_directory, music_settings const &music = {});
+                std::filesystem::path save_directory, music_settings const &music = {},
+                std::filesystem::path const &clock_directory = {});
   mission_view &view() {
     return view_;
   }

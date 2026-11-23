@@ -7,6 +7,7 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
+import zlib
 
 
 def check(archive, run_game=False, window=False):
@@ -42,6 +43,9 @@ def check(archive, run_game=False, window=False):
                      "assets/expansion/README.md", "docs/EXPANSION.md",
                      "earthsiege.exe" if os.name == "nt" else "earthsiege",
                      "scripts/fetch-assets.bat" if os.name == "nt" else "scripts/fetch-assets.sh"]
+        for tape in (game / "assets").rglob("DEMO*.TAP"):
+            checksum = zlib.crc32(tape.read_bytes())
+            required.append(f"assets/demo-clocks/{checksum:08x}.clk")
         for name in required:
             if not (game / name).is_file():
                 raise RuntimeError(f"Missing package file: {name}")

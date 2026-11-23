@@ -179,6 +179,7 @@ void window::draw(framebuffer const &frame, palette const &colours, software_cur
   glEnd();
 }
 void window::present(framebuffer const &frame, palette const &colours, software_cursor const *cursor) {
+  if(glfwGetWindowAttrib(handle.get(), GLFW_ICONIFIED)) return;
   draw(frame, colours, cursor);
   glfwSwapBuffers(handle.get());
 }

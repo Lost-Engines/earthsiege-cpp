@@ -38,6 +38,16 @@ int main() try {
   queue.clear();
   queue.read(output);
   require(output == std::array<int16_t, 8>{}, "clear removes previous scene's audio");
+  earthsiege::pcm_queue buffered{6};
+  buffered.queue(first);
+  buffered.read(output);
+  require(output == std::array<int16_t, 8>{}, "short first block is retained while priming");
+  buffered.queue(second);
+  buffered.read(output);
+  require(output == std::array<int16_t, 8>{-32768, 32767, 2, -2, 3, -3, 0, 0}, "primed stream starts in order");
+  buffered.queue(second);
+  buffered.read(output);
+  require(output == std::array<int16_t, 8>{}, "underrun re-primes instead of alternating audio and silence");
   std::cout << "Viewport and PCM transport checks pass\n";
 } catch(std::exception const &error) {
   std::cerr << error.what() << '\n';

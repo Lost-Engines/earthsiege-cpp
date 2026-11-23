@@ -12,9 +12,12 @@ namespace earthsiege {
 class pcm_queue {
   std::mutex lock;
   std::deque<int16_t> samples;
+  size_t const prebuffer_samples;
+  bool buffering{true};
   bool paused{false};
 
 public:
+  explicit pcm_queue(size_t prebuffer = 0) : prebuffer_samples{prebuffer} {}
   void queue(std::span<int16_t const> input) {
     std::lock_guard guard{lock};
     samples.insert(samples.end(), input.begin(), input.end());
@@ -22,10 +25,12 @@ public:
   void read(std::span<int16_t> output) {
     std::lock_guard guard{lock};
     std::ranges::fill(output, int16_t{});
-    if(paused) return;
+    if(paused || (buffering && samples.size() < prebuffer_samples)) return;
+    buffering = false;
     size_t const count{std::min(output.size(), samples.size())};
     std::copy_n(samples.begin(), count, output.begin());
     samples.erase(samples.begin(), samples.begin() + static_cast<ptrdiff_t>(count));
+    if(count < output.size()) buffering = true;
   }
   void pause(bool value) {
     std::lock_guard guard{lock};
@@ -34,6 +39,7 @@ public:
   void clear() {
     std::lock_guard guard{lock};
     samples.clear();
+    buffering = true;
   }
 };
 

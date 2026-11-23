@@ -261,6 +261,9 @@ public:
     return audio.state();
   }
   std::optional<vec2<int32_t>> take_pointer_warp();
+  size_t pan_frame_count() const {
+    return pan_frames.size();
+  }
   std::vector<framebuffer> take_pan_frames();
   framebuffer const &image() const;
   palette const &colours() const;

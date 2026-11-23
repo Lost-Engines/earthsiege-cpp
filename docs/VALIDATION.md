@@ -32,7 +32,8 @@ flag directly. Each click advances the retained preset and writes the original
 View Demo now launches the recorded-input simulator from the shell. Playback
 owns recorded modal input as well as ordinary frames, and returns to the main
 menu without importing a demo result into a career. The expansion passes its
-selected battleset to the simulator. Live keypresses or clicks end playback.
+selected battleset to the simulator. Escape returns to the menu. Playback
+continues when the user clicks the window or changes focus.
 
 The `--demo N` launcher was checked locally for all eight recordings, rendering
 120 frames and saving a distinct screenshot from each. Invalid numbers and
@@ -57,6 +58,13 @@ limitations.
 The GLFW window was checked locally against the original DOSBox preferences:
 Max displays correctly, all four presets cycle, a demo plays, and Escape returns
 to the main menu.
+
+A scale-5 window ran retail DEMO3 from its first startup update to the menu
+in 96.57 seconds. The 60,000-cycle DOSBox capture measured 96.52 seconds.
+The captured native output contained audio through all four cockpit pans.
+Switching away during playback and clicking back produced the same music-menu
+image as an uninterrupted run. A separate Alt+Tab check also returned the
+same frame after refocusing.
 
 ## Weapon-link shortcut
 
