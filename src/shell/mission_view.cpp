@@ -52,6 +52,13 @@ mission_view::mission_view(resource_store const &resources, std::unique_ptr<miss
     shields{resources, cockpit.layout},
     weapons{resources, cockpit.layout},
     navigation{resources, cockpit.layout},
+    cursors{software_cursor{resources.read("simvol0", "dci/CURSOR.DCI")},
+            software_cursor{resources.read("simvol0", "dci/PCURSOR.DCI")},
+            software_cursor{resources.read("simvol0", "dci/MCURSOR.DCI")},
+            software_cursor{resources.read("simvol0", "dci/NCURSOR.DCI")},
+            software_cursor{resources.read("simvol0", "dci/SCURSOR.DCI")},
+            software_cursor{resources.read("simvol0", "dci/ECURSOR.DCI")},
+            software_cursor{resources.read("simvol0", "dci/WCURSOR.DCI")}},
     waypoints{resources, cockpit.layout},
     clock{resources, cockpit.layout},
     external_artwork{resources},
@@ -220,6 +227,7 @@ void mission_view::consume_pointer_events() {
   if(camera.mode == camera_mode::attached) {
     for(auto const &queued : pointer_events) {
       auto const &event{queued.input};
+      edge_cursor = cockpit_edge_cursor(static_cast<int>(panel), event.mouse.x, event.mouse.y);
       hdd->pointer(event.mouse.x + origin[0], event.mouse.y + origin[1]);
       if(auto const action{instruments.event(event.mouse.x + origin[0], event.mouse.y + origin[1], event.left, event.right, queued.timestamp)}) {
         if(auto const edge{std::ranges::find(edge_controls, action->index)}; edge != edge_controls.end()) {
@@ -336,6 +344,8 @@ void mission_view::set_camera(camera_mode const mode, unsigned previous, bool re
 
 void mission_view::change_cockpit_view(cockpit_view const view) {
   transitions.reset(static_cast<int>(view));
+  secondary_cursor = view != cockpit_view::forward;
+  edge_cursor = 0;
   apply_cockpit_view(view, true);
 }
 void mission_view::apply_cockpit_view(cockpit_view const view, bool reset_input) {
@@ -364,6 +374,11 @@ void mission_view::present_view() {
   present_pending = false;
   auto const state{transitions.snapshot()};
   if(state.prepared) {
+    // 22904 selects the secondary cursor after every horizontal scroll,
+    // even when scrolling back to the forward gunsight.
+    if(state.pending == 0 || state.pending >= 4) secondary_cursor = true;
+    if(state.pending == 1) secondary_cursor = false;
+    edge_cursor = 0;
     for(auto const &position : cockpit_pan_path(state.pending, state.view, cockpit.windows)) {
       auto const page{state.pending < 2 ? state.other_page : state.draw_page};
       framebuffer image;
@@ -957,18 +972,26 @@ void mission_view::draw() {
   }
 }
 
-int mission_view::pointer_cursor(int x, int y) const {
-  if(startup || camera.mode != camera_mode::attached) return -1;
-  if(auto const edge{cockpit_edge_cursor(static_cast<int>(panel), x, y)}) return edge;
-  if(panel == cockpit_view::lower) return hdd->state().cursor ? 2 : 0;
+software_cursor const *mission_view::pointer_cursor(int x, int y) const {
+  if(startup || camera.mode != camera_mode::attached) return nullptr;
+  if(edge_cursor) return &cursors.at(static_cast<size_t>(edge_cursor));
+  if(secondary_cursor) return &cursors[hdd->state().cursor ? 2 : 0];
   auto bounds{cockpit.layout.bounds(0x48c)};
   auto const parent{cockpit.layout.bounds(0x450)};
-  auto const origin{instrument_origin()};
+  auto origin{cockpit.windows[static_cast<size_t>(panel)].instrument_origin};
+  origin[1] += impact.snapshot().displacement;
   bounds.left += parent.left;
   bounds.right += parent.left;
   bounds.top += parent.top;
   bounds.bottom += parent.top;
-  return bounds.contains(x + origin[0], y + origin[1]) ? 1 : 0;
+  return &cursors[bounds.contains(x + origin[0], y + origin[1]) ? 1 : 0];
+}
+bool mission_view::cursor_erase_due(unsigned refresh_ms) const {
+  if(paused) return false;
+  auto const &timer{pacing.state()};
+  auto const remaining{timer.nominal - (timer.maximum - timer.countdown)};
+  auto const ticks_until_refresh{((elapsed_milliseconds * simulation_timer_hz) % 1000 + refresh_ms * simulation_timer_hz) / 1000};
+  return remaining <= static_cast<int>(ticks_until_refresh);
 }
 
 std::optional<vec2<int32_t>> mission_view::take_pointer_warp() {

@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include "vectorstorm/vector/vector2.h"
 #include "resources/cockpit.h"
 
 namespace earthsiege {
@@ -9,7 +10,7 @@ class navigation_instruments {
   rectangle heading_bounds;
   rectangle torso_bounds;
   rectangle pitch_bounds;
-  std::array<int, 2> cross;
+  vec2<int32_t> cross;
   std::vector<bitmap> heading_art;
   std::vector<bitmap> torso_art;
   std::vector<bitmap> pitch_art;
@@ -26,6 +27,9 @@ class navigation_instruments {
 
 public:
   navigation_instruments(resource_store const &resources, cockpit_layout const &layout);
+  vec2<int32_t> const &aiming_centre() const {
+    return cross;
+  }
   void update(int16_t heading, int16_t torso, int16_t pitch, bool disabled = false);
   std::array<int16_t, 2> indicator_angles() const;
   uint16_t display_heading() const;

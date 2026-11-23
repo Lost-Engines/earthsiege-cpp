@@ -9,7 +9,8 @@ namespace earthsiege {
 /// while the host presents frames and can interrupt playback without steering it.
 class demo_playback {
 public:
-  using presenter = std::function<bool(unsigned milliseconds, framebuffer const &)>;
+  // A cockpit page also supplies its saved-under image for the last VGA refresh.
+  using presenter = std::function<bool(unsigned milliseconds, framebuffer const &, framebuffer const *erased)>;
 private:
   resource_store const &resources;
   std::vector<uint16_t> startup_periods;
@@ -17,6 +18,7 @@ private:
   input_tape tape;
   software_cursor dialog_cursor;
   vec2<int32_t> pointer{};
+  vec2<int32_t> last_mouse_event{};
   size_t startup_index{0};
   mission_view view_;
   preferences settings;
@@ -31,10 +33,10 @@ private:
   uint16_t last_delta{0};
   bool finished{false};
   bool suppressed{false};
-  tape_frame const &poll();
+  tape_frame const &poll(bool cursor_visible = true);
   unsigned world_hold(uint64_t poll_time);
   void advance_clock(unsigned milliseconds);
-  bool present(presenter const &, framebuffer const &, unsigned milliseconds);
+  bool present(presenter const &, framebuffer const &, unsigned milliseconds, framebuffer const *erased = nullptr);
   bool alert(int message, presenter const &);
   mission_command_result command(uint16_t, presenter const &);
 public:

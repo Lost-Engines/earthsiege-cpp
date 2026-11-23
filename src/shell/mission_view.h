@@ -13,6 +13,7 @@
 #include "render/presentation_player.h"
 #include "render/scenery_renderer.h"
 #include "render/shield_instruments.h"
+#include "render/software_cursor.h"
 #include "render/weapon_instruments.h"
 #include "resources/cockpit.h"
 #include "resources/input_options.h"
@@ -57,6 +58,9 @@ class mission_view {
   weapon_instruments weapons;
   std::vector<weapon_display> painted_weapon_rows;
   navigation_instruments navigation;
+  std::array<software_cursor, 7> cursors;
+  bool secondary_cursor{false};
+  int edge_cursor{0};
   waypoint_instruments waypoints;
   clock_instrument clock;
   external_view_artwork external_artwork;
@@ -180,8 +184,11 @@ public:
   void key(held_key key, bool pressed, bool alt);
   void command(uint16_t code);
   void mouse_position(int x, int y);
-  /// Original primary/secondary cursor selection; -1 means hidden.
-  int pointer_cursor(int x, int y) const;
+  vec2<int32_t> const &initial_pointer() const {
+    return navigation.aiming_centre();
+  }
+  software_cursor const *pointer_cursor(int x, int y) const;
+  bool cursor_erase_due(unsigned refresh_ms) const;
   void mouse_button(bool right, bool pressed);
   void clear_input();
   void toggle_pause();

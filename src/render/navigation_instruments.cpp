@@ -96,8 +96,8 @@ void navigation_instruments::draw(framebuffer &target, int const offset_x, int c
   target.image(pitch_art.at(0), pitch_bounds.left + offset_x, pitch_bounds.top + offset_y, true);
   int const py{pitch_bounds.top + indicator_position(pitch_indicator, -8000, 8000, pitch_bounds.bottom - pitch_bounds.top)};
   target.image(pitch_art.at(pitch_indicator > -400 && pitch_indicator < 400 ? 2 : 1), pitch_bounds.left + offset_x, py - 7 + offset_y, true);
-  int const x{cross[0] + offset_x};
-  int const y{cross[1] + offset_y};
+  int const x{cross.x + offset_x};
+  int const y{cross.y + offset_y};
   target.line(x + 3, y, x + 6, y, 56);
   target.line(x - 6, y, x - 3, y, 56);
   target.line(x, y - 6, x, y - 3, 56);

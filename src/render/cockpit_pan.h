@@ -4,6 +4,7 @@
 #include "resources/model.h"
 
 namespace earthsiege {
+inline constexpr unsigned vga_refresh_hz{70};
 /// Original 22904 scanout positions, relative to the current drawing page.
 std::vector<vec2<int32_t>> cockpit_pan_path(int action, int view,
     std::array<cockpit_window, 4> const &windows);

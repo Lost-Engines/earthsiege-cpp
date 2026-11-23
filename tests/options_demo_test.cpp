@@ -94,6 +94,7 @@ int main(int argc, char **argv) try {
     bool checked_panel{false};
     unsigned timed_pans{0};
     bool const retail_patrol{resources.edition() == earthsiege::game_edition::original && demo == 3};
+    unsigned const interrupt_frame{retail_patrol ? 481U : 3U};
     std::vector<recording_span> spans;
     if(retail_patrol) {
       // The last span is in the exit dialog. Its mouse moves from tick 9294
@@ -109,15 +110,38 @@ int main(int argc, char **argv) try {
       spans = {{1597, 2186, 9579, 9602}, {629, 3304, 39857, 39875}};
     }
     while(!playback.done()) {
-      playback.step([&](unsigned period, framebuffer const &frame){
+      playback.step([&](unsigned period, framebuffer const &frame, framebuffer const *erased){
         milliseconds += period;
         for(auto &span : spans) span.observe(playback.packets_read(), period);
         if(retail_patrol && playback.packets_read() == 1) {
           require(period == 83, "first patrol frame holds for the ten ticks stored in packet two");
         }
+        if(retail_patrol && (playback.packets_read() == 1 || playback.packets_read() == 60)) {
+          require(erased == &playback.view().image(), "cursor must leave the retained cockpit page clean");
+          auto expected{*erased};
+          earthsiege::software_cursor{resources.read("simvol0", "dci/PCURSOR.DCI")}.draw(expected, 160, 72);
+          require(frame.pixels() == expected.pixels(), "DOS keeps the green diamond until the first side pan");
+        }
+        if(retail_patrol && playback.frames_played() == 301) require(!erased, "external camera hides the cockpit cursor");
+        if(retail_patrol && playback.frames_played() == 481) {
+          require(erased == &playback.view().image(), "forward cockpit supplies the clean phase after a side pan");
+          auto expected{*erased};
+          // Retail DOS frame 480 differs from its saved-under page by this exact 13-pixel plus.
+          for(int i{-3}; i <= 3; ++i) {
+            expected.pixel(160 + i, 72, 60);
+            expected.pixel(160, 72 + i, 60);
+          }
+          require(frame.pixels() == expected.pixels() && frame.pixels() != erased->pixels(), "white DOS cursor over the green gunsight");
+        }
         stereo_frames += playback.view().take_audio().size() / 2;
         require(stereo_frames == milliseconds * 120 / 1000 * 44100 / 120, "continuous 44.1 kHz audio on the presentation clock");
         auto pans{playback.view().take_pan_frames()};
+        if(resources.edition() == earthsiege::game_edition::original && demo == 1 && playback.packets_read() == 1) {
+          require(erased, "retail demo 1 cockpit cursor is visible");
+          auto expected{*erased};
+          earthsiege::software_cursor{resources.read("simvol0", "dci/CURSOR.DCI")}.draw(expected, 192, 144);
+          require(frame.pixels() == expected.pixels(), "first recorded mouse movement takes the cursor off the gunsight");
+        }
         if(retail_patrol && !pans.empty()) {
           require(period >= 500, "cockpit pan has audio for its complete VGA scroll");
           ++timed_pans;
@@ -128,6 +152,12 @@ int main(int argc, char **argv) try {
           arrow.draw(stamped, 51, 148);
           require(stamped.pixels() == frame.pixels(), "DOS music button cursor at 51,148");
           checked_music_cursor = true;
+        }
+        if(retail_patrol && playback.frames_played() == 1021) {
+          require(erased, "cockpit cursor restored after the music dialog");
+          auto expected{*erased};
+          earthsiege::software_cursor{resources.read("simvol0", "dci/CURSOR.DCI")}.draw(expected, 0, 0);
+          require(frame.pixels() == expected.pixels(), "dialog restores the tape's raw mouse position");
         }
         require(frame.pixels().size() == 320 * 200, "demo presents game frames");
         ++shown;
@@ -144,7 +174,7 @@ int main(int argc, char **argv) try {
           require(earthsiege::crc32(rgb) == 0x4f79198a, "Apocalypse crew and lower panel differ from DOS");
           checked_panel = true;
         }
-        return full || playback.frames_played() < 3 || (apocalypse_panel && !checked_panel);
+        return full || playback.frames_played() < interrupt_frame || (apocalypse_panel && !checked_panel);
       });
       require(shown < 20000, "playback terminates");
     }
@@ -155,7 +185,7 @@ int main(int argc, char **argv) try {
       demo_playback uncaptured{resources, demo, shell.settings(), temp.path, {}, temp.path / "no-clocks"};
       recording_span opening{5, 55, 370};
       while(!uncaptured.done()) {
-        uncaptured.step([&](unsigned period, framebuffer const &){
+        uncaptured.step([&](unsigned period, framebuffer const &, framebuffer const *){
           uncaptured.view().take_audio();
           uncaptured.view().take_pan_frames();
           opening.observe(uncaptured.packets_read(), period);
@@ -172,7 +202,7 @@ int main(int argc, char **argv) try {
         require(checked_music_cursor && timed_pans == 4, "retail patrol music menu and four cockpit pans");
       }
     } else {
-      require((apocalypse_panel || playback.frames_played() == 3) && playback.packets_read() < playback.packet_count(), "host input can interrupt playback");
+      require((apocalypse_panel || playback.frames_played() == interrupt_frame) && playback.packets_read() < playback.packet_count(), "host input can interrupt playback");
     }
   }
   require(save_store{temp.path, resources.edition()}.index().entries.empty(), "playback creates no career");

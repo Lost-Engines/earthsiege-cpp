@@ -110,6 +110,21 @@ forward view while the player presses `1` to select a plasma weapon. DOS
 sends number keys to the active cockpit view, so the visible edge of the map
 cannot intercept that selection.
 
+## The cursor over the gunsight
+
+Retail DEMO3 opens with a small green diamond over the gunsight. After the
+pilot looks to the side and back, a white cross flashes between the green
+arms. Moving the mouse in live play separates the two. The arms belong to
+the HUD. The cross is `CURSOR.DCI`, a seven-by-seven sprite with 13 visible
+pixels and its hotspot in the middle.
+
+DOS saves the pixels under the cursor so it can restore them when it flips
+the VGA page. In the cockpit the clean image is visible for about one 70 Hz
+refresh. The cursor then appears on the next page. Its visible time varies
+with the length of the world step. Replay draws the cursor at the recorded
+mouse position, so moving the host mouse while watching a demo leaves it
+on its recorded path.
+
 ## Original comparison
 
 The analysis project runs the unchanged March 1995 expansion executable and TAP

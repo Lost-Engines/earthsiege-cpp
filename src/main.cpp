@@ -190,6 +190,8 @@ auto main(int argc, char *argv[])->int try {
   if(inspect_demo) {
     scene = std::make_unique<earthsiege::mission_view>(resources, *inspect_demo, music_settings);
     scene->configure_input(menu.settings(), menu.device_calibrations());
+    auto const p{scene->initial_pointer()};
+    if(display) display->warp_mouse(p.x, p.y);
     std::cout << "Scene inspection: arrows/keypad walk and turn; I/J/K/M aim; Alt increases aiming speed.\n"
       "Ctrl+Shift+arrows move the inspection camera; add Alt to change distance.\n"
       "Ctrl+F1 cockpit, Ctrl+F2 orbit, Ctrl+F3 free camera; P pauses, Escape returns to menu.\n"
@@ -215,23 +217,14 @@ auto main(int argc, char *argv[])->int try {
       std::cerr << "Joystick input unavailable: " << e.what() << '\n';
     }
   }
-  std::array<earthsiege::software_cursor, 7> mission_cursors{
-    earthsiege::software_cursor{resources.read("simvol0", "dci/CURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0", "dci/PCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0", "dci/MCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0", "dci/NCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0", "dci/SCURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0", "dci/ECURSOR.DCI")},
-    earthsiege::software_cursor{resources.read("simvol0", "dci/WCURSOR.DCI")}};
   earthsiege::software_cursor shell_cursor{resources.read("shell0", "RES32/ARROW.DCI")};
   earthsiege::software_cursor alert_cursor{resources.read("simvol0", "dci/ALERT.DCI")};
   auto const cursor_image{[&]()->earthsiege::software_cursor const* {
     if(alert || options) return &alert_cursor;
     if(!scene) return menu.presentation_active() ? nullptr : &shell_cursor;
-    if(!display) return nullptr;
+    if(!display || scene->cursor_erase_due(1000 / earthsiege::vga_refresh_hz)) return nullptr;
     auto const p{display->pointer_position()};
-    auto const kind{scene->pointer_cursor(p[0], p[1])};
-    return kind < 0 ? nullptr : &mission_cursors.at(static_cast<size_t>(kind));
+    return scene->pointer_cursor(p[0], p[1]);
   }};
   auto applied_preferences{menu.settings().current()};
   bool scene_dirty{scene != nullptr};
@@ -429,6 +422,7 @@ auto main(int argc, char *argv[])->int try {
   // events and the audio clock runs, but the suspended mission frame cannot
   // advance until its response is known.
   auto const run_modal{[&]{
+    auto const saved_mouse{display->pointer_position()};
     while(running && (alert || options)) {
       poll_events();
       update_devices_and_dialogs();
@@ -457,6 +451,7 @@ auto main(int argc, char *argv[])->int try {
       if(frame_limit && frames >= frame_limit) running = false;
       sleep_milliseconds(8);
     }
+    if(running && !leave_mission) display->warp_mouse(saved_mouse[0], saved_mouse[1]);
     return !running || leave_mission;
   }};
   earthsiege::mission_dialog_handlers const dialogs{
@@ -530,21 +525,21 @@ auto main(int argc, char *argv[])->int try {
       }};
       // Keep the window's synchronized swaps. Unsynchronized demo frames can
       // stay black in the Wayland compositor even with a populated back buffer.
-      constexpr unsigned vga_refresh_hz{70};
+      using earthsiege::vga_refresh_hz;
       uint64_t deadline{ticks()};
       uint64_t refresh_due{deadline};
       auto const show_frame{[&](earthsiege::framebuffer const &page){
         display->present(page, playback.view().colours());
         refresh_due = ticks() + 1000 / vga_refresh_hz;
       }};
-      auto const present_demo{[&](unsigned milliseconds, earthsiege::framebuffer const &frame){
+      auto const present_demo{[&](unsigned milliseconds, earthsiege::framebuffer const &frame, earthsiege::framebuffer const *erased){
         auto samples{playback.view().take_audio()};
         if(sound) sound->queue(samples);
         auto pans{playback.view().take_pan_frames()};
         auto const start{deadline};
         deadline += milliseconds;
         if(display) {
-          if(!demo_events()) return false;
+          if(!wait_until(start)) return false;
           for(size_t i{0}; i < pans.size(); ++i) {
             auto const until{std::min(deadline, start + (i + 1) * uint64_t{1000} / vga_refresh_hz)};
             if(ticks() >= until) continue;
@@ -555,6 +550,11 @@ auto main(int argc, char *argv[])->int try {
           // polls, but keep showing the current frame while playback catches up.
           auto const now{ticks()};
           if(now < deadline || now >= refresh_due) show_frame(frame);
+          if(erased && now < deadline) {
+            auto const erase_at{deadline - std::min(milliseconds, 1000 / vga_refresh_hz)};
+            if(!wait_until(erase_at)) return false;
+            if(ticks() < deadline) show_frame(*erased);
+          }
         }
         ++frames;
         if(frame_limit && frames >= frame_limit) {
@@ -565,7 +565,9 @@ auto main(int argc, char *argv[])->int try {
           }
           return false;
         }
-        return !display || wait_until(deadline);
+        // Compute the next page during the clean refresh. Its presentation
+        // waits for the same deadline even if rendering finishes early.
+        return !display || (erased && playback.packets_read() < playback.packet_count()) || wait_until(deadline);
       }};
       while(running && !playback.done()) playback.step(present_demo);
       if(sound) sound->clear();
@@ -580,6 +582,8 @@ auto main(int argc, char *argv[])->int try {
       scene = std::make_unique<earthsiege::mission_view>(resources, menu.launch(), music_settings);
       scene->configure_input(menu.settings(), menu.device_calibrations());
       scene->begin_startup();
+      auto const p{scene->initial_pointer()};
+      if(display) display->warp_mouse(p.x, p.y);
       scene_dirty = !scene->starting();
       applied_preferences = menu.settings().current();
       pending = 0;
@@ -628,7 +632,7 @@ auto main(int argc, char *argv[])->int try {
         uint64_t const start{ticks()};
         for(size_t i{0}; i < pans.size(); ++i) {
           display->present(pans[i], scene->colours());
-          uint64_t const deadline{start + (i + 1) * 1000 / 70};
+          uint64_t const deadline{start + (i + 1) * 1000 / earthsiege::vga_refresh_hz};
           auto tick{ticks()};
           if(tick < deadline) sleep_milliseconds(static_cast<uint32_t>(deadline - tick));
           tick = ticks();

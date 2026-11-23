@@ -130,7 +130,7 @@ int main(int argc, char **argv) try {
     auto const frame{playback.frames_played()};
     bool const startup{playback.view().starting()};
     if(!startup) emit("begin", frame);
-    playback.step([&](unsigned, framebuffer const &){
+    playback.step([&](unsigned, framebuffer const &, framebuffer const *){
       playback.view().take_audio();
       playback.view().take_pan_frames();
       return true;

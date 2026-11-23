@@ -21,7 +21,7 @@ int main(int argc, char **argv) try {
   resource_store resources{argv[1]};
   preferences settings{prefs, true, resources.edition()};
   demo_playback replay{resources, demo, settings, std::filesystem::path{argv[3]} / ("demo" + std::to_string(demo))};
-  auto const present{[&](unsigned, framebuffer const &){
+  auto const present{[&](unsigned, framebuffer const &, framebuffer const *){
     replay.view().take_audio();
     replay.view().take_pan_frames();
     return true;

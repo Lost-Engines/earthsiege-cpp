@@ -73,19 +73,24 @@ demo_playback::demo_playback(resource_store const &r, unsigned demo, preferences
    view_{r, tape, music},
    settings{prefs},
    saves{std::move(save_directory), r.edition()} {
+  pointer = view_.initial_pointer();
   calibrations = load_host_calibrations(saves);
   view_.configure_input(settings, calibrations);
   view_.begin_startup();
 }
-tape_frame const &demo_playback::poll() {
+tape_frame const &demo_playback::poll(bool cursor_visible) {
   auto const index{next++};
   auto const &record{tape.frames[index]};
-  for(auto const &event : record.mouse) pointer = event.position;
+  for(auto const &event : record.mouse) {
+    // 444d0 moves the displayed sprite on a changed position while visible.
+    if(cursor_visible && event.position != last_mouse_event) pointer = event.position;
+    last_mouse_event = event.position;
+  }
   if(!packet_periods.empty()) capture_ms += packet_periods[index];
   return record;
 }
 unsigned demo_playback::world_hold(uint64_t poll_time) {
-  auto const pan_ms{static_cast<unsigned>(view_.pan_frame_count() * 1000 / 70)};
+  auto const pan_ms{static_cast<unsigned>(view_.pan_frame_count() * 1000 / vga_refresh_hz)};
   if(next == tape.frames.size()) return std::max(capture_ms, pan_ms);
   // The writer samples elapsed time before each world update. The interval
   // after this update is therefore in the following primary input packet.
@@ -108,10 +113,10 @@ void demo_playback::advance_clock(unsigned milliseconds) {
   elapsed_ms += milliseconds;
   view_.advance_time(milliseconds);
 }
-bool demo_playback::present(presenter const &show, framebuffer const &frame, unsigned milliseconds) {
+bool demo_playback::present(presenter const &show, framebuffer const &frame, unsigned milliseconds, framebuffer const *erased) {
   capture_ms = 0;
   advance_clock(milliseconds);
-  if(!show(milliseconds, frame)) finished = true;
+  if(!show(milliseconds, frame, erased)) finished = true;
   return !finished;
 }
 bool demo_playback::alert(int message, presenter const &show) {
@@ -152,6 +157,9 @@ bool demo_playback::alert(int message, presenter const &show) {
     present(show, frame, entry_ms + timing.hold(remaining, response.has_value(), capture_ms - entry_ms));
   }
   if(response && dialog.exits_mission(*response)) finished = true;
+  // 460b8 restores the mouse fields saved from the primary input record.
+  // Playback fills its mouse event queue separately and leaves those fields zero.
+  pointer = {};
   return finished;
 }
 mission_command_result demo_playback::command(uint16_t code, presenter const &show) {
@@ -200,11 +208,12 @@ mission_command_result demo_playback::command(uint16_t code, presenter const &sh
     if(auto const warp{options.take_warp()}) pointer = *warp;
     dialog_cursor.draw(frame, pointer.x, pointer.y);
     auto const remaining{std::span{tape.frames}.subspan(next - 1)};
-    auto const fallback{packet_periods.empty() ? 1000 / 70 : capture_ms - entry_ms};
+    auto const fallback{packet_periods.empty() ? 1000 / vga_refresh_hz : capture_ms - entry_ms};
     present(show, frame, entry_ms + timing.hold(remaining, options.done(), fallback));
   }
   view_.apply_preferences(settings);
   view_.end_options();
+  pointer = {};
   return finished ? exit_mission : handled;
 }
 void demo_playback::step(presenter const &show) {
@@ -228,14 +237,14 @@ void demo_playback::step(presenter const &show) {
         milliseconds += tail;
       }
     }
-    if(!show(milliseconds, view_.image())) finished = true;
+    if(!show(milliseconds, view_.image(), nullptr)) finished = true;
     return;
   }
   auto const poll_time{elapsed_ms};
   bool const eof{next == tape.frames.size()};
   tape_frame empty;
   empty.delta = last_delta;
-  auto const &record{eof ? empty : poll()};
+  auto const &record{eof ? empty : poll(view_.view_camera().mode == camera_mode::attached)};
   last_delta = record.delta;
   bool const complete{view_.step_recorded(record, static_cast<uint32_t>(elapsed_ms * 60 / 1000), suppressed,
     {
@@ -245,7 +254,16 @@ void demo_playback::step(presenter const &show) {
   ++simulation_frames;
   if(complete && !finished) {
     view_.draw();
-    present(show, view_.image(), world_hold(poll_time));
+    if(auto warp{view_.take_pointer_warp()}) pointer = *warp;
+    auto const &clean{view_.image()};
+    auto const hold{world_hold(poll_time)};
+    if(auto const *cursor{view_.pointer_cursor(pointer.x, pointer.y)}) {
+      auto marked{clean};
+      cursor->draw(marked, pointer.x, pointer.y);
+      present(show, marked, hold, &clean);
+    } else {
+      present(show, clean, hold);
+    }
   }
   // Original playback performs one zero-input update at EOF, retaining ratio.
   if(eof || !complete) finished = true;
