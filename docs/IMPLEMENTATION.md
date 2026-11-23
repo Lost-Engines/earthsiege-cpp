@@ -1503,14 +1503,32 @@ controller states. Whole-frame pixels, software cursor ownership and full audio
 event timing remain separate integration comparisons.
 
 
+## Apocalypse cockpit and expansion crew
+
+The expansion cockpit constructor at 0x2ff04 loads the button sheet selected
+by GAU +0x680. The Apocalypse uses PBUTTONA for its round map pad, MFD,
+shields, weapons and throttle. The other eight playable layouts use PBUTTONS.
+Both sheets have 64 sprites. The lower map controls also carry a hit shape
+independent of their image dimensions.
+
+Expansion pilot names use the roster slot directly. The three slots sharing
+each portrait still use the same face and speech resources. An occupied crew
+display fills its authored rectangle in the expansion. Retail retains a
+one-pixel border. Empty displays have a one-pixel inset in both editions.
+
+`cockpit_controls` compares 68 views, the selected sheets, and the artwork
+and hit regions of 136 lower buttons with the two DOS executables.
+`expansion_options_demo` checks the lower Apocalypse panel against a DOSBox
+screen capture, including all three callsigns.
+
 ## VGA palette device and upload ownership
 
-The display now separates the CPU palette from the hardware DAC. Original
-88684 reads the DAC mode and, in write mode, emits a zero before setting its
-new colour index. Since normal uploads finish on an RGB boundary, this clears
-the red component of the colour immediately after the preceding range. The
-next upload need not include that colour. This explains the grey-to-teal
-cockpit change after shield updates without changing the stored DPL palette.
+The game keeps a CPU palette. Its VGA upload routine (retail 0x88684,
+expansion 0x8f71c) writes a zero in DAC write mode before setting the new
+index. This clears the next entry's red register. DOSBox updates the displayed
+colour only on the blue write that completes an RGB triplet. A write to red
+alone can change register readback while leaving the F7/F8 button backing
+grey. Older diagnostic PPMs read the DAC registers directly.
 
 palette_device reproduces the original 27f74 palette identity, unioned dirty
 ranges and idle entry-zero upload. All 500 sequential original manager/DAC
@@ -1689,9 +1707,9 @@ weapon selection highlights and smaller scene differences remain under review.
 
 Vertical cockpit pans reuse their existing pages and do not invoke the full
 shield painter. Horizontal preparations and a return from external view do.
-The original VGA upload routine first zeroes the next DAC entry's red component;
-an unnecessary shield upload of entries 80–85 therefore changed entry 86 on the
-following upload. This accounted for most of DEMO4's earlier 4,552-pixel maximum.
+An extra shield upload of entries 80 through 85 cleared the red register of
+entry 86 on the following upload. Older register-based PPM comparisons showed
+this as most of DEMO4's 4,552 differing pixels.
 capture_view_palette.py observes unchanged original camera/draw/present routines
 through 48 controlled transition frames; view-palette.json retains every palette
 upload. The native correction removes that extra upload rather than patching

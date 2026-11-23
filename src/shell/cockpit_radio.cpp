@@ -15,10 +15,10 @@ cockpit_radio::cockpit_radio(resource_store const &source, cockpit_layout const 
   system_erased.resize(static_cast<size_t>((system_bounds.right - system_bounds.left + 1) * (system_bounds.bottom - system_bounds.top + 1)));
   for(size_t slot{0}; slot < portrait_bounds.size(); ++slot) {
     auto b{layout.bounds(0x5ac + slot * 16)};
-    b.left += parent.left + 1;
-    b.right += parent.left - 1;
-    b.top += parent.top + 1;
-    b.bottom += parent.top - 1;
+    b.left += parent.left;
+    b.right += parent.left;
+    b.top += parent.top;
+    b.bottom += parent.top;
     portrait_bounds[slot] = b;
   }
   auto const &world{session.activity_state()};
@@ -27,11 +27,11 @@ cockpit_radio::cockpit_radio(resource_store const &source, cockpit_layout const 
     if(actor == session.player_id()) continue;
     auto const identity{session.pilot_identity(actor)};
     if(!identity || *identity<0 || *identity>= 36) throw std::runtime_error{"wingmate has no valid pilot identity"};
-    auto const pilot{static_cast<size_t>(*identity / 3)};
-    auto const slot{members.size()};
-    auto const b{portrait_bounds[slot]};
-    members.push_back({actor, pilot, b, b, radio_portrait{source, pilot, reduced_detail}, {}, 0, false, {}});
-    auto const voice{static_cast<uint8_t>(pilot / 4 + 1)};
+    auto const roster_slot{static_cast<size_t>(*identity)};
+    auto const portrait{roster_slot / 3};
+    auto const b{labels.paint_bounds(portrait_bounds[members.size()])};
+    members.push_back({actor, portrait, pilot_name_index(roster_slot, source.edition()), b, b, radio_portrait{source, portrait, reduced_detail}, {}, 0, false, {}});
+    auto const voice{static_cast<uint8_t>(portrait / 4 + 1)};
     speakers.push_back({actor, static_cast<uint8_t>(voice == 3 ? 4 : voice), actor == group.members.front()});
     if(members.size() == 3) break;
   }
@@ -80,18 +80,18 @@ void cockpit_radio::advance_portraits(mission_session &session, uint32_t const f
       if(!visible) return;
       if(kind == 0) {
         if(order.dead) {
-          labels.draw_static(cache, p.painted, p.pilot, i, p.noise_frame);
+          labels.draw_static(cache, p.painted, p.name_index, i, p.noise_frame);
           p.noise_frame = (p.noise_frame + 1) % 5;
         } else {
-          labels.draw_idle(cache, p.painted, p.pilot, i, session.instrument_damage(p.actor).armour, herc_status(order.type, order.disabled, order.dead, order.command, order.expansion));
+          labels.draw_idle(cache, p.painted, p.name_index, i, session.instrument_damage(p.actor).armour, herc_status(order.type, order.disabled, order.dead, order.command, order.expansion));
         }
       } else if(kind == 1) {
-        labels.draw_static(cache, p.painted, p.pilot, i, p.noise_frame);
+        labels.draw_static(cache, p.painted, p.name_index, i, p.noise_frame);
         p.noise_frame = (p.noise_frame + 1) % 5;
       } else if(kind == 2) {
         p.portrait.update(static_cast<size_t>(value), random);
         p.portrait.draw(cache, p.painted);
-        labels.draw_name(cache, p.painted, p.pilot, i);
+        labels.draw_name(cache, p.painted, p.name_index, i);
       }
       p.initialized = true;
     }};
@@ -197,7 +197,7 @@ void cockpit_radio::advance_queue(mission_session &session, uint32_t ticks) {
         return;
       }
       auto &p{members[*index]};
-      auto const filename{std::format("snc/P{}_{:02}{:03}.SNC", static_cast<char>('A' + p.pilot), message.event.id, message.flags)};
+      auto const filename{std::format("snc/P{}_{:02}{:03}.SNC", static_cast<char>('A' + p.portrait_index), message.event.id, message.flags)};
       if(!resources.contains("simvol0", filename)) {
         controller.ready();
         controller.cancel();
@@ -216,7 +216,7 @@ void cockpit_radio::advance_queue(mission_session &session, uint32_t ticks) {
     }},
     .show{[&](radio_message const &message){
       text_speaker = speaker_index(message.event.speaker);
-      text = banner.format(text_speaker ? labels.name(members[*text_speaker].pilot) : "XXXX", catalogue.at(message.text).text);
+      text = banner.format(text_speaker ? labels.name(members[*text_speaker].name_index) : "XXXX", catalogue.at(message.text).text);
       return true;
     }},
     .finish{[&](radio_message const&){
@@ -238,12 +238,13 @@ void cockpit_radio::draw(framebuffer &frame) {
   if(visible) {
     auto bounds{portrait_bounds};
     for(auto &b : bounds) {
+      b = b.inset(1);
       b.left -= system_origin_x;
       b.right -= system_origin_x;
       b.top -= system_origin_y;
       b.bottom -= system_origin_y;
     }
-    wingmate_portrait::draw_empty(frame, bounds, (1u << members.size()) - 1);
+    wingmate_portrait::draw_empty(frame, bounds, (1u << members.size()) - 1, resources.edition());
   }
   if(visible) {
     for(auto const &p : members) {

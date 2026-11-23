@@ -43,7 +43,7 @@ size_t next_mfd_range(size_t const current) {
 
 mfd_instruments::mfd_instruments(resource_store const &resources, cockpit_layout const &source)
   : layout{source},
-    buttons{read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA"))},
+    buttons{source.read_buttons(resources)},
     caption{read_font(resources.read("simvol0", "dfn/CPRED.DFN"))},
     button_fonts{read_font(resources.read("simvol0", "dfn/CPON.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPPRESS.DFN")),

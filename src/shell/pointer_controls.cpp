@@ -1,11 +1,13 @@
 #include "pointer_controls.h"
+#include <cstdlib>
 #include <stdexcept>
 
 namespace earthsiege {
 
-size_t pointer_controls::add_button(rectangle const bounds) {
+size_t pointer_controls::add_button(rectangle const bounds, bool const diamond) {
   controls.push_back({
     .bounds{bounds},
+    .diamond{diamond},
     .slider{},
     .painted_thumb{}
   });
@@ -54,7 +56,14 @@ void pointer_controls::reset_input() {
 }
 std::optional<size_t> pointer_controls::hit(int const x, int const y) const {
   for(size_t i{0}; i < controls.size(); ++i) {
-    if(controls[i].face != control_face::disabled && controls[i].bounds.contains(x, y)) return i;
+    auto const &item{controls[i]};
+    if(item.face == control_face::disabled) continue;
+    auto const &b{item.bounds};
+    if(item.diamond) {
+      // DBSIM uses the half-width for both centre coordinates and the radius.
+      int const radius{(b.right - b.left) / 2};
+      if(std::abs(x - b.left - radius) + std::abs(y - b.top - radius) <= radius) return i;
+    } else if(b.contains(x, y)) return i;
   }
   return {};
 }

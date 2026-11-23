@@ -3,7 +3,7 @@
 #include "simulation/instrument_failure.h"
 
 namespace earthsiege {
-void wingmate_portrait::draw_empty(framebuffer &target, std::array<rectangle, 3> const &bounds, unsigned int occupied) {
+void wingmate_portrait::draw_empty(framebuffer &target, std::array<rectangle, 3> const &bounds, unsigned int occupied, game_edition const edition) {
   // Original 3cb90's active-portrait painter leaves a temporary brush pointer
   // in the context. Its next empty fill works, but overwrites that brush with
   // the rectangle, so subsequent empty fills do nothing. Preserve the visible
@@ -16,13 +16,14 @@ void wingmate_portrait::draw_empty(framebuffer &target, std::array<rectangle, 3>
       valid = true;
     } else if(valid) {
       target.fill(bounds[slot], 63);
-      if(temporary) valid = false;
+      if(temporary && edition == game_edition::original) valid = false;
     }
   }
 }
 
 wingmate_portrait::wingmate_portrait(resource_store const &resources)
-  : red{read_font(resources.read("simvol0", "dfn/CPRED.DFN"))},
+  : paint_margin{resources.edition() == game_edition::original ? 1 : 0},
+    red{read_font(resources.read("simvol0", "dfn/CPRED.DFN"))},
     blue{read_font(resources.read("simvol0", "dfn/CPBLUE.DFN"))},
    strings{read_interface_strings(resources.read("simvol0", "str/STRINGS0.STR"))},
    names{read_interface_strings(resources.read("simvol0", "str/PILOTS.STR")).at(0)},
@@ -37,10 +38,10 @@ void wingmate_portrait::label(framebuffer &target, rectangle const b, font const
   target.text(face, text, x, y);
 }
 void wingmate_portrait::draw_name(framebuffer &target, rectangle const portrait, size_t const pilot, size_t const slot) const {
-  auto b{portrait};
-  ++b.left;
-  --b.right;
-  b.top += 3;
+  auto b{portrait.inset(-paint_margin)};
+  b.left += 2;
+  b.right -= 2;
+  b.top += 4;
   b.bottom = b.top + static_cast<int>(red.height);
   label(target, b, red, name(pilot), std::array<uint8_t, 3>{56, 59, 49}.at(slot));
 }
@@ -51,10 +52,8 @@ void wingmate_portrait::draw_idle(framebuffer &target, rectangle const portrait,
   auto const health{instrument_damage_band(static_cast<int16_t>(std::accumulate(armour.begin(), armour.end(), 0) / 19))};
   std::array<std::string_view, 4> const text{strings.at(29).at(0).text, strings.at(24).at(health).text, strings.at(29).at(1).text, strings.at(34).at(static_cast<size_t>(orders)).text};
   for(size_t i{0}; i < text.size(); ++i) {
-    auto b{portrait};
-    --b.left;
-    ++b.right;
-    b.top += 15 + static_cast<int>(i) * 8;
+    auto b{portrait.inset(-paint_margin)};
+    b.top += 16 + static_cast<int>(i) * 8;
     b.bottom = b.top + static_cast<int>(red.height);
     label(target, b, i % 2 ? red : blue, text[i]);
   }

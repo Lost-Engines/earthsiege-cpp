@@ -77,6 +77,8 @@ int main(int argc, char **argv) try {
     uint64_t milliseconds{0};
     uint64_t stereo_frames{0};
     bool checked_music_cursor{false};
+    bool const apocalypse_panel{resources.edition() == earthsiege::game_edition::expansion && demo == 1};
+    bool checked_panel{false};
     unsigned timed_pans{0};
     bool const retail_patrol{resources.edition() == earthsiege::game_edition::original && demo == 3};
     while(!playback.done()) {
@@ -98,11 +100,25 @@ int main(int argc, char **argv) try {
         }
         require(frame.pixels().size() == 320 * 200, "demo presents game frames");
         ++shown;
-        return full || playback.frames_played() < 3;
+        if(apocalypse_panel && shown == 90) {
+          // Native-resolution RGB crop of the DOSBox lower panel, including the F7/F8 buttons and crew.
+          std::vector<uint8_t> rgb;
+          auto const &palette{playback.view().colours().colours};
+          for(int y{124}; y < 193; ++y) {
+            for(int x{29}; x < 294; ++x) {
+              auto colour{palette[frame.pixels()[static_cast<size_t>(y * earthsiege::screen_width + x)]]};
+              for(unsigned shift : {16U, 8U, 0U}) rgb.push_back(static_cast<uint8_t>(colour >> shift));
+            }
+          }
+          require(earthsiege::crc32(rgb) == 0x4f79198a, "Apocalypse crew and lower panel differ from DOS");
+          checked_panel = true;
+        }
+        return full || playback.frames_played() < 3 || (apocalypse_panel && !checked_panel);
       });
       require(shown < 20000, "playback terminates");
     }
     std::cout << "Completed demo " << demo << ": " << playback.frames_played() << " frames, " << playback.modal_packets_read() << " modal packets, " << playback.packets_read() << '/' << playback.packet_count() << std::endl;
+    if(apocalypse_panel) require(checked_panel, "expansion demo shows the lower cockpit");
     if(full) {
       require(playback.packets_read() == playback.packet_count(), "complete recording consumed");
       require(playback.frames_played() > 1000, "full demo simulates");
@@ -111,7 +127,7 @@ int main(int argc, char **argv) try {
         require(milliseconds == 4601 + 91923, "DOSBox 60000-cycle lift and tape duration");
       }
     } else {
-      require(playback.frames_played() == 3 && playback.packets_read() < playback.packet_count(), "host input can interrupt playback");
+      require((apocalypse_panel || playback.frames_played() == 3) && playback.packets_read() < playback.packet_count(), "host input can interrupt playback");
     }
   }
   require(save_store{temp.path, resources.edition()}.index().entries.empty(), "playback creates no career");

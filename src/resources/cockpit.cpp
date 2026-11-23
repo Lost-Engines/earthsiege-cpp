@@ -75,6 +75,12 @@ std::array<int32_t, 2> cockpit_window::projection_centre() const {
 unsigned int cockpit_layout::weapon_count() const {
   return static_cast<unsigned int>(words[4]);
 }
+std::vector<bitmap> cockpit_layout::read_buttons(resource_store const &resources) const {
+  // Expansion DBSIM selects the shared instrument sheet from GAU +0x680.
+  static constexpr std::array sheets{"dba/PBUTTONS.DBA", "dba/PBUTTONA.DBA", "dba/PBUTTONB.DBA", "dba/PBUTTONC.DBA"};
+  auto const index{resources.edition() == game_edition::expansion ? words[0x680 / 4] : 0};
+  return read_bitmaps(resources.read("simvol0", sheets.at(static_cast<size_t>(index))));
+}
 rectangle cockpit_layout::bounds(size_t byte_offset) const {
   if(byte_offset % 4) throw std::invalid_argument{"unaligned cockpit layout field"};
   size_t const i{byte_offset / 4};

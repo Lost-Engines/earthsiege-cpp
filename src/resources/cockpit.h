@@ -27,6 +27,7 @@ struct cockpit_window {
 struct cockpit_layout {
   std::array<int32_t, 425> words;
   unsigned int weapon_count() const;
+  std::vector<bitmap> read_buttons(resource_store const &resources) const;
   rectangle bounds(size_t byte_offset) const;
 };
 

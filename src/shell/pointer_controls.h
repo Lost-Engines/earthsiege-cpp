@@ -24,6 +24,7 @@ public:
   struct control {
     rectangle bounds;
     control_face face{control_face::normal};
+    bool diamond{false};
     std::optional<slider_geometry> slider;
     int boundary{0};
     rectangle painted_thumb;
@@ -41,7 +42,7 @@ private:
   bool double_click{false};
   std::optional<size_t> hit(int x, int y) const;
 public:
-  size_t add_button(rectangle bounds);
+  size_t add_button(rectangle bounds, bool diamond = false);
   size_t add_slider(slider_geometry geometry, int initial_value);
   control const &at(size_t index) const;
   std::optional<size_t> active() const;

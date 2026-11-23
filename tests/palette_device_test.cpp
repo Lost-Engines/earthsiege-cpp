@@ -32,7 +32,11 @@ int main(int argc, char **argv) try {
       display.changed(first, n);
     }
     display.present(p);
-    for(auto const &c : display.colours().dac_colours) {
+    if(display.colours().dac_colours != p.dac_colours) f.fail("displayed palette at step " + std::to_string(i));
+    for(size_t entry{0}; entry < p.dac_colours.size(); ++entry) {
+      if(display.colours().colours[entry] != earthsiege::display_colour(p.dac_colours[entry])) f.fail("displayed RGB");
+    }
+    for(auto const &c : display.dac_registers()) {
       for(auto v : c) {
         if(v != f.integer<uint8_t>()) f.fail("DAC component at step " + std::to_string(i));
       }

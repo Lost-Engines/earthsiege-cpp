@@ -31,6 +31,11 @@ struct player_roster {
   game_edition edition{game_edition::original};
 };
 
+// The expansion gives each of the three roster slots sharing a portrait its own callsign.
+constexpr size_t pilot_name_index(size_t roster_slot, game_edition edition) {
+  return edition == game_edition::expansion ? roster_slot : roster_slot / 3;
+}
+
 player_roster read_player_roster(bytes source, game_edition edition = game_edition::original);
 std::vector<uint8_t> write_player_roster(player_roster const &roster);
 

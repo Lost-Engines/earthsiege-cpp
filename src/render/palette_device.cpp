@@ -13,12 +13,12 @@ void palette_device::changed(unsigned first, unsigned count) {
   }
 }
 void palette_device::upload(palette const &colours, unsigned first, unsigned count) {
-  // 886a7 writes DAC state zero before resetting the write index. Every
-  // preceding upload ends at an RGB boundary, so this clears the next red.
-  displayed.dac_colours[next][0] = 0;
-  displayed.colours[next] = display_colour(displayed.dac_colours[next]);
+  // The game writes one red component before selecting the next range.
+  // DOSBox updates the screen palette only after a complete RGB triplet.
+  registers[next][0] = 0;
   for(unsigned i{first}; i < first + count; ++i) {
-    displayed.dac_colours[i] = colours.dac_colours[i];
+    registers[i] = colours.dac_colours[i];
+    displayed.dac_colours[i] = registers[i];
     displayed.colours[i] = display_colour(displayed.dac_colours[i]);
   }
   next = (first + count) & 255;

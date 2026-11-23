@@ -231,6 +231,7 @@ int main(int argc, char **argv) try {
     diagnostics.open(diagnostic_path / "frames.jsonl");
     if(!diagnostics) throw std::runtime_error{"Cannot open replay diagnostics"};
   }
+  bool const dump_registers{std::getenv("EARTHSIEGE_REPLAY_DAC_READBACK") != nullptr};
   struct raster_frame {
     uint32_t frame;
     uint16_t x;
@@ -239,6 +240,7 @@ int main(int argc, char **argv) try {
     uint16_t height;
     std::vector<uint8_t> rgb;
     std::string_view kind{};
+    bool register_capture;
   };
   std::vector<raster_frame> raster_frames;
   size_t next_raster_frame{0};
@@ -249,14 +251,15 @@ int main(int argc, char **argv) try {
       auto raw_frames{read_file(std::filesystem::path{argv[2]}.parent_path() / ("demo" + std::to_string(demo) + ("_" + std::string{kind} + "_frames.bin")))};
       binary_reader rasters{raw_frames};
       auto signature{rasters.take(8)};
-      if(std::string(signature.begin(), signature.end()) != "ESWPF001") rasters.fail("raster frame format");
+      std::string const format(signature.begin(), signature.end());
+      // The first DOSBox observer expanded the readable DAC registers to RGB.
+      if(format != "ESWPF001" && format != "ESWPF002") rasters.fail("raster frame format");
       auto const n{rasters.integer<uint32_t>()};
       for(uint32_t i{0}; i < n; ++i) {
-        raster_frame value{rasters.integer<uint32_t>(), rasters.integer<uint16_t>(), rasters.integer<uint16_t>(), rasters.integer<uint16_t>(), rasters.integer<uint16_t>(), {}, kind};
+        raster_frame value{rasters.integer<uint32_t>(), rasters.integer<uint16_t>(), rasters.integer<uint16_t>(), rasters.integer<uint16_t>(), rasters.integer<uint16_t>(), {}, kind, format == "ESWPF001"};
         if(value.x + value.width > screen_width || value.y + value.height > screen_height) rasters.fail("raster frame bounds");
         auto rgb{rasters.take(size_t{value.width} * value.height * 3)};
         value.rgb.assign(rgb.begin(), rgb.end());
-        value.kind = kind;
         if(kind == "scene") {
           ++scene_frames;
         } else if(kind == "instrument") ++instrument_frames;
@@ -318,7 +321,7 @@ int main(int argc, char **argv) try {
         for(unsigned y{0}; y < expected.height; ++y) {
           for(unsigned x{0}; x < expected.width; ++x) {
             auto const index{view.image().pixels()[(expected.y + y) * screen_width + expected.x + x]};
-            auto const colour{view.colours().colours[index]};
+            auto const colour{expected.register_capture ? earthsiege::display_colour(view.dac_registers()[index]) : view.colours().colours[index]};
             for(auto shift : {16, 8, 0}) {
               if(static_cast<uint8_t>(colour >> shift) != expected.rgb[byte++]) {
                 throw std::runtime_error{"Original " + std::string{expected.kind} + " raster differs at frame " + std::to_string(frame - 1) +
@@ -380,12 +383,17 @@ int main(int argc, char **argv) try {
         std::ostringstream name;
         name << "frame-" << std::setw(5) << std::setfill('0') << frame - 1 << ".ppm";
         auto path{diagnostic_path / name.str()};
-        view.image().save(path, view.colours());
+        auto palette{view.colours()};
+        if(dump_registers) {
+          palette.dac_colours = view.dac_registers();
+          for(size_t i{0}; i < palette.colours.size(); ++i) palette.colours[i] = earthsiege::display_colour(palette.dac_colours[i]);
+        }
+        view.image().save(path, palette);
         auto const pixels{view.image().pixels()};
         std::ofstream raster{path.replace_extension(".bin"), std::ios::binary};
         raster.write(reinterpret_cast<char const *>(pixels.data()), static_cast<std::streamsize>(pixels.size()));
         std::ofstream pal{path.replace_extension(".pal"), std::ios::binary};
-        for(auto const &c : view.colours().dac_colours) pal.write(reinterpret_cast<char const *>(c.data()), 3);
+        for(auto const &c : palette.dac_colours) pal.write(reinterpret_cast<char const *>(c.data()), 3);
       }
     }
     if(has_camera) {

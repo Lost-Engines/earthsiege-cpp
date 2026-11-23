@@ -267,6 +267,9 @@ public:
   std::vector<framebuffer> take_pan_frames();
   framebuffer const &image() const;
   palette const &colours() const;
+  auto const &dac_registers() const {
+    return display_device.dac_registers();
+  }
 };
 
 } // namespace earthsiege

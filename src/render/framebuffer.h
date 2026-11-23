@@ -20,6 +20,9 @@ struct rectangle {
   int right{0};
   int bottom{0};
   auto contains(int x, int y) const->bool;
+  rectangle inset(int margin) const {
+    return {left + margin, top + margin, right - margin, bottom - margin};
+  }
 };
 
 struct scanline_span {

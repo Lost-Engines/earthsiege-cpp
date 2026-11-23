@@ -39,7 +39,7 @@ shield_instruments::shield_instruments(resource_store const &resources, cockpit_
   }};
   buttons = {absolute(0x278), absolute(0x288)};
   labels = {absolute(0x298), absolute(0x2a8)};
-  auto const bank{read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA"))};
+  auto const bank{layout.read_buttons(resources)};
   for(size_t i{0}; i < faces.size(); ++i) faces[i] = bank.at(58 + i);
 }
 

@@ -30,11 +30,14 @@ cockpit_hdd::cockpit_hdd(resource_store const &r, cockpit_layout const &layout, 
    controller{r.edition() == game_edition::expansion},
    map_state{session.tactical_state(0)},
    wingmates{session.wingmate_ids()},
- button_art{read_bitmaps(r.read("simvol0", "dba/PBUTTONS.DBA"))},
+ button_art{layout.read_buttons(r)},
  fonts{read_font(r.read("simvol0", "dfn/CPGREEN.DFN")), read_font(r.read("simvol0", "dfn/CPYLW.DFN")), read_font(r.read("simvol0", "dfn/CPRED.DFN")), read_font(r.read("simvol0", "dfn/CPBLUE.DFN"))},
  strings{read_interface_strings(r.read("simvol0", "str/STRINGS0.STR"))} {
   auto const pilots{read_interface_strings(r.read("simvol0", "str/PILOTS.STR")).at(0)};
-  for(size_t i{0}; i < wingmates.size(); ++i) pilot_names[i] = pilots.at(static_cast<size_t>(session.pilot_identity(wingmates[i]).value() / 3)).text;
+  for(size_t i{0}; i < wingmates.size(); ++i) {
+    auto const slot{static_cast<size_t>(session.pilot_identity(wingmates[i]).value())};
+    pilot_names[i] = pilots.at(pilot_name_index(slot, r.edition())).text;
+  }
   auto const parent{layout.bounds(0x4bc)};
   auto const rect{[&](size_t offset){return translate(layout.bounds(offset), parent.left, parent.top);}};
   bounds = rect(0x4cc);
@@ -46,7 +49,8 @@ cockpit_hdd::cockpit_hdd(resource_store const &r, cockpit_layout const &layout, 
   direction_art = layout.words[0x62c / 4];
   for(size_t i{0}; i < buttons.size(); ++i) {
     buttons[i] = rect(0x50c + i * 16);
-    button_ids[i] = input.add_button(buttons[i]);
+    bool const diamond{direction_art == 35 && i >= 2 && i < 6};
+    button_ids[i] = input.add_button(buttons[i], diamond);
   }
   selection_style = layout.words[0x634 / 4];
   for(size_t i{0}; i < selection_lights.size(); ++i) selection_lights[i] = rect(0x5fc + i * 16);

@@ -704,6 +704,17 @@ All seven state fields, including both page indices, are compared.
   also drives all six transitions through mission_view.
 
 
+`cockpit_controls.bin` (ESCPAD01) contains four indexed panel CRCs and the
+selected button-sheet CRC per playable chassis, followed by eight lower-panel
+button records. Each record contains the rectangle, the sprite chosen for
+each state and a CRC of the original hit-test results across and around it.
+Run `tools/capture_cockpit_layouts.py OUTPUT` in earthsiege-reverse to capture
+the eight retail and nine expansion layouts. The original readers, view
+selectors, button constructors, painters and hit tests run on the DOS images.
+The separate expansion demo 1 RGB reference in `options_demo_test.cpp`
+covers a 265 by 69 pixel rectangle starting at (29, 124) in a DOSBox screen
+capture.
+
 `palette_device.bin` (ESDAC001): 500 sequential executions of the unchanged
 27e98/27f74 palette manager and 88684 VGA upload from the CD executable.
 `tools/capture_palette_device.py` in earthsiege-reverse supplies palette edits,
@@ -759,7 +770,10 @@ fixture; the JSON retains their locations and both original and safe CRCs.
 demo1_weapon_frames.bin through demo4_weapon_frames.bin (ESWPF001) contain
 584 original weapon-name rectangles from stable forward-view frames, captured
 by export_replay_weapon_frames.py. Original widget objects supply the positions;
-each record has a frame, x/y/width/height and RGB pixels. Eight regions near the
+each record has a frame, x/y/width/height and RGB pixels. ESWPF001 retains
+colours from the DOSBox DAC registers. ESWPF002 identifies captures made from
+its displayed palette. The replay audit checks the corresponding palette in
+each case. Eight regions near the
 observed original software pointer are excluded, independently of native output.
 The checks cover paint-before-exchange timing rather than only widget setters.
 

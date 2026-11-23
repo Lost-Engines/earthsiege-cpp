@@ -37,7 +37,7 @@ weapon_instruments::weapon_instruments(resource_store const &resources, cockpit_
     header_cache(source.weapon_count()),
     expanded_label(source.weapon_count()),
     layout{source},
-    buttons{read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA"))},
+    buttons{source.read_buttons(resources)},
     number_fonts{read_font(resources.read("simvol0", "dfn/CPON.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPPRESS.DFN")),
                  read_font(resources.read("simvol0", "dfn/CPOFF.DFN"))},

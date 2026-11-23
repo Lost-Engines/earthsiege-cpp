@@ -46,7 +46,8 @@ class cockpit_radio {
   wingmate_portrait labels;
   struct member {
     size_t actor;
-    size_t pilot;
+    size_t portrait_index;
+    size_t name_index;
     rectangle bounds;
     rectangle painted;
     radio_portrait portrait;
@@ -83,7 +84,7 @@ public:
     return system_controller.state();
   }
   std::string pilot_name(int identity) const {
-    return identity >= 0 && identity < 36 ? labels.name(static_cast<size_t>(identity / 3)) : "????";
+    return identity >= 0 && identity < 36 ? labels.name(pilot_name_index(static_cast<size_t>(identity), resources.edition())) : "????";
   }
   void captions(bool enabled) {
     text_enabled = enabled;

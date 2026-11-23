@@ -125,7 +125,7 @@ throttle_gauge::throttle_gauge(resource_store const &resources, cockpit_layout c
   auto const images{read_bitmaps(resources.read("simvol0", "dba/THR_LED" + std::to_string(kind) + ".DBA"))};
   if(images.size() != lamps.size()) throw std::runtime_error{"unexpected throttle lamp bank"};
   std::ranges::copy(images, lamps.begin());
-  thumb = read_bitmaps(resources.read("simvol0", "dba/PBUTTONS.DBA")).at(static_cast<size_t>(layout.words[0x42c / 4]));
+  thumb = layout.read_buttons(resources).at(static_cast<size_t>(layout.words[0x42c / 4]));
   // The horizontal widget reserves twelve pixels even though its button bitmap
   // is wider. This is an explicit native slider setting, not the sprite width.
   thumb_extent = vertical ? static_cast<int>(thumb.height) : 12;
