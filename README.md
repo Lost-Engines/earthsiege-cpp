@@ -1,6 +1,8 @@
 # Earthsiege C++
 
-*Metaltech: Earthsiege* is a 1994 mech simulator by Dynamix. You pilot an armoured walker called a HERC, lead your squad against the Cybrids and salvage parts to get your machines ready for the next mission. This version recreates the DOS game and its expansion for modern computers.
+*Metaltech: Earthsiege* is a 1994 mech simulator by Dynamix. You pilot an armoured walker called a HERC, lead your squad against the Cybrids and salvage parts to get your machines ready for the next mission.
+
+We reverse engineered the DOS game and its expansion to create this reference implementation for academic study. If you're here to play Earthsiege, we recommend [Earthsiege Redux](https://github.com/Lost-Engines/earthsiege-redux).
 
 ## Playing the game
 
