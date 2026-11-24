@@ -86,7 +86,9 @@ std::span<light const> effect_lighting::select(vec3<int32_t> const &object, int3
       auto const weight{std::min(255, wrap_long(static_cast<int64_t>(entry.scale) * 256) / denominator)};
       value = light{
         .kind{light_kind::directional},
-        .intensity{wrap_long(static_cast<int64_t>(intensity) * weight) >> 8}
+        .intensity{wrap_long(static_cast<int64_t>(intensity) * weight) >> 8},
+        .position{},
+        .direction{}
       };
       for(unsigned int axis{0}; axis != 3; ++axis) value.direction[axis] = wrap_word(wrap_long(static_cast<int64_t>(delta[axis]) * model_normal_one) / distance);
     }

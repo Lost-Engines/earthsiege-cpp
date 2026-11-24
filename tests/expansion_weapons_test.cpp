@@ -59,6 +59,7 @@ int main(int argc, char **argv) try {
   auto const models{read_model(resources.read("simvol0", "dts/MECHWPNS.DTS"))};
   weapon_mount mount{
     .orientation{4},
+    .position{},
     .equipment_slot{0}
   };
   for(int16_t id{0}; id < 22; ++id) {

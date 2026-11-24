@@ -67,8 +67,8 @@ ground_catalogue::ground_catalogue(resource_store const &resources)
   collisions.require_end();
   if(resources.edition() == game_edition::expansion) {
     binary_reader w{resources.read("simvol0", "dat/lc_wpns.dat")};
-    auto count{w.integer<uint16_t>()};
-    for(unsigned i{0}; i < count; ++i) landing_weapons_.push_back({w.integer<int16_t>(), w.integer<int16_t>(), w.integer<int32_t>(), {w.integer<int32_t>(), w.integer<int32_t>(), w.integer<int32_t>()}, w.integer<int16_t>()});
+    auto const weapon_count{w.integer<uint16_t>()};
+    for(unsigned i{0}; i < weapon_count; ++i) landing_weapons_.push_back({w.integer<int16_t>(), w.integer<int16_t>(), w.integer<int32_t>(), {w.integer<int32_t>(), w.integer<int32_t>(), w.integer<int32_t>()}, w.integer<int16_t>()});
     w.require_end();
     if(landing_weapons_.size() != 3) throw std::runtime_error{"landing craft requires three weapon definitions"};
   }

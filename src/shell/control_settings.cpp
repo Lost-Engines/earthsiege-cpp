@@ -25,7 +25,7 @@ void control_settings_state::apply() {
   for(size_t i{7}; i <= 11; ++i) persisted_[i] = prefs.current()[i];
 }
 control_setting_action control_settings_state::activate(unsigned button, bool reverse, bool joystick_button) {
-  auto cycle{[&](size_t index, unsigned count){
+  auto cycle{[&](size_t index, int count){
     auto v{prefs.current()[index]};
     v = static_cast<uint8_t>(reverse ? (v ? v - 1 : count - 1) : (v + 1 == count ? 0 : v + 1));
     prefs.set(index, v);

@@ -96,15 +96,15 @@ weapon_instruments::row_layout weapon_instruments::geometry(unsigned int const s
   auto name{header};
   if(mirrored) name.right = lamp.left - 2;
   else name.left = lamp.right + 2;
-  auto offline{parent};
+  auto offline_bounds{parent};
   if(mirrored) {
-    offline.right = name.right;
-    offline.bottom = name.bottom;
+    offline_bounds.right = name.right;
+    offline_bounds.bottom = name.bottom;
   } else {
-    offline.left = expansion ? name.left : button.left;
-    offline.top = header.top;
+    offline_bounds.left = expansion ? name.left : button.left;
+    offline_bounds.top = header.top;
   }
-  return {button, number, lamp, name, offline, child(0x20)};
+  return {button, number, lamp, name, offline_bounds, child(0x20)};
 }
 rectangle weapon_instruments::button_bounds(unsigned int const slot, weapon_instrument_kind const kind) const {
   return geometry(slot, kind).button;

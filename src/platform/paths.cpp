@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 #ifdef _WIN32
-#define NOMINMAX
+#ifndef NOMINMAX
+#define NOMINMAX 1
+#endif // NOMINMAX
 #include <windows.h>
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>

@@ -20,6 +20,7 @@ auto read_input_tape(bytes source, game_edition const edition)->input_tape {
       .delta{file.integer<uint16_t>()},
       .buttons{file.integer<uint16_t>()},
       .mouse{},
+      .commands{},
     };
     if(edition == game_edition::expansion) frame.extended_buttons = file.integer<uint16_t>();
     auto const count{file.integer<uint32_t>()};

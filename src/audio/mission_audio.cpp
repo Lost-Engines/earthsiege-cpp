@@ -89,8 +89,9 @@ void mission_audio::engine(bool const external_view) {
 void mission_audio::battle_set(bool expansion) {
   // Expansion DBSIM 5435c changes the digit at offset 10 in the song paths.
   if(expansion == expansion_music) return;
+  int const track_offset{expansion ? 3 : -3};
   for(auto &song : songs) {
-    if(song.size() > 10) song[10] += expansion ? 3 : -3;
+    if(song.size() > 10) song[10] = static_cast<char>(song[10] + track_offset);
   }
   expansion_music = expansion;
 }
