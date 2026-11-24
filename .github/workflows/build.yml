@@ -122,6 +122,10 @@ jobs:
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install gcc@16
           gcc_prefix="$(brew --prefix gcc@16)"
+          binutils_bin="$(brew --prefix binutils)/bin"
+          export PATH="$binutils_bin:$PATH"
+          printf '.section .rodata\n.base64 "AA=="\n' | "$gcc_prefix/bin/gcc-16" -x assembler -c -o /dev/null -
+          echo "$binutils_bin" >> "$GITHUB_PATH"
           echo "CC=$gcc_prefix/bin/gcc-16" >> "$GITHUB_ENV"
           echo "CXX=$gcc_prefix/bin/g++-16" >> "$GITHUB_ENV"
 
