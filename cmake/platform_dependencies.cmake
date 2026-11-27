@@ -28,6 +28,25 @@ if(NOT TARGET glfw)
 endif()
 
 include(FetchContent)
+if(EARTHSIEGE_STATIC_RUNTIME)
+  set(Boost_USE_STATIC_LIBS ON)
+endif()
+# Homebrew's Boost uses libc++. A macOS GCC build needs a libstdc++ copy.
+if(NOT (APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR Boost_ROOT OR Boost_DIR)
+  find_package(Boost CONFIG QUIET COMPONENTS program_options)
+endif()
+if(NOT TARGET Boost::program_options)
+  block()
+    set(BOOST_INCLUDE_LIBRARIES program_options)
+    set(BUILD_SHARED_LIBS OFF)
+    FetchContent_Declare(boost SYSTEM EXCLUDE_FROM_ALL
+      URL https://github.com/boostorg/boost/releases/download/boost-1.90.0/boost-1.90.0-cmake.tar.xz
+      URL_HASH SHA256=aca59f889f0f32028ad88ba6764582b63c916ce5f77b31289ad19421a96c555f
+    )
+    FetchContent_MakeAvailable(boost)
+  endblock()
+endif()
+
 find_package(Threads REQUIRED)
 FetchContent_Declare(miniaudio
   URL https://codeload.github.com/mackron/miniaudio/tar.gz/f40cf03f80cdb7e741d43e53b7e706e8c1394bcf

@@ -10,7 +10,7 @@ Earthsiege and its expansion are bundled in the [Windows, Linux and Apple Silico
 
 ## Building from source
 
-You need Git, CMake 3.30 or newer, Ninja and a C++26 compiler such as GCC 16. The checkout includes the game data. CMake downloads GLFW and the audio libraries the first time you configure it.
+You need Git, CMake 3.30 or newer, Ninja and a C++26 compiler such as GCC 16. The checkout includes the game data. CMake downloads GLFW and the audio libraries the first time you configure it. It looks for Boost.Program_options and builds it from source if needed.
 
 <details>
 <summary>Platform prerequisites</summary>
@@ -47,6 +47,8 @@ Sound Blaster music works immediately. To use Roland music, run the fetch-assets
 The game finds the default ROM location automatically. Press **Ctrl+Shift+M** to choose a music device. To keep the ROMs elsewhere, give the script a destination folder and pass that folder to the game with `--rom-dir PATH`.
 
 ## Command-line options
+
+Options with values accept either spelling, for example `--music opl3` or `--music=opl3`. If you repeat an option, the last value wins.
 
 | Option | What it does |
 | --- | --- |

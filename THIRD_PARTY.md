@@ -5,6 +5,7 @@ have separate ownership and are not covered by the code licence.
 
 | Component | Source and revision | Licence |
 |---|---|---|
+| Boost.Program_options | System package or [Boost 1.90.0](https://github.com/boostorg/boost/releases/tag/boost-1.90.0). | Boost Software License 1.0. |
 | Nuked OPL3 | Vendored in `third_party/nuked-opl3`, by Alexey Khokholov (Nuke.YKT). | LGPL-2.1-or-later; notice and licence retained with the source. |
 | Munt / libmt32emu | [munt/munt](https://github.com/munt/munt), `5ee078a761d35cdd3d27000b551c12d11df6a60b`. Dean Beeler, Jerome Fisher, Sergey V. Mikayev and contributors. | LGPL-2.1-or-later. |
 | Nuked-SC55 | [jcmoyer/Nuked-SC55](https://github.com/jcmoyer/Nuked-SC55), `f3464753f64a7da5f5fd3a96fd72197628369589`. Alexey Khokholov, J. C. Moyer and contributors. | GPL-2.0-or-later. |

@@ -24,7 +24,7 @@ def check(archive, run_game=False, window=False):
             "README.md", "THIRD_PARTY.md", "docs/MUSIC.md", "docs/build-release.md",
             "assets/DATA/KEYJOY.CFG", "scripts/roms.txt",
             "third_party/licenses/GLFW-zlib.txt", "third_party/licenses/miniaudio.txt", "third_party/nuked-opl3/LICENSE",
-            "third_party/licenses/Munt-LGPL-2.1.txt",
+            "third_party/licenses/Boost-1.0.txt", "third_party/licenses/Munt-LGPL-2.1.txt",
             "third_party/licenses/Munt-GPL-2.0.txt",
             "third_party/licenses/Nuked-SC55-GPL-2.0.txt",
             "third_party/licenses/TinySoundFont-MIT.txt",

@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <charconv>
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
@@ -9,9 +8,9 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <thread>
 #include <GLFW/glfw3.h>
+#include "command_line.h"
 #include "platform/audio_output.h"
 #include "platform/joystick_devices.h"
 #include "platform/keyboard.h"
@@ -35,110 +34,24 @@ void sleep_milliseconds(uint64_t milliseconds) {
   std::this_thread::sleep_for(std::chrono::milliseconds{milliseconds});
 }
 
-auto integer_option(std::string_view text)->unsigned int {
-  unsigned int result{0};
-  auto const [end, error]{std::from_chars(text.data(), text.data() + text.size(), result)};
-  if(error != std::errc{} || end != text.data() + text.size()) throw std::runtime_error{"invalid integer option: " + std::string{text}};
-  return result;
-}
-
-
 } // anonymous namespace
 
 auto main(int argc, char *argv[])->int try {
-  auto const bundled_data{earthsiege::resource_store::locate(earthsiege::executable_path(argv[0]))};
-  std::filesystem::path data_dir{bundled_data};
-  std::filesystem::path screenshot;
-  std::filesystem::path save_directory;
-  bool list{false};
-  bool headless{false};
-  bool skip_intro{false};
-  bool audio_setup{false};
-  bool explicit_data{false};
-  std::optional<earthsiege::game_edition> requested_edition;
-  std::optional<earthsiege::music_device> requested_music;
-  std::optional<std::filesystem::path> requested_roms;
-  std::optional<std::filesystem::path> requested_soundfont;
-  unsigned int scale{0};
-  std::optional<unsigned int> inspect_demo;
-  std::optional<unsigned int> requested_demo;
-  unsigned int frame_limit{0};
-  for(int index{1}; index < argc; ++index) {
-    std::string_view const argument{argv[index]};
-    if(argument == "--help") {
-      std::cout << "Earthsiege C++\nUsage: earthsiege [options]\n"
-        "  --data-dir PATH       Original game data (default: bundled assets)\n"
-        "  --original            Start the original game directly\n"
-        "  --expansion           Start the expansion directly\n"
-        "  --save-dir PATH       Override the separate user save directory\n"
-        "  --demo N              Play recording 1-4 immediately (default: original game)\n"
-        "  --inspect-demo N      Inspect demo 1-4 terrain and player roster (not replay)\n"
-        "  --music NAME          opl2, opl3, sc55, scc1a, mt32, mt32-mpu, soundfont\n"
-        "  --rom-dir PATH        Override automatic Roland ROM discovery\n"
-        "  --soundfont PATH      SoundFont for the General MIDI music option\n"
-        "  --audio-setup         Open the saved music-device selector\n"
-        "  --scale N             Integer window scale (default: largest fit)\n"
-        "  --screenshot PATH     Save an unscaled PPM frame\n"
-        "  --frames N            Exit after N frames\n"
-        "  --skip-intro          Skip opening and pilot-death cinematics (original -a)\n"
-        "  --headless            Render a frame without creating a window\n"
-        "  --list-resources      Print all original resource sizes and CRCs\n";
-      return EXIT_SUCCESS;
-    }
-    if(argument == "--data-dir" && index + 1 < argc) {
-      data_dir = argv[++index];
-      explicit_data = true;
-    } else if(argument == "--original") {
-      requested_edition = earthsiege::game_edition::original;
-    } else if(argument == "--expansion") {
-      requested_edition = earthsiege::game_edition::expansion;
-    } else if(argument == "--save-dir" && index + 1 < argc) {
-      save_directory = argv[++index];
-    } else if(argument == "--screenshot" && index + 1 < argc) {
-      screenshot = argv[++index];
-    } else if(argument == "--demo" && index + 1 < argc) {
-      requested_demo = integer_option(argv[++index]);
-    } else if(argument.starts_with("--demo=")) {
-      requested_demo = integer_option(argument.substr(7));
-    } else if(argument == "--inspect-demo" && index + 1 < argc) {
-      inspect_demo = integer_option(argv[++index]);
-    } else if(argument == "--audio-setup") {
-      audio_setup = true;
-    } else if(argument == "--music" && index + 1 < argc) {
-      requested_music = earthsiege::parse_music_device(argv[++index]);
-    } else if(argument.starts_with("--music=")) {
-      requested_music = earthsiege::parse_music_device(argument.substr(8));
-    } else if(argument == "--rom-dir" && index + 1 < argc) {
-      requested_roms = argv[++index];
-    } else if(argument.starts_with("--rom-dir=")) {
-      requested_roms = argument.substr(10);
-    } else if(argument == "--soundfont" && index + 1 < argc) {
-      requested_soundfont = argv[++index];
-    } else if(argument.starts_with("--soundfont=")) {
-      requested_soundfont = argument.substr(12);
-    } else if(argument == "--scale" && index + 1 < argc) {
-      scale = integer_option(argv[++index]);
-    } else if(argument == "--frames" && index + 1 < argc) {
-      frame_limit = integer_option(argv[++index]);
-    } else if(argument == "--skip-intro") {
-      skip_intro = true;
-    } else if(argument == "--headless") {
-      headless = true;
-    } else if(argument == "--list-resources") {
-      list = true;
-    } else {
-      throw std::runtime_error{"unknown or incomplete option: " + std::string{argument}};
-    }
-  }
-  if(requested_demo && (*requested_demo < 1 || *requested_demo > 4)) {
-    throw std::runtime_error{"--demo must be between 1 and 4"};
-  }
-  if(requested_demo && inspect_demo) {
-    throw std::runtime_error{"--demo and --inspect-demo cannot be used together"};
-  }
+  auto const launch{earthsiege::parse_command_line(argc, argv, std::cout)};
+  if(!launch) return EXIT_SUCCESS;
+
+  auto const program{earthsiege::executable_path(argv[0])};
+  auto const bundled_data{earthsiege::resource_store::locate(program)};
+  auto data_dir{launch->data_dir.value_or(bundled_data)};
+  auto save_directory{launch->save_dir};
+  auto requested_edition{launch->edition};
+  auto requested_demo{launch->demo};
+  auto inspect_demo{launch->inspect_demo};
+  unsigned int frame_limit{launch->frame_limit};
+  auto screenshot{launch->screenshot};
   std::unique_ptr<earthsiege::window> display;
-  if(!headless && !list) display = std::make_unique<earthsiege::window>(scale);
-  if(display && !explicit_data && !requested_edition && !inspect_demo && !requested_demo && std::filesystem::is_directory(data_dir / "expansion")) {
+  if(!launch->headless && !launch->list_resources) display = std::make_unique<earthsiege::window>(launch->scale);
+  if(display && !launch->data_dir && !requested_edition && !inspect_demo && !requested_demo && std::filesystem::is_directory(data_dir / "expansion")) {
     earthsiege::resource_store original{data_dir};
     requested_edition = earthsiege::choose_game_edition(*display, original);
     if(!requested_edition) return EXIT_SUCCESS;
@@ -147,7 +60,7 @@ auto main(int argc, char *argv[])->int try {
   earthsiege::resource_store const resources{data_dir};
   if(requested_edition && resources.edition() != *requested_edition) throw std::runtime_error{"selected game edition is unavailable in " + data_dir.string()};
   if(display && resources.edition() == earthsiege::game_edition::expansion) glfwSetWindowTitle(display->get(), "Earthsiege Expansion C++");
-  if(list) {
+  if(launch->list_resources) {
     for(auto const &[volume, archive] : resources.archives()) {
       for(auto const &[name, entry] : archive.entries()) {
         std::cout << volume << ':' << name << '\t' << entry.size << '\t' << std::hex << std::setw(8) << std::setfill('0') << earthsiege::crc32(archive.read(entry)) << std::dec << '\n';
@@ -159,15 +72,15 @@ auto main(int argc, char *argv[])->int try {
     save_directory = earthsiege::user_save_directory();
     if(resources.edition() == earthsiege::game_edition::expansion) save_directory /= "expansion";
   }
-  if(headless && !frame_limit) frame_limit = 1;
+  if(launch->headless && !frame_limit) frame_limit = 1;
   auto const music_file{save_directory / "music.cfg"};
   auto music_settings{earthsiege::read_music_settings(music_file)};
-  music_settings.program_directory = earthsiege::executable_path(argv[0]).parent_path();
-  if(requested_music) music_settings.device = *requested_music;
-  if(requested_roms) music_settings.rom_directory = std::filesystem::absolute(*requested_roms);
-  if(requested_soundfont) music_settings.soundfont = std::filesystem::absolute(*requested_soundfont);
-  if(audio_setup) {
-    if(headless) throw std::runtime_error{"--audio-setup needs a window"};
+  music_settings.program_directory = program.parent_path();
+  if(launch->music) music_settings.device = *launch->music;
+  if(launch->rom_dir) music_settings.rom_directory = std::filesystem::absolute(*launch->rom_dir);
+  if(launch->soundfont) music_settings.soundfont = std::filesystem::absolute(*launch->soundfont);
+  if(launch->audio_setup) {
+    if(launch->headless) throw std::runtime_error{"--audio-setup needs a window"};
     if(auto chosen{earthsiege::choose_music_device(*display, resources, music_settings.device)}) {
       auto candidate{music_settings};
       candidate.device = *chosen;
@@ -181,7 +94,7 @@ auto main(int argc, char *argv[])->int try {
   earthsiege::game_shell menu{resources, save_directory, static_cast<int>(std::time(nullptr) & 127), music_settings};
   if(requested_demo) {
     menu.request_demo();
-  } else if(!inspect_demo) menu.startup(!skip_intro);
+  } else if(!inspect_demo) menu.startup(!launch->skip_intro);
   std::unique_ptr<earthsiege::mission_alert> alert;
   std::unique_ptr<earthsiege::mission_options_dialog> options;
   earthsiege::framebuffer alert_frame;

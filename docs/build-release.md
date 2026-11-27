@@ -31,7 +31,7 @@ contains:
 
 Extract the whole archive and run `earthsiege` or `earthsiege.exe`. Keep the `assets`
 directory beside the executable. The original freeware game data is included.
-GLFW, miniaudio, the synthesiser backends and compiler runtimes are linked statically;
+GLFW, Boost.Program_options, miniaudio, the synthesiser backends and compiler runtimes are linked statically;
 operating-system libraries and Linux display/audio drivers remain system dependencies.
 These archives are not signed or notarised.
 

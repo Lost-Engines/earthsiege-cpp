@@ -10,6 +10,11 @@ option(EARTHSIEGE_STATIC_RUNTIME "Link compiler runtimes statically" ${MINGW})
 if(EARTHSIEGE_STATIC_RUNTIME)
   if(MINGW)
     add_link_options(-static)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16
+        AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17)
+      # GCC PR125151: C++26 Boost exception copies collide with static libstdc++ on MinGW.
+      add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX>:__cpp_lib_constexpr_exceptions=0>")
+    endif()
   else()
     add_link_options("$<$<LINK_LANG_AND_ID:CXX,GNU>:-static-libgcc;-static-libstdc++>")
   endif()
@@ -368,6 +373,9 @@ target_compile_options(earthsiege_core PUBLIC
   $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>
 )
 
+add_library(earthsiege_command_line STATIC src/command_line.cpp)
+target_link_libraries(earthsiege_command_line PUBLIC earthsiege_core PRIVATE Boost::program_options)
+
 add_executable(earthsiege
   src/main.cpp
   src/platform/keyboard.cpp
@@ -378,12 +386,15 @@ add_executable(earthsiege
   src/platform/window.h
   src/platform/paths.cpp
 )
-target_link_libraries(earthsiege PRIVATE earthsiege_core glfw OpenGL::GL pcm_device)
+target_link_libraries(earthsiege PRIVATE earthsiege_command_line glfw OpenGL::GL pcm_device)
 
 add_executable(capture_demo EXCLUDE_FROM_ALL tools/capture_demo.cpp)
 target_link_libraries(capture_demo PRIVATE earthsiege_core)
 
 if(BUILD_TESTING)
+  add_executable(command_line_test tests/command_line_test.cpp)
+  target_link_libraries(command_line_test PRIVATE earthsiege_command_line)
+  add_test(NAME command_line COMMAND command_line_test)
   add_executable(mission_alert_test tests/mission_alert_test.cpp)
   target_link_libraries(mission_alert_test PRIVATE earthsiege_core)
   add_test(NAME mission_alert COMMAND mission_alert_test "${PROJECT_SOURCE_DIR}/assets" "${PROJECT_SOURCE_DIR}/tests/fixtures/alert_rasters.bin")
